@@ -4,3 +4,6 @@
 [submodule "nRF51_SDK"]
 	path = nRF51_SDK
 	url = https://github.com/hello/nRF51_SDK.git
+[submodule "SoftDevice"]
+	path = SoftDevice
+	url = https://github.com/hello/nRF51822_SoftDevice.git
