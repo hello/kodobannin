@@ -32,8 +32,8 @@ STRIP=$(BIN)/$(PREFIX)strip
 NRFFLAGS = -DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV)
 ASFLAGS=-mcpu=cortex-m0  -mthumb -march=armv6-m
 CFLAGS := -MMD -mcpu=cortex-m0  -mthumb -march=armv6-m -I./micro-ecc -I./nRF51_SDK/nrf51822/Include -I./nRF51_SDK/nrf51822/Include/gcc $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS)
-LDFLAGS :=-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
-# -T./link.ld -Map code.map
+LDFLAGS := -T./link.ld -Map code.map
+#-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
 
 all: $(TARGET)
 
