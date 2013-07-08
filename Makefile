@@ -1,6 +1,12 @@
 TARGET = bootloader.bin
 
-SRCS = $(wildcard *.c) $(wildcard micro-ecc/*.c) nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c nRF51_SDK/nrf51822/Source/templates/gcc/gcc_startup_nrf51.s nRF51_SDK/nrf51822/Source/templates/system_nrf51.c
+SRCS = $(wildcard *.c) \
+	$(wildcard micro-ecc/*.c) \
+	nRF51_SDK/nrf51822/Source/templates/gcc/gcc_startup_nrf51.s \
+	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
+	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c 
+#	nRF51_SDK/nrf51822/Source/app_common/app_timer.c 
+
 OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(SRCS)))
 DEPS = $(OBJS:.o=.d)
 
@@ -31,7 +37,7 @@ STRIP=$(BIN)/$(PREFIX)strip
 
 NRFFLAGS = -DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV)
 ASFLAGS=-mcpu=cortex-m0  -mthumb -march=armv6-m
-CFLAGS := -MMD -mcpu=cortex-m0  -mthumb -march=armv6-m -I./micro-ecc -I./nRF51_SDK/nrf51822/Include -I./nRF51_SDK/nrf51822/Include/gcc $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS)
+CFLAGS := -MMD -mcpu=cortex-m0  -mthumb -march=armv6-m -I./micro-ecc -I./nRF51_SDK/nrf51822/Include -I./nRF51_SDK/nrf51822/Include/gcc -I./nRF51_SDK/nrf51822/Include/app_common -I./nRF51_SDK/nrf51822/Include/ble/softdevice $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS)
 LDFLAGS := -T./link.ld -Map code.map
 #-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
 
