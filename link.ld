@@ -1,17 +1,17 @@
 /* Linker script to configure memory regions. */
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x14000, LENGTH = 0x2C000 /* 128k, 128k is taken by S110 */
+  FLASH (rx) : ORIGIN = 0x14000, LENGTH = 0x2C000 /* 80k, 80k is taken by S110 */
   RAM (rwx) : ORIGIN = 0x20002000, LENGTH = 0x2000 /* 8k, 8k is taken by S110 */
 }
 /* Library configurations */
 
 /*GROUP(libgcc.a libc.a libm.a libnosys.a)
 */
-/* Linker script to place sections and symbol values. 
+/* Linker script to place sections and symbol values.
  * It references following symbols, which must be defined in code:
  *   Reset_Handler : Entry of reset handler
- * 
+ *
  * It defines following symbols, which code can use without definition:
  *   __exidx_start
  *   __exidx_end
@@ -77,7 +77,7 @@ SECTIONS
 	__exidx_end = .;
 
 	__etext = .;
-		
+
 	.data : AT (__etext)
 	{
 		__data_start__ = .;
@@ -118,7 +118,7 @@ SECTIONS
 		*(COMMON)
 		__bss_end__ = .;
 	} > RAM
-	
+
 	.heap :
 	{
 		__end__ = .;
@@ -140,7 +140,7 @@ SECTIONS
 	__StackTop = ORIGIN(RAM) + LENGTH(RAM);
 	__StackLimit = __StackTop - SIZEOF(.stack_dummy);
 	PROVIDE(__stack = __StackTop);
-	
+
 	/* Check if data + heap + stack exceeds RAM limit */
 	ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
 }
