@@ -32,6 +32,16 @@ OPTFLAGS=-Os -g
 
 # compiler warnings
 WARNFLAGS=-Wall
+#-std=c99
+#    -Wno-missing-braces -Wno-missing-field-initializers -Wformat=2 \
+#    -Wswitch-default -Wswitch-enum -Wcast-align -Wpointer-arith \
+#    -Wundef -Wcast-qual -Wshadow -Wunreachable-code \
+#    -Wlogical-op -Wfloat-equal -Wstrict-aliasing=2 -Wredundant-decls \
+#    -Werror
+
+    #-Wbad-function-cast -Wstrict-overflow=5 \
+#-Wall -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
+        -Wstrict-prototypes -Wmissing-prototypes
 
 # micro-ecc config - see ecc.h for details
 MICROECCFLAGS=-DECC_ASM=1 -DECC_CURVE=6
@@ -63,7 +73,7 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
-CFLAGS := -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS)
+CFLAGS := -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 LDFLAGS := -T./link.ld -L$(LIB) -lgcc
 #-L/Users/jkelley/Downloads/gcc-arm-none-eabi-4_7-2013q1/lib/gcc/arm-none-eabi/4.7.3/armv6-m -lgcc
 #-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
