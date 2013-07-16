@@ -14,8 +14,17 @@ SRCS =  $(wildcard *.c) \
 	$(wildcard micro-ecc/*.c) \
 	nRF51_SDK/nrf51822/Source/templates/gcc/gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
+	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_advdata.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_bondmngr.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_conn_params.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_flash.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_stack_handler.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_radio_notification.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_bas.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c
-#	nRF51_SDK/nrf51822/Source/app_common/app_timer.c
 
 INCS =  ./ \
 	./ble \
