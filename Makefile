@@ -1,5 +1,6 @@
 # tool location
-BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q1/bin
+#BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q1/bin
+BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 
 # target to build
 TARGET = bootloader.bin
