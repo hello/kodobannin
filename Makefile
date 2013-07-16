@@ -23,7 +23,7 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/gcc \
 	./nRF51_SDK/nrf51822/Include/ble \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
-	./SoftDevice/s110_nrf51822_5.1.0_API/include
+	./SoftDevice/s110_nrf51822_5.2.0_API/include
 
 # optimization flags
 OPTFLAGS=-Os -g
