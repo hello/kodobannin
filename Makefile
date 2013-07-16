@@ -1,6 +1,7 @@
 # tool location
 #BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q1/bin
 BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
+JLINK_BIN=~/Work/jlink_462b
 
 # target to build
 TARGET = bootloader.bin
@@ -57,6 +58,8 @@ LD=$(BIN)/$(PREFIX)ld
 AS=$(BIN)/$(PREFIX)as
 OBJCOPY=$(BIN)/$(PREFIX)objcopy
 STRIP=$(BIN)/$(PREFIX)strip
+JPROG=$(JLINK_BIN)/JLinkExe.command
+JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
@@ -69,6 +72,10 @@ OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(SRCS)))
 DEPS = $(OBJS:.o=.d)
 
 all: $(TARGET)
+
+prog: $(TARGET)
+	$(JPROG) < prog.jlink
+	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
 %.o: %.c
 	$(info [CC] $(notdir $<))
