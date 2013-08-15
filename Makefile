@@ -1,6 +1,6 @@
 # tool location
-#BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q1/bin
-BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
+BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q1/bin
+#BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
 # target to build
