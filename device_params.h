@@ -43,7 +43,7 @@
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     40
+#define APP_ADV_INTERVAL                     800//40
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           180
 
@@ -86,3 +86,10 @@
 #define SEC_PARAM_MIN_KEY_SIZE               7
 // Maximum encryption key size
 #define SEC_PARAM_MAX_KEY_SIZE               16
+
+/*
+ * Intervals for timed activities
+ */
+// Battery level measurement interval (ticks).
+#define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
+
