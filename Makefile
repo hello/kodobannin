@@ -1,5 +1,6 @@
 # tool location
-BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q1/bin
+BIN=~/Work/gcc-arm-none-eabi-4_7-2013q1/bin
+#BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q1/bin
 #BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
@@ -24,7 +25,8 @@ SRCS =  $(wildcard *.c) \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_bas.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
-	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c
+	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
+	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c
 
 INCS =  ./ \
 	./ble \

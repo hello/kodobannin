@@ -7,6 +7,7 @@
 #include <device_params.h>
 #include <ble_err.h>
 #include <ble_bas.h>
+#include <simple_uart.h>
 
 extern void ble_init(void);
 extern void ble_advertising_start(void);
@@ -90,6 +91,7 @@ _start()
 	nrf_gpio_pin_set(GPIO_3v3_Enable);
 	*/
 
+	simple_uart_config(0, 9, 0, 10, false);
 	//timers_init();
 	ble_init();
 
@@ -97,6 +99,7 @@ _start()
 	battery_level_update();
 
 	//application_timers_start();
+
 	ble_advertising_start();
 	while(1) {
 		err_code = sd_app_event_wait();
