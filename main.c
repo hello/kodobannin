@@ -8,8 +8,6 @@
 #include <ble_err.h>
 #include <ble_bas.h>
 
-#define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER) /**< Battery level measurement interval (ticks). */
-
 extern void ble_init(void);
 extern void ble_advertising_start(void);
 extern uint32_t ble_services_update_battery_level(uint8_t level);
@@ -22,7 +20,7 @@ static void battery_level_update(void)
 {
     uint32_t err_code;
     uint8_t  battery_level;
-    
+
     battery_level = 69;
 
     err_code = ble_services_update_battery_level(battery_level);
@@ -61,7 +59,7 @@ static void
 timers_init(void)
 {
     uint32_t err_code;
-    
+
     // Initialize timer module
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
 
@@ -86,17 +84,23 @@ void
 _start()
 {
 	uint32_t err_code;
-	//APP_ERROR_CHECK(-1);
 
-	timers_init();
+	/*
+	nrf_gpio_cfg_output(GPIO_3v3_Enable);
+	nrf_gpio_pin_set(GPIO_3v3_Enable);
+	*/
+
+	//timers_init();
 	ble_init();
 
-	application_timers_start();
+	//< hack for when timers are disabled
+	battery_level_update();
+
+	//application_timers_start();
 	ble_advertising_start();
 	while(1) {
 		err_code = sd_app_event_wait();
 		APP_ERROR_CHECK(err_code);
-		//__WFE();
 	}
 /*
 	nrf_gpio_cfg_output(GPIO_3v3_Enable);
