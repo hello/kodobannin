@@ -1,6 +1,5 @@
 # tool location
-BIN=~/Work/gcc-arm-none-eabi-4_7-2013q1/bin
-#BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q1/bin
+BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q2/bin
 #BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
@@ -36,7 +35,7 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/gcc \
 	./nRF51_SDK/nrf51822/Include/ble \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
-	./SoftDevice/s110_nrf51822_5.2.0_API/include
+	./SoftDevice/s110_nrf51822_5.2.1_API/include
 
 # optimization flags
 OPTFLAGS=-Os -g
