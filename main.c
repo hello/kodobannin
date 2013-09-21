@@ -8,6 +8,7 @@
 #include <ble_err.h>
 #include <ble_bas.h>
 #include <simple_uart.h>
+#include "sha.h"
 
 extern void ble_init(void);
 extern void ble_advertising_start(void);
@@ -79,6 +80,36 @@ application_timers_start(void)
     // Start application timers
     err_code = app_timer_start(m_battery_timer_id, BATTERY_LEVEL_MEAS_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
+}
+
+void sha1_code_area(uint8_t *hash)
+{
+    NRF_UICR_Type *uicr = NRF_UICR;
+    NRF_FICR_Type *ficr = NRF_FICR;
+    uint32_t code_size = uicr->BOOTLOADERADDR - NRF_UICR_BASE; //!< fix
+    uint32_t code_address = NRF_UICR_BASE; //wrong
+    SHA_CTX ctx;
+    
+
+    SHA1_Init(&ctx);
+    SHA1_Update(&ctx, (void *)code_address, code_size);
+    SHA1_Final(hash, &ctx);
+}
+
+bool
+verify_code_sha1(uint8_t *valid_hash)
+{
+    uint8_t sha1[SHA1_DIGEST_LENGTH];
+    uint8_t test[SHA1_DIGEST_LENGTH] = {0}; // replace this
+    uint8_t comp = 0;
+    int i = 0;
+
+    sha1_code_area(sha1);
+
+    for (i = 0; i < SHA1_DIGEST_LENGTH; i++)
+        comp |= sha1[i] ^ test[i];
+
+    return comp == 0;
 }
 
 void
