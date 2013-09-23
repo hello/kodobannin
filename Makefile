@@ -1,5 +1,5 @@
 # tool location
-BIN=~/Work/gcc-arm-none-eabi-4_7-2013q1/bin
+BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q2/bin
 #BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
@@ -46,7 +46,7 @@ INCS =  ./ \
 OPTFLAGS=-Os -g
 
 # compiler warnings
-WARNFLAGS=-Wall
+WARNFLAGS=-Wall -Wstrict-prototypes -Wmissing-prototypes
 #-std=c99
 #    -Wno-missing-braces -Wno-missing-field-initializers -Wformat=2 \
 #    -Wswitch-default -Wswitch-enum -Wcast-align -Wpointer-arith \
@@ -56,7 +56,7 @@ WARNFLAGS=-Wall
 
     #-Wbad-function-cast -Wstrict-overflow=5 \
 #-Wall -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-        -Wstrict-prototypes -Wmissing-prototypes
+        
 
 # micro-ecc config - see ecc.h for details
 MICROECCFLAGS=-DECC_ASM=1 -DECC_CURVE=6
@@ -76,6 +76,7 @@ ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 
 # Tool setup
 LIBGCC=$(shell find $(BIN)/.. -name libgcc.a|grep armv6-m)
+SOFTDEV_SRC=$(shell find SoftDevice -iname "s110*.hex")
 LIB=$(dir $(shell python -c 'import os; print os.path.realpath("$(LIBGCC)")'))
 PREFIX=arm-none-eabi-
 CC=$(BIN)/$(PREFIX)gcc
@@ -96,7 +97,13 @@ LDFLAGS := -T./link.ld -L$(LIB) -lgcc
 OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(SRCS)))
 DEPS = $(OBJS:.o=.d)
 
-all: $(TARGET)
+all: $(TARGET) SoftDevice
+
+SoftDevice:
+	$(info [OBJCOPY] softdevice_main.bin)
+	@$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_main.bin
+	$(info [OBJCOPY] softdevice_uicr.bin)
+	@$(OBJCOPY) -I ihex -O binary --only-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_uicr.bin
 
 prog: $(TARGET)
 	$(JPROG) < prog.jlink
@@ -119,7 +126,7 @@ prog: $(TARGET)
 	@$(OBJCOPY)  -O binary $< $@
 #-j .text -j .data
 
-.PHONY: clean
+.PHONY: clean SoftDevice
 clean:
 	-@rm -f $(OBJS) $(TARGET) $(TARGET:.bin=.elf) $(DEPS)
 
