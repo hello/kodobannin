@@ -28,8 +28,8 @@
  * BLE Advertising Strings
  */
 #define BLE_DEVICE_NAME       "Band"
-#define BLE_MANUFACTURER_NAME "Hi"
-#define BLE_MODEL_NUM         "EVT1-r3"
+#define BLE_MANUFACTURER_NAME "H"
+//#define BLE_MODEL_NUM         "EVT1-r3"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -43,7 +43,7 @@
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800//40
+#define APP_ADV_INTERVAL                     40
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           180
 
