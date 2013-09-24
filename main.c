@@ -183,13 +183,15 @@ _start()
     nrf_gpio_cfg_output(21);
     nrf_gpio_cfg_output(22);
     nrf_gpio_cfg_output(23);
-
     nrf_gpio_pin_set(21);
+    nrf_gpio_pin_set(22);
+    nrf_gpio_pin_set(23);
+    //nrf_gpio_pin_set(21);
     nrf_delay_ms(500);
     // measure and verify current firmware
     if (verify_fw_sha1(valid_fw)) {
         //nrf_gpio_pin_set(22);
-        nrf_gpio_pin_clear(21);
+        //nrf_gpio_pin_clear(21);
 
         // boot FW if valid
         interrupts_disable();
@@ -199,8 +201,8 @@ _start()
         
         boot_firmware(CODE_REGION_1_START);
     } else {
-        nrf_gpio_pin_set(22);
-        nrf_gpio_pin_clear(21);
+        //nrf_gpio_pin_set(22);
+        //nrf_gpio_pin_clear(21);
         // else enter DFU over BLE mode
         err_code = dfu_init_state(); 
         if (err_code == NRF_SUCCESS)    
