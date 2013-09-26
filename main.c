@@ -90,7 +90,7 @@ application_timers_start(void)
 void sha1_code_area(uint8_t *hash)
 {
     NRF_UICR_Type *uicr = NRF_UICR;
-    NRF_FICR_Type *ficr = NRF_FICR;
+    // NRF_FICR_Type *ficr = NRF_FICR;
     uint32_t code_size = uicr->BOOTLOADERADDR - NRF_UICR_BASE; //!< fix
     uint32_t code_address = NRF_UICR_BASE; //wrong
     SHA_CTX ctx;
