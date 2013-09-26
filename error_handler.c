@@ -20,13 +20,9 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 #else
 	while(1) {
 		(void)error_code;
-		nrf_gpio_pin_set(21);
-	    nrf_gpio_pin_set(22);
-	    nrf_gpio_pin_set(23);
+		nrf_gpio_pin_set(18);
 	    nrf_delay_ms(500);
-	    nrf_gpio_pin_clear(21);
-	    nrf_gpio_pin_clear(22);
-	    nrf_gpio_pin_clear(23);
+	    nrf_gpio_pin_clear(18);
 	    nrf_delay_ms(500);
 	}
 	while(1) { __WFE(); }
