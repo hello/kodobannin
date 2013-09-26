@@ -35,10 +35,19 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/gcc \
 	./nRF51_SDK/nrf51822/Include/ble \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
-	./SoftDevice/s110_nrf51822_5.2.1_API/include
+	./SoftDevice/s110_nrf51822_5.2.1_API/include \
+	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader \
+	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader/include \
+	$(NULL)
 
 # optimization flags
-OPTFLAGS=-Os -g
+DEBUG = 1
+
+ifeq ($(DEBUG), 1)
+OPTFLAGS=-O0 -g
+else
+OPTFLAGS=-Os -DECC_ASM=1
+endif
 
 # compiler warnings
 WARNFLAGS=-Wall -Wstrict-prototypes -Wmissing-prototypes
@@ -54,7 +63,7 @@ WARNFLAGS=-Wall -Wstrict-prototypes -Wmissing-prototypes
         
 
 # micro-ecc config - see ecc.h for details
-MICROECCFLAGS=-DECC_ASM=1 -DECC_CURVE=6
+MICROECCFLAGS=-DECC_CURVE=6
 
 NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV)
 
