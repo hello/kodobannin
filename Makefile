@@ -113,6 +113,15 @@ prog: $(TARGET)
 	$(JPROG) < prog.jlink
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
+gdbs:
+	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
+
+gdb:
+	~/Work/gcc-arm-none-eabi-4_7-2013q1/bin/arm-none-eabi-gdb bootloader.elf  -ex "tar remote :2331" -ex "mon reset"
+
+cgdb:
+	cgdb -d ~/Work/gcc-arm-none-eabi-4_7-2013q1/bin/arm-none-eabi-gdb -- bootloader.elf  -ex "tar remote :2331" -ex "mon reset"
+
 %.o: %.c
 	$(info [CC] $(notdir $<))
 	@$(CC) $(CFLAGS) -c $< -o $@
