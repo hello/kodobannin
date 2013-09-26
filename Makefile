@@ -9,6 +9,8 @@ TARGET = bootloader.bin
 # nRF51822 revision (for PAN workarounds in nRF SDK)
 NRFREV = NRF51822_QFAA_CA
 
+NULL =
+
 SRCS =  $(wildcard *.c) \
 	$(wildcard ble/*.c) \
 	$(wildcard micro-ecc/*.c) \
@@ -25,7 +27,23 @@ SRCS =  $(wildcard *.c) \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
-	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c
+	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c \
+	\
+	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader/bootloader.c \
+	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader/dfu_single_bank.c \
+	\
+	hello_bootloader/bootloader_util_arm.c \
+	hello_bootloader/dfu_transport_ble.c \
+	\
+	nRF51_SDK/nrf51822/Source/app_common/hci_transport.c \
+	nRF51_SDK/nrf51822/Source/app_common/hci_mem_pool.c \
+	nRF51_SDK/nrf51822/Source/app_common/hci_slip.c \
+	nRF51_SDK/nrf51822/Source/app_common/app_uart.c \
+	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
+	nRF51_SDK/nrf51822/Source/app_common/crc16.c \
+	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dfu.c \
+	$(NULL)
 
 INCS =  ./ \
 	./ble \

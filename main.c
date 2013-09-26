@@ -16,8 +16,11 @@ extern uint32_t ble_services_update_battery_level(uint8_t level);
 
 static app_timer_id_t m_battery_timer_id; /**< Battery timer. */
 
+static ble_bas_t m_bas;
+
 /**@brief Perform battery measurement, and update Battery Level characteristic in Battery Service.
  */
+#if 0
 static void battery_level_update(void)
 {
     uint32_t err_code;
@@ -39,6 +42,7 @@ static void battery_level_update(void)
         APP_ERROR_HANDLER(err_code);
     }
 }
+#endif
 
 /**@brief Battery measurement timer timeout handler.
  *
@@ -50,7 +54,8 @@ static void battery_level_update(void)
 static void battery_level_meas_timeout_handler(void * p_context)
 {
     (void)p_context;
-    battery_level_update();
+    // battery_level_update();
+    ble_bas_battery_level_update(&m_bas, 69);
 }
 
 /**@brief Timer initialization.
@@ -112,6 +117,15 @@ verify_code_sha1(uint8_t *valid_hash)
     return comp == 0;
 }
 
+#include "ble_stack_handler.h"
+
+#define APP_GPIOTE_MAX_USERS            2
+#include "app_gpiote.h"
+static void gpiote_init(void)
+{
+	APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+}
+
 void
 _start()
 {
@@ -127,11 +141,19 @@ _start()
 	ble_init();
 
 	//< hack for when timers are disabled
-	battery_level_update();
+	ble_bas_battery_level_update(&m_bas, 69);
+	//battery_level_update();
 
 	//application_timers_start();
 
 	ble_advertising_start();
+
+	timers_init();
+	gpiote_init();
+
+	err_code = bootloader_dfu_start();
+	APP_ERROR_CHECK(err_code);
+
 	while(1) {
 		err_code = sd_app_event_wait();
 		APP_ERROR_CHECK(err_code);
