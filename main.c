@@ -94,7 +94,7 @@ void sha1_code_area(uint8_t *hash)
     uint32_t code_size = uicr->BOOTLOADERADDR - NRF_UICR_BASE; //!< fix
     uint32_t code_address = NRF_UICR_BASE; //wrong
     SHA_CTX ctx;
-    
+
 
     SHA1_Init(&ctx);
     SHA1_Update(&ctx, (void *)code_address, code_size);
