@@ -78,7 +78,7 @@ WARNFLAGS=-Wall -Wstrict-prototypes -Wmissing-prototypes
 
     #-Wbad-function-cast -Wstrict-overflow=5 \
 #-Wall -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-        
+
 
 # micro-ecc config - see ecc.h for details
 MICROECCFLAGS=-DECC_CURVE=6
