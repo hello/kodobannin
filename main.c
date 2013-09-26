@@ -138,7 +138,7 @@ _start()
 
 	simple_uart_config(0, 9, 0, 10, false);
 	//timers_init();
-	ble_init();
+	//ble_init();
 
 	//< hack for when timers are disabled
 	ble_bas_battery_level_update(&m_bas, 69);
@@ -146,10 +146,12 @@ _start()
 
 	//application_timers_start();
 
-	ble_advertising_start();
+	//ble_advertising_start();
 
 	timers_init();
 	gpiote_init();
+
+	dfu_init();
 
 	err_code = bootloader_dfu_start();
 	APP_ERROR_CHECK(err_code);
