@@ -9,13 +9,11 @@ TARGET = bootloader.bin
 # nRF51822 revision (for PAN workarounds in nRF SDK)
 NRFREV = NRF51822_QFAA_CA
 
-	#$(wildcard ble/*.c) \
-
 SRCS =  $(wildcard *.c) \
+	$(wildcard ble/*.c) \
 	$(wildcard micro-ecc/*.c) \
 	nRF51_SDK/nrf51822/Source/templates/gcc/gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_gpiote.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_advdata.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_bondmngr.c \
@@ -27,9 +25,7 @@ SRCS =  $(wildcard *.c) \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dfu.c \
-	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
-	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c 
+	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c
 
 INCS =  ./ \
 	./ble \
@@ -39,7 +35,6 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/gcc \
 	./nRF51_SDK/nrf51822/Include/ble \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
-	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader/include/ \
 	./SoftDevice/s110_nrf51822_5.2.1_API/include
 
 # optimization flags
