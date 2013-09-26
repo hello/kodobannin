@@ -123,9 +123,9 @@ all: $(TARGET) SoftDevice
 
 SoftDevice:
 	$(info [OBJCOPY] softdevice_main.bin)
-	@$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_main.bin
+	$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_main.bin
 	$(info [OBJCOPY] softdevice_uicr.bin)
-	@$(OBJCOPY) -I ihex -O binary --only-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_uicr.bin
+	$(OBJCOPY) -I ihex -O binary --only-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_uicr.bin
 
 prog: $(TARGET)
 	$(JPROG) < prog.jlink
@@ -142,24 +142,24 @@ cgdb:
 
 %.o: %.c
 	$(info [CC] $(notdir $<))
-	@$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o: %.s
 	$(info [AS] $(notdir $<))
-	@$(AS) $(ASFLAGS) $< -o $@
+	$(AS) $(ASFLAGS) $< -o $@
 
 %.elf: $(OBJS) link.ld
 	$(info [LD] $@)
-	@$(LD) -o $@ $(OBJS) $(LDFLAGS)
+	$(LD) -o $@ $(OBJS) $(LDFLAGS)
 
 %.bin: %.elf
 	$(info [BIN] $@)
-	@$(OBJCOPY)  -O binary $< $@
+	$(OBJCOPY)  -O binary $< $@
 #-j .text -j .data
 
 .PHONY: clean SoftDevice
 clean:
-	-@rm -f $(OBJS) $(TARGET) $(TARGET:.bin=.elf) $(DEPS)
+	-rm -f $(OBJS) $(TARGET) $(TARGET:.bin=.elf) $(DEPS)
 
 # dependency info
 -include $(DEPS)
