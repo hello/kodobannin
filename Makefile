@@ -11,8 +11,9 @@ NRFREV = NRF51822_QFAA_CA
 
 NULL =
 
+#$(wildcard ble/*.c) \
+
 SRCS =  $(wildcard *.c) \
-	$(wildcard ble/*.c) \
 	$(wildcard micro-ecc/*.c) \
 	nRF51_SDK/nrf51822/Source/templates/gcc/gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
