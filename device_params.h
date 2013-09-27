@@ -4,10 +4,38 @@
  * Board GPIO defines
  */
 
-// For EVT-1
-#define GPIO_3v3_Enable  5
-#define GPIO_HRS_PWM     2
-#define GPIO_VIBE_PWM   30
+// For EVT-2
+#define GPIO_3v3_Enable    13
+#define GPIO_HRS_PWM_G     31
+#define GPIO_HRS_PWM_R     25
+#define GPIO_VIBE_PWM       0
+
+#define GPIO_1   8
+#define GPIO_2   5
+#define GPIO_3   3
+#define GPIO_4   1
+#define GPIO_5  30
+
+#define IMU_SPI_MOSI       14
+#define IMU_SPI_MISO       22
+#define IMU_SPI_SCLK       19
+#define IMU_SPI_nCS        17
+#define IMU_INT             2
+
+#define MOSI         7
+#define MISO        11
+#define SCLK        15
+#define GPS_nCS     12
+#define FLASH_nCS   16
+#define GPS_ON_OFF   9
+
+#define RTC_SDA     23
+#define RTC_SCL     24
+#define RTC_INT     28
+
+#define HRS_SENSE   26
+
+#define nBATT_CHG   21
 
 // For PCA-1000 v2
 /*
@@ -29,7 +57,7 @@
  */
 #define BLE_DEVICE_NAME       "Band"
 #define BLE_MANUFACTURER_NAME "H"
-//#define BLE_MODEL_NUM         "EVT1-r3"
+#define BLE_MODEL_NUM         "EVT1-r3"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -43,7 +71,7 @@
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     40
+#define APP_ADV_INTERVAL                     800//40
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           180
 
@@ -55,12 +83,9 @@
 #define SECOND_10_MS_UNITS                   100
 // Minimum acceptable connection interval (0.5 seconds),
 // Connection interval uses 1.25 ms units
-#define MIN_CONN_INTERVAL                    (uint16_t)(MSEC_TO_UNITS(11.25, UNIT_1_25_MS))          /**< Minimum acceptable connection interval (11.25 milliseconds). */
-#define MAX_CONN_INTERVAL                    (uint16_t)(MSEC_TO_UNITS(15, UNIT_1_25_MS))             /**< Maximum acceptable connection interval (15 milliseconds). */
-
-//#define MIN_CONN_INTERVAL                    (TWENTY_MS_1_25_MS_UNITS)
+#define MIN_CONN_INTERVAL                    (TWENTY_MS_1_25_MS_UNITS)
 // Maximum acceptable connection interval (1 second), Connection interval uses 1.25 ms units.
-//#define MAX_CONN_INTERVAL                    (2*TWENTY_MS_1_25_MS_UNITS)
+#define MAX_CONN_INTERVAL                    (2*TWENTY_MS_1_25_MS_UNITS)
 
 // Slave latency. */
 #define SLAVE_LATENCY                        0
@@ -69,11 +94,9 @@
 
 // Time from initiating event (connect or start of notification) to first
 // time ble_gap_conn_param_update is called (5 seconds)
-#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(100, APP_TIMER_PRESCALER)               /**< Time from the Connected event to first time sd_ble_gap_conn_param_update is called (100 milliseconds). */
-#define NEXT_CONN_PARAMS_UPDATE_DELAY        APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)               /**< Time between each call to sd_ble_gap_conn_param_update after the first (500 milliseconds). */
-//#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
+#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
 // Time between each call to ble_gap_conn_param_update after the first (30 seconds)
-//#define NEXT_CONN_PARAMS_UPDATE_DELAY        APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
+#define NEXT_CONN_PARAMS_UPDATE_DELAY        APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
 // Number of attempts before giving up the connection parameter negotiation
 #define MAX_CONN_PARAMS_UPDATE_COUNT         3
 

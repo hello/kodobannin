@@ -1,6 +1,7 @@
 *.o
 *.d
 *.elf
-*.bin
-
 *.map
+bootloader.bin
+hrs.bin
+hrs_packet_encoded.bin

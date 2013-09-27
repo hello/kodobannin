@@ -1,5 +1,5 @@
 # tool location
-BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q2/bin
+BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q3/bin
 #BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
@@ -9,13 +9,15 @@ TARGET = bootloader.bin
 # nRF51822 revision (for PAN workarounds in nRF SDK)
 NRFREV = NRF51822_QFAA_CA
 
-	#$(wildcard ble/*.c) \
+NULL =
+
+#$(wildcard ble/*.c) \
 
 SRCS =  $(wildcard *.c) \
 	$(wildcard micro-ecc/*.c) \
-	nRF51_SDK/nrf51822/Source/templates/gcc/gcc_startup_nrf51.s \
+	$(wildcard hello_bootloader/*.c) \
+	./gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_gpiote.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_advdata.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_bondmngr.c \
@@ -27,26 +29,37 @@ SRCS =  $(wildcard *.c) \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dfu.c \
+	nRF51_SDK/nrf51822/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
-	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c 
-
+	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dfu.c \
+	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c \
+	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
+	$(NULL)
+		
 INCS =  ./ \
 	./ble \
 	./micro-ecc \
+	./hello_bootloader \
 	./nRF51_SDK/nrf51822/Include \
 	./nRF51_SDK/nrf51822/Include/app_common \
 	./nRF51_SDK/nrf51822/Include/gcc \
 	./nRF51_SDK/nrf51822/Include/ble \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
-	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader/include/ \
-	./SoftDevice/s110_nrf51822_5.2.1_API/include
+	./SoftDevice/s110_nrf51822_5.2.1_API/include \
+	$(NULL)
 
 # optimization flags
-OPTFLAGS=-Os -g
+DEBUG = 1
+
+ifeq ($(DEBUG), 1)
+OPTFLAGS=-O0 -g
+else
+OPTFLAGS=-Os -g -DECC_ASM=1
+endif
 
 # compiler warnings
-WARNFLAGS=-Wall -Wstrict-prototypes -Wmissing-prototypes
+WARNFLAGS=-Wall
+#-Wstrict-prototypes -Wmissing-prototypes
 #-std=c99
 #    -Wno-missing-braces -Wno-missing-field-initializers -Wformat=2 \
 #    -Wswitch-default -Wswitch-enum -Wcast-align -Wpointer-arith \
@@ -56,10 +69,10 @@ WARNFLAGS=-Wall -Wstrict-prototypes -Wmissing-prototypes
 
     #-Wbad-function-cast -Wstrict-overflow=5 \
 #-Wall -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-        
+
 
 # micro-ecc config - see ecc.h for details
-MICROECCFLAGS=-DECC_ASM=1 -DECC_CURVE=6
+MICROECCFLAGS=-DECC_CURVE=6
 
 NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV)
 
@@ -89,8 +102,8 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
-CFLAGS := -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
-LDFLAGS := -T./link.ld -L$(LIB) -lgcc
+CFLAGS := -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
+LDFLAGS := -T./link.ld -L$(LIB) -lgcc --gc-sections
 #-L/Users/jkelley/Downloads/gcc-arm-none-eabi-4_7-2013q1/lib/gcc/arm-none-eabi/4.7.3/armv6-m -lgcc
 #-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
 
@@ -108,6 +121,15 @@ SoftDevice:
 prog: $(TARGET)
 	$(JPROG) < prog.jlink
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
+
+gdbs:
+	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
+
+gdb:
+	$(BIN)/arm-none-eabi-gdb bootloader.elf  -ex "tar remote :2331" -ex "mon reset"
+
+cgdb:
+	cgdb -d $(BIN)/arm-none-eabi-gdb -- bootloader.elf  -ex "tar remote :2331" -ex "mon reset"
 
 %.o: %.c
 	$(info [CC] $(notdir $<))
@@ -128,7 +150,7 @@ prog: $(TARGET)
 
 .PHONY: clean SoftDevice
 clean:
-	-@rm -f $(OBJS) $(TARGET) $(TARGET:.bin=.elf) $(DEPS)
+	@-rm -f $(OBJS) $(TARGET) $(TARGET:.bin=.elf) $(DEPS)
 
 # dependency info
 -include $(DEPS)

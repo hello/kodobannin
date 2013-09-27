@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <simple_uart.h>
 
 void *
 memcpy(void *s1, const void *s2, size_t n)
@@ -50,4 +51,15 @@ strlen(const char *a)
 		++count;
 
 	return count;
+}
+
+static uint8_t hex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+void
+serial_print_hex(uint8_t *ptr, uint32_t len) {
+	while(len-- >0) {
+		simple_uart_put(hex[0xF&(*ptr>>4)]);
+		simple_uart_put(hex[0xF&*ptr++]);
+		simple_uart_put(' ');
+	}
 }
