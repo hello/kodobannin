@@ -1,7 +1,7 @@
 /* Linker script to configure memory regions. */
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x38000, LENGTH = 0x7000 /* 80k, 80k is taken by S110 */
+  FLASH (rx) : ORIGIN = 0x36000, LENGTH = 0x9000 /* 80k, 80k is taken by S110 */
   RAM (rwx) : ORIGIN = 0x20002000, LENGTH = 0x2000 /* 8k, 8k is taken by S110 */
 }
 /* Library configurations */

@@ -147,7 +147,7 @@ uint32_t bootloader_dfu_start(void)
 
 /**@brief Function for disabling all interrupts before jumping from bootloader to application.
  */
-static void interrupts_disable(void)
+void interrupts_disable(void)
 {
     uint32_t interrupt_setting_mask;
     uint8_t  irq;

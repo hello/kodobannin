@@ -680,7 +680,7 @@ static uint32_t stack_evt_schedule(void)
  */
 static void ble_stack_init(void)
 {
-    uint32_t err_code = ble_stack_handler_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM,
+    uint32_t err_code = ble_stack_handler_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
                                                m_evt_buffer,
                                                sizeof(m_evt_buffer),
                                                NULL,
