@@ -6,7 +6,7 @@ w4 4001e514 1
 r
 w4 4001e504 1
 speed 1000
-loadbin /Users/jkelley/Work/kodobannin/SoftDevice/softdevice_uicr.bin 0x10001000
+loadbin /Users/jkelley/Work/kodobannin/SoftDevice/bootloader_uicr.bin 0x10001000
 loadbin /Users/jkelley/Work/kodobannin/SoftDevice/softdevice_main.bin 0x0
-loadbin /Users/jkelley/Work/kodobannin/bootloader.bin  0x14000
+loadbin /Users/jkelley/Work/kodobannin/bootloader.bin  0x38000
 q

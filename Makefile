@@ -1,5 +1,5 @@
 # tool location
-BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q2/bin
+BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q3/bin
 #BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
