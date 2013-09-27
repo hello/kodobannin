@@ -5,7 +5,7 @@
 #include <app_timer.h>
 #include <device_params.h>
 #include <ble_err.h>
-#include "sha.h"
+#include "sha1.h"
 #include <bootloader.h>
 #include <dfu_types.h>
 #include <bootloader_util_arm.h>
@@ -18,7 +18,7 @@
 static void
 sha1_fw_area(uint8_t *hash)
 {
-	SHA_CTX ctx;
+	sha1_ctx_t ctx;
 	uint32_t code_size    = DFU_IMAGE_MAX_SIZE_FULL;
 	uint8_t *code_address = (uint8_t *)CODE_REGION_1_START;
 	uint32_t *index = (uint32_t *)BOOTLOADER_REGION_START - DFU_APP_DATA_RESERVED - 4;
@@ -32,9 +32,9 @@ sha1_fw_area(uint8_t *hash)
     if (code_size ==  0)
         return;
 
-	SHA1_Init(&ctx);
-	SHA1_Update(&ctx, (void *)code_address, code_size);
-	SHA1_Final(hash, &ctx);
+	sha1_init(&ctx);
+	sha1_update(&ctx, (void *)code_address, code_size);
+	sha1_final(&ctx, (uint32_t*)hash);
 }
 
 static bool

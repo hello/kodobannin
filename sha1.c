@@ -1,156 +1,401 @@
 /*
  * sha1.c
  *
- * Originally witten by Steve Reid <steve@edmweb.com>
- * 
- * Modified by Aaron D. Gifford <agifford@infowest.com>
+ * an implementation of the Secure Hash Algorithm v.1 (SHA-1),
+ * specified in FIPS 180-1
  *
- * NO COPYRIGHT - THIS IS 100% IN THE PUBLIC DOMAIN
- *
- * The original unmodified version is available at:
- *    ftp://ftp.funet.fi/pub/crypt/hash/sha/sha1.c
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR(S) OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * David A. McGrew
+ * Cisco Systems, Inc.
  */
-#include <string.h>
-#include "sha.h"
 
-#define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
+/*
+ *	
+ * Copyright (c) 2001-2006, Cisco Systems, Inc.
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 
+ *   Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ * 
+ *   Redistributions in binary form must reproduce the above
+ *   copyright notice, this list of conditions and the following
+ *   disclaimer in the documentation and/or other materials provided
+ *   with the distribution.
+ * 
+ *   Neither the name of the Cisco Systems, Inc. nor the names of its
+ *   contributors may be used to endorse or promote products derived
+ *   from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
 
-/* blk0() and blk() perform the initial expand. */
-/* I got the idea of expanding during the round function from SSLeay */
+#include <stdint.h>
 
+#include "sha1.h"
+
+#define LITTLE_ENDIAN
+
+/* SN == Rotate left N bits */
+#define S1(X)  ((X << 1)  | (X >> 31))
+#define S5(X)  ((X << 5)  | (X >> 27))
+#define S30(X) ((X << 30) | (X >> 2))
+
+#define f0(B,C,D) ((B & C) | (~B & D))              
+#define f1(B,C,D) (B ^ C ^ D)
+#define f2(B,C,D) ((B & C) | (B & D) | (C & D))
+#define f3(B,C,D) (B ^ C ^ D)
+
+/* 
+ * nota bene: the variable K0 appears in the curses library, so we 
+ * give longer names to these variables to avoid spurious warnings 
+ * on systems that uses curses
+ */
+
+uint32_t SHA_K0 = 0x5A827999;   /* Kt for 0  <= t <= 19 */
+uint32_t SHA_K1 = 0x6ED9EBA1;   /* Kt for 20 <= t <= 39 */
+uint32_t SHA_K2 = 0x8F1BBCDC;   /* Kt for 40 <= t <= 59 */
+uint32_t SHA_K3 = 0xCA62C1D6;   /* Kt for 60 <= t <= 79 */
+
+void
+sha1(const uint8_t *msg, int octets_in_msg, uint32_t hash_value[5]) {
+  sha1_ctx_t ctx;
+
+  sha1_init(&ctx);
+  sha1_update(&ctx, msg, octets_in_msg);
+  sha1_final(&ctx, hash_value);
+
+}
+
+/*
+ *  sha1_core(M, H) computes the core compression function, where M is
+ *  the next part of the message (in network byte order) and H is the
+ *  intermediate state { H0, H1, ...} (in host byte order)
+ *
+ *  this function does not do any of the padding required in the
+ *  complete SHA1 function
+ *
+ *  this function is used in the SEAL 3.0 key setup routines
+ *  (crypto/cipher/seal.c)
+ */
+
+static uint32_t be32_to_cpu(uint32_t v)
+{
 #ifdef LITTLE_ENDIAN
-#define blk0(i) (block->l[i] = (rol(block->l[i],24)&(sha1_quadbyte)0xFF00FF00) \
-	|(rol(block->l[i],8)&(sha1_quadbyte)0x00FF00FF))
+        return ((v & 0xff) << 24) | ((v & 0xff00) << 8) | ((v & 0xff0000) >> 8) | ((v & 0xff000000) >> 24);
 #else
-#define blk0(i) block->l[i]
+        return v;
 #endif
-
-#define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
-	^block->l[(i+2)&15]^block->l[i&15],1))
-
-/* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
-#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
-#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk(i)+0x5A827999+rol(v,5);w=rol(w,30);
-#define R2(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
-#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
-#define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
-
-typedef union _BYTE64QUAD16 {
-	sha1_byte c[64];
-	sha1_quadbyte l[16];
-} BYTE64QUAD16;
-
-/* Hash a single 512-bit block. This is the core of the algorithm. */
-void SHA1_Transform(sha1_quadbyte state[5], sha1_byte buffer[64]) {
-	sha1_quadbyte	a, b, c, d, e;
-	BYTE64QUAD16	*block;
-
-	block = (BYTE64QUAD16*)buffer;
-	/* Copy context->state[] to working vars */
-	a = state[0];
-	b = state[1];
-	c = state[2];
-	d = state[3];
-	e = state[4];
-	/* 4 rounds of 20 operations each. Loop unrolled. */
-	R0(a,b,c,d,e, 0); R0(e,a,b,c,d, 1); R0(d,e,a,b,c, 2); R0(c,d,e,a,b, 3);
-	R0(b,c,d,e,a, 4); R0(a,b,c,d,e, 5); R0(e,a,b,c,d, 6); R0(d,e,a,b,c, 7);
-	R0(c,d,e,a,b, 8); R0(b,c,d,e,a, 9); R0(a,b,c,d,e,10); R0(e,a,b,c,d,11);
-	R0(d,e,a,b,c,12); R0(c,d,e,a,b,13); R0(b,c,d,e,a,14); R0(a,b,c,d,e,15);
-	R1(e,a,b,c,d,16); R1(d,e,a,b,c,17); R1(c,d,e,a,b,18); R1(b,c,d,e,a,19);
-	R2(a,b,c,d,e,20); R2(e,a,b,c,d,21); R2(d,e,a,b,c,22); R2(c,d,e,a,b,23);
-	R2(b,c,d,e,a,24); R2(a,b,c,d,e,25); R2(e,a,b,c,d,26); R2(d,e,a,b,c,27);
-	R2(c,d,e,a,b,28); R2(b,c,d,e,a,29); R2(a,b,c,d,e,30); R2(e,a,b,c,d,31);
-	R2(d,e,a,b,c,32); R2(c,d,e,a,b,33); R2(b,c,d,e,a,34); R2(a,b,c,d,e,35);
-	R2(e,a,b,c,d,36); R2(d,e,a,b,c,37); R2(c,d,e,a,b,38); R2(b,c,d,e,a,39);
-	R3(a,b,c,d,e,40); R3(e,a,b,c,d,41); R3(d,e,a,b,c,42); R3(c,d,e,a,b,43);
-	R3(b,c,d,e,a,44); R3(a,b,c,d,e,45); R3(e,a,b,c,d,46); R3(d,e,a,b,c,47);
-	R3(c,d,e,a,b,48); R3(b,c,d,e,a,49); R3(a,b,c,d,e,50); R3(e,a,b,c,d,51);
-	R3(d,e,a,b,c,52); R3(c,d,e,a,b,53); R3(b,c,d,e,a,54); R3(a,b,c,d,e,55);
-	R3(e,a,b,c,d,56); R3(d,e,a,b,c,57); R3(c,d,e,a,b,58); R3(b,c,d,e,a,59);
-	R4(a,b,c,d,e,60); R4(e,a,b,c,d,61); R4(d,e,a,b,c,62); R4(c,d,e,a,b,63);
-	R4(b,c,d,e,a,64); R4(a,b,c,d,e,65); R4(e,a,b,c,d,66); R4(d,e,a,b,c,67);
-	R4(c,d,e,a,b,68); R4(b,c,d,e,a,69); R4(a,b,c,d,e,70); R4(e,a,b,c,d,71);
-	R4(d,e,a,b,c,72); R4(c,d,e,a,b,73); R4(b,c,d,e,a,74); R4(a,b,c,d,e,75);
-	R4(e,a,b,c,d,76); R4(d,e,a,b,c,77); R4(c,d,e,a,b,78); R4(b,c,d,e,a,79);
-	/* Add the working vars back into context.state[] */
-	state[0] += a;
-	state[1] += b;
-	state[2] += c;
-	state[3] += d;
-	state[4] += e;
-	/* Wipe variables */
-	a = b = c = d = e = 0;
 }
 
+void
+sha1_core(const uint32_t M[16], uint32_t hash_value[5]) {
+  uint32_t H0;
+  uint32_t H1;
+  uint32_t H2;
+  uint32_t H3;
+  uint32_t H4;
+  uint32_t W[80];
+  uint32_t A, B, C, D, E, TEMP;
+  int t;
 
-/* SHA1_Init - Initialize new context */
-void SHA1_Init(SHA_CTX* context) {
-	/* SHA1 initialization constants */
-	context->state[0] = 0x67452301;
-	context->state[1] = 0xEFCDAB89;
-	context->state[2] = 0x98BADCFE;
-	context->state[3] = 0x10325476;
-	context->state[4] = 0xC3D2E1F0;
-	context->count[0] = context->count[1] = 0;
+  /* copy hash_value into H0, H1, H2, H3, H4 */
+  H0 = hash_value[0];
+  H1 = hash_value[1];
+  H2 = hash_value[2];
+  H3 = hash_value[3];
+  H4 = hash_value[4];
+
+  /* copy/xor message into array */
+
+  W[0]  = be32_to_cpu(M[0]);
+  W[1]  = be32_to_cpu(M[1]);
+  W[2]  = be32_to_cpu(M[2]);
+  W[3]  = be32_to_cpu(M[3]);
+  W[4]  = be32_to_cpu(M[4]);
+  W[5]  = be32_to_cpu(M[5]);
+  W[6]  = be32_to_cpu(M[6]);
+  W[7]  = be32_to_cpu(M[7]);
+  W[8]  = be32_to_cpu(M[8]);
+  W[9]  = be32_to_cpu(M[9]);
+  W[10] = be32_to_cpu(M[10]);
+  W[11] = be32_to_cpu(M[11]);
+  W[12] = be32_to_cpu(M[12]);
+  W[13] = be32_to_cpu(M[13]);
+  W[14] = be32_to_cpu(M[14]);
+  W[15] = be32_to_cpu(M[15]);
+  TEMP = W[13] ^ W[8]  ^ W[2]  ^ W[0];  W[16] = S1(TEMP);
+  TEMP = W[14] ^ W[9]  ^ W[3]  ^ W[1];  W[17] = S1(TEMP);
+  TEMP = W[15] ^ W[10] ^ W[4]  ^ W[2];  W[18] = S1(TEMP);
+  TEMP = W[16] ^ W[11] ^ W[5]  ^ W[3];  W[19] = S1(TEMP);
+  TEMP = W[17] ^ W[12] ^ W[6]  ^ W[4];  W[20] = S1(TEMP);
+  TEMP = W[18] ^ W[13] ^ W[7]  ^ W[5];  W[21] = S1(TEMP);
+  TEMP = W[19] ^ W[14] ^ W[8]  ^ W[6];  W[22] = S1(TEMP);
+  TEMP = W[20] ^ W[15] ^ W[9]  ^ W[7];  W[23] = S1(TEMP);
+  TEMP = W[21] ^ W[16] ^ W[10] ^ W[8];  W[24] = S1(TEMP);
+  TEMP = W[22] ^ W[17] ^ W[11] ^ W[9];  W[25] = S1(TEMP);
+  TEMP = W[23] ^ W[18] ^ W[12] ^ W[10]; W[26] = S1(TEMP);
+  TEMP = W[24] ^ W[19] ^ W[13] ^ W[11]; W[27] = S1(TEMP);
+  TEMP = W[25] ^ W[20] ^ W[14] ^ W[12]; W[28] = S1(TEMP);
+  TEMP = W[26] ^ W[21] ^ W[15] ^ W[13]; W[29] = S1(TEMP);
+  TEMP = W[27] ^ W[22] ^ W[16] ^ W[14]; W[30] = S1(TEMP);
+  TEMP = W[28] ^ W[23] ^ W[17] ^ W[15]; W[31] = S1(TEMP);
+
+  /* process the remainder of the array */
+  for (t=32; t < 80; t++) {
+    TEMP = W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16];
+    W[t] = S1(TEMP);      
+  }
+
+  A = H0; B = H1; C = H2; D = H3; E = H4;
+
+  for (t=0; t < 20; t++) {
+    TEMP = S5(A) + f0(B,C,D) + E + W[t] + SHA_K0;
+    E = D; D = C; C = S30(B); B = A; A = TEMP;
+  }
+  for (   ; t < 40; t++) {
+    TEMP = S5(A) + f1(B,C,D) + E + W[t] + SHA_K1;
+    E = D; D = C; C = S30(B); B = A; A = TEMP;
+  }
+  for (   ; t < 60; t++) {
+    TEMP = S5(A) + f2(B,C,D) + E + W[t] + SHA_K2;
+    E = D; D = C; C = S30(B); B = A; A = TEMP;
+  }
+  for (   ; t < 80; t++) {
+    TEMP = S5(A) + f3(B,C,D) + E + W[t] + SHA_K3;
+    E = D; D = C; C = S30(B); B = A; A = TEMP;
+  }
+
+  hash_value[0] = H0 + A;
+  hash_value[1] = H1 + B;
+  hash_value[2] = H2 + C;
+  hash_value[3] = H3 + D;
+  hash_value[4] = H4 + E;
+
+  return;
 }
 
-/* Run your data through this. */
-void SHA1_Update(SHA_CTX *context, sha1_byte *data, unsigned int len) {
-	unsigned int	i, j;
+void
+sha1_init(sha1_ctx_t *ctx) {
 
-	j = (context->count[0] >> 3) & 63;
-	if ((context->count[0] += len << 3) < (len << 3)) context->count[1]++;
-	context->count[1] += (len >> 29);
-	if ((j + len) > 63) {
-	    memcpy(&context->buffer[j], data, (i = 64-j));
-	    SHA1_Transform(context->state, context->buffer);
-	    for ( ; i + 63 < len; i += 64) {
-	        SHA1_Transform(context->state, &data[i]);
-	    }
-	    j = 0;
-	}
-	else i = 0;
-	memcpy(&context->buffer[j], &data[i], len - i);
+  /* initialize state vector */
+  ctx->H[0] = 0x67452301;
+  ctx->H[1] = 0xefcdab89;
+  ctx->H[2] = 0x98badcfe;
+  ctx->H[3] = 0x10325476;
+  ctx->H[4] = 0xc3d2e1f0;
+
+  /* indicate that message buffer is empty */
+  ctx->octets_in_buffer = 0;
+
+  /* reset message bit-count to zero */
+  ctx->num_bits_in_msg = 0;
+
 }
 
+void
+sha1_update(sha1_ctx_t *ctx, const uint8_t *msg, int octets_in_msg) {
+  int i;
+  uint8_t *buf = (uint8_t *)ctx->M;
 
-/* Add padding and return the message digest. */
-void SHA1_Final(sha1_byte digest[SHA1_DIGEST_LENGTH], SHA_CTX *context) {
-	sha1_quadbyte	i, j;
-	sha1_byte	finalcount[8];
+  /* update message bit-count */
+  ctx->num_bits_in_msg += octets_in_msg * 8;
 
-	for (i = 0; i < 8; i++) {
-	    finalcount[i] = (sha1_byte)((context->count[(i >= 4 ? 0 : 1)]
-	     >> ((3-(i & 3)) * 8) ) & 255);  /* Endian independent */
-	}
-	SHA1_Update(context, (sha1_byte *)"\200", 1);
-	while ((context->count[0] & 504) != 448) {
-	    SHA1_Update(context, (sha1_byte *)"\0", 1);
-	}
-	/* Should cause a SHA1_Transform() */
-	SHA1_Update(context, finalcount, 8);
-	for (i = 0; i < SHA1_DIGEST_LENGTH; i++) {
-	    digest[i] = (sha1_byte)
-	     ((context->state[i>>2] >> ((3-(i & 3)) * 8) ) & 255);
-	}
-	/* Wipe variables */
-	i = j = 0;
-	memset(context->buffer, 0, SHA1_BLOCK_LENGTH);
-	memset(context->state, 0, SHA1_DIGEST_LENGTH);
-	memset(context->count, 0, 8);
-	memset(&finalcount, 0, 8);
+  /* loop over 16-word blocks of M */
+  while (octets_in_msg > 0) {
+
+    if (octets_in_msg + ctx->octets_in_buffer >= 64) {
+
+      /* 
+       * copy words of M into msg buffer until that buffer is full,
+       * converting them into host byte order as needed
+       */
+      octets_in_msg -= (64 - ctx->octets_in_buffer);
+      for (i=ctx->octets_in_buffer; i < 64; i++) 
+	buf[i] = *msg++;
+      ctx->octets_in_buffer = 0;
+
+      /* process a whole block */
+
+      sha1_core(ctx->M, ctx->H);
+
+    } else {
+
+      for (i=ctx->octets_in_buffer; 
+	   i < (ctx->octets_in_buffer + octets_in_msg); i++)
+	buf[i] = *msg++;
+      ctx->octets_in_buffer += octets_in_msg;
+      octets_in_msg = 0;
+    }
+
+  }
+
 }
 
+/*
+ * sha1_final(ctx, output) computes the result for ctx and copies it
+ * into the twenty octets located at *output
+ */
+
+void
+sha1_final(sha1_ctx_t *ctx, uint32_t *output) {
+  uint32_t A, B, C, D, E, TEMP;
+  uint32_t W[80];  
+  int i, t;
+
+  /*
+   * process the remaining octets_in_buffer, padding and terminating as
+   * necessary
+   */
+  {
+    int tail = ctx->octets_in_buffer % 4;
+
+    /* copy/xor message into array */
+    for (i=0; i < (ctx->octets_in_buffer+3)/4; i++) 
+      W[i]  = be32_to_cpu(ctx->M[i]);
+
+    /* set the high bit of the octet immediately following the message */
+    switch (tail) {
+    case (3):
+      W[i-1] = (be32_to_cpu(ctx->M[i-1]) & 0xffffff00) | 0x80;
+      W[i] = 0x0;
+      break;
+    case (2):      
+      W[i-1] = (be32_to_cpu(ctx->M[i-1]) & 0xffff0000) | 0x8000;
+      W[i] = 0x0;
+      break;
+    case (1):
+      W[i-1] = (be32_to_cpu(ctx->M[i-1]) & 0xff000000) | 0x800000;
+      W[i] = 0x0;
+      break;
+    case (0):
+      W[i] = 0x80000000;
+      break;
+    }
+
+    /* zeroize remaining words */
+    for (i++   ; i < 15; i++)
+      W[i] = 0x0;
+
+    /* 
+     * if there is room at the end of the word array, then set the
+     * last word to the bit-length of the message; otherwise, set that
+     * word to zero and then we need to do one more run of the
+     * compression algo.
+     */
+    if (ctx->octets_in_buffer < 56) 
+      W[15] = ctx->num_bits_in_msg;
+    else if (ctx->octets_in_buffer < 60)
+      W[15] = 0x0;
+
+    /* process the word array */
+    for (t=16; t < 80; t++) {
+      TEMP = W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16];
+      W[t] = S1(TEMP);
+    }
+
+    A = ctx->H[0]; 
+    B = ctx->H[1]; 
+    C = ctx->H[2]; 
+    D = ctx->H[3]; 
+    E = ctx->H[4];
+
+    for (t=0; t < 20; t++) {
+      TEMP = S5(A) + f0(B,C,D) + E + W[t] + SHA_K0;
+      E = D; D = C; C = S30(B); B = A; A = TEMP;
+    }
+    for (   ; t < 40; t++) {
+      TEMP = S5(A) + f1(B,C,D) + E + W[t] + SHA_K1;
+      E = D; D = C; C = S30(B); B = A; A = TEMP;
+    }
+    for (   ; t < 60; t++) {
+      TEMP = S5(A) + f2(B,C,D) + E + W[t] + SHA_K2;
+      E = D; D = C; C = S30(B); B = A; A = TEMP;
+    }
+    for (   ; t < 80; t++) {
+      TEMP = S5(A) + f3(B,C,D) + E + W[t] + SHA_K3;
+      E = D; D = C; C = S30(B); B = A; A = TEMP;
+    }
+
+    ctx->H[0] += A;
+    ctx->H[1] += B;
+    ctx->H[2] += C;
+    ctx->H[3] += D;
+    ctx->H[4] += E;
+
+  }
+
+  if (ctx->octets_in_buffer >= 56) {
+
+    /* we need to do one final run of the compression algo */
+
+    /* 
+     * set initial part of word array to zeros, and set the 
+     * final part to the number of bits in the message
+     */
+    for (i=0; i < 15; i++)
+      W[i] = 0x0;
+    W[15] = ctx->num_bits_in_msg;
+
+    /* process the word array */
+    for (t=16; t < 80; t++) {
+      TEMP = W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16];
+      W[t] = S1(TEMP);
+    }
+
+    A = ctx->H[0]; 
+    B = ctx->H[1]; 
+    C = ctx->H[2]; 
+    D = ctx->H[3]; 
+    E = ctx->H[4];
+
+    for (t=0; t < 20; t++) {
+      TEMP = S5(A) + f0(B,C,D) + E + W[t] + SHA_K0;
+      E = D; D = C; C = S30(B); B = A; A = TEMP;
+    }
+    for (   ; t < 40; t++) {
+      TEMP = S5(A) + f1(B,C,D) + E + W[t] + SHA_K1;
+      E = D; D = C; C = S30(B); B = A; A = TEMP;
+    }
+    for (   ; t < 60; t++) {
+      TEMP = S5(A) + f2(B,C,D) + E + W[t] + SHA_K2;
+      E = D; D = C; C = S30(B); B = A; A = TEMP;
+    }
+    for (   ; t < 80; t++) {
+      TEMP = S5(A) + f3(B,C,D) + E + W[t] + SHA_K3;
+      E = D; D = C; C = S30(B); B = A; A = TEMP;
+    }
+
+    ctx->H[0] += A;
+    ctx->H[1] += B;
+    ctx->H[2] += C;
+    ctx->H[3] += D;
+    ctx->H[4] += E;
+  }
+
+  /* copy result into output buffer */
+  output[0] = be32_to_cpu(ctx->H[0]);
+  output[1] = be32_to_cpu(ctx->H[1]);
+  output[2] = be32_to_cpu(ctx->H[2]);
+  output[3] = be32_to_cpu(ctx->H[3]);
+  output[4] = be32_to_cpu(ctx->H[4]);
+
+  /* indicate that message buffer in context is empty */
+  ctx->octets_in_buffer = 0;
+
+  return;
+}
