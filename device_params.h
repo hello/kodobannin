@@ -55,8 +55,8 @@
 /*
  * BLE Advertising Strings
  */
-#define BLE_DEVICE_NAME       "Band (DFU Mode)"
-#define BLE_MANUFACTURER_NAME "Hello Inc."
+#define BLE_DEVICE_NAME       "Band"
+#define BLE_MANUFACTURER_NAME "H"
 #define BLE_MODEL_NUM         "EVT1-r3"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
