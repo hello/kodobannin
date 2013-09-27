@@ -11,6 +11,7 @@
 #include "sha.h"
 #include <bootloader.h>
 #include <dfu_types.h>
+#include "bootloader_util_arm.h"
 
 extern void ble_init(void);
 extern void ble_advertising_start(void);
