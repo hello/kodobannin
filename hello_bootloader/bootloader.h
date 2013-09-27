@@ -35,6 +35,10 @@
  */
 bool bootloader_app_is_valid(uint32_t app_addr);
 
+/**@brief Function for disabling all interrupts before jumping from bootloader to application.
+ */
+void interrupts_disable(void);
+
 /**@brief Function for starting the Device Firmware Update.
  * 
  * @retval     NRF_SUCCESS If new appliction image was successfully transfered. 
