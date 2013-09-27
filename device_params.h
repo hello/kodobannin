@@ -4,10 +4,38 @@
  * Board GPIO defines
  */
 
-// For EVT-1
-#define GPIO_3v3_Enable  5
-#define GPIO_HRS_PWM     2
-#define GPIO_VIBE_PWM   30
+// For EVT-2
+#define GPIO_3v3_Enable    13
+#define GPIO_HRS_PWM_G     31
+#define GPIO_HRS_PWM_R     25
+#define GPIO_VIBE_PWM       0
+
+#define GPIO_1   8
+#define GPIO_2   5
+#define GPIO_3   3
+#define GPIO_4   1
+#define GPIO_5  30
+
+#define IMU_SPI_MOSI       14
+#define IMU_SPI_MISO       22
+#define IMU_SPI_SCLK       19
+#define IMU_SPI_nCS        17
+#define IMU_INT             2
+
+#define MOSI         7
+#define MISO        11
+#define SCLK        15
+#define GPS_nCS     12
+#define FLASH_nCS   16
+#define GPS_ON_OFF   9
+
+#define RTC_SDA     23
+#define RTC_SCL     24
+#define RTC_INT     28
+
+#define HRS_SENSE   26
+
+#define nBATT_CHG   21
 
 // For PCA-1000 v2
 /*
