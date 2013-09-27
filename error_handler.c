@@ -18,8 +18,6 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 #ifdef ASSERT_LED_PIN_NO
 	nrf_gpio_pin_set(ASSERT_LED_PIN_NO);
 #else
-	simple_uart_putstring("\n*** ERROR ***: ");
-	serial_print_hex(&error_code, 4);
 	nrf_gpio_cfg_output(18);
 	while(1) {
 	    nrf_gpio_pin_set(18);
