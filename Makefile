@@ -49,6 +49,7 @@ SRCS =  $(wildcard *.c) \
 INCS =  ./ \
 	./ble \
 	./micro-ecc \
+	./hello-bootloader \
 	./nRF51_SDK/nrf51822/Include \
 	./nRF51_SDK/nrf51822/Include/app_common \
 	./nRF51_SDK/nrf51822/Include/gcc \
