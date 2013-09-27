@@ -1,4 +1,5 @@
 #include <ble_types.h>
+#include <nrf_delay.h>
 #include <nrf51.h>
 #include <nrf_gpio.h>
 #include "device_params.h"
