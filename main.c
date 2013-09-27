@@ -192,7 +192,7 @@ _start()
 		sha1_fw_area(new_fw_sha1);
 
 		flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
-		ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, 5); // SHA1_DIGEST_LENGTH/sizeof(word)
+		ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, (SHA1_DIGEST_LENGTH/sizeof(uint32_t));
 	}
 
 	interrupts_disable();
