@@ -16,18 +16,28 @@
 void
 app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filename)
 {
-#ifdef ASSERT_LED_PIN_NO
-	nrf_gpio_pin_set(ASSERT_LED_PIN_NO);
-#else
-	nrf_gpio_cfg_output(18);
+	uint32_t error_led;
+
+	switch ((NRF_FICR->CONFIGID & FICR_CONFIGID_HWID_Msk) >> FICR_CONFIGID_HWID_Pos)
+	{
+		case 0x31UL:
+		case 0x2FUL:
+			error_led = GPIO_HRS_PWM_G;
+			nrf_gpio_cfg_output(GPIO_3v3_Enable);
+	    		nrf_gpio_pin_set(GPIO_3v3_Enable);
+			break;
+		default:
+			error_led = 18;
+	}
+
+	nrf_gpio_cfg_output(error_led);
 	while(1) {
-	    nrf_gpio_pin_set(18);
+	    nrf_gpio_pin_set(error_led);
 	    nrf_delay_ms(500);
-	    nrf_gpio_pin_clear(18);
+	    nrf_gpio_pin_clear(error_led);
 	    nrf_delay_ms(500);
 	}
-	while(1) { __WFE(); }
-#endif
+	//while(1) { __WFE(); }
 	(void)error_code;
 	(void)line_num;
 	(void)filename;
@@ -41,7 +51,7 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 	// ble_debug_assert_handler(error_code, line_num, p_file_name);
 
 	// On assert, the system can only recover on reset
-	NVIC_SystemReset();
+	//NVIC_SystemReset();
 }
 
 /**@brief Assert macro callback function.
