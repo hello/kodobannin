@@ -9,6 +9,8 @@
 #include <ble_bas.h>
 #include <simple_uart.h>
 #include "sha.h"
+#include "bootloader.h"
+#include "dfu_types.h"
 
 extern void ble_init(void);
 extern void ble_advertising_start(void);
@@ -151,15 +153,17 @@ _start()
 	timers_init();
 	gpiote_init();
 
-	dfu_init();
+	//dfu_init();
 
 	err_code = bootloader_dfu_start();
 	APP_ERROR_CHECK(err_code);
 
-	while(1) {
-		err_code = sd_app_event_wait();
-		APP_ERROR_CHECK(err_code);
+	if(bootloader_app_is_valid(DFU_BANK_0_REGION_START))
+	{
+		bootloader_app_start(DFU_BANK_0_REGION_START);		
 	}
+
+	NVIC_SystemReset();
 /*
 	nrf_gpio_cfg_output(GPIO_3v3_Enable);
 	nrf_gpio_pin_set(GPIO_3v3_Enable);
