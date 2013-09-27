@@ -70,7 +70,7 @@ timers_init(void)
     uint32_t err_code;
 
     // Initialize timer module
-    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
+    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
     // Create timers
     err_code = app_timer_create(&m_battery_timer_id,
