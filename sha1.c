@@ -22,7 +22,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
+#include <string.h>
 #include "sha.h"
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))

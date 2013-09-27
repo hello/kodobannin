@@ -35,24 +35,22 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <device_params.h>
+#include "device_params.h"
 
-//#define DEVICE_NAME                          "DfuTarg"                                               /**< Name of device. Will be included in the advertising data. */
-//#define MANUFACTURER_NAME                    "NordicSemiconductor"                                   /**< Manufacturer. Will be passed to Device Information Service. */
+#define DEVICE_NAME                          BLE_DEVICE_NAME
+#define MANUFACTURER_NAME                    BLE_MANUFACTURER_NAME
 
-//#define MIN_CONN_INTERVAL                    (uint16_t)(MSEC_TO_UNITS(11.25, UNIT_1_25_MS))          /**< Minimum acceptable connection interval (11.25 milliseconds). */
-//#define MAX_CONN_INTERVAL                    (uint16_t)(MSEC_TO_UNITS(15, UNIT_1_25_MS))             /**< Maximum acceptable connection interval (15 milliseconds). */
+#define MIN_CONN_INTERVAL                    (uint16_t)(MSEC_TO_UNITS(11.25, UNIT_1_25_MS))          /**< Minimum acceptable connection interval (11.25 milliseconds). */
+#define MAX_CONN_INTERVAL                    (uint16_t)(MSEC_TO_UNITS(15, UNIT_1_25_MS))             /**< Maximum acceptable connection interval (15 milliseconds). */
 #define SLAVE_LATENCY                        0                                                       /**< Slave latency. */
-//#define CONN_SUP_TIMEOUT                     (4 * 100)                                               /**< Connection supervisory timeout (4 seconds). */
+#define CONN_SUP_TIMEOUT                     (4 * 100)                                               /**< Connection supervisory timeout (4 seconds). */
 
 #define APP_TIMER_PRESCALER                  0                                                       /**< Value of the RTC1 PRESCALER register. */
 
-//#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(100, APP_TIMER_PRESCALER)               /**< Time from the Connected event to first time sd_ble_gap_conn_param_update is called (100 milliseconds). */
-//#define NEXT_CONN_PARAMS_UPDATE_DELAY        APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)               /**< Time between each call to sd_ble_gap_conn_param_update after the first (500 milliseconds). */
+#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(100, APP_TIMER_PRESCALER)               /**< Time from the Connected event to first time sd_ble_gap_conn_param_update is called (100 milliseconds). */
+#define NEXT_CONN_PARAMS_UPDATE_DELAY        APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)               /**< Time between each call to sd_ble_gap_conn_param_update after the first (500 milliseconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT         3                                                       /**< Number of attempts before giving up the connection parameter negotiation. */
 
-#undef APP_ADV_INTERVAL
-#undef APP_ADV_TIMEOUT_IN_SECONDS
 #define APP_ADV_INTERVAL                     40                                                      /**< The advertising interval (in units of 0.625 ms. This value corresponds to 25 ms). */
 #define APP_ADV_TIMEOUT_IN_SECONDS           BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED                   /**< The advertising timeout in units of seconds. This is set to @ref BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED so that the advertisement is done as long as there there is a call to @ref dfu_transport_close function.*/
 
@@ -381,7 +379,7 @@ static void on_dfu_pkt_write(ble_dfu_t * p_dfu, ble_dfu_evt_t * p_evt)
         case PKT_TYPE_FIRMWARE_DATA:
             app_data_process(p_dfu, p_evt);
             break;
-        
+
         default:
             // It is not possible to find out what packet it is. Ignore. Currently there is no
             // mechanism to notify the DFU Controller about this error condition.
@@ -453,7 +451,7 @@ static void on_dfu_evt(ble_dfu_t * p_dfu, ble_dfu_evt_t * p_evt)
         case BLE_DFU_ACTIVATE_N_RESET:
             // Final state of DFU is reached.
             m_activate_img_after_tear_down = true;
-        
+
             err_code = dfu_transport_close();
             APP_ERROR_CHECK(err_code);
             break;
@@ -489,7 +487,7 @@ static void on_dfu_evt(ble_dfu_t * p_dfu, ble_dfu_evt_t * p_evt)
             m_pkt_rcpt_notif_enabled = false;
             m_pkt_notif_target       = 0;
             break;
-        
+
        case BLE_DFU_BYTES_RECEIVED_SEND:
             err_code = ble_dfu_bytes_rcvd_report(p_dfu, m_num_of_firmware_bytes_rcvd);
             APP_ERROR_CHECK(err_code);
@@ -682,7 +680,7 @@ static uint32_t stack_evt_schedule(void)
  */
 static void ble_stack_init(void)
 {
-    uint32_t err_code = ble_stack_handler_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM,
+    uint32_t err_code = ble_stack_handler_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
                                                m_evt_buffer,
                                                sizeof(m_evt_buffer),
                                                NULL,
@@ -705,8 +703,8 @@ static void gap_params_init(void)
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
     err_code = sd_ble_gap_device_name_set(&sec_mode,
-                                          (const uint8_t *)BLE_DEVICE_NAME,
-                                          strlen(BLE_DEVICE_NAME));
+                                          (const uint8_t *)DEVICE_NAME,
+                                          strlen(DEVICE_NAME));
     APP_ERROR_CHECK(err_code);
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
@@ -753,7 +751,7 @@ static void advertising_init(void)
     memset(&m_adv_params, 0, sizeof(m_adv_params));
 
     m_adv_params.type        = BLE_GAP_ADV_TYPE_ADV_IND;
-    m_adv_params.p_peer_addr = NULL;                           
+    m_adv_params.p_peer_addr = NULL;
     m_adv_params.fp          = BLE_GAP_ADV_FP_ANY;
     m_adv_params.interval    = APP_ADV_INTERVAL;
     m_adv_params.timeout     = APP_ADV_TIMEOUT_IN_SECONDS;
@@ -830,7 +828,7 @@ uint32_t dfu_transport_update_start()
 {
     m_pkt_type = PKT_TYPE_INVALID;
 
-    //leds_init();
+    leds_init();
     // Initialize the S110 Stack.
     ble_stack_init();
     scheduler_init();
@@ -841,9 +839,9 @@ uint32_t dfu_transport_update_start()
     sec_params_init();
     radio_notification_init();
     advertising_start();
-    
+
     wait_for_events();
-    
+
     return NRF_SUCCESS;
 }
 
@@ -869,6 +867,6 @@ uint32_t dfu_transport_close()
 
 
     m_tear_down_in_progress = true;
-    
+
     return NRF_SUCCESS;
 }
