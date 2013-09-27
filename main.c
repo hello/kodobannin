@@ -11,7 +11,9 @@
 #include <bootloader_util_arm.h>
 #include <ble_flash.h>
 #include <ble_stack_handler.h>
+#include <simple_uart.h>
 #include <string.h>
+#include <spi_master.h>
 
 #define APP_GPIOTE_MAX_USERS            2
 
@@ -52,59 +54,114 @@ verify_fw_sha1(uint8_t *valid_hash)
     return comp == 0;
 }
 
-static void flash_page_erase(uint32_t * p_page)
-{
-    // Turn on flash erase enable and wait until the NVMC is ready.
-    NRF_NVMC->CONFIG = (NVMC_CONFIG_WEN_Een << NVMC_CONFIG_WEN_Pos);
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy)
-    {
-        // Do nothing.
-    }
+uint32_t
+init_spi(uint32_t chan, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS) {
+    NRF_SPI_Type *spi;
 
-    // Erase page.
-    NRF_NVMC->ERASEPAGE = (uint32_t)p_page;
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy)
-    {
-        // Do nothing.
-    }
+    if (chan == 0)
+        spi = NRF_SPI0;
+    else if (chan == 1)
+        spi = NRF_SPI1;
+    else
+        return -1;
 
-    // Turn off flash erase enable and wait until the NVMC is ready.
-    NRF_NVMC->CONFIG = (NVMC_CONFIG_WEN_Ren << NVMC_CONFIG_WEN_Pos);
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy)
-    {
-        // Do nothing
-    }
+    //configure GPIOs
+    nrf_gpio_cfg_output(mosi); 
+    nrf_gpio_cfg_output(sclk);
+    nrf_gpio_cfg_output(nCS);
+    nrf_gpio_pin_set(nCS);
+    nrf_gpio_cfg_input(miso, NRF_GPIO_PIN_NOPULL);
+
+    //configure SPI channel
+    spi->PSELSCK  = sclk;
+    spi->PSELMOSI = mosi;
+    spi->PSELMISO = miso;
+    spi->FREQUENCY =  ( 0x02000000UL << (uint32_t)Freq_1Mbps );
+
+    //MODE0 as per p34 of MPU-6500 v2 0.pdf 
+    spi->CONFIG = (SPI_CONFIG_ORDER_MsbFirst << SPI_CONFIG_ORDER_Pos) | (SPI_CONFIG_CPHA_Leading << SPI_CONFIG_CPHA_Pos) | (SPI_CONFIG_CPOL_ActiveHigh << SPI_CONFIG_CPOL_Pos);
+    //(SPI_CONFIG_CPHA_Leading << SPI_CONFIG_CPHA_Pos) | (SPI_CONFIG_CPOL_ActiveHigh << SPI_CONFIG_CPOL_Pos);//
+    
+    spi->EVENTS_READY = 0U;
+
+    spi->ENABLE = (SPI_ENABLE_ENABLE_Enabled << SPI_ENABLE_ENABLE_Pos);
+
+    return 0;
 }
 
-bool dfu_success = false;
+#define TIMEOUT_COUNTER          0x3000UL
+
+bool
+spi_xfer(uint32_t chan, uint8_t nCS, uint16_t len, const uint8_t *tx, uint8_t *rx) {
+    NRF_SPI_Type *spi;
+    uint32_t counter;
+    int i;
+
+    if (chan == 0)
+        spi = NRF_SPI0;
+    else if (chan == 1)
+        spi = NRF_SPI1;
+    else
+        return false;    
+
+    // select perhipheral
+    nrf_gpio_pin_clear(nCS);
+
+    for (i = 0; i < len; i++) {
+        spi->TXD = (uint32_t)tx[i];
+        counter = 0;
+        /* Wait for the transaction complete or timeout (about 10ms - 20 ms) */
+        while ((spi->EVENTS_READY == 0U) && (counter < TIMEOUT_COUNTER))
+        {
+            counter++;
+        }
+
+        if (counter == TIMEOUT_COUNTER) {
+            //we've timed out
+            nrf_gpio_pin_set(nCS);
+            return false;
+        }
+        spi->EVENTS_READY = 0U;
+        rx[i] = (uint8_t)spi->RXD;
+    }
+
+    nrf_gpio_pin_set(nCS);
+    return true;
+}
 
 void
 _start()
 {
 	uint32_t err_code;
-    volatile uint8_t* proposed_fw_sha1 = (uint8_t*)BOOTLOADER_SETTINGS_ADDRESS;
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
+    uint8_t tx[8];
+    uint8_t rx[8];
+    //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
-    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+    simple_uart_config(0, 30, 0, 3, false);
 
-	while(!verify_fw_sha1(proposed_fw_sha1)) {
-   		err_code = bootloader_dfu_start();
-       	APP_ERROR_CHECK(err_code);
+    err_code = init_spi(0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err_code);
 
-        //reboot if dfu failed
-        if (!dfu_success)
-            NVIC_SystemReset();
 
-		sha1_fw_area(new_fw_sha1);
+    err_code = init_spi(1, MISO, MOSI, SCLK, FLASH_nCS);
+    APP_ERROR_CHECK(err_code);
 
-		flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
-		ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
-	}
+// MPU-6500 bit 1 addr: 1 read 0 write, 7 bit addr
+    tx[0] = 0x90;//0x75 | 0x80; //who am i
+    tx[1] = 0xff;
+    tx[2] = 0xff;
+    tx[3] = 0x00;
 
-	interrupts_disable();
-
-	err_code = sd_softdevice_forward_to_application();
-	APP_ERROR_CHECK(err_code);
-
-	StartApplication(CODE_REGION_1_START);
+    while(1) {
+        //err_code = spi_xfer(0, IMU_SPI_nCS, 3, tx, rx);
+        err_code = spi_xfer(1, FLASH_nCS, 6, tx, rx);
+        serial_print_hex(&err_code, 4);
+        simple_uart_putstring(" : ");
+    serial_print_hex(rx, 6);
+        simple_uart_put('\n');
+        //serial_print_hex(new_fw_sha1, SHA1_DIGEST_LENGTH);
+        //simple_uart_put('\n');
+        nrf_delay_ms(500);
+    }
 }

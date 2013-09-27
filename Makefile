@@ -15,7 +15,6 @@ NULL =
 
 SRCS =  $(wildcard *.c) \
 	$(wildcard micro-ecc/*.c) \
-	$(wildcard hello_bootloader/*.c) \
 	./gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
