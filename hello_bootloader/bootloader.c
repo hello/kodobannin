@@ -78,6 +78,7 @@ static void bootloader_settings_save(bootloader_settings_t settings)
     APP_ERROR_CHECK(err_code);
 }
 
+extern bool dfu_success;
 
 void bootloader_dfu_update_process(dfu_update_status_t update_status)
 {
@@ -86,6 +87,8 @@ void bootloader_dfu_update_process(dfu_update_status_t update_status)
 
     if (update_status.status_code == DFU_UPDATE_COMPLETE)
     {
+        //GROSS HACK
+        dfu_success = true;
         bootloader_settings_t settings;
         
         settings.bank_0_crc  = update_status.app_crc;
