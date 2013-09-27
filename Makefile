@@ -31,7 +31,7 @@ SRCS =  $(wildcard *.c) \
 	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c \
 	\
 	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader/bootloader.c \
-	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader/dfu_single_bank.c \
+	./nRF51_SDK/nrf51822/Board/nrf6310/device_firmware_updates/bootloader/dfu_dual_bank.c \
 	\
 	hello_bootloader/bootloader_util_arm.c \
 	hello_bootloader/dfu_transport_ble.c \
