@@ -9,8 +9,8 @@
 #include <ble_bas.h>
 #include <simple_uart.h>
 #include "sha.h"
-#include "bootloader.h"
-#include "dfu_types.h"
+#include <bootloader.h>
+#include <dfu_types.h>
 
 extern void ble_init(void);
 extern void ble_advertising_start(void);
