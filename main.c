@@ -87,24 +87,28 @@ _start()
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
-	while(!verify_fw_sha1(proposed_fw_sha1)) {
-   		err_code = bootloader_dfu_start();
-       	APP_ERROR_CHECK(err_code);
-
-        //reboot if dfu failed
-        if (!dfu_success)
-            NVIC_SystemReset();
-
-		sha1_fw_area(new_fw_sha1);
-
-		flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
-		ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
-	}
-
-	interrupts_disable();
-
-	err_code = sd_softdevice_forward_to_application();
+    while((NRF_POWER->GPREGRET & 1) || !verify_fw_sha1((uint8_t*)proposed_fw_sha1)) {
+	err_code = bootloader_dfu_start();
 	APP_ERROR_CHECK(err_code);
+	    
+	if (dfu_success) {
+	    NRF_POWER->GPREGRET &= ~((uint32_t)1);
 
-	StartApplication(CODE_REGION_1_START);
+	    // Need to turn the radio off before calling ble_flash_block_write?
+	    ble_flash_on_radio_active_evt(false);
+	    
+	    sha1_fw_area(new_fw_sha1);
+	    flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
+	    ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
+	} else {
+	    NVIC_SystemReset();
+	}
+    }
+
+    interrupts_disable();
+
+    err_code = sd_softdevice_forward_to_application();
+    APP_ERROR_CHECK(err_code);
+	
+    StartApplication(CODE_REGION_1_START);
 }
