@@ -2,13 +2,9 @@
 #include <simple_uart.h>
 #include <util.h>
 #include <device_params.h>
+#include <mpu-6500.h>
 
 #define BUF_SIZE 16
-#define CHIP_ID 0x70
-
-enum MPU_Registers {
-	MPU_REG_WHO_AM_I = 0x75
-};
 
 static enum SPI_Channel chan;
 static uint8_t buf[BUF_SIZE];
@@ -28,6 +24,7 @@ imu_init(enum SPI_Channel channel) {
 	uint32_t err;
 	chan = channel;
 
+	// Check for vazlid Chip ID
 	simple_uart_putstring((const uint8_t *)"MPU-6500 Chip ID\n");
 
 	buf[0] = SPI_Read(MPU_REG_WHO_AM_I);
@@ -42,6 +39,12 @@ imu_init(enum SPI_Channel channel) {
 		simple_uart_put('\n');
 		return -1;
 	}
+
+	// Reset buffers
+
+	// Init accel
+
+	// Init Gyro
 
 	return 0;
 }
