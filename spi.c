@@ -54,10 +54,34 @@ init_spi(uint32_t chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t 
     return 0;
 }
 
+static bool
+spi_one_byte(NRF_SPI_Type *spi, const uint8_t nCS, const uint8_t tx, uint8_t *rx) {
+    uint32_t counter = 0;
+
+    spi->TXD = (uint32_t)tx;
+    counter = 0;
+
+    /* Wait for the transaction complete or timeout (about 10ms - 20 ms) */
+    while ((spi->EVENTS_READY == 0U) && (counter < TIMEOUT_COUNTER))
+    {
+        counter++;
+    }
+
+    if (counter == TIMEOUT_COUNTER) {
+        //we've timed out
+        nrf_gpio_pin_set(nCS);
+        return false;
+    }
+
+    spi->EVENTS_READY = 0U;
+    *rx = (uint8_t)spi->RXD;
+
+    return true;
+}
+
 bool
-spi_xfer(uint32_t chan, uint8_t nCS, uint16_t len, const uint8_t *tx, uint8_t *rx) {
+spi_xfer(const enum SPI_Channel chan, const uint8_t nCS, const uint32_t len, const uint8_t *tx, uint8_t *rx) {
     NRF_SPI_Type *spi;
-    uint32_t counter;
     int i;
 
     if (chan == SPI_Channel_0)
@@ -71,23 +95,36 @@ spi_xfer(uint32_t chan, uint8_t nCS, uint16_t len, const uint8_t *tx, uint8_t *r
     nrf_gpio_pin_clear(nCS);
 
     for (i = 0; i < len; i++) {
-        spi->TXD = (uint32_t)tx[i];
-        counter = 0;
-        /* Wait for the transaction complete or timeout (about 10ms - 20 ms) */
-        while ((spi->EVENTS_READY == 0U) && (counter < TIMEOUT_COUNTER))
-        {
-            counter++;
-        }
-
-        if (counter == TIMEOUT_COUNTER) {
-            //we've timed out
-            nrf_gpio_pin_set(nCS);
+        if (!spi_one_byte(spi, nCS, tx[i], &rx[i]))
             return false;
-        }
-        spi->EVENTS_READY = 0U;
-        rx[i] = (uint8_t)spi->RXD;
     }
 
     nrf_gpio_pin_set(nCS);
     return true;
+}
+
+uint16_t
+spi_read_multi(const enum SPI_Channel chan, const uint8_t nCS, const uint8_t tx, const uint32_t rxlen, uint8_t *rx) {
+    NRF_SPI_Type *spi;
+    int i;
+
+    if (chan == SPI_Channel_0)
+        spi = NRF_SPI0;
+    else if (chan == SPI_Channel_1)
+        spi = NRF_SPI1;
+    else
+        return 0;    
+
+    // select perhipheral
+    nrf_gpio_pin_clear(nCS);
+
+    if (!spi_one_byte(spi, nCS, tx, rx))
+            return 0;
+
+    for (i = 0; i < rxlen; i++) {
+        if (!spi_one_byte(spi, nCS, 0xFF, &rx[i]))
+            return i;
+    }
+
+    return rxlen;
 }
