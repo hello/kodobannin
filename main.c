@@ -134,8 +134,8 @@ _start()
     while(1) {
         //err_code = spi_xfer(0, IMU_SPI_nCS, 3, tx, rx);
         err_code = spi_xfer(0, IMU_SPI_nCS, 2, tx, rx);
-        serial_print_hex(&err_code, 4);
-        simple_uart_putstring(" : ");
+        serial_print_hex((uint8_t *)&err_code, 4);
+        simple_uart_putstring((const uint8_t *)" : ");
         serial_print_hex(rx, 2);
         simple_uart_put('\n');
         //serial_print_hex(new_fw_sha1, SHA1_DIGEST_LENGTH);
