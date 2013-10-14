@@ -51,7 +51,7 @@ INCS =  ./ \
 DEBUG = 1
 
 ifeq ($(DEBUG), 1)
-OPTFLAGS=-O0 -g
+OPTFLAGS=-O0 -g -DDEBUG_SERIAL=1
 else
 OPTFLAGS=-Os -g -DECC_ASM=1
 endif
