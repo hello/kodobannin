@@ -11,9 +11,11 @@ NRFREV = NRF51822_QFAA_CA
 
 NULL =
 
-#$(wildcard ble/*.c) \
+#	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_bas.c \
+#	
 
 SRCS =  $(wildcard *.c) \
+	$(wildcard ble/*.c) \
 	$(wildcard micro-ecc/*.c) \
 	./gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
@@ -24,13 +26,11 @@ SRCS =  $(wildcard *.c) \
 	nRF51_SDK/nrf51822/Source/ble/ble_flash.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_stack_handler.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_radio_notification.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_bas.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
 	nRF51_SDK/nrf51822/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dfu.c \
 	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
 	$(NULL)
