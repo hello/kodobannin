@@ -13,8 +13,9 @@ enum SPI_Mode {
 };
 
 enum SPI_Channel {
-	SPI_Channel_0 = 0,
-	SPI_Channel_1 = 1,
+    SPI_Channel_0 = 0,
+    SPI_Channel_1 = 1,
+    SPI_Channel_Invalid = 0xFF,
 };
 
 enum SPI_Freq {
