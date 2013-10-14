@@ -20,43 +20,6 @@
 
 #define APP_GPIOTE_MAX_USERS            2
 
-static void
-sha1_fw_area(uint8_t *hash)
-{
-	SHA_CTX ctx;
-	uint32_t code_size    = DFU_IMAGE_MAX_SIZE_FULL;
-	uint8_t *code_address = (uint8_t *)CODE_REGION_1_START;
-	uint32_t *index = (uint32_t *)BOOTLOADER_REGION_START - DFU_APP_DATA_RESERVED - 4;
-
-	// walk back to the end of the actual firmware
-	while (*index-- == EMPTY_FLASH_MASK && code_size > 0)
-		code_size -= 4;
-
-    // only measure if there is something to measure
-    memset(hash, 0, SHA1_DIGEST_LENGTH);
-    if (code_size ==  0)
-        return;
-
-	SHA1_Init(&ctx);
-	SHA1_Update(&ctx, (void *)code_address, code_size);
-	SHA1_Final(hash, &ctx);
-}
-
-static bool
-verify_fw_sha1(uint8_t *valid_hash)
-{
-	uint8_t sha1[SHA1_DIGEST_LENGTH];
-    uint8_t comp = 0;
-    int i = 0;
-
-    sha1_fw_area(sha1);
-
-    for (i = 0; i < SHA1_DIGEST_LENGTH; i++)
-        comp |= sha1[i] ^ valid_hash[i];
-
-    return comp == 0;
-}
-
 void
 test_3v3() {
     nrf_gpio_cfg_output(GPIO_3v3_Enable);
@@ -125,6 +88,6 @@ _start()
         err_code = sd_app_event_wait();
         APP_ERROR_CHECK(err_code);
     }
-    
+
 	NVIC_SystemReset();
 }
