@@ -79,39 +79,9 @@ test_3v3() {
     } 
 }
 
-void
-_start()
-{
-	uint32_t err_code;
-    //uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
-    uint8_t tx[8];
-    uint8_t rx[8];
-    //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+void ble_init();
+void ble_advertising_start();
 
-    simple_uart_config(0, 5, 0, 8, false);
-
-    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err_code);
-	
-    //test_3v3();
-	//timers_init();
-	//ble_init();
-
-	//< hack for when timers are disabled
-//	ble_bas_battery_level_update(&m_bas, 69);
-	//battery_level_update();
-
-	//application_timers_start();
-
-	//ble_advertising_start();
-
-
-    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
-    APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
-	//dfu_init();
-
-//	err_code = bootloader_dfu_start();
-//	APP_ERROR_CHECK(err_code);
 /*
     // GPS Stuff
     nrf_gpio_cfg_output(GPS_ON_OFF);
@@ -122,25 +92,39 @@ _start()
     err_code = init_spi(SPI_Channel_1, SPI_Mode1, MISO, MOSI, SCLK, GPS_nCS);
     APP_ERROR_CHECK(err_code);
 */
+
+void
+_start()
+{
+	uint32_t err_code;
+    uint8_t tx[8];
+    uint8_t rx[8];
+    //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+
+    simple_uart_config(0, 5, 0, 8, false);
+
+    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err_code);
+	
+	//timers_init();
+	ble_init();
+
+	//application_timers_start();
+
+	ble_advertising_start();
+
+
+    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+    APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+
     err_code = imu_init(SPI_Channel_0);
     APP_ERROR_CHECK(err_code);
 
-// MPU-6500 bit 1 addr: 1 read 0 write, 7 bit addr
-    tx[0] = SPI_Read(0x75); //who am i
-    tx[1] = 0xff;
-    tx[2] = 0xff;
-    tx[3] = 0x00;
-
     while(1) {
-        //err_code = spi_xfer(0, IMU_SPI_nCS, 3, tx, rx);
-        err_code = spi_xfer(0, IMU_SPI_nCS, 2, tx, rx);
-        serial_print_hex((uint8_t *)&err_code, 4);
-        simple_uart_putstring((const uint8_t *)" : ");
-        serial_print_hex(rx, 2);
-        simple_uart_put('\n');
-        //serial_print_hex(new_fw_sha1, SHA1_DIGEST_LENGTH);
-        //simple_uart_put('\n');
-        nrf_delay_ms(300);
+        // Switch to a low power state until an event is available for the application
+        err_code = sd_app_event_wait();
+        APP_ERROR_CHECK(err_code);
     }
+    
 	NVIC_SystemReset();
 }
