@@ -9,9 +9,9 @@ uint32_t
 init_spi(uint32_t chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS) {
     NRF_SPI_Type *spi;
 
-    if (chan == 0)
+    if (chan == SPI_Channel_0)
         spi = NRF_SPI0;
-    else if (chan == 1)
+    else if (chan == SPI_Channel_1)
         spi = NRF_SPI1;
     else
         return -1;
@@ -60,9 +60,9 @@ spi_xfer(uint32_t chan, uint8_t nCS, uint16_t len, const uint8_t *tx, uint8_t *r
     uint32_t counter;
     int i;
 
-    if (chan == 0)
+    if (chan == SPI_Channel_0)
         spi = NRF_SPI0;
-    else if (chan == 1)
+    else if (chan == SPI_Channel_1)
         spi = NRF_SPI1;
     else
         return false;    
