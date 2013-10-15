@@ -6,7 +6,6 @@
 #include <app_timer.h>
 #include <device_params.h>
 #include <ble_err.h>
-#include <sha.h>
 #include <bootloader.h>
 #include <dfu_types.h>
 #include <bootloader_util_arm.h>
@@ -17,7 +16,7 @@
 #include <spi.h>
 #include <util.h>
 #include <imu.h>
-
+#include <ble_hello_demo.h>
 #define APP_GPIOTE_MAX_USERS            2
 
 void
@@ -55,13 +54,20 @@ void ble_advertising_start();
     err_code = init_spi(SPI_Channel_1, SPI_Mode1, MISO, MOSI, SCLK, GPS_nCS);
     APP_ERROR_CHECK(err_code);
 */
+void
+mode_write_handler(ble_gatts_evt_write_t *event) {
+    PRINTS("mode_write_handler called\n");
+}
+
+void
+data_write_handler(ble_gatts_evt_write_t *event) {
+    PRINTS("data_write_handler called\n");
+}
 
 void
 _start()
 {
 	uint32_t err_code;
-    uint8_t tx[8];
-    uint8_t rx[8];
     //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
     simple_uart_config(0, 5, 0, 8, false);
@@ -71,6 +77,12 @@ _start()
 	
 	//timers_init();
 	ble_init();
+    ble_hello_demo_init_t demo_init = {
+            .data_write_handler = &data_write_handler,
+            .mode_write_handler = &mode_write_handler,
+    };
+    err_code = ble_hello_demo_init(&demo_init);
+    APP_ERROR_CHECK(err_code);
 
 	//application_timers_start();
 
