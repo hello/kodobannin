@@ -18,7 +18,7 @@ imu_uart_debug(const uint32_t result, const uint8_t *buf, const uint32_t len) {
 	PRINTS(": ");
 	for (i = 0; i < len; i++)
 		PRINT_HEX(&buf[i], 1);
-	PRINTC('\n');
+	PRINTC('\r');PRINTC('\n');
 }
 
 uint16_t
