@@ -16,6 +16,7 @@ NULL =
 
 SRCS =  $(wildcard *.c) \
 	$(wildcard ble/*.c) \
+	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
 	./gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
@@ -37,6 +38,7 @@ SRCS =  $(wildcard *.c) \
 		
 INCS =  ./ \
 	./ble \
+	./ble/services \
 	./micro-ecc \
 	./hello_bootloader \
 	./nRF51_SDK/nrf51822/Include \
@@ -117,7 +119,7 @@ SoftDevice:
 	$(info [OBJCOPY] softdevice_uicr.bin)
 	@$(OBJCOPY) -I ihex -O binary --only-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_uicr.bin
 
-prog: $(TARGET)
+prog: all
 	$(JPROG) < prog.jlink
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
