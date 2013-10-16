@@ -26,7 +26,7 @@ imu_get_fifo_count() {
 	uint16_t count;
 	uint32_t err;
 
-	APP_ERROR_CHECK(chan != SPI_Channel_Invalid);
+	APP_ERROR_CHECK(chan == SPI_Channel_Invalid);
 
 	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_HI);
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
