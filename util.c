@@ -53,7 +53,7 @@ strlen(const char *a)
 	return count;
 }
 
-static uint8_t hex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+static uint8_t hex[] = "0123456789ABCDEF";
 
 void
 serial_print_hex(uint8_t *ptr, uint32_t len) {
