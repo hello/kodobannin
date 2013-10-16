@@ -17,6 +17,7 @@
 #include <util.h>
 #include <imu.h>
 #include <ble_hello_demo.h>
+
 #define APP_GPIOTE_MAX_USERS            2
 
 void
@@ -65,36 +66,69 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 }
 
 void
+sample_imu(void * p_context) {
+    static uint8_t counter;
+    uint8_t sample[20];
+    uint32_t read, sent;
+
+    read = imu_fifo_read(12, &sample[1]);
+    if (read == 0)
+        return;
+    sample[0] = counter++;
+    sent = ble_hello_demo_data_send(sample, read);
+    if (read != sent) {
+        DEBUG("Sent 0x", sent);
+        DEBUG("Instead of 0x", read);
+    }
+    //DEBUG("fifo read bytes: 0x", read);
+    //DEBUG("data", sample);
+}
+
+void
 _start()
 {
 	uint32_t err_code;
-    //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+    app_timer_id_t imu_sampler;
 
+
+    // setup debug UART
     simple_uart_config(0, 5, 0, 8, false);
 
-    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    // setup timer system
+    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
+
+    err_code = app_timer_create(&imu_sampler, APP_TIMER_MODE_REPEATED, &sample_imu);
     APP_ERROR_CHECK(err_code);
-	
-	//timers_init();
+
+    // init ble
 	ble_init();
+
+    // add hello demo service
     ble_hello_demo_init_t demo_init = {
-            .data_write_handler = &data_write_handler,
-            .mode_write_handler = &mode_write_handler,
+        .data_write_handler = &data_write_handler,
+        .mode_write_handler = &mode_write_handler,
     };
+
     err_code = ble_hello_demo_init(&demo_init);
     APP_ERROR_CHECK(err_code);
 
-	//application_timers_start();
-
+    // start advertising
 	ble_advertising_start();
 
-
-    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
     APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+
+    // init imu SPI channel and interface
+    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err_code);
 
     err_code = imu_init(SPI_Channel_0);
     APP_ERROR_CHECK(err_code);
 
+    // start imu sampler
+    err_code = app_timer_start(imu_sampler, 200, NULL);
+    APP_ERROR_CHECK(err_code);
+
+    // loop on BLE events FOREVER
     while(1) {
         // Switch to a low power state until an event is available for the application
         err_code = sd_app_event_wait();
