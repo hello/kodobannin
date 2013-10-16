@@ -20,8 +20,7 @@ typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
  */
 typedef struct
 {
-    ble_srv_security_mode_t        dis_attr_md;                 /**< Initial Security Setting for Hello Demo Characteristics. */
-	ble_hello_demo_write_handler   data_write_handler;
+    ble_hello_demo_write_handler   data_write_handler;
 	ble_hello_demo_write_handler   mode_write_handler;
 } ble_hello_demo_init_t;
 
@@ -40,4 +39,4 @@ typedef struct
 uint32_t ble_hello_demo_init(const ble_hello_demo_init_t * p_init);
 
 void ble_hello_demo_on_ble_evt(ble_evt_t *event);
-uint16_t ble_dts_data_send(const uint8_t * data, const uint16_t data_len);
+uint16_t ble_hello_demo_data_send(const uint8_t * data, const uint16_t data_len);
