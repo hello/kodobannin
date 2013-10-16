@@ -1,4 +1,6 @@
 #pragma once
+#include <nrf51.h>
+#include <nrf51_bitfields.h>
 
 /*
  * Board GPIO defines
@@ -34,6 +36,7 @@
 #define RTC_INT     28
 
 #define HRS_SENSE   26
+#define HRS_ADC     ADC_CONFIG_PSEL_AnalogInput0
 
 #define nBATT_CHG   21
 
