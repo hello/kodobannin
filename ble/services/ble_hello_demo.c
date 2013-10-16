@@ -19,10 +19,17 @@ static ble_gatts_char_handles_t sys_mode_handles;
 static ble_gatts_char_handles_t sys_data_handles;
 static ble_hello_demo_write_handler    data_write_handler;
 static ble_hello_demo_write_handler    mode_write_handler;
+static ble_hello_demo_connect_handler  conn_handler;
+static ble_hello_demo_connect_handler  disconn_handler;
 
 static void
 default_write_handler(ble_gatts_evt_write_t *event) {
     DEBUG("Default write handler called for 0x", event->handle);
+}
+
+static void
+default_conn_handler(void) {
+    PRINTS("Default conn handler called");
 }
 
 static void
@@ -49,10 +56,12 @@ ble_hello_demo_on_ble_evt(ble_evt_t *event)
     {
         case BLE_GAP_EVT_CONNECTED:
             conn_handle = event->evt.gap_evt.conn_handle;
+            conn_handler();
             break;
             
         case BLE_GAP_EVT_DISCONNECTED:
             conn_handle = BLE_CONN_HANDLE_INVALID;
+            disconn_handler();
             break;
             
         case BLE_GATTS_EVT_WRITE:
@@ -245,6 +254,8 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
     conn_handle = BLE_CONN_HANDLE_INVALID;
     data_write_handler = &default_write_handler;
     mode_write_handler = &default_write_handler;
+    conn_handler       = &default_conn_handler;
+    disconn_handler    = &default_conn_handler;
 
     // Assign write handlers
     if (init->data_write_handler)
@@ -252,6 +263,12 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
 
     if (init->mode_write_handler)
         mode_write_handler = init->mode_write_handler;
+
+    if (init->conn_handler)
+        conn_handler = init->conn_handler;
+
+    if (init->disconn_handler)
+        disconn_handler = init->disconn_handler;
 
     // Add Hello's Base UUID
     err_code = sd_ble_uuid_vs_add(&hello_uuid, &hello_type);

@@ -14,6 +14,7 @@
 #define BLE_UUID_CONF_CHAR      0xC0FF
 
 typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
+typedef void (*ble_hello_demo_connect_handler)(void);
 
 /**@brief Hello Demo init structure. This contains all possible characteristics 
  *        needed for initialization of the service.
@@ -22,6 +23,8 @@ typedef struct
 {
     ble_hello_demo_write_handler   data_write_handler;
 	ble_hello_demo_write_handler   mode_write_handler;
+	ble_hello_demo_connect_handler conn_handler;
+	ble_hello_demo_connect_handler disconn_handler;
 } ble_hello_demo_init_t;
 
 /**@brief Function for initializing the Hello Demo Service.
