@@ -102,14 +102,18 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 
 void
 start_sampling_on_connect(void) {
+    //TODO: this is the wrong place for this, we must detect when
+    //      someone subscribes to the notification instead
+    /*
     uint32_t err_code;
-    //err_code = app_timer_start(imu_sampler, 250, NULL);
-    //APP_ERROR_CHECK(err_code);
+    err_code = app_timer_start(imu_sampler, 250, NULL);
+    APP_ERROR_CHECK(err_code);
+    */
 }
 
 void
 stop_sampling_on_disconnect(void) {
-    uint32_t err_code;
+    //uint32_t err_code;
     //err_code = app_timer_stop(imu_sampler);
     //APP_ERROR_CHECK(err_code);
 }
