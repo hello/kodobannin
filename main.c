@@ -137,34 +137,6 @@ sample_imu(void * p_context) {
     //DEBUG("data", sample);
 }
 
-const uint8_t sin_table[] = {0, 0,1,2,4,6,9,12,16,20,24,29,35,40,   46, 53, 59, 66, 74, 81, 88, 96, 104,112,120,128,136,144,152,160,168,175,182,190,197,203,210,216,221,227,
-           232,236,240,244,247,250,252,254,255,255,255,255,255,254,252,250,247,244,240,236,232,227,221,216,210,203,197,190,182,175,168,160,152,144,136,128,120,112,104,
-           96,88,81,74,66,59,   53, 46, 40, 35, 29,24,  20, 16, 12, 9,  6,  4,  2,1,0};
-    
-void
-pwm_test() {
-    uint32_t err_code;
-    uint32_t counter = 0;
-
-    uint32_t gpios[] = {
-        GPIO_HRS_PWM_G
-    };
-
-    err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_122Hz_255);
-    APP_ERROR_CHECK(err_code);
-
-    nrf_gpio_cfg_output(GPIO_3v3_Enable);
-    nrf_gpio_pin_set(GPIO_3v3_Enable);
-
-    while(1) {
-        err_code = pwm_set_value(PWM_1_Channel, sin_table[counter]);
-        APP_ERROR_CHECK(err_code);
-        if (++counter >= 100)
-            counter = 0; 
-        nrf_delay_us(8000);
-    }
-}
-
 static void
 hello_demo_service_init() {
     uint32_t err_code;
