@@ -16,6 +16,13 @@
 typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
 typedef void (*ble_hello_demo_connect_handler)(void);
 
+typedef enum {
+	Demo_Config_Standby = 0,
+	Demo_Config_Sampling,
+	Demo_Config_Calibrating,
+	Demo_Config_Enter_DFU,
+} Demo_Config;
+
 /**@brief Hello Demo init structure. This contains all possible characteristics 
  *        needed for initialization of the service.
  */
