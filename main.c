@@ -69,12 +69,25 @@ mode_write_handler(ble_gatts_evt_write_t *event) {
     DEBUG("mode_write_handler: 0x", state);
 
     switch (state) {
+        case Demo_Config_Standby:
+            PRINTS("Enter into sleep mode");
+            // TODO: cancel timers and quiesce hardware
+            //       schedule maintenance wakeup with RTC
+            break;
+
         case Demo_Config_Calibrating:
             PRINTS("Start HRS Calibration here");
+            _state = Demo_Config_Calibrating;
+            // TODO: notify HRS system here
             break;
+
         case Demo_Config_Enter_DFU:
-            PRINTS("Reboot into DFU here");
+            PRINTS("Rebooting into DFU");
+            // set the trap bit for the bootloader and kick the system
+            NRF_POWER->GPREGRET |= 0x1;
+            NVIC_SystemReset();
             break;
+
         default:
             DEBUG("Unhandled state transition to 0x", state);
             err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
