@@ -18,6 +18,7 @@
 #include <imu.h>
 #include <ble_hello_demo.h>
 #include <pwm.h>
+#include <hrs.h>
 
 #define APP_GPIOTE_MAX_USERS            2
 
@@ -48,6 +49,7 @@ test_3v3() {
 void ble_init();
 void ble_advertising_start();
 
+static uint8_t _state;
 /*
     // GPS Stuff
     nrf_gpio_cfg_output(GPS_ON_OFF);
@@ -60,7 +62,24 @@ void ble_advertising_start();
 */
 void
 mode_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("mode_write_handler called\n");
+    uint8_t  state = event->data[0];
+    uint16_t len = 1;
+    uint32_t err;
+
+    DEBUG("mode_write_handler: 0x", state);
+
+    switch (state) {
+        case Demo_Config_Calibrating:
+            PRINTS("Start HRS Calibration here");
+            break;
+        case Demo_Config_Enter_DFU:
+            PRINTS("Reboot into DFU here");
+            break;
+        default:
+            DEBUG("Unhandled state transition to 0x", state);
+            err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+    };
 }
 
 void
@@ -71,15 +90,15 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 void
 start_sampling_on_connect(void) {
     uint32_t err_code;
-    err_code = app_timer_start(imu_sampler, 250, NULL);
-    APP_ERROR_CHECK(err_code);
+    //err_code = app_timer_start(imu_sampler, 250, NULL);
+    //APP_ERROR_CHECK(err_code);
 }
 
 void
 stop_sampling_on_disconnect(void) {
     uint32_t err_code;
-    err_code = app_timer_stop(imu_sampler);
-    APP_ERROR_CHECK(err_code);
+    //err_code = app_timer_stop(imu_sampler);
+    //APP_ERROR_CHECK(err_code);
 }
 
 void
@@ -129,110 +148,9 @@ pwm_test() {
     }
 }
 
-void
-adc_test() {
+static void
+hello_demo_service_init() {
     uint32_t err_code;
-
-    // Configure the ADC
-    // P0.1 is used for ADC input, apply a varying voltage between 0 and VDD to change the PWM values
-    NRF_ADC->CONFIG = ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos | \
-                    ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos | \
-                    ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos | \
-                    HRS_ADC << ADC_CONFIG_PSEL_Pos;
-    NRF_ADC->ENABLE = 1;  
-    NRF_ADC->INTENSET = ADC_INTENSET_END_Msk;
-    
-    nrf_gpio_cfg_output(GPIO_3v3_Enable);
-    nrf_gpio_pin_set(GPIO_3v3_Enable);
-
-    //configure LED
-    //nrf_gpio_cfg_output(GPIO_HRS_PWM_G);
-    //nrf_gpio_pin_set  (GPIO_HRS_PWM_G);
-    uint32_t gpios[] = {
-        GPIO_HRS_PWM_G
-    };
-
-    err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
-    APP_ERROR_CHECK(err_code);
-    err_code = pwm_set_value(PWM_1_Channel, 66);
-    APP_ERROR_CHECK(err_code);
-
-    // Enable the ADC interrupt, and set the priority to 1
-    NVIC_SetPriority(ADC_IRQn, 1);
-    NVIC_EnableIRQ(ADC_IRQn);   
-
-    // Start the ADC
-    NRF_ADC->TASKS_START = 1;
-    
-    while (true)
-    {
-        __WFE();
-    }
-}
-
-#define HRS_MASK (~0x7)
-#define NUM_BUCKETS 32
-#define MAX_VALUE 0xFF
-#define BUCKET_LVL ((MAX_VALUE+1)/NUM_BUCKETS)
-
-static uint32_t buckets[4];
-
-void
-ADC_IRQHandler(void)
-{
-    static uint32_t count;
-
-    // Clear the END event
-    NRF_ADC->EVENTS_END = 0;
-    
-    // Read the ADC result, and update the PWM channels accordingly
-    uint8_t tmp = NRF_ADC->RESULT;// & HRS_MASK;
-    if (tmp < BUCKET_LVL)
-        ++buckets[0];
-    else if (tmp < BUCKET_LVL*2)
-        ++buckets[1];
-    else if (tmp < BUCKET_LVL*3)
-        ++buckets[2];
-    else
-        ++buckets[3];
-
-    //PRINT_HEX(&tmp, 1);
-    //PRINTC(' ');
-
-    if (++count > 128) {
-        PRINT_HEX(&buckets[0], 4);
-        PRINT_HEX(&buckets[1], 4);
-        PRINT_HEX(&buckets[2], 4);
-        PRINT_HEX(&buckets[3], 4);
-        PRINTS("\r\n");
-        memset(buckets, 0, NUM_BUCKETS*sizeof(uint32_t));
-        count = 0;
-    }   
-
-    // Trigger a new ADC sampling
-    NRF_ADC->TASKS_START = 1;
-}
-
-void
-_start()
-{
-	uint32_t err_code;
-
-    //pwm_test();
-
-    // setup debug UART
-    simple_uart_config(0, 5, 0, 8, false);
-
-    adc_test();
-
-    // setup timer system
-    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
-
-    err_code = app_timer_create(&imu_sampler, APP_TIMER_MODE_REPEATED, &sample_imu);
-    APP_ERROR_CHECK(err_code);
-
-    // init ble
-	ble_init();
 
     // add hello demo service
     ble_hello_demo_init_t demo_init = {
@@ -244,15 +162,43 @@ _start()
 
     err_code = ble_hello_demo_init(&demo_init);
     APP_ERROR_CHECK(err_code);
+}
+
+void
+_start()
+{
+	uint32_t err_code;
+
+    _state = Demo_Config_Standby;
+
+    //pwm_test();
+
+    // setup debug UART
+    simple_uart_config(0, 5, 0, 8, false);
+
+    //adc_test();
+
+    // setup timer system
+    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
+    APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+
+    err_code = app_timer_create(&imu_sampler, APP_TIMER_MODE_REPEATED, &sample_imu);
+    APP_ERROR_CHECK(err_code);
+
+    // init ble
+	ble_init();
+
+    // init demo app ble service
+    hello_demo_service_init();
 
     // start advertising
 	ble_advertising_start();
 
-    APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
-
     // init imu SPI channel and interface
     err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
+
+    //imu_selftest(SPI_Channel_0);
 
     err_code = imu_init(SPI_Channel_0);
     APP_ERROR_CHECK(err_code);
