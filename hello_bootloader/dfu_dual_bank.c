@@ -103,7 +103,6 @@ uint32_t dfu_init(void)
 {
     uint32_t              page_count;
     uint32_t              err_code;
-    bootloader_settings_t bootloader_settings;
     dfu_update_status_t   update_status;
     
     // Clear swap area.
@@ -116,8 +115,7 @@ uint32_t dfu_init(void)
     m_init_packet_length  = 0;
     m_image_crc           = 0;    
            
-    bootloader_settings_get(&bootloader_settings);
-    if ((bootloader_settings.bank_1 != BANK_ERASED) || (*p_bank_start_address != EMPTY_FLASH_MASK))
+    if (true)
     {
         for (page_count = 0; page_count < num_of_pages; page_count++)
         {

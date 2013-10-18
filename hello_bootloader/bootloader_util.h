@@ -31,12 +31,6 @@
  */
 void bootloader_util_app_start(uint32_t start_addr);
 
-/**@brief Function for getting the bootloader settings.
- * 
- * @param[out] pp_bootloader_settings Bootloader settings. 
- */
-void bootloader_util_settings_get(const bootloader_settings_t ** pp_bootloader_settings);
-
 #endif // BOOTLOADER_UTIL_H__
 
 /**@} */
