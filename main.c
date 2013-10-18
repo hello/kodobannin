@@ -13,6 +13,8 @@
 #include <ble_stack_handler.h>
 #include <string.h>
 
+#include "hello_dfu.h"
+
 #define APP_GPIOTE_MAX_USERS            2
 
 static void
@@ -87,28 +89,29 @@ _start()
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
-    while((NRF_POWER->GPREGRET & 1) || !verify_fw_sha1((uint8_t*)proposed_fw_sha1)) {
-	err_code = bootloader_dfu_start();
-	APP_ERROR_CHECK(err_code);
+	const bool firmware_verified = verify_fw_sha1((uint8_t*)proposed_fw_sha1);
+    if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
+		err_code = bootloader_dfu_start();
+		APP_ERROR_CHECK(err_code);
 	    
-	if (dfu_success) {
-	    NRF_POWER->GPREGRET &= ~((uint32_t)1);
+		if (dfu_success) {
+			NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
 
-	    // Need to turn the radio off before calling ble_flash_block_write?
-	    ble_flash_on_radio_active_evt(false);
+			// Need to turn the radio off before calling ble_flash_block_write?
+			ble_flash_on_radio_active_evt(false);
 	    
-	    sha1_fw_area(new_fw_sha1);
-	    flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
-	    ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
-	} else {
-	    NVIC_SystemReset();
-	}
-    }
+			sha1_fw_area(new_fw_sha1);
+			flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
+			ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
+		}
 
-    interrupts_disable();
+		NVIC_SystemReset();
+    } else {
+		interrupts_disable();
 
-    err_code = sd_softdevice_forward_to_application();
-    APP_ERROR_CHECK(err_code);
+		err_code = sd_softdevice_forward_to_application();
+		APP_ERROR_CHECK(err_code);
 	
-    StartApplication(CODE_REGION_1_START);
+		StartApplication(CODE_REGION_1_START);
+	}
 }
