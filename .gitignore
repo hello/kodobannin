@@ -5,3 +5,4 @@
 bootloader.bin
 hrs.bin
 hrs_packet_encoded.bin
+JLink.log
