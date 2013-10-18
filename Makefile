@@ -16,6 +16,7 @@ NULL =
 SRCS =  $(wildcard *.c) \
 	$(wildcard micro-ecc/*.c) \
 	$(wildcard hello_bootloader/*.c) \
+	hello_bootloader/ble/ble_services/ble_dfu.c \
 	./gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
@@ -31,7 +32,6 @@ SRCS =  $(wildcard *.c) \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
 	nRF51_SDK/nrf51822/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dfu.c \
 	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
 	$(NULL)
