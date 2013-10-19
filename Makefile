@@ -123,7 +123,7 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
-LDFLAGS := -T./link.ld -L$(LIB) -lgcc --gc-sections
+LDFLAGS := -L$(LIB) -lgcc --gc-sections
 #-L/Users/jkelley/Downloads/gcc-arm-none-eabi-4_7-2013q1/lib/gcc/arm-none-eabi/4.7.3/armv6-m -lgcc
 #-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
 
@@ -217,9 +217,9 @@ SoftDevice/softdevice_uicr.bin: $(SOFTDEV_SRC)
 	$(info [AS] $(notdir $<))
 	@$(AS) $(ASFLAGS) $< -o $@
 
-%.elf: link.ld
+%.elf: %.ld
 	$(info [LD] $@)
-	@$(LD) -o $@ $(filter %.o, $^) $(LDFLAGS)
+	@$(LD) -o $@ $(filter %.o, $^) -T$(@:.elf=.ld) $(LDFLAGS)
 
 %.bin: %.elf
 	$(info [BIN] $@)
