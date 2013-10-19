@@ -23,7 +23,6 @@ SRCS = \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
-	./gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_advdata.c \
@@ -43,6 +42,7 @@ SRCS = \
 
 APP_SRCS = \
 	$(SRCS) \
+	./app_startup_nrf51.s \
 	hrs.c \
 	mpu-6500.c \
 	pwm.c \
@@ -51,6 +51,7 @@ APP_SRCS = \
 
 BOOTLOADER_SRCS = \
 	$(SRCS) \
+	./bootloader_startup_nrf51.s \
 	$(wildcard hello_bootloader/*.c) \
 	hello_bootloader/ble/ble_services/ble_dfu.c \
 
