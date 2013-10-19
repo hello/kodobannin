@@ -101,6 +101,11 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 }
 
 void
+cmd_write_handler(ble_gatts_evt_write_t *event) {
+    PRINTS("data_write_handler called\n");
+}
+
+void
 start_sampling_on_connect(void) {
     //TODO: this is the wrong place for this, we must detect when
     //      someone subscribes to the notification instead
@@ -145,6 +150,7 @@ hello_demo_service_init() {
     ble_hello_demo_init_t demo_init = {
         .data_write_handler = &data_write_handler,
         .mode_write_handler = &mode_write_handler,
+        .cmd_write_handler = &cmd_write_handler,
         .conn_handler    = &start_sampling_on_connect,
         .disconn_handler = &stop_sampling_on_disconnect,
     };

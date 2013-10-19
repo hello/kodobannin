@@ -12,6 +12,7 @@
 #define BLE_UUID_HELLO_DEMO_SVC 0x1337
 #define BLE_UUID_DATA_CHAR      0xDA1A
 #define BLE_UUID_CONF_CHAR      0xC0FF
+#define BLE_UUID_CMD_CHAR       0xBEEF
 
 typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
 typedef void (*ble_hello_demo_connect_handler)(void);
@@ -30,6 +31,7 @@ typedef struct
 {
     ble_hello_demo_write_handler   data_write_handler;
 	ble_hello_demo_write_handler   mode_write_handler;
+	ble_hello_demo_write_handler   cmd_write_handler;
 	ble_hello_demo_connect_handler conn_handler;
 	ble_hello_demo_connect_handler disconn_handler;
 } ble_hello_demo_init_t;

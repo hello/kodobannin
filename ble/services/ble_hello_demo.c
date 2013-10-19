@@ -16,9 +16,11 @@ static uint8_t hello_type;
 static uint16_t                 service_handle;
 static uint16_t                 conn_handle;
 static ble_gatts_char_handles_t sys_mode_handles;
+static ble_gatts_char_handles_t sys_cmd_handles;
 static ble_gatts_char_handles_t sys_data_handles;
 static ble_hello_demo_write_handler    data_write_handler;
 static ble_hello_demo_write_handler    mode_write_handler;
+static ble_hello_demo_write_handler    cmd_write_handler;
 static ble_hello_demo_connect_handler  conn_handler;
 static ble_hello_demo_connect_handler  disconn_handler;
 
@@ -43,8 +45,8 @@ dispatch_write(ble_evt_t *event) {
         data_write_handler(write_evt);
     } else if (handle == sys_mode_handles.value_handle) {
         mode_write_handler(write_evt);
-    } else {
-        DEBUG("Unhandled write to handle 0x", handle);
+    } else if (handle == sys_cmd_handles.value_handle) {
+        cmd_write_handler(write_evt);
     }
 }
 
@@ -309,6 +311,7 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
     conn_handle = BLE_CONN_HANDLE_INVALID;
     data_write_handler = &default_write_handler;
     mode_write_handler = &default_write_handler;
+    cmd_write_handler  = &default_write_handler;
     conn_handler       = &default_conn_handler;
     disconn_handler    = &default_conn_handler;
 
@@ -318,6 +321,9 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
 
     if (init->mode_write_handler)
         mode_write_handler = init->mode_write_handler;
+
+    if (init->cmd_write_handler)
+        cmd_write_handler = init->cmd_write_handler;
 
     if (init->conn_handler)
         conn_handler = init->conn_handler;
@@ -352,6 +358,14 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
                         zeroes,
                         4,
                         &sys_mode_handles);
+    if (err_code != NRF_SUCCESS)
+        return err_code;
+
+    err_code = char_add2(BLE_UUID_CMD_CHAR,
+                        0,
+                        zeroes,
+                        4,
+                        &sys_cmd_handles);
     if (err_code != NRF_SUCCESS)
         return err_code;
 
