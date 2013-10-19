@@ -3,6 +3,8 @@
 #include <nrf_gpiote.h>
 #include <nrf_gpio.h>
 
+#include "device_params.h"
+
 static PWM_Mode    _mode  = PWM_Mode_Invalid;
 static PWM_Channel _chans = PWM_Num_Channels;
 

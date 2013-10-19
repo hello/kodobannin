@@ -27,108 +27,22 @@
 
 bool bootloader_app_is_valid(uint32_t app_addr)
 {
-    const bootloader_settings_t * p_bootloader_settings;
-
-    // There exists an application in CODE region 1.
-    if (DFU_BANK_0_REGION_START == EMPTY_FLASH_MASK)
-    {
-        return false;
-    }
-    
-    bool success = false;
-    
-    switch (app_addr)
-    {
-        case DFU_BANK_0_REGION_START:
-            bootloader_util_settings_get(&p_bootloader_settings);
-
-            // The application in CODE region 1 is flagged as valid during update.
-            if (p_bootloader_settings->bank_0 == BANK_VALID_APP)
-            {
-                success = true;
-            }
-            break;
-            
-        case DFU_BANK_1_REGION_START:
-        default:
-            break;
-    }
-
-    return success;
-}
-
-
-static void bootloader_settings_save(bootloader_settings_t settings)
-{
-    const bootloader_settings_t * p_bootloader_settings;
-
-    bootloader_util_settings_get(&p_bootloader_settings);
-
-    // Save needed data for later use. 
-    uint32_t settings_page = ((uint32_t) p_bootloader_settings) / NRF_FICR->CODEPAGESIZE;
-
-    uint32_t num_of_words = sizeof(bootloader_settings_t) / sizeof(uint32_t);
-
-    // Save bootloader settings.
-    uint32_t err_code = ble_flash_page_erase(settings_page);
-    APP_ERROR_CHECK(err_code);    
-    err_code          = ble_flash_block_write((uint32_t *)p_bootloader_settings, 
-                                              (uint32_t *)&settings, 
-                                              num_of_words);
-    APP_ERROR_CHECK(err_code);
+    return false;
 }
 
 extern bool dfu_success;
 
 void bootloader_dfu_update_process(dfu_update_status_t update_status)
 {
-    const bootloader_settings_t * p_bootloader_settings;
-    bootloader_util_settings_get(&p_bootloader_settings);
-
     if (update_status.status_code == DFU_UPDATE_COMPLETE)
     {
-        //GROSS HACK
         dfu_success = true;
-        bootloader_settings_t settings;
-        
-        settings.bank_0_crc  = update_status.app_crc;
-        settings.bank_0_size = update_status.app_size;
-        settings.bank_0      = BANK_VALID_APP;
-        settings.bank_1      = BANK_INVALID_APP;
-        
-        bootloader_settings_save(settings);
     }
     else if (update_status.status_code == DFU_TIMEOUT)
     {
         // Timeout has occurred. Close the connection with the DFU Controller.
         uint32_t err_code = dfu_transport_close();
         APP_ERROR_CHECK(err_code);
-    }
-    else if (update_status.status_code == DFU_BANK_0_ERASED)
-    {
-        bootloader_settings_t settings;
-        
-        settings.bank_0_crc  = 0;
-        settings.bank_0_size = 0;
-        settings.bank_0      = BANK_ERASED;
-        settings.bank_1      = p_bootloader_settings->bank_1;
-        
-        bootloader_settings_save(settings);
-    }
-    else if (update_status.status_code == DFU_BANK_1_ERASED)
-    {
-        bootloader_settings_t settings;
-        
-        settings.bank_0      = p_bootloader_settings->bank_0;
-        settings.bank_0_crc  = p_bootloader_settings->bank_0_crc;
-        settings.bank_0_size = p_bootloader_settings->bank_0_size;
-        settings.bank_1      = BANK_ERASED;
-        
-        bootloader_settings_save(settings);
-    }
-    else
-    {
-        // No implementation needed.
     }
 }
 
@@ -181,16 +95,4 @@ void bootloader_app_start(uint32_t app_addr)
     APP_ERROR_CHECK(err_code);
 
     bootloader_util_app_start(CODE_REGION_1_START);
-}
-
-
-void bootloader_settings_get(bootloader_settings_t * const p_settings)
-{
-    const bootloader_settings_t * p_bootloader_settings;
-    bootloader_util_settings_get(&p_bootloader_settings);
-
-    p_settings->bank_0      = p_bootloader_settings->bank_0;
-    p_settings->bank_0_crc  = p_bootloader_settings->bank_0_crc;
-    p_settings->bank_0_size = p_bootloader_settings->bank_0_size;
-    p_settings->bank_1      = p_bootloader_settings->bank_1;
 }

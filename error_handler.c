@@ -2,7 +2,9 @@
 #include <nrf_delay.h>
 #include <nrf51.h>
 #include <nrf_gpio.h>
+
 #include "device_params.h"
+#include "hello_dfu.h"
 
 /**@brief Error handler function, which is called when an error has occurred.
  *
@@ -16,6 +18,9 @@
 void
 app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filename)
 {
+	NRF_POWER->GPREGRET |= GPREGRET_APP_CRASHED_MASK;
+	NRF_POWER->GPREGRET |= GPREGRET_FORCE_DFU_ON_BOOT_MASK;
+
 	uint32_t error_led;
 
 	switch ((NRF_FICR->CONFIGID & FICR_CONFIGID_HWID_Msk) >> FICR_CONFIGID_HWID_Pos)

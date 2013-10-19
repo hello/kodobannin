@@ -20,6 +20,8 @@
 #include <pwm.h>
 #include <hrs.h>
 
+#include "hello_dfu.h"
+
 #define APP_GPIOTE_MAX_USERS            2
 
 static app_timer_id_t imu_sampler;
