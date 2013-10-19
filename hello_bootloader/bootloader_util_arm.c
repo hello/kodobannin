@@ -29,18 +29,7 @@ void StartApplication(uint32_t start_addr)
 	asm(".align 4");
 }
 
-
 void bootloader_util_app_start(uint32_t start_addr)
 {
     StartApplication(start_addr);
-}
-
-
-void bootloader_util_settings_get(const bootloader_settings_t ** pp_bootloader_settings)
-{
-    // Read only pointer to bootloader settings in flash.
-    static bootloader_settings_t const * const p_bootloader_settings =
-        (bootloader_settings_t *)BOOTLOADER_SETTINGS_ADDRESS;
-
-    *pp_bootloader_settings = p_bootloader_settings;
 }

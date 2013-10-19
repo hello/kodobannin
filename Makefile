@@ -1,10 +1,12 @@
-# tool location
+# tool locations
 BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q3/bin
 #BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
 # target to build
-TARGET = bootloader.bin
+APP = app.bin
+BOOTLOADER = bootloader.bin
+SOFTDEVICE_BINARIES = SoftDevice/softdevice_uicr.bin SoftDevice/softdevice_main.bin
 
 # nRF51822 revision (for PAN workarounds in nRF SDK)
 NRFREV = NRF51822_QFAA_CA
@@ -14,11 +16,13 @@ NULL =
 #	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_bas.c \
 #	
 
-SRCS =  $(wildcard *.c) \
+SRCS = \
+	error_handler.c \
+	sha1.c \
+	util.c \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
-	./gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_advdata.c \
@@ -35,7 +39,22 @@ SRCS =  $(wildcard *.c) \
 	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
 	$(NULL)
-		
+
+APP_SRCS = \
+	$(SRCS) \
+	./app_startup_nrf51.s \
+	hrs.c \
+	mpu-6500.c \
+	pwm.c \
+	spi.c \
+	main.c \
+
+BOOTLOADER_SRCS = \
+	$(SRCS) \
+	./bootloader_startup_nrf51.s \
+	$(wildcard hello_bootloader/*.c) \
+	hello_bootloader/ble/ble_services/ble_dfu.c \
+
 INCS =  ./ \
 	./ble \
 	./ble/services \
@@ -48,8 +67,8 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
 	./nRF51_SDK/nrf51822/Include/ble/softdevice/ \
 	$(NULL)
-
 #	./SoftDevice/s110_nrf51822_5.2.1_API/include \
+
 # optimization flags
 DEBUG = 1
 
@@ -105,24 +124,35 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
-LDFLAGS := -T./link.ld -L$(LIB) -lgcc --gc-sections
+LDFLAGS := -L$(LIB) -lgcc --gc-sections
 #-L/Users/jkelley/Downloads/gcc-arm-none-eabi-4_7-2013q1/lib/gcc/arm-none-eabi/4.7.3/armv6-m -lgcc
 #-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
 
-OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(SRCS)))
-DEPS = $(OBJS:.o=.d)
+ALL_SRCS = $(SRCS) $(APP_SRCS) $(BOOTLOADER_SRCS)
+ALL_OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(ALL_SRCS)))
+ALL_DEPS = $(ALL_OBJS:.o=.d)
 
-all: $(TARGET) SoftDevice
+# all target (must be first rule): build app + bootloader
 
-SoftDevice:
-	$(info [OBJCOPY] softdevice_main.bin)
-	@$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_main.bin
-	$(info [OBJCOPY] softdevice_uicr.bin)
-	@$(OBJCOPY) -I ihex -O binary --only-section .sec3 $(SOFTDEV_SRC) SoftDevice/softdevice_uicr.bin
+.PHONY: all
+all: $(APP) $(BOOTLOADER) SoftDevice
 
-prog: all
-	$(JPROG) < prog.jlink
-	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
+jl: all jl.jlink
+	$(JLINK_COMMANDS)
+
+# jlink invocation
+
+%.jlink: %.jlink.in
+	$(info [JLINK_SCRIPT] $@)
+	sed -e 's,$$PWD,$(PWD),g' < $< > $@
+
+JLINK_COMMANDS = \
+	$(info [JPROG] $@.jlink) \
+	@$(JPROG) < $@.jlink && $(JGDBServer) -if SWD -device nRF51822 -speed 4000
+
+# gdb
+
+.PHONY: gdbs gdb cgdb
 
 gdbs:
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
@@ -133,6 +163,46 @@ gdb:
 cgdb:
 	cgdb -d $(BIN)/arm-none-eabi-gdb -- bootloader.elf  -ex "tar remote :2331" -ex "mon reset"
 
+
+# building and debugging the app
+
+.PHONY: prog app
+
+app: $(APP)
+
+APP_OBJS := $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(APP_SRCS)))
+app.elf: $(APP_OBJS)
+
+prog: app SoftDevice prog.jlink
+	$(JLINK_COMMANDS)
+
+# building and debugging the bootloader
+
+.PHONY: bl blprog
+
+bl: $(BOOTLOADER)
+
+BOOTLOADER_OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(BOOTLOADER_SRCS)))
+bootloader.elf: $(BOOTLOADER_OBJS)
+
+blprog: bl SoftDevice blprog.jlink
+	$(JLINK_COMMANDS)
+
+# SoftDevice
+
+.PHONY: SoftDevice
+SoftDevice: $(SOFTDEVICE_BINARIES)
+
+SoftDevice/softdevice_main.bin: $(SOFTDEV_SRC)
+	$(info [OBJCOPY] softdevice_main.bin)
+	$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $< $@
+
+SoftDevice/softdevice_uicr.bin: $(SOFTDEV_SRC)
+	$(info [OBJCOPY] softdevice_uicr.bin)
+	$(OBJCOPY) -I ihex -O binary --only-section .sec3 $< $@
+
+# building the entire firmware
+
 %.o: %.c
 	$(info [CC] $(notdir $<))
 	@$(CC) $(CFLAGS) -c $< -o $@
@@ -141,18 +211,20 @@ cgdb:
 	$(info [AS] $(notdir $<))
 	@$(AS) $(ASFLAGS) $< -o $@
 
-%.elf: $(OBJS) link.ld
+%.elf: %.ld
 	$(info [LD] $@)
-	@$(LD) -o $@ $(OBJS) $(LDFLAGS)
+	@$(LD) -o $@ $(filter %.o, $^) -T$(@:.elf=.ld) $(LDFLAGS)
 
 %.bin: %.elf
 	$(info [BIN] $@)
 	@$(OBJCOPY)  -O binary $< $@
 #-j .text -j .data
 
-.PHONY: clean SoftDevice
+ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink
+
+.PHONY: clean
 clean:
-	@-rm -f $(OBJS) $(TARGET) $(TARGET:.bin=.elf) $(DEPS)
+	@-rm -f $(ALL_PRODUCTS)
 
 # dependency info
--include $(DEPS)
+-include $(ALL_DEPS)

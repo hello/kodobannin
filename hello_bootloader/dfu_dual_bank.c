@@ -29,6 +29,7 @@
 #include "bootloader.h"
 #include "bootloader_types.h"
 #include "crc16.h"
+#include "sha1.h"
 
 /**@brief States of the DFU state machine. */
 typedef enum
@@ -102,7 +103,6 @@ uint32_t dfu_init(void)
 {
     uint32_t              page_count;
     uint32_t              err_code;
-    bootloader_settings_t bootloader_settings;
     dfu_update_status_t   update_status;
     
     // Clear swap area.
@@ -115,8 +115,7 @@ uint32_t dfu_init(void)
     m_init_packet_length  = 0;
     m_image_crc           = 0;    
            
-    bootloader_settings_get(&bootloader_settings);
-    if ((bootloader_settings.bank_1 != BANK_ERASED) || (*p_bank_start_address != EMPTY_FLASH_MASK))
+    if (true)
     {
         for (page_count = 0; page_count < num_of_pages; page_count++)
         {
@@ -317,7 +316,6 @@ uint32_t dfu_init_pkt_handle(dfu_update_packet_t * p_packet)
 uint32_t dfu_image_validate()
 {
     uint32_t err_code;
-    uint16_t received_crc;    
     
     switch (m_dfu_state)
     {
@@ -338,17 +336,32 @@ uint32_t dfu_image_validate()
                 if (err_code == NRF_SUCCESS)
                 {                    
                     // calculate CRC from DFU_BANK_1_REGION_START to mp_app_write_address.
-                    m_image_crc  = crc16_compute((uint8_t*)DFU_BANK_1_REGION_START, 
-                                                 m_image_size, 
-                                                 NULL);
-                    received_crc = uint16_decode((uint8_t*)&m_init_packet[0]);
-                    
-                    if ((m_init_packet_length != 0) && (m_image_crc != received_crc))
-                    {
-                        return NRF_ERROR_INVALID_DATA;
-                    }                    
-                    
-                    m_dfu_state = DFU_STATE_WAIT_4_ACTIVATE;                                                                                
+                    m_image_crc = crc16_compute((uint8_t*)DFU_BANK_1_REGION_START, 
+						m_image_size, 
+						NULL);
+
+                    if(m_init_packet_length != 0) {
+			uint8_t* client_sent_sha1 = (uint8_t*)m_init_packet;
+			    
+			uint8_t received_data_sha1[SHA1_DIGEST_LENGTH];
+			sha1_ctx_t ctx;
+			sha1_init(&ctx);
+			sha1_update(&ctx, (void*)DFU_BANK_1_REGION_START, m_image_size);
+			sha1_final(&ctx, (uint32_t*)received_data_sha1);
+			    
+			uint8_t cmp_result = 0;
+			    
+			int i;
+			for (i = 0; i < SHA1_DIGEST_LENGTH; i++) {
+				cmp_result |= received_data_sha1[i] ^ client_sent_sha1[i];
+			}
+			
+			if(cmp_result != 0) {
+				return NRF_ERROR_INVALID_DATA;
+			}
+		    }
+		    
+                    m_dfu_state = DFU_STATE_WAIT_4_ACTIVATE;
                 }
             }
             break;
