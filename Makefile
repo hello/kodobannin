@@ -137,14 +137,14 @@ ALL_DEPS = $(ALL_OBJS:.o=.d)
 .PHONY: all
 all: $(APP) $(BOOTLOADER) SoftDevice
 
-jl.jlink: jlink.template
-# We need to use \'$'\n in the sed expression below to get a newline in the replacement string for OS X sed: see <https://cafenate.wordpress.com/2010/12/05/newlines-in-sed-on-mac/>. Ugh.
-	sed -e 's,$$PWD,$(PWD),g' -e 's,$$LOADBIN,loadbin $(PWD)/$(APP) 0x14000\'$$'\nloadbin $(PWD)/$(BOOTLOADER) 0x36000,' < $< > $@
-
 jl: all jl.jlink
 	$(JLINK_COMMANDS)
 
 # jlink invocation
+
+%.jlink: %.jlink.in
+	$(info [JLINK_SCRIPT] $@)
+	sed -e 's,$$PWD,$(PWD),g' < $< > $@
 
 JLINK_COMMANDS = \
 	$(info [JPROG] $@.jlink) \
@@ -176,9 +176,6 @@ app.elf: $(APP_OBJS)
 prog: app SoftDevice prog.jlink
 	$(JLINK_COMMANDS)
 
-prog.jlink: jlink.template
-	@sed -e 's,$$PWD,$(PWD),g' -e 's,$$LOADBIN,loadbin $(PWD)/$(APP) 0x14000,' < $< > $@
-
 # building and debugging the bootloader
 
 .PHONY: bl blprog
@@ -190,10 +187,6 @@ bootloader.elf: $(BOOTLOADER_OBJS)
 
 blprog: bl SoftDevice blprog.jlink
 	$(JLINK_COMMANDS)
-
-
-blprog.jlink: jlink.template
-	sed -e 's,$$PWD,$(PWD),g' -e 's,$$LOADBIN,loadbin $(PWD)/$(BOOTLOADER) 0x36000,' < $< > $@
 
 # SoftDevice
 
@@ -227,7 +220,7 @@ SoftDevice/softdevice_uicr.bin: $(SOFTDEV_SRC)
 	@$(OBJCOPY)  -O binary $< $@
 #-j .text -j .data
 
-ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) prog.jlink blprog.jlink
+ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink
 
 .PHONY: clean
 clean:
