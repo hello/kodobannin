@@ -1,5 +1,8 @@
+#include <app_error.h>
+#include <device_params.h>
 #include <pwm.h>
 #include <nrf.h>
+#include <nrf_delay.h>
 #include <nrf_gpiote.h>
 #include <nrf_gpio.h>
 

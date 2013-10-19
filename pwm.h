@@ -36,5 +36,5 @@ typedef enum {
 uint32_t pwm_init(uint32_t num_channels, uint32_t *gpios, PWM_Mode mode);
 uint32_t pwm_set_value(uint32_t channel, uint32_t value);
 
-//test func
+// Test func
 void pwm_test();
