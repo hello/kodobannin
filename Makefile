@@ -48,6 +48,7 @@ APP_SRCS = \
 	mpu-6500.c \
 	pwm.c \
 	spi.c \
+	peak_detect.c \
 	main.c \
 
 BOOTLOADER_SRCS = \
