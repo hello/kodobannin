@@ -10,3 +10,4 @@ jl.jlink
 app.bin
 blprog.jlink
 prog.jlink
+peak_detect_test
