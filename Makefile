@@ -55,6 +55,7 @@ BOOTLOADER_SRCS = \
 	./bootloader_startup_nrf51.s \
 	$(wildcard hello_bootloader/*.c) \
 	hello_bootloader/ble/ble_services/ble_dfu.c \
+	nRF51_SDK/nrf51822/Source/app_common/app_button.c \
 
 INCS =  ./ \
 	./ble \
