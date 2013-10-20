@@ -12,10 +12,14 @@
 #include <ble_flash.h>
 #include <ble_stack_handler.h>
 #include <string.h>
+#include <app_button.h>
+#include <ble_eval_board_pins.h>
+#include <app_gpiote.h>
 
 #include "hello_dfu.h"
 
 #define APP_GPIOTE_MAX_USERS            2
+#define BUTTON_DETECTION_DELAY APP_TIMER_TICKS(50u, APP_TIMER_PRESCALER)
 
 static void
 sha1_fw_area(uint8_t *hash)
@@ -83,14 +87,30 @@ bool dfu_success = false;
 void
 _start()
 {
+	static app_button_cfg_t buttons[] = {
+		{EVAL_BOARD_BUTTON_0, false, NRF_GPIO_PIN_PULLUP, NULL},
+	};
+
 	uint32_t err_code;
     volatile uint8_t* proposed_fw_sha1 = (uint8_t*)BOOTLOADER_SETTINGS_ADDRESS;
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+	APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS); // Required for buttons support.
+	APP_BUTTON_INIT(buttons, sizeof(buttons)/sizeof(buttons[0]), BUTTON_DETECTION_DELAY, true);
 
-	const bool firmware_verified = verify_fw_sha1((uint8_t*)proposed_fw_sha1);
-    if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
+	err_code = app_button_enable();
+	APP_ERROR_CHECK(err_code);
+
+	bool forceDFUButtonPushed = false;
+	err_code = app_button_is_pushed(EVAL_BOARD_BUTTON_0, &forceDFUButtonPushed);
+	APP_ERROR_CHECK(err_code);
+
+	const bool firmwareVerified = verify_fw_sha1((uint8_t*)proposed_fw_sha1);
+    if(forceDFUButtonPushed || (NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmwareVerified) {
+		nrf_gpio_cfg_output(EVAL_BOARD_LED_0);
+		nrf_gpio_pin_set(EVAL_BOARD_LED_0);
+
 		err_code = bootloader_dfu_start();
 		APP_ERROR_CHECK(err_code);
 	    
