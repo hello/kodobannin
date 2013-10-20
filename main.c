@@ -174,12 +174,16 @@ _start()
     //adc_test();
 
     // setup timer system
-    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
-    APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
-
+    //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
+    //APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+/*
     err_code = app_timer_create(&imu_sampler, APP_TIMER_MODE_REPEATED, &sample_imu);
     APP_ERROR_CHECK(err_code);
-
+*/
+    hrs_calibrate();
+    while(1) {
+        __WFE();
+    }
     // init ble
 	ble_init();
 
