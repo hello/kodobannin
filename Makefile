@@ -223,11 +223,21 @@ SoftDevice/softdevice_uicr.bin: $(SOFTDEV_SRC)
 	@$(OBJCOPY)  -O binary $< $@
 #-j .text -j .data
 
-ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink
+ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink peak_detect_test
 
 .PHONY: clean
 clean:
 	@-rm -f $(ALL_PRODUCTS)
+
+# peak_detect_test
+peak_detect_test:
+	gcc -Wall -c -DHEART_RATE_DEBUG peak_detect.c
+	g++ -Wall -c peak_detect_test.cpp
+	g++ -o peak_detect_test peak_detect.o peak_detect_test.o
+
+.PHONY: pdt
+pdt: peak_detect_test
+	cat ../research/ecg_100_noise.csv | ./peak_detect_test 100 1.5
 
 # dependency info
 -include $(ALL_DEPS)
