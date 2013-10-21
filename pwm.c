@@ -139,7 +139,7 @@ pwm_init(uint32_t num_channels, uint32_t *gpios, PWM_Mode mode) {
     }
 
     //NVIC_SetPriority(PWM_IRQn, 3);
-    err = sd_nvic_SetPriority(PWM_IRQn, 3);
+    err = sd_nvic_SetPriority(PWM_IRQn, 1);
     APP_ERROR_CHECK(err);
     err = sd_nvic_EnableIRQ(PWM_IRQn);
     APP_ERROR_CHECK(err);
