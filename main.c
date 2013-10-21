@@ -117,6 +117,13 @@ mode_write_handler(ble_gatts_evt_write_t *event) {
     };
 }
 
+void hrs_send_data(const uint8_t *data, const uint16_t len) {
+    uint32_t err;
+
+    err = ble_hello_demo_data_send_blocking(data, len);
+    APP_ERROR_CHECK(err);
+}
+
 void
 data_write_handler(ble_gatts_evt_write_t *event) {
     PRINTS("data_write_handler called\n");
@@ -124,6 +131,7 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 
 #define TEST_START_HRS  0x33
 #define TEST_HRS_DONE   0x34
+#define TEST_CAL_HRS    0x35
 #define TEST_SEND_DATA  0x44
 #define TEST_STATE_IDLE 0x66
 #define TEST_ENTER_DFU  0x99
@@ -143,6 +151,17 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             DEBUG("Starting HRS job: ", test_size);
             
             hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4]);
+            _state = TEST_HRS_DONE;
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+            break;
+
+        case TEST_CAL_HRS:
+            PRINT_HEX(event->data, 6);
+            test_size = *(uint16_t *)&event->data[4];
+            DEBUG("Starting HRS cal: ", test_size);
+
+            hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &hrs_send_data);
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
