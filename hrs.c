@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <util.h>
+#include <nrf_soc.h>
 
 typedef void(*hrs_adc_callback)(uint8_t);
 
@@ -22,6 +23,7 @@ static uint16_t buckets[NUM_BUCKETS];
 static uint32_t measure_count = 0;
 static uint32_t measure_limit = 0;
 static uint32_t ppi_chan = 0;
+static uint32_t conf_done = 2;
 
 #define HRS_TIMER               NRF_TIMER1
 #define HRS_IRQHandler          TIMER1_IRQHandler
@@ -32,7 +34,7 @@ void HRS_IRQHandler() {
     HRS_TIMER->EVENTS_COMPARE[0] = 0;
     HRS_TIMER->INTENCLR = 0xFFFFFFFF;
     HRS_TIMER->SHORTS = TIMER_SHORTS_COMPARE0_CLEAR_Msk;
-    PWM_TIMER->CC[0] = 2500;
+    HRS_TIMER->CC[0] = 2500;
     HRS_TIMER->TASKS_START = 1;
 }
 
@@ -58,8 +60,10 @@ hrs_adc_conf() {
     HRS_TIMER->EVENTS_COMPARE[2] = 0;
     HRS_TIMER->EVENTS_COMPARE[3] = 0;
     HRS_TIMER->CC[0] = 2500; // sample rate = 100Hz; 16MHz / 2^6 = 250kHz / 100Hz = 2500
-    NVIC_SetPriority(HRS_IRQn, 3);
-    NVIC_EnableIRQ(HRS_IRQn);
+    sd_nvic_SetPriority(HRS_IRQn, 3);
+    //NVIC_SetPriority(HRS_IRQn, 3);
+    //NVIC_EnableIRQ(HRS_IRQn);
+    sd_nvic_EnableIRQ(HRS_IRQn);
     HRS_TIMER->TASKS_START = 1;
 
     ppi_chan = ppi_enable_first_available_channel(&HRS_TIMER->EVENTS_COMPARE[0], &NRF_ADC->TASKS_START);
@@ -70,9 +74,10 @@ hrs_adc_conf() {
 static void
 hrs_adc_start() {
     // Enable the ADC interrupt, and set the priority to 1
-    NVIC_SetPriority(ADC_IRQn, 1);
-    NVIC_EnableIRQ(ADC_IRQn);   
-
+    //NVIC_SetPriority(ADC_IRQn, 1);
+    //NVIC_EnableIRQ(ADC_IRQn);   
+    sd_nvic_SetPriority(ADC_IRQn, 1);
+    sd_nvic_EnableIRQ(ADC_IRQn);
     NRF_ADC->ENABLE = 1;
 
     // Start the ADC
@@ -82,7 +87,8 @@ hrs_adc_start() {
 static void
 hrs_adc_stop() {
     NRF_ADC->TASKS_STOP = 1;
-    NVIC_DisableIRQ(ADC_IRQn);
+    sd_nvic_DisableIRQ(ADC_IRQn);
+    //NVIC_DisableIRQ(ADC_IRQn);
     NRF_ADC->ENABLE = 0;
 }
 
@@ -104,7 +110,8 @@ hrs_debug_cb(uint8_t val) {
 
 void
 hrs_calibration_cb(uint8_t val) {
-    //if (val != 0) DEBUG(" ", val);
+    //if (val != 0) 
+    //DEBUG("", val);
     
     if (val < BUCKET_LVL)
         ++buckets[0];
@@ -146,6 +153,80 @@ hrs_calibration_cb(uint8_t val) {
     }*/
 }
 
+static uint8_t buffer[500];
+static uint16_t buf_lvl;
+
+uint8_t *
+get_hrs_buffer() {
+    return buffer;
+}
+
+void
+hrs_test_cb(uint8_t val) {
+    if (measure_count < measure_limit)
+        buffer[buf_lvl++] = val;
+}
+
+void
+hrs_run_test( uint8_t power_lvl, uint16_t delay, uint16_t samples) {
+    uint32_t err_code;
+    uint32_t i;
+    uint32_t gpios[] = {
+        GPIO_HRS_PWM_G
+    };
+
+    APP_ERROR_CHECK(samples > sizeof(buffer));
+
+    buf_lvl = 0;
+
+    adc_callback = &hrs_test_cb;
+
+    // enable the HRS sensor
+    if (conf_done == 2) {
+        PRINTS("HRS_RUN INIT");
+        hrs_sensor_enable();
+        
+        // drive PWM at 20kHz and range is 0-100 for intensity
+        err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
+        APP_ERROR_CHECK(err_code);
+
+        // configure ADC
+        hrs_adc_conf();
+        hrs_adc_start();
+        conf_done = 1;
+    } else
+        PRINTS("skipping hrs init");
+
+    DEBUG("samples ", samples);
+    DEBUG("power ", power_lvl);
+    DEBUG("ppi ", ppi_chan);
+    err_code = pwm_set_value(PWM_1_Channel, (uint32_t)power_lvl);
+    APP_ERROR_CHECK(err_code);
+
+    measure_count = 0;
+    measure_limit = samples;
+    
+    nrf_delay_ms(delay);
+
+    // enable PPI
+    err_code = sd_ppi_channel_enable_set(1<<ppi_chan);
+    APP_ERROR_CHECK(err_code);
+    //NRF_PPI->CHENSET = (1 << ppi_chan);
+
+    // wait for completion
+    while (measure_count < measure_limit) {
+        __WFE();
+    }
+
+    // disable PPI
+    err_code = sd_ppi_channel_enable_clr(1<<ppi_chan);
+    APP_ERROR_CHECK(err_code);
+    //NRF_PPI->CHENCLR = (1 << ppi_chan);
+    pwm_set_value(PWM_1_Channel, 0);
+}
+
+
+#define MDELAY  4000
 uint32_t
 hrs_calibrate() {
     uint32_t err_code;
@@ -175,9 +256,10 @@ hrs_calibrate() {
 
     uint32_t best_fit = 0;
     uint8_t minima = 100;
-    for (i=0; i <= 20; i+=1) {
+    /*
+    for (i=0; i <= 14; i+=1) {
         measure_count = 0;
-        measure_limit = 100; // whatever sampling rate we're using * 1.5
+        measure_limit = 200; // whatever sampling rate we're using * 1.5
 
         err_code = pwm_set_value(PWM_1_Channel, i);
         APP_ERROR_CHECK(err_code);
@@ -185,7 +267,7 @@ hrs_calibrate() {
 
         // wait for sensor to stabilize from the light change
         // TODO: watch for zero
-        nrf_delay_ms(500);
+        nrf_delay_ms(MDELAY);
 
         // start samples
         //hrs_adc_start();
@@ -217,13 +299,14 @@ hrs_calibrate() {
     }
     DEBUG("Best fit: ", best_fit);
     DEBUG("Minima: ", minima);
+    /*
     uint32_t temp = best_fit;
     best_fit = 0;
     minima = 100;
     
     for (i=temp-1; i < temp+2; i++) {
         measure_count = 0;
-        measure_limit = 100; // whatever sampling rate we're using * 1.5
+        measure_limit = 200; // whatever sampling rate we're using * 1.5
 
         err_code = pwm_set_value(PWM_1_Channel, i);
         APP_ERROR_CHECK(err_code);
@@ -231,7 +314,7 @@ hrs_calibrate() {
 
         // wait for sensor to stabilize from the light change
         // TODO: watch for zero
-        nrf_delay_ms(500);
+        nrf_delay_ms(MDELAY);
 
         // start samples
         //hrs_adc_start();
@@ -262,12 +345,32 @@ hrs_calibrate() {
         DEBUG("cal diverged from ", temp);
         DEBUG("to ", best_fit);
     }
+*/
+    err_code = pwm_set_value(PWM_1_Channel, 9);
+    APP_ERROR_CHECK(err_code);
+    adc_callback = &hrs_debug_cb;
+    measure_count = 0;
+    measure_limit = 500;
+    nrf_delay_ms(MDELAY);
+
+    //for (i=0; i < 200; i++) {
+        // enable PPI
+        NRF_PPI->CHENSET = (1 << ppi_chan);
+
+        // wait for completion
+        while (measure_count < measure_limit) {
+            __WFE();
+        }
+
+        // disable PPI
+        NRF_PPI->CHENCLR = (1 << ppi_chan);
 
     err_code = pwm_set_value(PWM_1_Channel, 0xa);
     APP_ERROR_CHECK(err_code);
     adc_callback = &hrs_debug_cb;
     measure_count = 0;
-    nrf_delay_ms(500);
+    measure_limit = 500;
+    nrf_delay_ms(MDELAY);
 
     //for (i=0; i < 200; i++) {
         // enable PPI
