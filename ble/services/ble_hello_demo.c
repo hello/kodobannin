@@ -23,6 +23,7 @@ static ble_hello_demo_write_handler    mode_write_handler;
 static ble_hello_demo_write_handler    cmd_write_handler;
 static ble_hello_demo_connect_handler  conn_handler;
 static ble_hello_demo_connect_handler  disconn_handler;
+static volatile uint32_t buffers_available = 0;
 
 uint16_t ble_hello_demo_get_handle() {
     return sys_cmd_handles.value_handle;
@@ -73,11 +74,68 @@ ble_hello_demo_on_ble_evt(ble_evt_t *event)
         case BLE_GATTS_EVT_WRITE:
             dispatch_write(event);
             break;
-            
+
+        case BLE_EVT_TX_COMPLETE:
+            buffers_available = 1;
+            break;
+
         default:
             DEBUG("Hello Demo event unhandled: 0x", event->header.evt_id);
             break;
     };
+}
+
+uint32_t
+ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
+    uint32_t err;
+    int32_t hvx_len;
+    uint16_t pkt_len;
+    ble_gatts_hvx_params_t hvx_params;
+    uint8_t *ptr;
+
+    //todo: return verbose errors instead of 0
+    if (conn_handle == BLE_CONN_HANDLE_INVALID)
+        return 0;
+
+    hvx_len = len;
+    ptr = (uint8_t *)data;
+
+    memset(&hvx_params, 0, sizeof(hvx_params));
+    
+    hvx_params.handle   = sys_data_handles.value_handle;
+    hvx_params.type     = BLE_GATT_HVX_NOTIFICATION;
+    hvx_params.offset   = 0;
+
+    // send all the data
+    while (hvx_len > 0) {
+        
+        // cap packet size at 20
+        if (hvx_len >= 20)
+            pkt_len = 20;
+        else
+            pkt_len = hvx_len;
+
+        // configure data to send
+        hvx_params.p_len  = &pkt_len;
+        hvx_params.p_data = ptr;
+
+        // send notification with data
+        err = sd_ble_gatts_hvx(conn_handle, &hvx_params);
+        if (err == NRF_SUCCESS) {
+            hvx_len -= pkt_len;
+            ptr += pkt_len;
+        } else if (err == BLE_ERROR_NO_TX_BUFFERS) {
+            buffers_available = 0;
+            // wait for BLE_EVT_TX_COMPLETE before continuing
+            while (!buffers_available) {
+                __WFE();
+            }
+        } else {
+            return err;
+        }
+    }
+
+    return NRF_SUCCESS;
 }
 
 uint16_t
@@ -309,7 +367,9 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
     uint32_t   err_code;
     ble_uuid_t ble_uuid;
     const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
-    uint8_t zeroes[20] = {0xAC};
+    uint8_t zeroes[20];
+
+    memset(zeroes, 0xAC, sizeof(zeroes));
 
     // Init defaults
     conn_handle = BLE_CONN_HANDLE_INVALID;
@@ -368,7 +428,7 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
     err_code = char_add2(BLE_UUID_CMD_CHAR,
                         0,
                         zeroes,
-                        6,
+                        7,
                         &sys_cmd_handles);
     if (err_code != NRF_SUCCESS)
         return err_code;

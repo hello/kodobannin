@@ -53,5 +53,6 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t * p_init);
 
 void ble_hello_demo_on_ble_evt(ble_evt_t *event);
 uint16_t ble_hello_demo_data_send(const uint8_t * data, const uint16_t data_len);
+uint32_t ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len);
 
 uint16_t ble_hello_demo_get_handle();
