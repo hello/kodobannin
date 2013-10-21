@@ -169,7 +169,23 @@ hrs_test_cb(uint8_t val) {
 }
 
 void
-hrs_run_test( uint8_t power_lvl, uint16_t delay, uint16_t samples) {
+hrs_calibrate(uint8_t power_lvl_min, uint8_t power_lvl_max, uint16_t delay, uint16_t samples, hrs_send_data_cb data_send) {
+    uint32_t i;
+
+    APP_ERROR_CHECK(data_send !=NULL);
+  
+    DEBUG("pwr min ", power_lvl_min);
+    DEBUG("pwr max ", power_lvl_max);
+    DEBUG("samples ", samples);
+
+    for(i = power_lvl_min; i <= power_lvl_max; i++) {
+        hrs_run_test(i, delay, samples);
+        data_send(buffer, samples);
+    }
+}
+
+void
+hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples) {
     uint32_t err_code;
     uint32_t i;
     uint32_t gpios[] = {
@@ -183,9 +199,11 @@ hrs_run_test( uint8_t power_lvl, uint16_t delay, uint16_t samples) {
     adc_callback = &hrs_test_cb;
 
     // enable the HRS sensor
+    hrs_sensor_enable();
+
     if (conf_done == 2) {
+        // one-time init
         PRINTS("HRS_RUN INIT");
-        hrs_sensor_enable();
         
         // drive PWM at 20kHz and range is 0-100 for intensity
         err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
@@ -195,40 +213,42 @@ hrs_run_test( uint8_t power_lvl, uint16_t delay, uint16_t samples) {
         hrs_adc_conf();
         hrs_adc_start();
         conf_done = 1;
-    } else
-        PRINTS("skipping hrs init");
+    }
 
-    DEBUG("samples ", samples);
-    DEBUG("power ", power_lvl);
-    DEBUG("ppi ", ppi_chan);
+    DEBUG("HRS power ", power_lvl);
+
+    // turn on LED at specified brightness
     err_code = pwm_set_value(PWM_1_Channel, (uint32_t)power_lvl);
     APP_ERROR_CHECK(err_code);
 
+    // setup counters for limiting
     measure_count = 0;
     measure_limit = samples;
     
+    // wait for sensor output to settle
     nrf_delay_ms(delay);
 
     // enable PPI
     err_code = sd_ppi_channel_enable_set(1<<ppi_chan);
     APP_ERROR_CHECK(err_code);
-    //NRF_PPI->CHENSET = (1 << ppi_chan);
 
-    // wait for completion
+    // read samples and wait for completion
     while (measure_count < measure_limit) {
         __WFE();
-	watchdog_pet();
+    	watchdog_pet();
     }
 
     // disable PPI
     err_code = sd_ppi_channel_enable_clr(1<<ppi_chan);
     APP_ERROR_CHECK(err_code);
-    //NRF_PPI->CHENCLR = (1 << ppi_chan);
+
+    // turn off LED
     pwm_set_value(PWM_1_Channel, 0);
 }
 
 
 #define MDELAY  4000
+/*
 uint32_t
 hrs_calibrate() {
     uint32_t err_code;
@@ -258,7 +278,7 @@ hrs_calibrate() {
 
     uint32_t best_fit = 0;
     uint8_t minima = 100;
-    /*
+#if 0
     for (i=0; i <= 14; i+=1) {
         measure_count = 0;
         measure_limit = 200; // whatever sampling rate we're using * 1.5
@@ -301,7 +321,7 @@ hrs_calibrate() {
     }
     DEBUG("Best fit: ", best_fit);
     DEBUG("Minima: ", minima);
-    /*
+
     uint32_t temp = best_fit;
     best_fit = 0;
     minima = 100;
@@ -347,7 +367,7 @@ hrs_calibrate() {
         DEBUG("cal diverged from ", temp);
         DEBUG("to ", best_fit);
     }
-*/
+#endif
     err_code = pwm_set_value(PWM_1_Channel, 9);
     APP_ERROR_CHECK(err_code);
     adc_callback = &hrs_debug_cb;
@@ -388,7 +408,7 @@ hrs_calibrate() {
 
     //}
     pwm_set_value(PWM_1_Channel, 0);
-}
+}*/
 
 static void
 hrs_test_callback(uint8_t val) {
