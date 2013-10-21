@@ -9,6 +9,7 @@
 #include <string.h>
 #include <util.h>
 #include <nrf_soc.h>
+#include <watchdog.h>
 
 typedef void(*hrs_adc_callback)(uint8_t);
 
@@ -216,6 +217,7 @@ hrs_run_test( uint8_t power_lvl, uint16_t delay, uint16_t samples) {
     // wait for completion
     while (measure_count < measure_limit) {
         __WFE();
+	watchdog_pet();
     }
 
     // disable PPI

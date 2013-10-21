@@ -19,6 +19,8 @@
 #include <ble_hello_demo.h>
 #include <pwm.h>
 #include <hrs.h>
+#include <watchdog.h>
+
 static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
 
@@ -225,7 +227,7 @@ void
 _start()
 {
 	uint32_t err_code;
-
+	watchdog_init(10, 1);
     //_state = Demo_Config_Standby;
     _state = TEST_STATE_IDLE;
 
@@ -272,6 +274,7 @@ _start()
 */
     // loop on BLE events FOREVER
     while(1) {
+	watchdog_pet();
         // Switch to a low power state until an event is available for the application
         err_code = sd_app_event_wait();
         APP_ERROR_CHECK(err_code);
