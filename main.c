@@ -19,7 +19,7 @@
 #include <ble_hello_demo.h>
 #include <pwm.h>
 #include <hrs.h>
-
+static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
 
 static app_timer_id_t imu_sampler;
@@ -84,7 +84,8 @@ mode_write_handler(ble_gatts_evt_write_t *event) {
         case Demo_Config_Enter_DFU:
             PRINTS("Rebooting into DFU");
             // set the trap bit for the bootloader and kick the system
-            NRF_POWER->GPREGRET |= 0x1;
+            //NRF_POWER->GPREGRET |= 0x1;
+            sd_power_gpregret_set(1);
             NVIC_SystemReset();
             break;
 
@@ -100,9 +101,70 @@ data_write_handler(ble_gatts_evt_write_t *event) {
     PRINTS("data_write_handler called\n");
 }
 
+#define TEST_START_HRS  0x33
+#define TEST_HRS_DONE   0x34
+#define TEST_SEND_DATA  0x44
+#define TEST_STATE_IDLE 0x66
+#define TEST_ENTER_DFU  0x99
+
+
+
 void
 cmd_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("data_write_handler called\n");
+    PRINTS("cmd_write_handler called\n");
+    uint8_t  state = event->data[0];
+    uint16_t len = 1;
+    uint32_t i;
+    uint32_t err;
+
+    switch (state) {
+        case TEST_START_HRS:
+            PRINT_HEX(event->data, 6);
+            test_size = *(uint16_t *)&event->data[4];
+            DEBUG("Starting HRS job: ", test_size);
+            
+            hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4]);
+            _state = TEST_HRS_DONE;
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+            break;
+
+        case TEST_ENTER_DFU:
+            PRINTS("Rebooting into DFU");
+            // set the trap bit for the bootloader and kick the system
+            //NRF_POWER->GPREGRET |= 0x1;
+            sd_power_gpregret_set(1);
+            NVIC_SystemReset();
+            break;
+
+        case TEST_SEND_DATA:
+            DEBUG("Sending HRS data: ", test_size);
+            uint8_t *data = get_hrs_buffer();
+            uint32_t read = 20;
+            uint32_t sent;
+            uint32_t h;
+
+            for (i=0;i<test_size;i+=20) {
+                h = &data[i];
+                DEBUG("sending from ", h);
+                sent = ble_hello_demo_data_send(&data[i], read);
+                if (read != sent) {
+                    DEBUG("Short send of 0x", sent);
+                    if (sent == 0) {
+                        i-=20;
+                        nrf_delay_ms(3);
+                    }
+                } else
+                    DEBUG("send packet for ", i);
+            }
+            _state = TEST_STATE_IDLE;
+            err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+            break;
+
+        default:
+            DEBUG("Unhandled state: ", state);
+    }
 }
 
 void
@@ -164,7 +226,8 @@ _start()
 {
 	uint32_t err_code;
 
-    _state = Demo_Config_Standby;
+    //_state = Demo_Config_Standby;
+    _state = TEST_STATE_IDLE;
 
     //pwm_test();
 
@@ -179,12 +242,12 @@ _start()
 /*
     err_code = app_timer_create(&imu_sampler, APP_TIMER_MODE_REPEATED, &sample_imu);
     APP_ERROR_CHECK(err_code);
-*/
+
     hrs_calibrate();
     while(1) {
         __WFE();
     }
-    // init ble
+*/    // init ble
 	ble_init();
 
     // init demo app ble service
@@ -192,8 +255,9 @@ _start()
 
     // start advertising
 	ble_advertising_start();
-
+    //pwm_test();
     // init imu SPI channel and interface
+    /*
     err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
 
@@ -205,7 +269,7 @@ _start()
     // start imu sampler - now done on BLE connect
     //err_code = app_timer_start(imu_sampler, 200, NULL);
     //APP_ERROR_CHECK(err_code);
-
+*/
     // loop on BLE events FOREVER
     while(1) {
         // Switch to a low power state until an event is available for the application
