@@ -24,6 +24,10 @@ static ble_hello_demo_write_handler    cmd_write_handler;
 static ble_hello_demo_connect_handler  conn_handler;
 static ble_hello_demo_connect_handler  disconn_handler;
 
+uint16_t ble_hello_demo_get_handle() {
+    return sys_cmd_handles.value_handle;
+}
+
 static void
 default_write_handler(ble_gatts_evt_write_t *event) {
     DEBUG("Default write handler called for 0x", event->handle);
@@ -364,7 +368,7 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
     err_code = char_add2(BLE_UUID_CMD_CHAR,
                         0,
                         zeroes,
-                        4,
+                        6,
                         &sys_cmd_handles);
     if (err_code != NRF_SUCCESS)
         return err_code;
