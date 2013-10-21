@@ -22,6 +22,7 @@ typedef enum {
 	Demo_Config_Sampling,
 	Demo_Config_Calibrating,
 	Demo_Config_Enter_DFU,
+	Demo_Config_ID_Band,
 } Demo_Config;
 
 /**@brief Hello Demo init structure. This contains all possible characteristics 

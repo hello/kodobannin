@@ -86,9 +86,28 @@ mode_write_handler(ble_gatts_evt_write_t *event) {
         case Demo_Config_Enter_DFU:
             PRINTS("Rebooting into DFU");
             // set the trap bit for the bootloader and kick the system
-            //NRF_POWER->GPREGRET |= 0x1;
             sd_power_gpregret_set(1);
             NVIC_SystemReset();
+            break;
+
+        case Demo_Config_ID_Band:
+            PRINTS("ID'ing Band with Vibe");
+            nrf_gpio_cfg_output(GPIO_3v3_Enable);
+            nrf_gpio_pin_set(GPIO_3v3_Enable);
+            nrf_gpio_cfg_output(GPIO_VIBE_PWM);
+
+            for (len = 0; len < 3; len++) {
+                nrf_gpio_pin_set  (GPIO_VIBE_PWM);
+                nrf_delay_ms(100);
+                nrf_gpio_pin_clear(GPIO_VIBE_PWM);
+                nrf_delay_ms(390);
+            }
+            // have to make sure that eveeryone turns this back on when they need it.
+            nrf_gpio_pin_clear(GPIO_3v3_Enable);
+
+            // don't let the BLE advertised state sit in this state
+            err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
+            APP_ERROR_CHECK(err);
             break;
 
         default:
@@ -108,8 +127,6 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 #define TEST_SEND_DATA  0x44
 #define TEST_STATE_IDLE 0x66
 #define TEST_ENTER_DFU  0x99
-
-
 
 void
 cmd_write_handler(ble_gatts_evt_write_t *event) {
@@ -144,7 +161,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             uint8_t *data = get_hrs_buffer();
             uint32_t read = 20;
             uint32_t sent;
-            uint32_t h;
+            uintptr_t h;
 
             for (i=0;i<test_size;i+=20) {
                 h = &data[i];
