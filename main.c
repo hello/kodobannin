@@ -132,6 +132,7 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 #define TEST_START_HRS  0x33
 #define TEST_HRS_DONE   0x34
 #define TEST_CAL_HRS    0x35
+#define TEST_START_IMU  0x55
 #define TEST_SEND_DATA  0x44
 #define TEST_STATE_IDLE 0x66
 #define TEST_ENTER_DFU  0x99
@@ -142,6 +143,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
+    uint8_t *buf;
 
     switch (state) {
         case TEST_START_HRS:
@@ -166,6 +168,16 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
             break;
+
+        case TEST_START_IMU:
+                //steal the HRS buffer
+                buf = get_hrs_buffer();
+                imu_reset_fifo();
+                err = imu_fifo_read(480, buf);
+                for (len = 0; len < (480/12); len++) {
+                    err = ble_hello_demo_data_send_blocking(&buf[len*12], 12);
+                }
+                break;
 
         case TEST_ENTER_DFU:
             PRINTS("Rebooting into DFU");
@@ -260,7 +272,28 @@ _start()
 
     // setup debug UART
     simple_uart_config(0, 5, 0, 8, false);
+    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err_code);
 
+    //imu_selftest(SPI_Channel_0);
+/* 
+    // IMU standalone test code
+
+    err_code = imu_init(SPI_Channel_0);
+    APP_ERROR_CHECK(err_code);
+
+    uint8_t sample[20];
+    uint32_t read, sent;
+
+    while(1) {
+        read = imu_fifo_read(12, &sample[1]);
+        if (read > 0) {
+            PRINT_HEX(&sample[1], 12);
+            PRINTS("\r\n");
+        }
+        nrf_delay_ms(5);
+    }
+*/
     //adc_test();
 
     // setup timer system
@@ -274,7 +307,8 @@ _start()
     while(1) {
         __WFE();
     }
-*/    // init ble
+*/
+    // init ble
 	ble_init();
 
     // init demo app ble service
@@ -282,9 +316,9 @@ _start()
 
     // start advertising
 	ble_advertising_start();
-    //pwm_test();
+
     // init imu SPI channel and interface
-    /*
+    
     err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
 
@@ -296,10 +330,10 @@ _start()
     // start imu sampler - now done on BLE connect
     //err_code = app_timer_start(imu_sampler, 200, NULL);
     //APP_ERROR_CHECK(err_code);
-*/
+
     // loop on BLE events FOREVER
     while(1) {
-	watchdog_pet();
+    	watchdog_pet();
         // Switch to a low power state until an event is available for the application
         err_code = sd_app_event_wait();
         APP_ERROR_CHECK(err_code);
