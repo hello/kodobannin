@@ -174,9 +174,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
                 buf = get_hrs_buffer();
                 imu_reset_fifo();
                 err = imu_fifo_read(480, buf);
-                for (len = 0; len < (480/12); len++) {
-                    err = ble_hello_demo_data_send_blocking(&buf[len*12], 12);
-                }
+                ble_hello_demo_data_send_blocking(buf, err);
                 break;
 
         case TEST_ENTER_DFU:

@@ -53,7 +53,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 	if (count == 0)
 		return 0;
 	
-	return spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), 12, buf);
+	return spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
 }
 
 void
@@ -116,7 +116,7 @@ imu_init(enum SPI_Channel channel) {
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
 
-		// Check for valid Chip ID
+	// Check for valid Chip ID
 	simple_uart_putstring((const uint8_t *)"MPU-6500 Chip ID\n");
 
 	buf[0] = SPI_Read(MPU_REG_WHO_AM_I);
