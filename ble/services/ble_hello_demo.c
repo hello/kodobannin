@@ -25,6 +25,11 @@ static ble_hello_demo_connect_handler  conn_handler;
 static ble_hello_demo_connect_handler  disconn_handler;
 static volatile uint32_t buffers_available = 0;
 
+typedef uint32_t (*notify_data_send_cb)(const uint8_t *data, const uint16_t len);
+static notify_data_send_cb data_cb = NULL;
+static uint8_t *data_cb_data;
+static uint16_t data_cb_len;
+
 uint16_t ble_hello_demo_get_handle() {
     return sys_cmd_handles.value_handle;
 }
@@ -76,7 +81,14 @@ ble_hello_demo_on_ble_evt(ble_evt_t *event)
             break;
 
         case BLE_EVT_TX_COMPLETE:
-            buffers_available = 1;
+            PRINTS("BUF AVAIL\n");
+            if (data_cb) {
+                notify_data_send_cb cb = data_cb;
+                data_cb = NULL;
+                cb(data_cb_data, data_cb_len);
+
+            }
+
             break;
 
         default:
@@ -92,6 +104,8 @@ ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
     uint16_t pkt_len;
     ble_gatts_hvx_params_t hvx_params;
     uint8_t *ptr;
+
+    data_cb = NULL;
 
     //todo: return verbose errors instead of 0
     if (conn_handle == BLE_CONN_HANDLE_INVALID)
@@ -124,12 +138,16 @@ ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
         if (err == NRF_SUCCESS) {
             hvx_len -= pkt_len;
             ptr += pkt_len;
+            DEBUG("SENT PKT ", hvx_len);
         } else if (err == BLE_ERROR_NO_TX_BUFFERS) {
-            buffers_available = 0;
-            // wait for BLE_EVT_TX_COMPLETE before continuing
-            while (!buffers_available) {
-                __WFE();
-            }
+            DEBUG("NEED BUF, ", hvx_len);
+            // so we cant wait here because we're blocking the softdevice from actually sending
+            // right now, we return an in progress indicator, and request that we be called back
+            // with our in-progress data ptr and bytes
+            data_cb = &ble_hello_demo_data_send_blocking;
+            data_cb_data = ptr;
+            data_cb_len = hvx_len;
+            return -1;
         } else {
             return err;
         }
