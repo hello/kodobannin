@@ -141,7 +141,6 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
     PRINTS("cmd_write_handler called\n");
     uint8_t  state = event->data[0];
     uint16_t len = 1;
-    uint32_t i;
     uint32_t err;
 
     switch (state) {
@@ -177,27 +176,16 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 
         case TEST_SEND_DATA:
             DEBUG("Sending HRS data: ", test_size);
-            uint8_t *data = get_hrs_buffer();
-            uint32_t read = 20;
-            uint32_t sent;
-            uintptr_t h;
+            
+            err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
+            // APP_ERROR_CHECK(err);
 
-            for (i=0;i<test_size;i+=20) {
-                h = &data[i];
-                DEBUG("sending from ", h);
-                sent = ble_hello_demo_data_send(&data[i], read);
-                if (read != sent) {
-                    DEBUG("Short send of 0x", sent);
-                    if (sent == 0) {
-                        i-=20;
-                        nrf_delay_ms(3);
-                    }
-                } else
-                    DEBUG("send packet for ", i);
+            // update device state
+            if (err == NRF_SUCCESS) {
+                _state = TEST_STATE_IDLE;
+                err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
+                APP_ERROR_CHECK(err);
             }
-            _state = TEST_STATE_IDLE;
-            err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
-            APP_ERROR_CHECK(err);
             break;
 
         default:
