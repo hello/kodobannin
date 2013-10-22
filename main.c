@@ -149,7 +149,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS job: ", test_size);
             
-            hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4]);
+            hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 0);
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
@@ -160,7 +160,8 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS cal: ", test_size);
 
-            hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &hrs_send_data);
+            hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 1);
+           // hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &hrs_send_data);
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);

@@ -179,13 +179,13 @@ hrs_calibrate(uint8_t power_lvl_min, uint8_t power_lvl_max, uint16_t delay, uint
     DEBUG("samples ", samples);
 
     for(i = power_lvl_min; i <= power_lvl_max; i++) {
-        hrs_run_test(i, delay, samples);
+        hrs_run_test(i, delay, samples, 0);
         data_send(buffer, samples);
     }
 }
 
 void
-hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples) {
+hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_lights_on) {
     uint32_t err_code;
     uint32_t i;
     uint32_t gpios[] = {
@@ -243,7 +243,9 @@ hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples) {
     APP_ERROR_CHECK(err_code);
 
     // turn off LED
-    pwm_set_value(PWM_1_Channel, 0);
+    if (!keep_the_lights_on) {
+        pwm_set_value(PWM_1_Channel, 0);
+    }
 }
 
 
