@@ -154,7 +154,9 @@ hrs_calibration_cb(uint8_t val) {
     }*/
 }
 
-static uint8_t buffer[500];
+#define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
+
+static uint8_t buffer[MAX_SAMPLE_COUNT];
 static uint16_t buf_lvl;
 
 uint8_t *
