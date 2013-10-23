@@ -51,6 +51,7 @@ dispatch_write(ble_evt_t *event) {
     DEBUG("write, handle: 0x", handle);
     DEBUG("data, handle: 0x", sys_data_handles.cccd_handle);
     DEBUG("mode, handle: 0x", sys_mode_handles.value_handle);
+    DEBUG("cmd, handle: 0x", sys_cmd_handles.value_handle);
     if (handle == sys_data_handles.cccd_handle) {
         data_write_handler(write_evt);
     } else if (handle == sys_mode_handles.value_handle) {
