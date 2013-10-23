@@ -198,8 +198,6 @@ hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_
 
     buf_lvl = 0;
 
-    adc_callback = &hrs_test_cb;
-
     // enable the HRS sensor
     hrs_sensor_enable();
 
@@ -234,7 +232,17 @@ hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_
     err_code = sd_ppi_channel_enable_set(1<<ppi_chan);
     APP_ERROR_CHECK(err_code);
 
+    // skip HRS_DISCARD_SAMPLES_COUNT samples by sending them to a null callback
+#define HRS_DISCARD_SAMPLES_COUNT 200
+
+    adc_callback = &null_cb;
+    for(i = 0; i < HRS_DISCARD_SAMPLES_COUNT; i++) {
+	__WFE();
+	watchdog_pet();
+    }
+
     // read samples and wait for completion
+    adc_callback = &hrs_test_cb;
     while (measure_count < measure_limit) {
         __WFE();
     	watchdog_pet();
