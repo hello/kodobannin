@@ -323,7 +323,11 @@ _start()
     //imu_selftest(SPI_Channel_0);
 
     err_code = imu_init(SPI_Channel_0);
-    APP_ERROR_CHECK(err_code);
+    if(err_code == -1) {
+	    // This is probably Andre's development board that has a weird chip ID (0xFF instead of 0x70). Just ignore this for now...
+    } else {
+	    APP_ERROR_CHECK(err_code);
+    }
 
     // start imu sampler - now done on BLE connect
     //err_code = app_timer_start(imu_sampler, 200, NULL);
