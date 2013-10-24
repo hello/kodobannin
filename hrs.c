@@ -39,11 +39,11 @@ void HRS_IRQHandler() {
 }
 
 static void
-hrs_adc_conf() {
+hrs_adc_conf(uint32_t inpsel_mode, uint32_t refsel_mode) {
     // Configure the ADC
     NRF_ADC->CONFIG = ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos | \
-                    ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos | \
-                    ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos | \
+                    inpsel_mode << ADC_CONFIG_INPSEL_Pos | \
+                    refsel_mode << ADC_CONFIG_REFSEL_Pos | \
                     HRS_ADC << ADC_CONFIG_PSEL_Pos;
     NRF_ADC->ENABLE = 1;  
     NRF_ADC->INTENSET = ADC_INTENSET_END_Msk;
@@ -187,13 +187,40 @@ hrs_calibrate(uint8_t power_lvl_min, uint8_t power_lvl_max, uint16_t delay, uint
 
 void
 hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_lights_on) {
+    hrs_parameters_t parameters = {
+	.power_level = power_lvl,
+	.delay = delay,
+	.samples = samples,
+	.discard_samples = 200,
+	.inpsel_mode = ADC_CONFIG_INPSEL_AnalogInputNoPrescaling,
+	.refsel_mode = ADC_CONFIG_REFSEL_VBG,
+	.keep_the_lights_on = keep_the_lights_on,
+    };
+
+    hrs_run_test2(parameters);
+}
+
+void hrs_run_test2(hrs_parameters_t parameters) {
     uint32_t err_code;
     uint32_t i;
     uint32_t gpios[] = {
         GPIO_HRS_PWM_G
     };
 
-    APP_ERROR_CHECK(samples > sizeof(buffer));
+    uint32_t inpsel_mode = parameters.inpsel_mode;
+    APP_ERROR_CHECK(!(inpsel_mode == ADC_CONFIG_INPSEL_AnalogInputNoPrescaling
+		      || inpsel_mode == ADC_CONFIG_INPSEL_AnalogInputTwoThirdsPrescaling
+		      || inpsel_mode == ADC_CONFIG_INPSEL_AnalogInputOneThirdPrescaling
+		      || inpsel_mode == ADC_CONFIG_INPSEL_SupplyTwoThirdsPrescaling
+		      || inpsel_mode == ADC_CONFIG_INPSEL_SupplyOneThirdPrescaling));
+
+    uint32_t refsel_mode = parameters.refsel_mode;
+    APP_ERROR_CHECK(!(refsel_mode == ADC_CONFIG_REFSEL_VBG 
+		      || refsel_mode == ADC_CONFIG_REFSEL_External
+		      || refsel_mode == ADC_CONFIG_REFSEL_SupplyOneHalfPrescaling
+		      || refsel_mode == ADC_CONFIG_REFSEL_SupplyOneThirdPrescaling));
+
+    APP_ERROR_CHECK(parameters.samples > sizeof(buffer));
 
     buf_lvl = 0;
 
@@ -209,33 +236,31 @@ hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_
         APP_ERROR_CHECK(err_code);
 
         // configure ADC
-        hrs_adc_conf();
+        hrs_adc_conf(inpsel_mode, refsel_mode);
         hrs_adc_start();
         conf_done = 1;
     }
 
-    DEBUG("HRS power ", power_lvl);
+    DEBUG("HRS power ", parameters.power_level);
 
     // turn on LED at specified brightness
-    err_code = pwm_set_value(PWM_1_Channel, (uint32_t)power_lvl);
+    err_code = pwm_set_value(PWM_1_Channel, (uint32_t)parameters.power_level);
     APP_ERROR_CHECK(err_code);
 
     // setup counters for limiting
     measure_count = 0;
-    measure_limit = samples;
+    measure_limit = parameters.samples;
     
     // wait for sensor output to settle
-    nrf_delay_ms(delay);
+    nrf_delay_ms(parameters.delay);
 
     // enable PPI
     err_code = sd_ppi_channel_enable_set(1<<ppi_chan);
     APP_ERROR_CHECK(err_code);
 
-    // skip HRS_DISCARD_SAMPLES_COUNT samples by sending them to a null callback
-#define HRS_DISCARD_SAMPLES_COUNT 200
 
     adc_callback = &null_cb;
-    for(i = 0; i < HRS_DISCARD_SAMPLES_COUNT; i++) {
+    for(i = 0; i < parameters.discard_samples; i++) {
 	__WFE();
 	watchdog_pet();
     }
@@ -252,11 +277,10 @@ hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_
     APP_ERROR_CHECK(err_code);
 
     // turn off LED
-    if (!keep_the_lights_on) {
+    if (!parameters.keep_the_lights_on) {
         pwm_set_value(PWM_1_Channel, 0);
     }
 }
-
 
 #define MDELAY  4000
 /*
@@ -493,7 +517,7 @@ void
 adc_test() {
     uint32_t err_code;
 
-    hrs_adc_conf();
+    hrs_adc_conf(ADC_CONFIG_INPSEL_AnalogInputNoPrescaling, ADC_CONFIG_REFSEL_VBG);
     
     hrs_sensor_enable();
 

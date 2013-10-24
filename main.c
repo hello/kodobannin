@@ -132,6 +132,7 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 #define TEST_START_HRS  0x33
 #define TEST_HRS_DONE   0x34
 #define TEST_CAL_HRS    0x35
+#define TEST_START_HRS2 0x36
 #define TEST_START_IMU  0x55
 #define TEST_SEND_DATA  0x44
 #define TEST_STATE_IDLE 0x66
@@ -145,13 +146,36 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
     uint32_t err;
     uint8_t *buf;
 
+    hrs_parameters_t hrs_parameters;
+    memset(&hrs_parameters, 0, sizeof(hrs_parameters));
+
     switch (state) {
         case TEST_START_HRS:
             PRINT_HEX(event->data, 6);
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS job: ", test_size);
-            
+
             hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 0);
+            _state = TEST_HRS_DONE;
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+            break;
+
+    case TEST_START_HRS2:
+            PRINT_HEX(event->data, 10);
+            test_size = *(uint16_t *)&event->data[4];
+            DEBUG("Starting HRS job: ", test_size);
+
+	    hrs_parameters = (hrs_parameters_t) {
+		    .power_level = event->data[1], 
+		    .delay = *(uint16_t *)&event->data[2], 
+		    .samples = *(uint16_t *)&event->data[4], 
+		    .discard_samples = *(uint16_t *)&event->data[6], 
+		    .inpsel_mode = (uint32_t)event->data[8],
+		    .refsel_mode = (uint32_t)event->data[9],
+		    .keep_the_lights_on = (bool)event->data[10],
+	    };
+	    hrs_run_test2(hrs_parameters);
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);

@@ -447,7 +447,7 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
     err_code = char_add2(BLE_UUID_CMD_CHAR,
                         0,
                         zeroes,
-                        7,
+                        11,
                         &sys_cmd_handles);
     if (err_code != NRF_SUCCESS)
         return err_code;
