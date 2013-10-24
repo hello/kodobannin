@@ -14,8 +14,7 @@
 typedef void(*hrs_adc_callback)(uint8_t);
 
 void
-null_cb(uint8_t val) {
-    (val);
+null_cb(uint8_t val __attribute__((unused))) {
 }
 
 static hrs_adc_callback adc_callback = &null_cb;
