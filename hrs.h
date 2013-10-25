@@ -14,6 +14,7 @@ typedef struct {
 	uint16_t delay;
 	uint16_t samples;
 	uint16_t discard_samples;
+	uint8_t discard_threshold;
 	uint32_t inpsel_mode;
 	uint32_t refsel_mode;
 	bool keep_the_lights_on;

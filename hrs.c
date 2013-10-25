@@ -1,6 +1,7 @@
 #include <app_error.h>
 #include <device_params.h>
 #include <hrs.h>
+#include <limits.h>
 #include <nrf.h>
 #include <nrf_delay.h>
 #include <nrf_gpio.h>
@@ -163,6 +164,16 @@ get_hrs_buffer() {
     return buffer;
 }
 
+static uint8_t discard_threshold = UCHAR_MAX;
+static bool discard_threshold_passed = false;
+
+void
+hrs_threshold_cb(uint8_t val) {
+    if (val <= discard_threshold) {
+	discard_threshold_passed = true;
+    }
+}
+
 void
 hrs_test_cb(uint8_t val) {
     if (measure_count < measure_limit)
@@ -192,6 +203,7 @@ hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_
 	.delay = delay,
 	.samples = samples,
 	.discard_samples = 200,
+	.discard_threshold = UCHAR_MAX,
 	.inpsel_mode = ADC_CONFIG_INPSEL_AnalogInputNoPrescaling,
 	.refsel_mode = ADC_CONFIG_REFSEL_VBG,
 	.keep_the_lights_on = keep_the_lights_on,
@@ -258,11 +270,24 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     err_code = sd_ppi_channel_enable_set(1<<ppi_chan);
     APP_ERROR_CHECK(err_code);
 
-
+    // discard the first N samples, where N = parameters.discard_samples
     adc_callback = &null_cb;
     for(i = 0; i < parameters.discard_samples; i++) {
 	__WFE();
 	watchdog_pet();
+    }
+
+    // wait for the first sample to pass the threshold check
+    discard_threshold_passed = false;
+    adc_callback = &hrs_threshold_cb;
+    for(;;) {
+        __WFE();
+    	watchdog_pet();
+
+	if(discard_threshold_passed) {
+	    discard_threshold_passed = false;
+	    break;
+	}
     }
 
     // read samples and wait for completion
