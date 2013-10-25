@@ -45,7 +45,7 @@ test_3v3() {
         nrf_gpio_pin_clear(GPIO_HRS_PWM_G);
         nrf_gpio_pin_set  (GPIO_HRS_PWM_R);
         nrf_delay_ms(500);
-    } 
+    }
 }
 
 void ble_init();
@@ -167,10 +167,10 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             DEBUG("Starting HRS job: ", test_size);
 
 	    hrs_parameters = (hrs_parameters_t) {
-		    .power_level = event->data[1], 
-		    .delay = *(uint16_t *)&event->data[2], 
-		    .samples = *(uint16_t *)&event->data[4], 
-		    .discard_samples = *(uint16_t *)&event->data[6], 
+		    .power_level = event->data[1],
+		    .delay = *(uint16_t *)&event->data[2],
+		    .samples = *(uint16_t *)&event->data[4],
+		    .discard_samples = *(uint16_t *)&event->data[6],
 		    .inpsel_mode = (uint32_t)event->data[8],
 		    .refsel_mode = (uint32_t)event->data[9],
 		    .keep_the_lights_on = (bool)event->data[10],
@@ -212,7 +212,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 
         case TEST_SEND_DATA:
             DEBUG("Sending HRS data: ", test_size);
-            
+
             err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
             // APP_ERROR_CHECK(err);
 
@@ -299,7 +299,7 @@ _start()
     APP_ERROR_CHECK(err_code);
 
     //imu_selftest(SPI_Channel_0);
-/* 
+/*
     // IMU standalone test code
 
     err_code = imu_init(SPI_Channel_0);
@@ -341,7 +341,7 @@ _start()
 	ble_advertising_start();
 
     // init imu SPI channel and interface
-    
+
     err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
 

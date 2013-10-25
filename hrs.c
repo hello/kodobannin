@@ -46,7 +46,7 @@ hrs_adc_conf(uint32_t inpsel_mode, uint32_t refsel_mode) {
                     inpsel_mode << ADC_CONFIG_INPSEL_Pos | \
                     refsel_mode << ADC_CONFIG_REFSEL_Pos | \
                     HRS_ADC << ADC_CONFIG_PSEL_Pos;
-    NRF_ADC->ENABLE = 1;  
+    NRF_ADC->ENABLE = 1;
     NRF_ADC->INTENSET = ADC_INTENSET_END_Msk;
 
     // setup a PPI channel to trigger ADC
@@ -76,7 +76,7 @@ static void
 hrs_adc_start() {
     // Enable the ADC interrupt, and set the priority to 1
     //NVIC_SetPriority(ADC_IRQn, 1);
-    //NVIC_EnableIRQ(ADC_IRQn);   
+    //NVIC_EnableIRQ(ADC_IRQn);
     sd_nvic_SetPriority(ADC_IRQn, 1);
     sd_nvic_EnableIRQ(ADC_IRQn);
     NRF_ADC->ENABLE = 1;
@@ -111,9 +111,9 @@ hrs_debug_cb(uint8_t val) {
 
 void
 hrs_calibration_cb(uint8_t val) {
-    //if (val != 0) 
+    //if (val != 0)
     //DEBUG("", val);
-    
+
     if (val < BUCKET_LVL)
         ++buckets[0];
     else if (val < BUCKET_LVL*2)
@@ -185,7 +185,7 @@ hrs_calibrate(uint8_t power_lvl_min, uint8_t power_lvl_max, uint16_t delay, uint
     uint32_t i;
 
     APP_ERROR_CHECK(data_send !=NULL);
-  
+
     DEBUG("pwr min ", power_lvl_min);
     DEBUG("pwr max ", power_lvl_max);
     DEBUG("samples ", samples);
@@ -227,7 +227,7 @@ void hrs_run_test2(hrs_parameters_t parameters) {
 		      || inpsel_mode == ADC_CONFIG_INPSEL_SupplyOneThirdPrescaling));
 
     uint32_t refsel_mode = parameters.refsel_mode;
-    APP_ERROR_CHECK(!(refsel_mode == ADC_CONFIG_REFSEL_VBG 
+    APP_ERROR_CHECK(!(refsel_mode == ADC_CONFIG_REFSEL_VBG
 		      || refsel_mode == ADC_CONFIG_REFSEL_External
 		      || refsel_mode == ADC_CONFIG_REFSEL_SupplyOneHalfPrescaling
 		      || refsel_mode == ADC_CONFIG_REFSEL_SupplyOneThirdPrescaling));
@@ -242,7 +242,7 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     if (conf_done == 2) {
         // one-time init
         PRINTS("HRS_RUN INIT");
-        
+
         // drive PWM at 20kHz and range is 0-100 for intensity
         err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
         APP_ERROR_CHECK(err_code);
@@ -262,7 +262,7 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     // setup counters for limiting
     measure_count = 0;
     measure_limit = parameters.samples;
-    
+
     // wait for sensor output to settle
     nrf_delay_ms(parameters.delay);
 
@@ -319,13 +319,13 @@ hrs_calibrate() {
 
     // we should probably kill or pause the softdevice here
 
-    
+
 
     adc_callback = &hrs_calibration_cb;
 
     // enable the HRS sensor
     hrs_sensor_enable();
-    
+
     // drive PWM at 20kHz and range is 0-100 for intensity
     err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
     APP_ERROR_CHECK(err_code);
@@ -334,7 +334,7 @@ hrs_calibrate() {
     hrs_adc_conf();
     hrs_adc_start();
 
-    
+
 
     uint32_t best_fit = 0;
     uint8_t minima = 100;
@@ -376,7 +376,7 @@ hrs_calibrate() {
 
         PRINT_HEX(buckets, sizeof(buckets));
         PRINTS("\r\n");
-        
+
 
     }
     DEBUG("Best fit: ", best_fit);
@@ -385,7 +385,7 @@ hrs_calibrate() {
     uint32_t temp = best_fit;
     best_fit = 0;
     minima = 100;
-    
+
     for (i=temp-1; i < temp+2; i++) {
         measure_count = 0;
         measure_limit = 200; // whatever sampling rate we're using * 1.5
@@ -513,7 +513,7 @@ hrs_test_callback(uint8_t val) {
         PRINTS("\r\n");
         memset(buckets, 0, NUM_BUCKETS*sizeof(uint32_t));
         measure_count = 0;
-    }   
+    }
 }
 
 void
@@ -528,7 +528,7 @@ ADC_IRQHandler(void)
 
     // Clear the END event
     NRF_ADC->EVENTS_END = 0;
-    
+
     ++measure_count;
 
 // Prevent further sampling
@@ -543,7 +543,7 @@ adc_test() {
     uint32_t err_code;
 
     hrs_adc_conf(ADC_CONFIG_INPSEL_AnalogInputNoPrescaling, ADC_CONFIG_REFSEL_VBG);
-    
+
     hrs_sensor_enable();
 
     // configure LED
@@ -557,7 +557,7 @@ adc_test() {
     APP_ERROR_CHECK(err_code);
 
     hrs_adc_start();
-    
+
     while (true)
     {
         __WFE();
