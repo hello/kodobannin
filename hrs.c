@@ -171,6 +171,8 @@ void
 hrs_threshold_cb(uint8_t val) {
     if (val <= discard_threshold) {
 	discard_threshold_passed = true;
+    } else {
+        DEBUG("Over threshold: ", val);
     }
 }
 
@@ -276,6 +278,7 @@ void hrs_run_test2(hrs_parameters_t parameters) {
 	__WFE();
 	watchdog_pet();
     }
+    DEBUG("Discarded number of samples: ", parameters.discard_samples);
 
     // wait for the first sample to pass the threshold check
     discard_threshold_passed = false;
