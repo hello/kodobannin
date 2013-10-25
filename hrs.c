@@ -279,6 +279,7 @@ void hrs_run_test2(hrs_parameters_t parameters) {
 
     // wait for the first sample to pass the threshold check
     discard_threshold_passed = false;
+    discard_threshold = parameters.discard_threshold;
     adc_callback = &hrs_threshold_cb;
     for(;;) {
         __WFE();
