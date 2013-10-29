@@ -26,9 +26,7 @@
 
 void watchdog_init(unsigned seconds, bool pauseTimerWhileCPUSleeping)
 {
-	NRF_WDT->CONFIG = (
-		(WDT_CONFIG_HALT_Run << WDT_CONFIG_HALT_Pos) 
-		| ((pauseTimerWhileCPUSleeping ? WDT_CONFIG_SLEEP_Pause : WDT_CONFIG_SLEEP_Run) << WDT_CONFIG_SLEEP_Pos));
+	NRF_WDT->CONFIG = (pauseTimerWhileCPUSleeping ? WDT_CONFIG_SLEEP_Pause : WDT_CONFIG_SLEEP_Run) << WDT_CONFIG_SLEEP_Pos;
 
 	NRF_WDT->CRV = 32768 * seconds;
 	NRF_WDT->RREN = WDT_RREN_RR0_Msk;
