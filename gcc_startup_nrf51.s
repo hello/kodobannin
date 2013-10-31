@@ -148,15 +148,12 @@ Reset_Handler:
     subs r1, r1
     ldr r4, =__bss_start__
     ldr r3, =__bss_end__
-
-    subs r3, r4
-    bgt     .LC3
 .LC2:
+    str r1, [r3]
     subs r3, 4
-    str r1, [r4, r3]
-    bgt .LC2
+    cmp r3, r4
+    bhs .LC2
 
-.LC3:
     LDR     R0, =SystemInit
     BLX     R0
     LDR     R0, =_start
