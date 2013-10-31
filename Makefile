@@ -25,11 +25,13 @@ SRCS = \
 	error_handler.c \
 	sha1.c \
 	util.c \
+	watchdog.c \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
+	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_advdata.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_bondmngr.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_conn_params.c \
