@@ -12,6 +12,7 @@
 #define BLE_UUID_HELLO_DEMO_SVC 0x1337
 #define BLE_UUID_DATA_CHAR      0xDA1A
 #define BLE_UUID_CONF_CHAR      0xC0FF
+#define BLE_UUID_CMD_CHAR       0xBEEF
 
 typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
 typedef void (*ble_hello_demo_connect_handler)(void);
@@ -21,6 +22,7 @@ typedef enum {
 	Demo_Config_Sampling,
 	Demo_Config_Calibrating,
 	Demo_Config_Enter_DFU,
+	Demo_Config_ID_Band,
 } Demo_Config;
 
 /**@brief Hello Demo init structure. This contains all possible characteristics 
@@ -30,6 +32,7 @@ typedef struct
 {
     ble_hello_demo_write_handler   data_write_handler;
 	ble_hello_demo_write_handler   mode_write_handler;
+	ble_hello_demo_write_handler   cmd_write_handler;
 	ble_hello_demo_connect_handler conn_handler;
 	ble_hello_demo_connect_handler disconn_handler;
 } ble_hello_demo_init_t;
@@ -50,3 +53,6 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t * p_init);
 
 void ble_hello_demo_on_ble_evt(ble_evt_t *event);
 uint16_t ble_hello_demo_data_send(const uint8_t * data, const uint16_t data_len);
+uint32_t ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len);
+
+uint16_t ble_hello_demo_get_handle();

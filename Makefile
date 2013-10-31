@@ -3,6 +3,9 @@ BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q3/bin
 #BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
+# enable debug mode?
+DEBUG = 1
+
 # target to build
 APP = app.bin
 BOOTLOADER = bootloader.bin
@@ -11,10 +14,12 @@ SOFTDEVICE_BINARIES = SoftDevice/softdevice_uicr.bin SoftDevice/softdevice_main.
 # nRF51822 revision (for PAN workarounds in nRF SDK)
 NRFREV = NRF51822_QFAA_CA
 
+# don't mess with teh NULL!
 NULL =
 
 #	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_bas.c \
-#	
+#	$(wildcard micro-ecc/*.c) \
+#	nRF51_SDK/nrf51822/Source/app_common/crc16.c \
 
 SRCS = \
 	error_handler.c \
@@ -34,9 +39,7 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
-	nRF51_SDK/nrf51822/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
-	nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
 	$(NULL)
 
@@ -70,10 +73,11 @@ INCS =  ./ \
 #	./SoftDevice/s110_nrf51822_5.2.1_API/include \
 
 # optimization flags
-DEBUG = 1
+
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=1
+SRCS += nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c
 else
 OPTFLAGS=-Os -g -DECC_ASM=1
 endif
@@ -158,10 +162,10 @@ gdbs:
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
 gdb:
-	$(BIN)/arm-none-eabi-gdb bootloader.elf  -ex "tar remote :2331" -ex "mon reset"
+	$(BIN)/arm-none-eabi-gdb demo.elf  -ex "tar remote :2331" -ex "mon reset"
 
 cgdb:
-	cgdb -d $(BIN)/arm-none-eabi-gdb -- bootloader.elf  -ex "tar remote :2331" -ex "mon reset"
+	cgdb -d $(BIN)/arm-none-eabi-gdb -- demo.elf  -ex "tar remote :2331" -ex "mon reset"
 
 
 # building and debugging the app
