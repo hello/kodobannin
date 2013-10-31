@@ -20,7 +20,6 @@ SRCS = \
 	error_handler.c \
 	sha1.c \
 	util.c \
-	watchdog.c \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
