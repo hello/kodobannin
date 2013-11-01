@@ -143,7 +143,7 @@ ALL_DEPS = $(ALL_OBJS:.o=.d)
 .PHONY: all jl
 all: $(APP) $(BOOTLOADER) SoftDevice
 
-jl: all jl.jlink
+jl: all jl.jlink app.sha1
 	$(JLINK_COMMANDS)
 
 # jlink invocation
@@ -188,8 +188,6 @@ app.elf: $(APP_OBJS)
 
 prog: app SoftDevice prog.jlink
 	$(JLINK_COMMANDS)
-
-prog.jlink: app.sha1
 
 # building and debugging the bootloader
 
