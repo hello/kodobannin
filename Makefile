@@ -24,6 +24,7 @@ NULL =
 SRCS = \
 	error_handler.c \
 	sha1.c \
+	spi.c \
 	util.c \
 	watchdog.c \
 	$(wildcard ble/*.c) \
@@ -51,7 +52,6 @@ APP_SRCS = \
 	hrs.c \
 	mpu-6500.c \
 	pwm.c \
-	spi.c \
 	main.c \
 
 BOOTLOADER_SRCS = \
