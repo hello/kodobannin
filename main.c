@@ -295,10 +295,7 @@ _start()
 
     //pwm_test();
 
-    // setup debug UART
-    simple_uart_config(0, 5, 0, 8, false);
-    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err_code);
+    debug_uart_init();
 
     //imu_selftest(SPI_Channel_0);
 /*
