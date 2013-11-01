@@ -12,8 +12,8 @@
 #include <ble_flash.h>
 #include <ble_stack_handler.h>
 #include <string.h>
-
 #include "hello_dfu.h"
+#include "util.h"
 
 #define APP_GPIOTE_MAX_USERS            2
 
@@ -47,6 +47,12 @@ verify_fw_sha1(uint8_t *valid_hash)
     int i = 0;
 
     sha1_fw_area(sha1);
+
+#ifdef DEBUG
+    for(i = 0; i < SHA1_DIGEST_LENGTH; i++) {
+	    DEBUG("SHA1: ", sha1[i]);
+    }
+#endif
 
     for (i = 0; i < SHA1_DIGEST_LENGTH; i++)
         comp |= sha1[i] ^ valid_hash[i];
@@ -88,6 +94,10 @@ _start()
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+
+    debug_uart_init();
+
+    PRINTS("Bootloader is alive.\n");
 
 	const bool firmware_verified = verify_fw_sha1((uint8_t*)proposed_fw_sha1);
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
