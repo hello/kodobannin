@@ -17,12 +17,12 @@ typedef enum {
 	PWM_2_Channels,
 	PWM_3_Channels,
 	PWM_Num_Channels
-} PWM_Channel;
+} PWM_Channel_Count;
 
-enum {
+typedef enum {
 	PWM_Channel_1 = 0,
 	PWM_Channel_2,
-};
+} PWM_Channel;
 
 typedef struct {
 	uint32_t max_value;
@@ -38,8 +38,8 @@ typedef enum {
     PWM_Mode_Invalid
 } PWM_Mode;
 
-uint32_t pwm_init(uint32_t num_channels, uint32_t *gpios, PWM_Mode mode);
-uint32_t pwm_set_value(uint32_t channel, uint32_t value);
+uint32_t pwm_init(PWM_Channel_Count num_channels, uint32_t *gpios, PWM_Mode mode);
+uint32_t pwm_set_value(PWM_Channel channel, uint32_t value);
 
 // Test func
 void pwm_test();

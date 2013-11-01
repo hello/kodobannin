@@ -334,7 +334,7 @@ hrs_calibrate() {
     hrs_sensor_enable();
 
     // drive PWM at 20kHz and range is 0-100 for intensity
-    err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
+    err_code = pwm_init(PWM_Channel_1, gpios, PWM_Mode_20kHz_100);
     APP_ERROR_CHECK(err_code);
 
 // configure ADC
@@ -350,7 +350,7 @@ hrs_calibrate() {
         measure_count = 0;
         measure_limit = 200; // whatever sampling rate we're using * 1.5
 
-        err_code = pwm_set_value(PWM_1_Channel, i);
+        err_code = pwm_set_value(PWM_Channel_1, i);
         APP_ERROR_CHECK(err_code);
         DEBUG("Power lvl ", i);
 
@@ -397,7 +397,7 @@ hrs_calibrate() {
         measure_count = 0;
         measure_limit = 200; // whatever sampling rate we're using * 1.5
 
-        err_code = pwm_set_value(PWM_1_Channel, i);
+        err_code = pwm_set_value(PWM_Channel_1, i);
         APP_ERROR_CHECK(err_code);
         //DEBUG("Power lvl ", i);
 
@@ -435,7 +435,7 @@ hrs_calibrate() {
         DEBUG("to ", best_fit);
     }
 #endif
-    err_code = pwm_set_value(PWM_1_Channel, 9);
+    err_code = pwm_set_value(PWM_Channel_1, 9);
     APP_ERROR_CHECK(err_code);
     adc_callback = &hrs_debug_cb;
     measure_count = 0;
@@ -454,7 +454,7 @@ hrs_calibrate() {
         // disable PPI
         NRF_PPI->CHENCLR = (1 << ppi_chan);
 
-    err_code = pwm_set_value(PWM_1_Channel, 0xa);
+    err_code = pwm_set_value(PWM_Channel_1, 0xa);
     APP_ERROR_CHECK(err_code);
     adc_callback = &hrs_debug_cb;
     measure_count = 0;
@@ -474,7 +474,7 @@ hrs_calibrate() {
         NRF_PPI->CHENCLR = (1 << ppi_chan);
 
     //}
-    pwm_set_value(PWM_1_Channel, 0);
+    pwm_set_value(PWM_Channel_1, 0);
 }*/
 
 static void
@@ -560,7 +560,7 @@ adc_test() {
 
     err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
     APP_ERROR_CHECK(err_code);
-    err_code = pwm_set_value(PWM_1_Channel, 66);
+    err_code = pwm_set_value(PWM_Channel_1, 66);
     APP_ERROR_CHECK(err_code);
 
     hrs_adc_start();

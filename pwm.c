@@ -10,8 +10,8 @@
 
 #include "device_params.h"
 
-static PWM_Mode    _mode  = PWM_Mode_Invalid;
-static PWM_Channel _chans = PWM_Num_Channels;
+static PWM_Mode          _mode  = PWM_Mode_Invalid;
+static PWM_Channel_Count _chans = PWM_Num_Channels;
 
 uint32_t pwm_max_value;
 uint32_t pwm_next_value[PWM_Num_Channels];
@@ -101,7 +101,7 @@ ppi_enable_first_available_channel(volatile uint32_t *event_ptr, volatile uint32
 }
 
 uint32_t
-pwm_init(uint32_t num_channels, uint32_t *gpios, PWM_Mode mode) {
+pwm_init(PWM_Channel_Count num_channels, uint32_t *gpios, PWM_Mode mode) {
 	uint32_t i;
     uint32_t err;
 
@@ -152,14 +152,14 @@ pwm_init(uint32_t num_channels, uint32_t *gpios, PWM_Mode mode) {
 }
 
 uint32_t
-pwm_set_value(uint32_t channel, uint32_t value) {
+pwm_set_value(PWM_Channel channel, uint32_t value) {
 	if (_mode >= PWM_Mode_Invalid)
 		return 1;
 
 	if (_chans >= PWM_Num_Channels)
 		return 2;
 
-	if (channel > _chans)
+	if ((PWM_Channel_Count)channel > _chans)
 		return 3;
 
 	pwm_next_value[channel] = value;
