@@ -7,6 +7,7 @@ sleep 100
 r
 w4 4001e504 1
 speed 1000
+erase
 loadbin $PWD/bootloader_uicr_36000.bin 0x10001000
 loadbin $PWD/SoftDevice/softdevice_main.bin 0x0
 loadbin $PWD/bootloader.bin 0x36000
