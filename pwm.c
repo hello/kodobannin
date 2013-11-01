@@ -181,17 +181,19 @@ pwm_test() {
     uint32_t counter = 0;
 
     uint32_t gpios[] = {
-        GPIO_HRS_PWM_G
+		GPIO_HRS_PWM_G,
+        GPIO_HRS_PWM_R,
     };
 
-    err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_122Hz_255);
+    err_code = pwm_init(PWM_2_Channels, gpios, PWM_Mode_122Hz_255);
     APP_ERROR_CHECK(err_code);
 
     nrf_gpio_cfg_output(GPIO_3v3_Enable);
     nrf_gpio_pin_set(GPIO_3v3_Enable);
 
     while(1) {
-        err_code = pwm_set_value(PWM_1_Channel, sin_table[counter]);
+        err_code = pwm_set_value(PWM_Channel_1, sin_table[counter]);
+        err_code = pwm_set_value(PWM_Channel_2, sin_table[counter]);
         APP_ERROR_CHECK(err_code);
         if (++counter >= 100)
             counter = 0; 

@@ -19,6 +19,11 @@ typedef enum {
 	PWM_Num_Channels
 } PWM_Channel;
 
+enum {
+	PWM_Channel_1 = 0,
+	PWM_Channel_2,
+};
+
 typedef struct {
 	uint32_t max_value;
 	uint8_t  prescaler;
