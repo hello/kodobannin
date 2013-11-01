@@ -210,11 +210,11 @@ SoftDevice: $(SOFTDEVICE_BINARIES)
 
 SoftDevice/softdevice_main.bin: $(SOFTDEV_SRC)
 	$(info [OBJCOPY] softdevice_main.bin)
-	$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $< $@
+	@$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $< $@
 
 SoftDevice/softdevice_uicr.bin: $(SOFTDEV_SRC)
 	$(info [OBJCOPY] softdevice_uicr.bin)
-	$(OBJCOPY) -I ihex -O binary --only-section .sec3 $< $@
+	@$(OBJCOPY) -I ihex -O binary --only-section .sec3 $< $@
 
 # building the entire firmware
 
