@@ -101,6 +101,7 @@ static uint32_t dfu_timer_restart(void)
 
 uint32_t dfu_init(void)
 {
+    uint32_t              page_count;
     uint32_t              err_code;
     dfu_update_status_t   update_status;
     
@@ -109,19 +110,28 @@ uint32_t dfu_init(void)
     // Erase swap.
     uint32_t * p_bank_start_address = (uint32_t *)DFU_BANK_1_REGION_START; 
     
+    uint32_t page         = DFU_BANK_1_REGION_START / flash_page_size;
     uint32_t num_of_pages = DFU_IMAGE_MAX_SIZE_BANKED / flash_page_size;    
     m_init_packet_length  = 0;
     m_image_crc           = 0;    
-
-    // The bootloader code that comes with the nRF51822 SDK expects
-    // the memory bank to be erased before proceeding; however, we
-    // don't want to do this. So we simply update the status to tell
-    // the DFU code that the bank is erased, without actually erasing
-    // the memory bank.
-
-    update_status.status_code = DFU_BANK_1_ERASED;
-    bootloader_dfu_update_process(update_status);
-
+           
+    if (true)
+    {
+        for (page_count = 0; page_count < num_of_pages; page_count++)
+        {
+            err_code = ble_flash_page_erase(page + page_count);
+            if (err_code != NRF_SUCCESS)
+            {
+                m_dfu_state = DFU_STATE_INIT_ERROR;
+                
+                return err_code;
+            }
+        }
+        
+        update_status.status_code = DFU_BANK_1_ERASED;
+        bootloader_dfu_update_process(update_status);
+    }
+    
     // Create the timer to monitor the activity by the peer doing the firmware update.
     err_code = app_timer_create(&m_dfu_timer_id,
                                 APP_TIMER_MODE_SINGLE_SHOT,
