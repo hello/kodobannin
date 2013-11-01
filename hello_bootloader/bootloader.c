@@ -50,14 +50,14 @@ void bootloader_dfu_update_process(dfu_update_status_t update_status)
 uint32_t bootloader_dfu_start(void)
 {
     uint32_t err_code;
-    
-    // Clear swap if banked update is used.    
-    err_code = dfu_init(); 
-    if (err_code == NRF_SUCCESS)    
+
+    // Clear swap if banked update is used.
+    err_code = dfu_init();
+    if (err_code == NRF_SUCCESS)
     {
         err_code = dfu_transport_update_start();
     }
-        
+
     return err_code;
 }
 
@@ -73,7 +73,7 @@ void interrupts_disable(void)
     irq                    = 0;
     // Fetch the current interrupt settings.
     interrupt_setting_mask = NVIC->ISER[0];
-    
+
     for (; irq < MAX_NUMBER_INTERRUPTS; irq++)
     {
         if (interrupt_setting_mask & (IRQ_ENABLED << irq))
@@ -81,7 +81,7 @@ void interrupts_disable(void)
             // The interrupt was enabled, and hence disable it.
             NVIC_DisableIRQ((IRQn_Type) irq);
         }
-    }        
+    }
 }
 
 
