@@ -123,4 +123,3 @@
  */
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
-

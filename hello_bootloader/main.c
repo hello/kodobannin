@@ -103,13 +103,13 @@ _start()
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
 		err_code = bootloader_dfu_start();
 		APP_ERROR_CHECK(err_code);
-	    
+
 		if (dfu_success) {
 			NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
 
 			// Need to turn the radio off before calling ble_flash_block_write?
 			ble_flash_on_radio_active_evt(false);
-	    
+
 			sha1_fw_area(new_fw_sha1);
 			flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
 			ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
@@ -121,7 +121,7 @@ _start()
 
 		err_code = sd_softdevice_forward_to_application();
 		APP_ERROR_CHECK(err_code);
-	
+
 		StartApplication(CODE_REGION_1_START);
 	}
 }
