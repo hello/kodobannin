@@ -156,6 +156,13 @@ JLINK_COMMANDS = \
 	$(info [JPROG] $@.jlink) \
 	@$(JPROG) < $@.jlink && $(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
+# sha1 invocation
+
+%.sha1: %.bin
+	$(info [SHA1] $@)
+	@openssl sha1 -binary $< > $@
+	@stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
+
 # gdb
 
 .PHONY: gdbs gdb cgdb
@@ -181,6 +188,8 @@ app.elf: $(APP_OBJS)
 
 prog: app SoftDevice prog.jlink
 	$(JLINK_COMMANDS)
+
+prog.jlink: app.sha1
 
 # building and debugging the bootloader
 
@@ -226,7 +235,7 @@ SoftDevice/softdevice_uicr.bin: $(SOFTDEV_SRC)
 	@$(OBJCOPY)  -O binary $< $@
 #-j .text -j .data
 
-ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink
+ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink app.sha1
 
 .PHONY: clean
 clean:
