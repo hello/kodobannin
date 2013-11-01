@@ -140,7 +140,7 @@ ALL_DEPS = $(ALL_OBJS:.o=.d)
 
 # all target (must be first rule): build app + bootloader
 
-.PHONY: all
+.PHONY: all jl
 all: $(APP) $(BOOTLOADER) SoftDevice
 
 jl: all jl.jlink
