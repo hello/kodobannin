@@ -34,7 +34,7 @@ typedef enum {
     PWM_Mode_122Hz_255,
     PWM_Mode_125Hz_1000,
     PWM_Mode_20kHz_100,
-    PWM_Mode_32kHz_255, 
+    PWM_Mode_32kHz_255,
     PWM_Mode_Invalid
 } PWM_Mode;
 
