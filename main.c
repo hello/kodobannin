@@ -33,19 +33,19 @@ test_3v3() {
     nrf_gpio_cfg_output(GPIO_3v3_Enable);
     nrf_gpio_pin_set(GPIO_3v3_Enable);
 
-    nrf_gpio_cfg_output(GPIO_HRS_PWM_G);
-    nrf_gpio_cfg_output(GPIO_HRS_PWM_R);
+    nrf_gpio_cfg_output(GPIO_HRS_PWM_G1);
+    nrf_gpio_cfg_output(GPIO_HRS_PWM_G2);
     nrf_gpio_cfg_output(GPIO_VIBE_PWM);
 
     while (1){
-        nrf_gpio_pin_clear(GPIO_HRS_PWM_R);
-        nrf_gpio_pin_set  (GPIO_HRS_PWM_G);
+        nrf_gpio_pin_clear(GPIO_HRS_PWM_G2);
+        nrf_gpio_pin_set  (GPIO_HRS_PWM_G1);
         nrf_gpio_pin_set  (GPIO_VIBE_PWM);
         nrf_delay_ms(100);
         nrf_gpio_pin_clear(GPIO_VIBE_PWM);
         nrf_delay_ms(390);
-        nrf_gpio_pin_clear(GPIO_HRS_PWM_G);
-        nrf_gpio_pin_set  (GPIO_HRS_PWM_R);
+        nrf_gpio_pin_clear(GPIO_HRS_PWM_G1);
+        nrf_gpio_pin_set  (GPIO_HRS_PWM_G2);
         nrf_delay_ms(500);
     }
 }

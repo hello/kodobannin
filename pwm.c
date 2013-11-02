@@ -182,8 +182,8 @@ pwm_test() {
     uint32_t counter = 0;
 
     uint32_t gpios[] = {
-		GPIO_HRS_PWM_G,
-        GPIO_HRS_PWM_R,
+		GPIO_HRS_PWM_G1,
+        GPIO_HRS_PWM_G2,
     };
 
     err_code = pwm_init(PWM_2_Channels, gpios, PWM_Mode_122Hz_255);

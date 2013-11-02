@@ -8,8 +8,8 @@
 
 // For EVT-2
 #define GPIO_3v3_Enable    13
-#define GPIO_HRS_PWM_G     31
-#define GPIO_HRS_PWM_R     25
+#define GPIO_HRS_PWM_G1   31
+#define GPIO_HRS_PWM_G2     25
 #define GPIO_VIBE_PWM       0
 
 #define GPIO_1   8

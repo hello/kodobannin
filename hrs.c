@@ -218,8 +218,8 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     uint32_t err_code;
     uint32_t i;
     uint32_t gpios[] = {
-	    GPIO_HRS_PWM_G,
-        GPIO_HRS_PWM_R
+	    GPIO_HRS_PWM_G1,
+        GPIO_HRS_PWM_G2
     };
 
     uint32_t inpsel_mode = parameters.inpsel_mode;
@@ -555,7 +555,7 @@ adc_test() {
 
     // configure LED
     uint32_t gpios[] = {
-        GPIO_HRS_PWM_G
+        GPIO_HRS_PWM_G1
     };
 
     err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);

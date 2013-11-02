@@ -27,7 +27,7 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 	{
 		case 0x31UL:
 		case 0x2FUL:
-			error_led = GPIO_HRS_PWM_G;
+			error_led = GPIO_HRS_PWM_G1;
 			nrf_gpio_cfg_output(GPIO_3v3_Enable);
 	    		nrf_gpio_pin_set(GPIO_3v3_Enable);
 			break;
