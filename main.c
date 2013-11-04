@@ -164,7 +164,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             break;
 
     case TEST_START_HRS2:
-            PRINT_HEX(event->data, 11);
+            PRINT_HEX(event->data, 9);
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS job: ", test_size);
 
@@ -173,10 +173,8 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 		    .delay = *(uint16_t *)&event->data[2],
 		    .samples = *(uint16_t *)&event->data[4],
 		    .discard_samples = *(uint16_t *)&event->data[6],
-		    .inpsel_mode = (uint32_t)event->data[8],
-		    .refsel_mode = (uint32_t)event->data[9],
-		    .keep_the_lights_on = (bool)event->data[10],
-		    .discard_threshold = event->data[11],
+		    .keep_the_lights_on = (bool)event->data[8],
+		    .discard_threshold = event->data[9],
 	    };
 	    hrs_run_test2(hrs_parameters);
             _state = TEST_HRS_DONE;

@@ -40,11 +40,11 @@ void HRS_IRQHandler() {
 }
 
 static void
-hrs_adc_conf(uint32_t inpsel_mode, uint32_t refsel_mode) {
+hrs_adc_conf() {
     // Configure the ADC
     NRF_ADC->CONFIG = ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos | \
-                    inpsel_mode << ADC_CONFIG_INPSEL_Pos | \
-                    refsel_mode << ADC_CONFIG_REFSEL_Pos | \
+                    ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos | \
+                    ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos | \
                     HRS_ADC << ADC_CONFIG_PSEL_Pos;
     NRF_ADC->ENABLE = 1;
     NRF_ADC->INTENSET = ADC_INTENSET_END_Msk;
@@ -206,8 +206,6 @@ hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_
 	.samples = samples,
 	.discard_samples = 200,
 	.discard_threshold = UCHAR_MAX,
-	.inpsel_mode = ADC_CONFIG_INPSEL_AnalogInputNoPrescaling,
-	.refsel_mode = ADC_CONFIG_REFSEL_VBG,
 	.keep_the_lights_on = keep_the_lights_on,
     };
 
@@ -221,19 +219,6 @@ void hrs_run_test2(hrs_parameters_t parameters) {
 	    GPIO_HRS_PWM_G1,
         GPIO_HRS_PWM_G2
     };
-
-    uint32_t inpsel_mode = parameters.inpsel_mode;
-    APP_ERROR_CHECK(!(inpsel_mode == ADC_CONFIG_INPSEL_AnalogInputNoPrescaling
-		      || inpsel_mode == ADC_CONFIG_INPSEL_AnalogInputTwoThirdsPrescaling
-		      || inpsel_mode == ADC_CONFIG_INPSEL_AnalogInputOneThirdPrescaling
-		      || inpsel_mode == ADC_CONFIG_INPSEL_SupplyTwoThirdsPrescaling
-		      || inpsel_mode == ADC_CONFIG_INPSEL_SupplyOneThirdPrescaling));
-
-    uint32_t refsel_mode = parameters.refsel_mode;
-    APP_ERROR_CHECK(!(refsel_mode == ADC_CONFIG_REFSEL_VBG
-		      || refsel_mode == ADC_CONFIG_REFSEL_External
-		      || refsel_mode == ADC_CONFIG_REFSEL_SupplyOneHalfPrescaling
-		      || refsel_mode == ADC_CONFIG_REFSEL_SupplyOneThirdPrescaling));
 
     APP_ERROR_CHECK(parameters.samples > sizeof(buffer));
 
@@ -251,7 +236,7 @@ void hrs_run_test2(hrs_parameters_t parameters) {
         APP_ERROR_CHECK(err_code);
 
         // configure ADC
-        hrs_adc_conf(inpsel_mode, refsel_mode);
+        hrs_adc_conf();
         hrs_adc_start();
         conf_done = 1;
     }
@@ -549,7 +534,7 @@ void
 adc_test() {
     uint32_t err_code;
 
-    hrs_adc_conf(ADC_CONFIG_INPSEL_AnalogInputNoPrescaling, ADC_CONFIG_REFSEL_VBG);
+    hrs_adc_conf();
 
     hrs_sensor_enable();
 
