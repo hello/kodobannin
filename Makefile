@@ -171,10 +171,10 @@ gdbs:
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
 gdb:
-	$(BIN)/arm-none-eabi-gdb demo.elf  -ex "tar remote :2331" -ex "mon reset"
+	$(BIN)/arm-none-eabi-gdb app.elf -ex "tar remote :2331" -ex "mon reset"
 
 cgdb:
-	cgdb -d $(BIN)/arm-none-eabi-gdb -- demo.elf  -ex "tar remote :2331" -ex "mon reset"
+	cgdb -d $(BIN)/arm-none-eabi-gdb -- app.elf -ex "tar remote :2331" -ex "mon reset"
 
 
 # building and debugging the app
