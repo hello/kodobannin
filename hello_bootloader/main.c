@@ -101,6 +101,7 @@ _start()
 
 	const bool firmware_verified = verify_fw_sha1((uint8_t*)proposed_fw_sha1);
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
+	    PRINTS("Bootloader: in DFU mode...\n");
 		err_code = bootloader_dfu_start();
 		APP_ERROR_CHECK(err_code);
 
@@ -117,6 +118,7 @@ _start()
 
 		NVIC_SystemReset();
     } else {
+	    PRINTS("Bootloader kicking to app\n");
 		interrupts_disable();
 
 		err_code = sd_softdevice_forward_to_application();
