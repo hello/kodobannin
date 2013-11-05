@@ -12,7 +12,7 @@
 #include <util.h>
 #include <ble.h>
 
-static uint8_t hello_type;
+uint8_t hello_type;
 static uint16_t                 service_handle;
 static uint16_t                 conn_handle;
 static ble_gatts_char_handles_t sys_mode_handles;
