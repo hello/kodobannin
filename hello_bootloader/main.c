@@ -49,9 +49,7 @@ verify_fw_sha1(uint8_t *valid_hash)
     sha1_fw_area(sha1);
 
 #ifdef DEBUG
-    for(i = 0; i < SHA1_DIGEST_LENGTH; i++) {
-	    DEBUG("SHA1: ", sha1[i]);
-    }
+    DEBUG("SHA1: ", sha1);
 #endif
 
     for (i = 0; i < SHA1_DIGEST_LENGTH; i++)
