@@ -15,9 +15,9 @@
 
 typedef uint8_t sample_t;
 typedef uint8_t sample_rate_t;
-typedef uint32_t bpm_t; // divide by 10 to get actual BPM
+typedef uint8_t peaks_t; // (60.0f / ((sample_count-hz)/hz) * peaks) to get actual BPM
 
 void pre_analysis(const sample_t* const begin, const sample_t* const end, sample_t* out_min_value, sample_t* out_max_value);
-bpm_t detect_peaks(const sample_t* begin, const sample_t* const end, const sample_rate_t hz);
+peaks_t detect_peaks(const sample_t* const begin, const sample_t* const end, const sample_rate_t hz);
 
 #endif // PEAK_DETECT_H
