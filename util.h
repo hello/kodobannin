@@ -16,3 +16,4 @@ void debug_uart_init();
 #define DEBUG(a,b) {PRINTS(a); PRINT_HEX(&b, sizeof(b)); PRINTC('\r'); PRINTC('\n');}
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
+void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);

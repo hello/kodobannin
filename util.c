@@ -69,6 +69,14 @@ serial_print_hex(uint8_t *ptr, uint32_t len) {
 	}
 }
 
+void
+binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
+	while(len-- >0) {
+		*(out++) = hex[0xF&(*ptr>>4)];
+		*(out++) = hex[0xF&*ptr++];
+	}
+}
+
 void debug_uart_init()
 {
     simple_uart_config(0, 5, 0, 8, false);
