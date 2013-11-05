@@ -21,13 +21,6 @@ ble_advertising_init(void)
 	ble_advdata_t advdata;
 	uint8_t	      flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
-	ble_uuid_t adv_uuids[] =
-	{
-		//{BLE_UUID_BLOOD_PRESSURE_SERVICE,     BLE_UUID_TYPE_BLE},
-		{BLE_UUID_BATTERY_SERVICE,            BLE_UUID_TYPE_BLE},
-		{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
-	};
-
 	// Build and set advertising data
 	memset(&advdata, 0, sizeof(advdata));
 
@@ -35,8 +28,6 @@ ble_advertising_init(void)
 	advdata.include_appearance      = true;
 	advdata.flags.size              = sizeof(flags);
 	advdata.flags.p_data            = &flags;
-	advdata.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
-	advdata.uuids_complete.p_uuids  = adv_uuids;
 
 	// Scan response packet
 	ble_uuid_t sr_uuid = {
@@ -78,4 +69,3 @@ ble_advertising_start(void)
 	nrf_gpio_pin_set(ADVERTISING_LED_PIN_NO);
 #endif
 }
-
