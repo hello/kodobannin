@@ -1,6 +1,10 @@
+#include <app_error.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <simple_uart.h>
+
+#include "device_params.h"
+#include "spi.h"
 
 void *
 memcpy(void *s1, const void *s2, size_t n)
@@ -53,13 +57,29 @@ strlen(const char *a)
 	return count;
 }
 
-static uint8_t hex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+static const uint8_t hex[] = "0123456789ABCDEF";
 
 void
 serial_print_hex(uint8_t *ptr, uint32_t len) {
+
 	while(len-- >0) {
 		simple_uart_put(hex[0xF&(*ptr>>4)]);
 		simple_uart_put(hex[0xF&*ptr++]);
 		simple_uart_put(' ');
 	}
+}
+
+void
+binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
+	while(len-- >0) {
+		*(out++) = hex[0xF&(*ptr>>4)];
+		*(out++) = hex[0xF&*ptr++];
+	}
+}
+
+void debug_uart_init()
+{
+    simple_uart_config(0, 5, 0, 8, false);
+    uint32_t err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err_code);
 }

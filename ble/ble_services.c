@@ -76,7 +76,7 @@ void
 ble_services_init(void)
 {
 
-	ble_battery_service_init();
+	//ble_battery_service_init();
 	ble_device_info_service_init();
 	ble_debug_service_init();
 }

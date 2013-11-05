@@ -1,4 +1,6 @@
 #pragma once
+#include <nrf51.h>
+#include <nrf51_bitfields.h>
 
 /*
  * Board GPIO defines
@@ -6,8 +8,8 @@
 
 // For EVT-2
 #define GPIO_3v3_Enable    13
-#define GPIO_HRS_PWM_G     31
-#define GPIO_HRS_PWM_R     25
+#define GPIO_HRS_PWM_G1   31
+#define GPIO_HRS_PWM_G2     25
 #define GPIO_VIBE_PWM       0
 
 #define GPIO_1   8
@@ -17,7 +19,7 @@
 #define GPIO_5  30
 
 #define IMU_SPI_MOSI       14
-#define IMU_SPI_MISO       22
+#define IMU_SPI_MISO       3 // was 22
 #define IMU_SPI_SCLK       19
 #define IMU_SPI_nCS        17
 #define IMU_INT             2
@@ -34,6 +36,7 @@
 #define RTC_INT     28
 
 #define HRS_SENSE   26
+#define HRS_ADC     ADC_CONFIG_PSEL_AnalogInput0
 
 #define nBATT_CHG   21
 
@@ -56,8 +59,8 @@
  * BLE Advertising Strings
  */
 #define BLE_DEVICE_NAME       "Band"
-#define BLE_MANUFACTURER_NAME "H"
-#define BLE_MODEL_NUM         "EVT1-r3"
+#define BLE_MANUFACTURER_NAME "Hello Inc."
+#define BLE_MODEL_NUM         "EVT2"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -120,4 +123,3 @@
  */
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
-

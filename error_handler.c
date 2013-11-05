@@ -27,7 +27,7 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 	{
 		case 0x31UL:
 		case 0x2FUL:
-			error_led = GPIO_HRS_PWM_G;
+			error_led = GPIO_HRS_PWM_G1;
 			nrf_gpio_cfg_output(GPIO_3v3_Enable);
 	    		nrf_gpio_pin_set(GPIO_3v3_Enable);
 			break;
@@ -63,7 +63,7 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
  *
  * @details This function will be called in case of an assert in the SoftDevice.
  *
- * @warning This handler is an example only and does not fit a final product. You need to analyze 
+ * @warning This handler is an example only and does not fit a final product. You need to analyze
  *          how your product is supposed to react in case of Assert.
  * @warning On assert from the SoftDevice, the system can only recover on reset.
  *
@@ -75,4 +75,3 @@ assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
 	app_error_handler(0xDEADBEEF, line_num, p_file_name);
 }
-
