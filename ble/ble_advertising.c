@@ -3,7 +3,7 @@
 #include <ble_types.h>
 #include <nrf_gpio.h>
 #include "device_params.h"
-
+#include "ble_hello_demo.h"
 static ble_gap_adv_params_t m_adv_params;
 
 /**@brief Advertising functionality initialization.
@@ -11,6 +11,9 @@ static ble_gap_adv_params_t m_adv_params;
  * @details Encodes the required advertising data and passes it to the stack.
  *		  Also builds a structure to be passed to the stack when starting advertising.
  */
+
+extern uint8_t hello_type;
+
 void
 ble_advertising_init(void)
 {
@@ -35,7 +38,20 @@ ble_advertising_init(void)
 	advdata.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
 	advdata.uuids_complete.p_uuids  = adv_uuids;
 
-	err_code = ble_advdata_set(&advdata, NULL);
+	// Scan response packet
+	ble_uuid_t sr_uuid = {
+		.uuid = BLE_UUID_HELLO_DEMO_SVC,
+		.type = hello_type
+	};
+
+	ble_advdata_t srdata;
+	memset(&srdata, 0, sizeof(srdata));
+	srdata = (ble_advdata_t) {
+		.uuids_more_available.uuid_cnt = 1,
+		.uuids_more_available.p_uuids = &sr_uuid,
+	};
+
+	err_code = ble_advdata_set(&advdata, &srdata);
 	APP_ERROR_CHECK(err_code);
 
 	// Initialise advertising parameters (used when starting advertising)
