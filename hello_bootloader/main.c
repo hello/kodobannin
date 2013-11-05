@@ -97,6 +97,19 @@ _start()
 
     PRINTS("Bootloader is alive.\r\n");
 
+#ifdef DEBUG
+	{
+		uint8_t mac_address[6];
+
+		// MAC address is stored backwards; reverse it.
+		unsigned i;
+		for(i = 0; i < 6; i++) {
+			mac_address[i] = ((uint8_t*)NRF_FICR->DEVICEADDR)[5-i];
+		}
+		DEBUG("MAC address: ", mac_address);
+	}
+#endif
+
 	const bool firmware_verified = verify_fw_sha1((uint8_t*)proposed_fw_sha1);
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
 	    PRINTS("Bootloader: in DFU mode...\r\n");
