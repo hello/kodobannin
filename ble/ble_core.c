@@ -19,6 +19,8 @@ extern void ble_conn_params_init(void);
 extern void ble_sec_params_init(void);
 extern void ble_radio_notification_init(void);
 
+extern void hello_demo_service_init();
+
 extern ble_gap_sec_params_t sec_params;
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;   /**< Handle of the current connection. */
@@ -150,6 +152,7 @@ ble_init()
 	ble_stack_init();
 	ble_bond_manager_init();
 	ble_gap_params_init();
+	hello_demo_service_init();  // Must come before ble_advertising_init()
 	ble_advertising_init();
 	ble_services_init();
 	ble_conn_params_init();

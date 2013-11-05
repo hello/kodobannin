@@ -266,7 +266,7 @@ sample_imu(void * p_context) {
     //DEBUG("data", sample);
 }
 
-static void
+void
 hello_demo_service_init() {
     uint32_t err_code;
 
@@ -332,7 +332,7 @@ _start()
 	ble_init();
 
     // init demo app ble service
-    hello_demo_service_init();
+    // hello_demo_service_init();
 
     // start advertising
 	ble_advertising_start();
