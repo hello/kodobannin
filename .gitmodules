@@ -1,6 +1,7 @@
 [submodule "micro-ecc"]
 	path = micro-ecc
 	url = https://github.com/kmackay/micro-ecc.git
+	ignore = dirty
 [submodule "nRF51_SDK"]
 	path = nRF51_SDK
 	url = https://github.com/hello/nRF51_SDK.git
