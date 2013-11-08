@@ -83,6 +83,7 @@ bool
 spi_xfer(const enum SPI_Channel chan, const uint8_t nCS, const uint32_t len, const uint8_t *tx, uint8_t *rx) {
     NRF_SPI_Type *spi;
     int i;
+    bool ret = false;
 
     if (chan == SPI_Channel_0)
         spi = NRF_SPI0;
@@ -96,11 +97,14 @@ spi_xfer(const enum SPI_Channel chan, const uint8_t nCS, const uint32_t len, con
 
     for (i = 0; i < len; i++) {
         if (!spi_one_byte(spi, nCS, tx[i], &rx[i]))
-            return false;
+            goto cleanup;
     }
 
+    ret = true;
+
+cleanup:
     nrf_gpio_pin_set(nCS);
-    return true;
+    return ret;
 }
 
 uint16_t
