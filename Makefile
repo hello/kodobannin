@@ -129,7 +129,7 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
-CFLAGS := -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
+CFLAGS := -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS) -DBLE_DEVICE_NAME="\"$(BLE_DEVICE_NAME)\""
 LDFLAGS := -L$(LIB) -lgcc --gc-sections
 #-L/Users/jkelley/Downloads/gcc-arm-none-eabi-4_7-2013q1/lib/gcc/arm-none-eabi/4.7.3/armv6-m -lgcc
 #-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
@@ -154,7 +154,7 @@ jl: all jl.jlink app.sha1
 
 JLINK_COMMANDS = \
 	$(info [JPROG] $@.jlink) \
-	@$(JPROG) < $@.jlink && $(JGDBServer) -if SWD -device nRF51822 -speed 4000
+	@$(JPROG) < $@.jlink
 
 # sha1 invocation
 
