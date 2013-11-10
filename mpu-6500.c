@@ -52,11 +52,13 @@ imu_get_fifo_count() {
 
 	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_HI);
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	APP_ERROR_CHECK(!err);
 
 	count = buf[1] << 8;
 
 	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_LO);
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	APP_ERROR_CHECK(!err);
 
 	count |= buf[1];
 
