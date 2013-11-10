@@ -19,7 +19,7 @@
 #define GPIO_5  30
 
 #define IMU_SPI_MOSI       14
-#define IMU_SPI_MISO       3 // was 22
+#define IMU_SPI_MISO       22 //3 // was 22 in EVT2
 #define IMU_SPI_SCLK       19
 #define IMU_SPI_nCS        17
 #define IMU_INT             2
@@ -58,9 +58,14 @@
 /*
  * BLE Advertising Strings
  */
-#define BLE_DEVICE_NAME       "Band"
+#ifndef BLE_DEVICE_NAME
+#error You must specify a device name on the build line with "BLE_DEVICE_NAME=Blah make <options>"
+#endif
+
+//#define BLE_DEVICE_NAME       "Band (DFU mode)"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT2b"
+#define BLE_MODEL_NUM         "EVT2"
+
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
