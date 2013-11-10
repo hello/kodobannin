@@ -76,7 +76,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 
 	if (count == 0)
 		return 0;
-	
+
 	return spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
 }
 
@@ -323,4 +323,3 @@ imu_init(enum SPI_Channel channel) {
 
 	return 0;
 }
-
