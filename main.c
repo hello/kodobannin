@@ -301,22 +301,22 @@ _start()
     nrf_gpio_cfg_output(GPS_nCS);
     nrf_gpio_pin_set(GPS_nCS);
 
-    err_code = init_spi(SPI_Channel_1, SPI_Mode0, MISO, MOSI, SCLK, FLASH_nCS);
+    err_code = init_spi(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
     APP_ERROR_CHECK(err_code);
 
     PRINTS("What does the flash say?\r\n");
     memset(buf, 0, sizeof(buf));
     buf[0] = SPI_Write(0x05);//9F);
+    err_code = spi_xfer(SPI_Channel_0, FLASH_nCS, 3, buf, buf);
+    PRINTS("Eep, eep-eep, eep-eep-a-meep ");
+    PRINT_HEX(&buf[1], 1);
+    memset(buf, 0, sizeof(buf));
+    buf[0] = SPI_Write(0x90);
     buf[1] = 0xFF;
     buf[2] = 0xFF;
-    err_code = spi_xfer(SPI_Channel_1, FLASH_nCS, 6, buf, buf);
-    PRINTS("Eep, eep-eep, eep-eep-a-meep ");
-    PRINT_HEX(buf, 6);
-    memset(buf, 0, sizeof(buf));
-    buf[0] = SPI_Write(0x9F);
-    buf[1] = 0xFF;
-    err_code = spi_xfer(SPI_Channel_1, FLASH_nCS, 2, buf, buf);
-    PRINT_HEX(buf, 2);
+    buf[3] = 0;
+    err_code = spi_xfer(SPI_Channel_0, FLASH_nCS, 6, buf, buf);
+    PRINT_HEX(&buf[4], 2);
     PRINTS("\r\n");
 
     while(1) {
