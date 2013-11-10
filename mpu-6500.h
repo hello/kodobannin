@@ -122,4 +122,12 @@ enum MPU_Reg_Bits {
 	MPU_REG_PWR_MGMT_2_GYRO_X_DIS  = (1UL << 2),
 	MPU_REG_PWR_MGMT_2_GYRO_Y_DIS  = (1UL << 1),
 	MPU_REG_PWR_MGMT_2_GYRO_Z_DIS  = (1UL << 0),
+
+	// MPU_REG_ACC_CFG
+	AX_ST_EN = (1UL << 7),
+	AY_ST_EN = (1UL << 6),
+	AZ_ST_EN = (1UL << 5),
+
+	// MPU_REG_SAMPLE_RATE_DIVIDER
+	SMPLRT_DIV, // This enum is here for completeness: this definition is for bits [7:0] of the register, i.e. all of it, so no need to use a bitmask or bit-shifts.
 };
