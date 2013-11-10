@@ -57,8 +57,8 @@ peaks_t detect_peaks(const sample_t* const begin, const sample_t* const end, con
     for(p = begin+hz; p < end; p++) {
         const sample_t sample = *p;
 
-        if(sample > 1) {
-            if(found_min_counts >= WIDTH && sample > 5) {
+        if(sample > min_val) {
+            if(found_min_counts >= WIDTH && sample > 30) {
                 detected++;
                 found_min_counts = 0;
                 found_min_val = max_val;
