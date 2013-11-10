@@ -121,18 +121,15 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,
 static void
 imu_accelerometer_continuous()
 {
-#define P_LSB16(p_int16) ((uint8_t*)(p_int16)+0)
-#define P_MSB16(p_int16) ((uint8_t*)(p_int16)+1)
-
 	int16_t values[3];
 
 	for(;;) {
 		register_read(MPU_REG_ACC_X_HI, (uint8_t*)&values[0]+1);
-		register_read(MPU_REG_ACC_X_LO, P_LSB16(&values[0]));
-		register_read(MPU_REG_ACC_Y_HI, P_LSB16(&values[1]));
-		register_read(MPU_REG_ACC_Y_LO, P_MSB16(&values[1]));
-		register_read(MPU_REG_ACC_Z_HI, P_LSB16(&values[2]));
-		register_read(MPU_REG_ACC_Z_LO, P_MSB16(&values[2]));
+		register_read(MPU_REG_ACC_X_LO, (uint8_t*)&values[0]);
+		register_read(MPU_REG_ACC_Y_HI, (uint8_t*)&values[1]+1);
+		register_read(MPU_REG_ACC_Y_LO, (uint8_t*)&values[1]);
+		register_read(MPU_REG_ACC_Z_HI, (uint8_t*)&values[2]+1);
+		register_read(MPU_REG_ACC_Z_LO, (uint8_t*)&values[2]);
 
 		PRINT_HEX(&values[0], sizeof(values[0]));
 		PRINT_HEX(&values[1], sizeof(values[1]));
