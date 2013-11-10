@@ -318,8 +318,7 @@ imu_init(enum SPI_Channel channel) {
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
 
-
-#endif
+	imu_accelerometer_continuous();
 
 	return 0;
 }
