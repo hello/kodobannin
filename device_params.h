@@ -19,7 +19,7 @@
 #define GPIO_5  30
 
 #define IMU_SPI_MOSI       14
-#define IMU_SPI_MISO       22 //3 // was 22 in EVT2
+#define IMU_SPI_MISO       3 // was 22 in EVT2
 #define IMU_SPI_SCLK       19
 #define IMU_SPI_nCS        17
 #define IMU_INT             2
