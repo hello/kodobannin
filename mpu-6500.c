@@ -11,6 +11,28 @@
 static enum SPI_Channel chan = SPI_Channel_Invalid;
 static uint8_t buf[BUF_SIZE];
 
+static inline bool
+register_read(MPU_Register_t register_address, uint8_t* const out_value)
+{
+	uint8_t buf[2];
+	buf[0] = SPI_Read(register_address);
+
+	bool success = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	if(success) {
+		*out_value = buf[1];
+	}
+
+	return success;
+}
+
+static inline bool
+register_write(MPU_Register_t register_address, uint8_t value)
+{
+	uint8_t buf[2] = { SPI_Write(register_address), value };
+
+	return spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+}
+
 static void
 imu_uart_debug(const uint32_t result, const uint8_t *buf, const uint32_t len) {
 	int i;
