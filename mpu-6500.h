@@ -3,7 +3,7 @@
 
 #define CHIP_ID 0x70
 
-enum MPU_Registers {
+typedef enum MPU_Registers {
 	MPU_REG_CONFIG   = 0x1A,
 	MPU_REG_GYRO_CFG = 0x1B,
 	MPU_REG_ACC_CFG  = 0x1C,
@@ -35,7 +35,7 @@ enum MPU_Registers {
 	MPU_REG_FIFO_CNT_LO = 0x73,
 	MPU_REG_FIFO     = 0x74,
 	MPU_REG_WHO_AM_I = 0x75,
-};
+} MPU_Register_t;
 
 enum MPU_Reg_Bits {
 	CONFIG_FIFO_MODE_DROP = (1UL << 6),
