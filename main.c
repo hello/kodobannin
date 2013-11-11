@@ -140,6 +140,8 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 #define TEST_STATE_IDLE 0x66
 #define TEST_ENTER_DFU  0x99
 
+static volatile uint8_t do_imu = 0;
+
 void
 cmd_write_handler(ble_gatts_evt_write_t *event) {
     PRINTS("cmd_write_handler called\n");
@@ -153,6 +155,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 
     switch (state) {
         case TEST_START_HRS:
+            do_imu = 0;
             PRINT_HEX(event->data, 6);
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS job: ", test_size);
@@ -164,6 +167,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             break;
 
     case TEST_START_HRS2:
+            do_imu = 0;
             PRINT_HEX(event->data, 9);
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS job: ", test_size);
@@ -183,6 +187,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             break;
 
         case TEST_CAL_HRS:
+            do_imu = 0;
             PRINT_HEX(event->data, 6);
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS cal: ", test_size);
@@ -196,13 +201,15 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 
         case TEST_START_IMU:
                 //steal the HRS buffer
-                buf = get_hrs_buffer();
-                imu_reset_fifo();
+                //buf = get_hrs_buffer();
+                do_imu = 1;
+                /*imu_reset_fifo();
                 err = imu_fifo_read(480, buf);
                 ble_hello_demo_data_send_blocking(buf, err);
-                break;
+                */break;
 
         case TEST_ENTER_DFU:
+            do_imu = 0;
             PRINTS("Rebooting into DFU");
             // set the trap bit for the bootloader and kick the system
             //NRF_POWER->GPREGRET |= 0x1;
@@ -211,6 +218,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             break;
 
         case TEST_SEND_DATA:
+           do_imu = 0;
             DEBUG("Sending HRS data: ", test_size);
 
             err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
@@ -296,19 +304,23 @@ _start()
     debug_uart_init();
 
     //imu_selftest(SPI_Channel_0);
-/*
+
     // IMU standalone test code
 
     err_code = imu_init(SPI_Channel_0);
     APP_ERROR_CHECK(err_code);
 
+    // for do_imu code
     uint8_t sample[20];
+    memset(sample, 0, 20);
+/*
     uint32_t read, sent;
 
     while(1) {
-        read = imu_fifo_read(12, &sample[1]);
+        read = imu_accel_reg_read(sample);
+        read = imu_fifo_read(6, sample);
         if (read > 0) {
-            PRINT_HEX(&sample[1], 12);
+            PRINT_HEX(sample, read);
             PRINTS("\r\n");
         }
         nrf_delay_ms(5);
@@ -358,9 +370,15 @@ _start()
     // loop on BLE events FOREVER
     while(1) {
     	watchdog_pet();
-        // Switch to a low power state until an event is available for the application
-        err_code = sd_app_event_wait();
-        APP_ERROR_CHECK(err_code);
+
+        if (do_imu) {
+            imu_accel_reg_read(sample);
+            ble_hello_demo_data_send_blocking(sample, 12);
+        } else {
+            // Switch to a low power state until an event is available for the application
+            err_code = sd_app_event_wait();
+            APP_ERROR_CHECK(err_code);
+        }
     }
 
 	NVIC_SystemReset();
