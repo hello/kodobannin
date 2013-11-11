@@ -9,6 +9,7 @@
 #define PRINT_HEX(a,b) {}
 #define PRINTS(a) {}
 #define PRINTC(a) {}
+#define simple_uart_config(a,b,c,d,e) {}
 #endif //===================================================
 
 #define DEBUG(a,b) {PRINTS(a); PRINT_HEX(&b, sizeof(b)); PRINTC('\r'); PRINTC('\n');}

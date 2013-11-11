@@ -57,6 +57,7 @@ strlen(const char *a)
 	return count;
 }
 
+#ifdef DEBUG_SERIAL
 static const uint8_t hex[] = "0123456789ABCDEF";
 
 void
@@ -76,3 +77,4 @@ binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
 		*(out++) = hex[0xF&*ptr++];
 	}
 }
+#endif
