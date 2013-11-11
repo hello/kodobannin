@@ -218,7 +218,9 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     uint32_t i;
     uint32_t gpios[] = {
 	    GPIO_HRS_PWM_G1,
+#ifndef ONE_HRS_LED
         GPIO_HRS_PWM_G2
+#endif
     };
 
     APP_ERROR_CHECK(parameters.samples > sizeof(buffer));
@@ -233,7 +235,11 @@ void hrs_run_test2(hrs_parameters_t parameters) {
         PRINTS("HRS_RUN INIT");
 
         // drive PWM at 20kHz and range is 0-100 for intensity
+#ifdef ONE_HRS_LED
+        err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
+#else
         err_code = pwm_init(PWM_2_Channels, gpios, PWM_Mode_20kHz_100);
+#endif
         APP_ERROR_CHECK(err_code);
 
         // configure ADC
@@ -246,8 +252,11 @@ void hrs_run_test2(hrs_parameters_t parameters) {
 
     // turn on LED at specified brightness
     err_code = pwm_set_value(PWM_Channel_1, (uint32_t)parameters.power_level);
+    APP_ERROR_CHECK(err_code);
+#ifndef ONE_HRS_LED
     err_code = pwm_set_value(PWM_Channel_2, (uint32_t)parameters.power_level);
     APP_ERROR_CHECK(err_code);
+#endif
 
     // setup counters for limiting
     measure_count = 0;
@@ -296,7 +305,9 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     // turn off LED
     if (!parameters.keep_the_lights_on) {
         pwm_set_value(PWM_Channel_1, 0);
+#ifndef ONE_HRS_LED
         pwm_set_value(PWM_Channel_2, 0);
+#endif
     }
 }
 
