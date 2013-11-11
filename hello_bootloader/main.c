@@ -93,7 +93,7 @@ _start()
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
-    debug_uart_init();
+    simple_uart_config(0, 5, 0, 8, false);
 
     PRINTS("Bootloader is alive.\r\n");
 

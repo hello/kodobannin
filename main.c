@@ -299,9 +299,9 @@ _start()
     //_state = Demo_Config_Standby;
     _state = TEST_STATE_IDLE;
 
-    //pwm_test();
+    simple_uart_config(0, 5, 0, 8, false);
 
-    debug_uart_init();
+    //pwm_test();
 
     //imu_selftest(SPI_Channel_0);
 
