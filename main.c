@@ -144,7 +144,7 @@ static volatile uint8_t do_imu = 0;
 
 void
 cmd_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("cmd_write_handler called\n");
+    PRINTS("cmd_write_handler called\r\n");
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
