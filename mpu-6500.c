@@ -66,6 +66,26 @@ imu_get_fifo_count() {
 }
 
 uint16_t
+imu_accel_reg_read(uint8_t *buf) {
+	bool good = 0;
+
+	good = register_read(MPU_REG_ACC_X_LO, buf++);
+	APP_ERROR_CHECK(!good);
+	good = register_read(MPU_REG_ACC_X_HI, buf++);
+	APP_ERROR_CHECK(!good);
+	good = register_read(MPU_REG_ACC_Y_LO, buf++);
+	APP_ERROR_CHECK(!good);
+	good = register_read(MPU_REG_ACC_Y_HI, buf++);
+	APP_ERROR_CHECK(!good);
+	good = register_read(MPU_REG_ACC_Z_LO, buf++);
+	APP_ERROR_CHECK(!good);
+	good = register_read(MPU_REG_ACC_Z_HI, buf++);
+	APP_ERROR_CHECK(!good);
+
+	return 6;
+}
+
+uint16_t
 imu_fifo_read(uint16_t count, uint8_t *buf) {
 	uint16_t avail;
 
