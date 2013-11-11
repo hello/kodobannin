@@ -227,7 +227,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             // update device state
             if (err == NRF_SUCCESS) {
                 _state = TEST_STATE_IDLE;
-                err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
+                err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
                 APP_ERROR_CHECK(err);
             }
             break;
