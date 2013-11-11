@@ -321,48 +321,44 @@ _start()
 
     //pwm_test();
 
-    //imu_selftest(SPI_Channel_0);
-
     // IMU standalone test code
+#if 0
+    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err_code);
 
     err_code = imu_init(SPI_Channel_0);
     APP_ERROR_CHECK(err_code);
 
     // for do_imu code
-    uint8_t sample[20];
-    memset(sample, 0, 20);
-/*
+    int16_t *values = sample;
+    int16_t old_values[6];
+    uint16_t diff[6];
     uint32_t read, sent;
 
-    while(1) {
-        read = imu_accel_reg_read(sample);
-        read = imu_fifo_read(6, sample);
-        if (read > 0) {
-            PRINT_HEX(sample, read);
-            PRINTS("\r\n");
+    imu_read_regs(old_values);
+    int i;
+    while(1) {}
+        //read = imu_accel_reg_read(sample);
+        read = imu_read_regs(sample);
+        
+        // let's play around with calc'ing diffs
+        for (i=0; i < 6; i++) {
+            diff[i] = old_values[i] - values[i];
+            old_values[i] = values[i];
         }
+        //read = imu_fifo_read(6, sample);
+        //if (read > 0) {
+            PRINT_HEX(diff, read);
+            PRINTS("\r\n");
+        //}
         nrf_delay_ms(5);
     }
-*/
+#endif
+
     //adc_test();
 
-    // setup timer system
-    //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
-    //APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
-/*
-    err_code = app_timer_create(&imu_sampler, APP_TIMER_MODE_REPEATED, &sample_imu);
-    APP_ERROR_CHECK(err_code);
-
-    hrs_calibrate();
-    while(1) {
-        __WFE();
-    }
-*/
     // init ble
 	ble_init();
-
-    // init demo app ble service
-    // hello_demo_service_init();
 
     // start advertising
 	ble_advertising_start();
