@@ -179,7 +179,7 @@ imu_init(enum SPI_Channel channel) {
 	// page 43
 
 	// Reset chip
-	PRINTS("Chip reset\n");
+	PRINTS("Chip reset\r\n");
 	buf[0] = SPI_Write(MPU_REG_PWR_MGMT_1);
 	buf[1] = MPU_REG_PWR_MGMT_1_RESET;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
@@ -187,14 +187,14 @@ imu_init(enum SPI_Channel channel) {
 
 	nrf_delay_ms(100);
 
-	PRINTS("Chip wakeup\n");
+	PRINTS("Chip wakeup\r\n");
 	buf[0] = SPI_Write(MPU_REG_PWR_MGMT_1);
 	buf[1] = 0;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
 
 	// Check for valid Chip ID
-	simple_uart_putstring((const uint8_t *)"MPU-6500 Chip ID\n");
+	PRINTS("MPU-6500 Chip ID\r\n");
 
 	buf[0] = SPI_Read(MPU_REG_WHO_AM_I);
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
@@ -205,7 +205,7 @@ imu_init(enum SPI_Channel channel) {
 
 	if (buf[1] != CHIP_ID) {
 		PRINTS("Invalid MPU-6500 ID found. Expected 0x70, got 0x");
-		serial_print_hex(&buf[1], 1);
+		PRINT_HEX(&buf[1], 1);
 		return -1;
 	}
 
