@@ -21,10 +21,18 @@ null_cb(uint8_t val __attribute__((unused))) {
 static hrs_adc_callback adc_callback = &null_cb;
 
 static uint16_t buckets[NUM_BUCKETS];
-static uint32_t measure_count = 0;
+static volatile uint32_t measure_count = 0;
 static uint32_t measure_limit = 0;
 static uint32_t ppi_chan = 0;
 static uint32_t conf_done = 2;
+
+static uint8_t discard_threshold = UCHAR_MAX;
+static volatile bool discard_threshold_passed = false;
+
+#define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
+
+static uint8_t buffer[MAX_SAMPLE_COUNT];
+static uint16_t buf_lvl;
 
 #define HRS_TIMER               NRF_TIMER1
 #define HRS_IRQHandler          TIMER1_IRQHandler
@@ -154,18 +162,11 @@ hrs_calibration_cb(uint8_t val) {
     }*/
 }
 
-#define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
-
-static uint8_t buffer[MAX_SAMPLE_COUNT];
-static uint16_t buf_lvl;
 
 uint8_t *
 get_hrs_buffer() {
     return buffer;
 }
-
-static uint8_t discard_threshold = UCHAR_MAX;
-static bool discard_threshold_passed = false;
 
 void
 hrs_threshold_cb(uint8_t val) {
@@ -275,10 +276,10 @@ void hrs_run_test2(hrs_parameters_t parameters) {
         __WFE();
     	watchdog_pet();
 
-	if(discard_threshold_passed) {
-	    discard_threshold_passed = false;
-	    break;
-	}
+    	if(discard_threshold_passed) {
+    	    discard_threshold_passed = false;
+    	    break;
+    	}
     }
 
     // read samples and wait for completion
