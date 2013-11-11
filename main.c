@@ -387,7 +387,8 @@ _start()
 
         if (do_imu) {
             // sample IMU and queue up to send over BLE
-            imu_accel_reg_read(sample);
+            //imu_accel_reg_read(sample);
+            imu_read_regs(sample);
             ble_hello_demo_data_send_blocking(sample, 12);
         } else {
             // Switch to a low power state until an event is available for the application

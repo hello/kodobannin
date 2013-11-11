@@ -353,7 +353,7 @@ imu_init(enum SPI_Channel channel) {
 	// Init accel
 	PRINTS("Accel config\n");
 	buf[0] = SPI_Write(MPU_REG_ACC_CFG);
-	buf[1] = ACCEL_CFG_SCALE_8G;
+	buf[1] = ACCEL_CFG_SCALE_2G;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
