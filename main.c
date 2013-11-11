@@ -314,6 +314,10 @@ _start()
 {
 	uint32_t err_code;
 	watchdog_init(10, 1);
+    uint8_t sample[20];
+    
+    memset(sample, 0, 20);
+
     //_state = Demo_Config_Standby;
     _state = TEST_STATE_IDLE;
 
