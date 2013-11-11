@@ -80,6 +80,7 @@ enum MPU_Reg_Bits {
 	ACCEL_CFG_SCALE_4G   = (0UL << 4) | (1UL << 3),
 	ACCEL_CFG_SCALE_8G   = (1UL << 4) | (0UL << 3),
 	ACCEL_CFG_SCALE_16G  = (1UL << 4) | (1UL << 3),
+	ACCEL_CFG_SCALE_OFFSET = 0x3,
 
 	ACCEL_CFG2_FCHOICE_B    = (1 << 3),
 	ACCEL_CFG2_DPL_CFG_MASK = 3,
