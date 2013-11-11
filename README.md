@@ -28,6 +28,6 @@ Here are a few ways to get OS X to talk to serial ports. Take your pick of you p
 
 3. If you are 31337 like Andre and like to use `cat`:
 
-    exec 3<> /dev/cu.usbserial-*  # attach file descriptor 3 to serial port
-    stty -f /dev/cu.usbserial-* speed 38400  # set serial port to 38400 baud
-    cat <&3  # run cat with stdin attached to file descriptor 3
+       exec 3<> /dev/cu.usbserial-*  # attach file descriptor 3 to serial port
+       stty -f /dev/cu.usbserial-* speed 38400  # set serial port to 38400 baud
+       cat <&3  # run cat with stdin attached to file descriptor 3
