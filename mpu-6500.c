@@ -313,6 +313,10 @@ imu_init(enum SPI_Channel channel) {
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
 
+	bool success = false;
+	success = register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9); // 1000=(1+9) = 100 Hz
+	APP_ERROR_CHECK(!success);
+	
 	// Init accel
 	PRINTS("Accel config\n");
 	buf[0] = SPI_Write(MPU_REG_ACC_CFG);
