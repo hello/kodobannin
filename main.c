@@ -218,7 +218,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             break;
 
         case TEST_SEND_DATA:
-           do_imu = 0;
+            do_imu = 0;
             DEBUG("Sending HRS data: ", test_size);
 
             err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
@@ -230,6 +230,15 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
                 err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
                 APP_ERROR_CHECK(err);
             }
+            break;
+
+        case TEST_STATE_IDLE:
+            do_imu = 0;
+            if (_state == TEST_START_IMU) {
+                _state = TEST_STATE_IDLE;
+            }
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
             break;
 
         default:
@@ -250,6 +259,15 @@ start_sampling_on_connect(void) {
 
 void
 stop_sampling_on_disconnect(void) {
+    uint32_t err;
+    uint16_t len = 1;
+    PRINTS("\r\n*******Stop*******\r\n");
+    do_imu = 0;
+
+    _state = TEST_STATE_IDLE;
+    err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+    APP_ERROR_CHECK(err);
+
     //uint32_t err_code;
     //err_code = app_timer_stop(imu_sampler);
     //APP_ERROR_CHECK(err_code);
@@ -363,15 +381,12 @@ _start()
 	    APP_ERROR_CHECK(err_code);
     }
 
-    // start imu sampler - now done on BLE connect
-    //err_code = app_timer_start(imu_sampler, 200, NULL);
-    //APP_ERROR_CHECK(err_code);
-
     // loop on BLE events FOREVER
     while(1) {
     	watchdog_pet();
 
         if (do_imu) {
+            // sample IMU and queue up to send over BLE
             imu_accel_reg_read(sample);
             ble_hello_demo_data_send_blocking(sample, 12);
         } else {
