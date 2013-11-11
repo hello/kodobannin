@@ -328,7 +328,7 @@ imu_init(enum SPI_Channel channel) {
 	// Init Gyro
 	PRINTS("Gyro config\n");
 	buf[0] = SPI_Write(MPU_REG_GYRO_CFG);
-	buf[1] = (GYRO_CFG_RATE_2k_DPS << GYRO_CFG_RATE_OFFET);
+	buf[1] = (GYRO_CFG_RATE_250_DPS << GYRO_CFG_RATE_OFFET);
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
@@ -344,7 +344,7 @@ imu_init(enum SPI_Channel channel) {
 	// Init FIFO
 	PRINTS("FIFO config\n");
 	buf[0] = SPI_Write(MPU_REG_FIFO_EN);
-	buf[1] = FIFO_EN_QUEUE_ACCEL | FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z;// | FIFO_EN_QUEUE_ACCEL;
+	buf[1] = FIFO_EN_QUEUE_ACCEL;// | FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z;// | FIFO_EN_QUEUE_ACCEL;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
