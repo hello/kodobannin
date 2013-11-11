@@ -316,11 +316,11 @@ imu_init(enum SPI_Channel channel) {
 	bool success = false;
 	success = register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9); // 1000=(1+9) = 100 Hz
 	APP_ERROR_CHECK(!success);
-	
+
 	// Init accel
 	PRINTS("Accel config\n");
 	buf[0] = SPI_Write(MPU_REG_ACC_CFG);
-	buf[1] = (ACCEL_CFG_SCALE_8G << ACCEL_CFG_SCALE_OFFSET);
+	buf[1] = ACCEL_CFG_SCALE_8G;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
