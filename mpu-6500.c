@@ -346,12 +346,16 @@ imu_init(enum SPI_Channel channel) {
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
 
-	bool success = false;
-	success = register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9); // 1000=(1+9) = 100 Hz
-	APP_ERROR_CHECK(!success);
+	// Set sample rate div  F = (DPLF_Freq / (Sample Rate Div + 1))
+	PRINTS("Sample Rate config\n");
+	buf[0] = SPI_Write(MPU_REG_SAMPLE_RATE_DIVIDER);
+	buf[1] = 9;
+	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	imu_uart_debug(err, buf, 2);
+	PRINTC('\n');
 
 	// Init accel
-	PRINTS("Accel config\n");
+	PRINTS("Accel scale config\n");
 	buf[0] = SPI_Write(MPU_REG_ACC_CFG);
 	buf[1] = ACCEL_CFG_SCALE_2G;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
