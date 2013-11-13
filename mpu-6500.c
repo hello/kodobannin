@@ -181,7 +181,7 @@ imu_init(enum SPI_Channel channel) {
 	// Reset chip
 	PRINTS("Chip reset\r\n");
 	buf[0] = SPI_Write(MPU_REG_PWR_MGMT_1);
-	buf[1] = MPU_REG_PWR_MGMT_1_RESET;
+	buf[1] = PWR_MGMT_1_RESET;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
 
