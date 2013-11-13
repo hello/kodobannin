@@ -20,7 +20,7 @@ Serial Debugging
 
 The Band has serial port output. You will want the serial port set to 38400 8N1. (8 stop bits, no parity, 1 stop bit.) Plugging in a USB serial port should add a new device at `/dev/cu.usbserial-SOMETHING`.
 
-Here are a few ways to get OS X to talk to serial ports. Take your pick of you prefer.
+Here are a few ways to get OS X to talk to serial ports. Take your pick of what you prefer. On pre-Mavericks machines, you'll need the FTDI serial driver from [FTDI](http://www.ftdichip.com/Drivers/VCP.htm) to make the serial port appear.
 
 1. `screen /dev/cu.usbserial-* 38400`. This is the easiest option, since screen works on all Macs. Unless you know GNU screen voodoo, screen may or may not override your Terminal scrollback buffer, which you may or may not want.
 
