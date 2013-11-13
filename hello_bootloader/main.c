@@ -98,6 +98,10 @@ _start()
     PRINTS("Bootloader is alive.\r\n");
 
 #ifdef DEBUG
+    PRINTS("Device name: ");
+    PRINTS(BLE_DEVICE_NAME);
+    PRINTS("\r\n");
+
 	{
 		uint8_t mac_address[6];
 
