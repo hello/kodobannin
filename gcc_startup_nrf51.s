@@ -1,10 +1,10 @@
-/* 
+/*
 Copyright (c) 2009 Nordic Semiconductor. All Rights Reserved.
 
 The information contained herein is property of Nordic Semiconductor ASA.
 Terms and conditions of usage are described in detail in NORDIC
 SEMICONDUCTOR STANDARD SOFTWARE LICENSE AGREEMENT.
- 
+
 Licensees are granted free, non-transferable use of the information. NO
 WARRANTY of ANY KIND is provided. This heading must NOT be removed from
 the file.
@@ -44,7 +44,7 @@ __HeapBase:
     .size __HeapBase, . - __HeapBase
 __HeapLimit:
     .size __HeapLimit, . - __HeapLimit
-    
+
     .section .Vectors
     .align 2
     .globl __Vectors
@@ -106,7 +106,7 @@ __Vectors:
 /* Reset Handler */
 
     .equ    NRF_POWER_RAMON_ADDRESS,            0x40000524
-    .equ    NRF_POWER_RAMON_RAMxON_ONMODE_Msk,  0xF  
+    .equ    NRF_POWER_RAMON_RAMxON_ONMODE_Msk,  0xF
 
     .text
     .thumb
@@ -125,7 +125,7 @@ Reset_Handler:
     STR     R2, [R0]
 
 /*     Loop to copy data from read only memory to RAM. The ranges
- *      of copy from/to are specified by following symbols evaluated in 
+ *      of copy from/to are specified by following symbols evaluated in
  *      linker script.
  *      __etext: End of code section, i.e., begin of data sections to copy from.
  *      __data_start__/__data_end__: RAM address range that data should be
@@ -136,27 +136,29 @@ Reset_Handler:
     ldr    r3, =__data_end__
 
     subs    r3, r2
-    ble     .LC0
+    ble     .clear_bss
 
-.LC1:
+.etext_loop:
     subs    r3, 4
     ldr    r0, [r1,r3]
     str    r0, [r2,r3]
-    bgt    .LC1
-.LC0:
+    bgt    .etext_loop
+
+.clear_bss:
 /* clear bss */
     subs r1, r1
-    ldr r4, =__bss_start__
+    ldr r2, =__bss_start__
     ldr r3, =__bss_end__
 
-    subs r3, r4
-    bgt     .LC3
-.LC2:
-    subs r3, 4
-    str r1, [r4, r3]
-    bgt .LC2
+    subs r3, r2
+    ble     .sys_init
 
-.LC3:
+.bss_loop:
+    subs r3, 4
+    str r1, [r2, r3]
+    bgt .bss_loop
+
+.sys_init:
     LDR     R0, =SystemInit
     BLX     R0
     LDR     R0, =_start
