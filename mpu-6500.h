@@ -74,8 +74,8 @@ enum MPU_Reg_Bits {
 	GYRO_CFG_FCHOICE_B_MASK = 0x3,
 
 	ACCEL_CFG_X_TEST     = (1UL << 7),
-	ACCEL_CFG_Y_TEST     = (1UL << 7),
-	ACCEL_CFG_Z_TEST     = (1UL << 7),
+	ACCEL_CFG_Y_TEST     = (1UL << 6),
+	ACCEL_CFG_Z_TEST     = (1UL << 5),
 	ACCEL_CFG_SCALE_2G   = (0UL << 4) | (0UL << 3),
 	ACCEL_CFG_SCALE_4G   = (0UL << 4) | (1UL << 3),
 	ACCEL_CFG_SCALE_8G   = (1UL << 4) | (0UL << 3),
