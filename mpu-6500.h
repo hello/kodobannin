@@ -108,7 +108,7 @@ enum MPU_Reg_Bits {
 	ACCEL_CFG2_LPF_1kHz_20bw    = 4,
 	ACCEL_CFG2_LPF_1kHz_10bw    = 5,
 	ACCEL_CFG2_LPF_1kHz_5bw     = 6,
-	ACCEL_CFG2_LPF_1kHz_460bw   = 7,
+	ACCEL_CFG2_LPF_1kHz_460bw_2 = 7,
 
 	FIFO_EN_QUEUE_TEMP   = (1UL << 7),
 	FIFO_EN_QUEUE_GYRO_X = (1UL << 6),
