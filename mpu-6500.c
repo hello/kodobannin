@@ -362,10 +362,26 @@ imu_init(enum SPI_Channel channel) {
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
 
+	// Set Accel Low Pass Filter
+	PRINTS("Accel LPF Config\n");
+	buf[0] = SPI_Write(MPU_REG_ACC_CFG2);
+	buf[1] = (ACCEL_CFG2_FCHOICE_1 << ACCEL_CFG2_FCHOICE_B_SHIFT) | ACCEL_CFG2_LPF_1kHz_460bw;
+	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	imu_uart_debug(err, buf, 2);
+	PRINTC('\n');
+
+	// Set Gyro Low Pass Filter
+	PRINTS("Gyro LPF Config\n");
+	buf[0] = SPI_Write(MPU_REG_CONFIG);
+	buf[1] = CONFIG_LPF_1kHz_184bw;
+	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	imu_uart_debug(err, buf, 2);
+	PRINTC('\n');
+
 	// Init Gyro
 	PRINTS("Gyro config\n");
 	buf[0] = SPI_Write(MPU_REG_GYRO_CFG);
-	buf[1] = (GYRO_CFG_RATE_250_DPS << GYRO_CFG_RATE_OFFET);
+	buf[1] = (GYRO_CFG_RATE_250_DPS << GYRO_CFG_RATE_OFFET) | GYRO_CFG_FCHOICE_11;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
 	PRINTC('\n');
