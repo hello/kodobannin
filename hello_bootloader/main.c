@@ -22,7 +22,6 @@
 static void
 sha1_fw_area(uint8_t *hash)
 {
-	sha1_ctx_t ctx;
 	uint32_t code_size    = DFU_IMAGE_MAX_SIZE_FULL;
 	uint8_t *code_address = (uint8_t *)CODE_REGION_1_START;
 	uint32_t *index = (uint32_t *)BOOTLOADER_REGION_START - DFU_APP_DATA_RESERVED;
@@ -36,9 +35,7 @@ sha1_fw_area(uint8_t *hash)
     if (code_size ==  0)
         return;
 
-	sha1_init(&ctx);
-	sha1_update(&ctx, (void *)code_address, code_size);
-	sha1_final(&ctx, (uint32_t*)hash);
+    sha1_calc(code_address, code_size, hash);
 }
 
 static bool
