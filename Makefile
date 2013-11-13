@@ -177,6 +177,9 @@ gdbs:
 gdb:
 	$(BIN)/arm-none-eabi-gdb app.elf -ex "tar remote :2331" -ex "mon reset"
 
+blgdb:
+	$(BIN)/arm-none-eabi-gdb bootloader.elf -ex "tar remote :2331" -ex "mon reset"
+
 cgdb:
 	cgdb -d $(BIN)/arm-none-eabi-gdb -- app.elf -ex "tar remote :2331" -ex "mon reset"
 
