@@ -44,6 +44,9 @@ enum
 static bool    m_is_dfu_service_initialized = false;                                /**< Variable to check if the DFU service was initialized by the application.*/
 static uint8_t m_notif_buffer[MAX_NOTIF_BUFFER_LEN];                                /**< Buffer used for sending notifications to peer. */
 
+/// Attribute handle for the Generic Attribute Service (UUID 0x1801).
+static uint16_t m_gatt_service_handle;
+
 
 /**@brief       Function for adding DFU Packet characteristic to the BLE Stack.
  *
@@ -432,6 +435,58 @@ uint32_t ble_dfu_init(ble_dfu_t * p_dfu, ble_dfu_init_t * p_dfu_init)
 
     m_is_dfu_service_initialized = true;
 
+    // Add Generic Attribute Service (0x1801), so we can expose the
+    // Service Changed Characteristic (0x2A05).
+
+    static const ble_uuid_t gatt_uuid = {
+	    .uuid = BLE_UUID_GATT,
+	    .type = BLE_UUID_TYPE_BLE
+    };
+
+    err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
+					&gatt_uuid,
+					&m_gatt_service_handle);
+    APP_ERROR_CHECK(err_code);
+
+    ble_gatts_char_md_t svc_changed_char_metadata;
+    memset(&svc_changed_char_metadata, 0, sizeof(svc_changed_char_metadata));
+    svc_changed_char_metadata = (ble_gatts_char_md_t) {
+	.char_props.indicate = 1,
+    };
+
+    ble_gatts_attr_md_t svc_changed_attr_md;
+    memset(&svc_changed_attr_md, 0, sizeof(svc_changed_attr_md));
+    svc_changed_attr_md = (ble_gatts_attr_md_t) {
+	.vloc = BLE_GATTS_VLOC_STACK,
+	.rd_auth = 0,
+	.wr_auth = 0,
+	.vlen = 1,
+    };
+
+    ble_uuid_t service_changed_uuid = {
+	.uuid = BLE_UUID_GATT_CHARACTERISTIC_SERVICE_CHANGED,
+	.type = BLE_UUID_TYPE_BLE,
+    };
+
+    ble_gatts_attr_t char_value;
+    memset(&char_value, 0, sizeof(char_value));
+    char_value = (ble_gatts_attr_t) {
+	.p_uuid = &service_changed_uuid,
+	.p_attr_md = &svc_changed_attr_md,
+	.init_len = 0,
+	.init_offs = 0,
+	.max_len = 8,
+	.p_value = NULL,
+    };
+
+    ble_gatts_char_handles_t handles;
+
+    err_code = sd_ble_gatts_characteristic_add(m_gatt_service_handle,
+					       &svc_changed_char_metadata,
+					       &char_value,
+					       &handles);
+    APP_ERROR_CHECK(err_code);
+
     return NRF_SUCCESS;
 }
 
@@ -476,12 +531,12 @@ uint32_t ble_dfu_bytes_rcvd_report(ble_dfu_t * p_dfu, uint32_t num_of_firmware_b
     {
         return NRF_ERROR_NULL;
     }
-    
+
     if ((p_dfu->conn_handle == BLE_CONN_HANDLE_INVALID) || !m_is_dfu_service_initialized)
     {
         return NRF_ERROR_INVALID_STATE;
     }
-    
+
     ble_gatts_hvx_params_t hvx_params;
     uint16_t               index = 0;
 
