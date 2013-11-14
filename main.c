@@ -317,7 +317,7 @@ _start()
 	uint32_t err_code;
 	watchdog_init(10, 1);
     uint8_t sample[20];
-    
+
     memset(sample, 0, 20);
 
     //_state = Demo_Config_Standby;
@@ -346,7 +346,7 @@ _start()
     while(1) {}
         //read = imu_accel_reg_read(sample);
         read = imu_read_regs(sample);
-        
+
         // let's play around with calc'ing diffs
         for (i=0; i < 6; i++) {
             diff[i] = old_values[i] - values[i];
