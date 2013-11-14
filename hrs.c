@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #include <app_error.h>
 #include <device_params.h>
 #include <hrs.h>
@@ -12,39 +14,36 @@
 #include <nrf_soc.h>
 #include <watchdog.h>
 
-typedef void(*hrs_adc_callback)(uint8_t);
+static hrs_parameters_t hrs_parameters;
 
-void
-null_cb(uint8_t val __attribute__((unused))) {
-}
+static uint32_t ppi_chan = -1;
 
-static hrs_adc_callback adc_callback = &null_cb;
+typedef enum {
+	HRS_STATE_START,
+	HRS_STATE_DISCARD,
+	HRS_STATE_THRESHOLD,
+	HRS_STATE_READING,
+	HRS_STATE_FINISHED,
+} hrs_state_t;
 
-static uint16_t buckets[NUM_BUCKETS];
-static volatile uint32_t measure_count = 0;
-static uint32_t measure_limit = 0;
-static uint32_t ppi_chan = 0;
-static uint32_t conf_done = 2;
-
-static uint8_t discard_threshold = UCHAR_MAX;
-static volatile bool discard_threshold_passed = false;
+static hrs_state_t hrs_state = HRS_STATE_START;
 
 #define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
 
 static uint8_t buffer[MAX_SAMPLE_COUNT];
-static uint16_t buf_lvl;
 
 #define HRS_TIMER               NRF_TIMER1
 #define HRS_IRQHandler          TIMER1_IRQHandler
 #define HRS_IRQn                TIMER1_IRQn
 
 void HRS_IRQHandler() {
-    //PRINTS("HRS_TIMER");
     HRS_TIMER->EVENTS_COMPARE[0] = 0;
     HRS_TIMER->INTENCLR = 0xFFFFFFFF;
     HRS_TIMER->SHORTS = TIMER_SHORTS_COMPARE0_CLEAR_Msk;
     HRS_TIMER->CC[0] = 2500;
     HRS_TIMER->TASKS_START = 1;
+
+	PRINTS("HRS_IRQHandler\r\n");
 }
 
 static void
@@ -69,10 +68,10 @@ hrs_adc_conf() {
     HRS_TIMER->EVENTS_COMPARE[2] = 0;
     HRS_TIMER->EVENTS_COMPARE[3] = 0;
     HRS_TIMER->CC[0] = 2500; // sample rate = 100Hz; 16MHz / 2^6 = 250kHz / 100Hz = 2500
-    sd_nvic_SetPriority(HRS_IRQn, 3);
-    //NVIC_SetPriority(HRS_IRQn, 3);
-    //NVIC_EnableIRQ(HRS_IRQn);
+
+    sd_nvic_SetPriority(HRS_IRQn, NRF_APP_PRIORITY_LOW);
     sd_nvic_EnableIRQ(HRS_IRQn);
+
     HRS_TIMER->TASKS_START = 1;
 
     ppi_chan = ppi_enable_first_available_channel(&HRS_TIMER->EVENTS_COMPARE[0], &NRF_ADC->TASKS_START);
@@ -81,23 +80,22 @@ hrs_adc_conf() {
 }
 
 static void
-hrs_adc_start() {
-    // Enable the ADC interrupt, and set the priority to 1
-    //NVIC_SetPriority(ADC_IRQn, 1);
-    //NVIC_EnableIRQ(ADC_IRQn);
-    sd_nvic_SetPriority(ADC_IRQn, 1);
-    sd_nvic_EnableIRQ(ADC_IRQn);
+hrs_adc_start()
+{
     NRF_ADC->ENABLE = 1;
 
-    // Start the ADC
-    //NRF_ADC->TASKS_START = 1;
+    sd_nvic_SetPriority(ADC_IRQn, NRF_APP_PRIORITY_HIGH);
+    sd_nvic_EnableIRQ(ADC_IRQn);
+
+	NRF_ADC->TASKS_START = 1;
 }
 
 static void
 hrs_adc_stop() {
-    NRF_ADC->TASKS_STOP = 1;
-    sd_nvic_DisableIRQ(ADC_IRQn);
-    //NVIC_DisableIRQ(ADC_IRQn);
+	NRF_ADC->TASKS_START = 0;
+
+    //sd_nvic_DisableIRQ(ADC_IRQn);
+
     NRF_ADC->ENABLE = 0;
 }
 
@@ -112,56 +110,9 @@ hrs_sensor_disable() {
     nrf_gpio_pin_clear(GPIO_3v3_Enable);
 }
 
-void
-hrs_debug_cb(uint8_t val) {
-    DEBUG("", val);
-}
+#define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
 
-void
-hrs_calibration_cb(uint8_t val) {
-    //if (val != 0)
-    //DEBUG("", val);
-
-    if (val < BUCKET_LVL)
-        ++buckets[0];
-    else if (val < BUCKET_LVL*2)
-        ++buckets[1];
-    else if (val < BUCKET_LVL*3)
-        ++buckets[2];
-    else if (val < BUCKET_LVL*4)
-        ++buckets[3];
-    else if (val < BUCKET_LVL*5)
-        ++buckets[4];
-    else if (val < BUCKET_LVL*6)
-        ++buckets[5];
-    else if (val < BUCKET_LVL*7)
-        ++buckets[6];
-    else if (val < BUCKET_LVL*8)
-        ++buckets[7];
-    else if (val < BUCKET_LVL*9)
-        ++buckets[8];
-    else if (val < BUCKET_LVL*10)
-        ++buckets[9];
-    else if (val < BUCKET_LVL*11)
-        ++buckets[10];
-    else if (val < BUCKET_LVL*12)
-        ++buckets[11];
-    else if (val < BUCKET_LVL*13)
-        ++buckets[12];
-    else
-        ++buckets[13];
-/*
-    if (++measure_count > measure_limit) {
-        PRINT_HEX(&buckets[0], 4);
-        PRINT_HEX(&buckets[1], 4);
-        PRINT_HEX(&buckets[2], 4);
-        PRINT_HEX(&buckets[3], 4);
-        PRINTS("\r\n");
-        memset(buckets, 0, NUM_BUCKETS*sizeof(uint32_t));
-        measure_count = 0;
-    }*/
-}
-
+static uint8_t buffer[MAX_SAMPLE_COUNT];
 
 uint8_t *
 get_hrs_buffer() {
@@ -169,53 +120,23 @@ get_hrs_buffer() {
 }
 
 void
-hrs_threshold_cb(uint8_t val) {
-    if (val <= discard_threshold) {
-	discard_threshold_passed = true;
-    } else {
-        DEBUG("Over threshold: ", val);
-    }
-}
-
-void
-hrs_test_cb(uint8_t val) {
-    if (measure_count < measure_limit)
-        buffer[buf_lvl++] = val;
-}
-
-void
-hrs_calibrate(uint8_t power_lvl_min, uint8_t power_lvl_max, uint16_t delay, uint16_t samples, hrs_send_data_cb data_send) {
-    uint32_t i;
-
-    APP_ERROR_CHECK(data_send !=NULL);
-
-    DEBUG("pwr min ", power_lvl_min);
-    DEBUG("pwr max ", power_lvl_max);
-    DEBUG("samples ", samples);
-
-    for(i = power_lvl_min; i <= power_lvl_max; i++) {
-        hrs_run_test(i, delay, samples, 0);
-        data_send(buffer, samples);
-    }
-}
-
-void
 hrs_run_test(uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_lights_on) {
     hrs_parameters_t parameters = {
-	.power_level = power_lvl,
-	.delay = delay,
-	.samples = samples,
-	.discard_samples = 200,
-	.discard_threshold = UCHAR_MAX,
-	.keep_the_lights_on = keep_the_lights_on,
+		.power_level = power_lvl,
+		.delay = delay,
+		.samples = samples,
+		.discard_samples = 200,
+		.discard_threshold = UCHAR_MAX,
+		.keep_the_lights_on = keep_the_lights_on,
     };
 
     hrs_run_test2(parameters);
 }
 
-void hrs_run_test2(hrs_parameters_t parameters) {
+static void
+hrs_preflight()
+{
     uint32_t err_code;
-    uint32_t i;
     uint32_t gpios[] = {
 	    GPIO_HRS_PWM_G1,
 #ifndef ONE_HRS_LED
@@ -223,16 +144,16 @@ void hrs_run_test2(hrs_parameters_t parameters) {
 #endif
     };
 
-    APP_ERROR_CHECK(parameters.samples > sizeof(buffer));
-
-    buf_lvl = 0;
+    APP_ERROR_CHECK(hrs_parameters.samples > sizeof(buffer));
 
     // enable the HRS sensor
     hrs_sensor_enable();
 
-    if (conf_done == 2) {
+	static bool conf_done;
+
+    if (!conf_done) {
         // one-time init
-        PRINTS("HRS_RUN INIT");
+        PRINTS("HRS_RUN INIT\r\n");
 
         // drive PWM at 20kHz and range is 0-100 for intensity
 #ifdef ONE_HRS_LED
@@ -244,66 +165,50 @@ void hrs_run_test2(hrs_parameters_t parameters) {
 
         // configure ADC
         hrs_adc_conf();
-        hrs_adc_start();
-        conf_done = 1;
+
+        conf_done = true;
     }
 
-    DEBUG("HRS power ", parameters.power_level);
+    DEBUG("HRS power ", hrs_parameters.power_level);
 
     // turn on LED at specified brightness
-    err_code = pwm_set_value(PWM_Channel_1, (uint32_t)parameters.power_level);
+    err_code = pwm_set_value(PWM_Channel_1, (uint32_t)hrs_parameters.power_level);
     APP_ERROR_CHECK(err_code);
 #ifndef ONE_HRS_LED
-    err_code = pwm_set_value(PWM_Channel_2, (uint32_t)parameters.power_level);
+    err_code = pwm_set_value(PWM_Channel_2, (uint32_t)hrs_parameters.power_level);
     APP_ERROR_CHECK(err_code);
 #endif
-
-    // setup counters for limiting
-    measure_count = 0;
-    measure_limit = parameters.samples;
-
-    // wait for sensor output to settle
-    nrf_delay_ms(parameters.delay);
 
     // enable PPI
     err_code = sd_ppi_channel_enable_set(1<<ppi_chan);
     APP_ERROR_CHECK(err_code);
 
-    // discard the first N samples, where N = parameters.discard_samples
-    adc_callback = &null_cb;
-    for(i = 0; i < parameters.discard_samples; i++) {
-	__WFE();
+	hrs_adc_start();
+
+	hrs_state = HRS_STATE_START;
+}
+
+static void
+hrs_postflight()
+{
+    uint32_t err_code;
+
 	watchdog_pet();
-    }
-    DEBUG("Discarded number of samples: ", parameters.discard_samples);
 
-    // wait for the first sample to pass the threshold check
-    discard_threshold_passed = false;
-    discard_threshold = parameters.discard_threshold;
-    adc_callback = &hrs_threshold_cb;
-    for(;;) {
-        __WFE();
-    	watchdog_pet();
+	TRACE();
 
-    	if(discard_threshold_passed) {
-    	    discard_threshold_passed = false;
-    	    break;
-    	}
-    }
+	hrs_adc_stop();
 
-    // read samples and wait for completion
-    adc_callback = &hrs_test_cb;
-    while (measure_count < measure_limit) {
-        __WFE();
-    	watchdog_pet();
-    }
+	TRACE();
 
     // disable PPI
-    err_code = sd_ppi_channel_enable_clr(1<<ppi_chan);
-    APP_ERROR_CHECK(err_code);
+    // err_code = sd_ppi_channel_enable_clr(1<<ppi_chan);
+    // APP_ERROR_CHECK(err_code);
 
     // turn off LED
-    if (!parameters.keep_the_lights_on) {
+	DEBUG("Keep lights on? ", hrs_parameters.keep_the_lights_on);
+
+    if (!hrs_parameters.keep_the_lights_on) {
         pwm_set_value(PWM_Channel_1, 0);
 #ifndef ONE_HRS_LED
         pwm_set_value(PWM_Channel_2, 0);
@@ -311,259 +216,92 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     }
 }
 
-#define MDELAY  4000
-/*
-uint32_t
-hrs_calibrate() {
-    uint32_t err_code;
-    uint32_t i;
-    uint32_t gpios[] = {
-        GPIO_HRS_PWM_G
-    };
-
-    // we should probably kill or pause the softdevice here
-
-
-
-    adc_callback = &hrs_calibration_cb;
-
-    // enable the HRS sensor
-    hrs_sensor_enable();
-
-    // drive PWM at 20kHz and range is 0-100 for intensity
-    err_code = pwm_init(PWM_Channel_1, gpios, PWM_Mode_20kHz_100);
-    APP_ERROR_CHECK(err_code);
-
-// configure ADC
-    hrs_adc_conf();
-    hrs_adc_start();
-
-
-
-    uint32_t best_fit = 0;
-    uint8_t minima = 100;
-#if 0
-    for (i=0; i <= 14; i+=1) {
-        measure_count = 0;
-        measure_limit = 200; // whatever sampling rate we're using * 1.5
-
-        err_code = pwm_set_value(PWM_Channel_1, i);
-        APP_ERROR_CHECK(err_code);
-        DEBUG("Power lvl ", i);
-
-        // wait for sensor to stabilize from the light change
-        // TODO: watch for zero
-        nrf_delay_ms(MDELAY);
-
-        // start samples
-        //hrs_adc_start();
-        memset(buckets, 0, sizeof(buckets));
-        // enable PPI
-        NRF_PPI->CHENSET = (1 << ppi_chan);
-
-        // wait for completion
-        while (measure_count < measure_limit) {
-            __WFE();
-        }
-
-        // disable PPI
-        NRF_PPI->CHENCLR = (1 << ppi_chan);
-
-        // stop ADC
-        //hrs_adc_stop();
-
-        // analyze readings
-        if (buckets[0] < minima) {
-            minima = buckets[0];
-            best_fit = i;
-        }
-
-        PRINT_HEX(buckets, sizeof(buckets));
-        PRINTS("\r\n");
-
-
-    }
-    DEBUG("Best fit: ", best_fit);
-    DEBUG("Minima: ", minima);
-
-    uint32_t temp = best_fit;
-    best_fit = 0;
-    minima = 100;
-
-    for (i=temp-1; i < temp+2; i++) {
-        measure_count = 0;
-        measure_limit = 200; // whatever sampling rate we're using * 1.5
-
-        err_code = pwm_set_value(PWM_Channel_1, i);
-        APP_ERROR_CHECK(err_code);
-        //DEBUG("Power lvl ", i);
-
-        // wait for sensor to stabilize from the light change
-        // TODO: watch for zero
-        nrf_delay_ms(MDELAY);
-
-        // start samples
-        //hrs_adc_start();
-        memset(buckets, 0, sizeof(buckets));
-        // enable PPI
-        NRF_PPI->CHENSET = (1 << ppi_chan);
-
-        // wait for completion
-        while (measure_count < measure_limit) {
-            __WFE();
-        }
-
-        // disable PPI
-        NRF_PPI->CHENCLR = (1 << ppi_chan);
-
-        // stop ADC
-        //hrs_adc_stop();
-
-        // analyze readings
-        if (buckets[0] < minima) {
-            minima = buckets[0];
-            best_fit = i;
-        }
-    }
-    DEBUG("Best fit: ", best_fit);
-    DEBUG("Minima: ", minima);
-    if (temp != best_fit) {
-        DEBUG("cal diverged from ", temp);
-        DEBUG("to ", best_fit);
-    }
-#endif
-    err_code = pwm_set_value(PWM_Channel_1, 9);
-    APP_ERROR_CHECK(err_code);
-    adc_callback = &hrs_debug_cb;
-    measure_count = 0;
-    measure_limit = 500;
-    nrf_delay_ms(MDELAY);
-
-    //for (i=0; i < 200; i++) {
-        // enable PPI
-        NRF_PPI->CHENSET = (1 << ppi_chan);
-
-        // wait for completion
-        while (measure_count < measure_limit) {
-            __WFE();
-        }
-
-        // disable PPI
-        NRF_PPI->CHENCLR = (1 << ppi_chan);
-
-    err_code = pwm_set_value(PWM_Channel_1, 0xa);
-    APP_ERROR_CHECK(err_code);
-    adc_callback = &hrs_debug_cb;
-    measure_count = 0;
-    measure_limit = 500;
-    nrf_delay_ms(MDELAY);
-
-    //for (i=0; i < 200; i++) {
-        // enable PPI
-        NRF_PPI->CHENSET = (1 << ppi_chan);
-
-        // wait for completion
-        while (measure_count < measure_limit) {
-            __WFE();
-        }
-
-        // disable PPI
-        NRF_PPI->CHENCLR = (1 << ppi_chan);
-
-    //}
-    pwm_set_value(PWM_Channel_1, 0);
-}*/
-
 static void
-hrs_test_callback(uint8_t val) {
+adc_callback(uint8_t val) {
+	static uint32_t measure_count;
+	static uint16_t buf_lvl;
 
-    if (val < BUCKET_LVL)
-        ++buckets[0];
-    else if (val < BUCKET_LVL*2)
-        ++buckets[1];
-    else if (val < BUCKET_LVL*3)
-        ++buckets[2];
-    else if (val < BUCKET_LVL*4)
-        ++buckets[3];
-    else if (val < BUCKET_LVL*5)
-        ++buckets[4];
-    else if (val < BUCKET_LVL*6)
-        ++buckets[5];
-    else if (val < BUCKET_LVL*7)
-        ++buckets[6];
-    else if (val < BUCKET_LVL*8)
-        ++buckets[7];
-    else if (val < BUCKET_LVL*9)
-        ++buckets[8];
-    else if (val < BUCKET_LVL*10)
-        ++buckets[9];
-    else if (val < BUCKET_LVL*11)
-        ++buckets[10];
-    else if (val < BUCKET_LVL*12)
-        ++buckets[11];
-    else if (val < BUCKET_LVL*13)
-        ++buckets[12];
-    else
-        ++buckets[13];
+	switch(hrs_state) {
+	case HRS_STATE_START:
+		measure_count = 0;
+		buf_lvl = 0;
 
-    //PRINT_HEX(&tmp, 1);
-    //PRINTC(' ');
+		hrs_state = HRS_STATE_DISCARD;
 
-    if (++measure_count > measure_limit) {
-        PRINT_HEX(&buckets[0], 4);
-        PRINT_HEX(&buckets[1], 4);
-        PRINT_HEX(&buckets[2], 4);
-        PRINT_HEX(&buckets[3], 4);
-        PRINTS("\r\n");
-        memset(buckets, 0, NUM_BUCKETS*sizeof(uint32_t));
-        measure_count = 0;
-    }
+		// Fallthrough
+	case HRS_STATE_DISCARD:
+		if(measure_count <= hrs_parameters.discard_samples) {
+			break;
+		} else {
+			DEBUG("Discarded number of samples: ", measure_count);
+
+			measure_count = 0;
+			hrs_state = HRS_STATE_THRESHOLD;
+
+			// Fallthrough
+		}
+	case HRS_STATE_THRESHOLD:
+		if(val > hrs_parameters.discard_threshold) {
+			DEBUG("Over threshold: ", val);
+
+			break;
+		} else {
+			DEBUG("Discarded sample count due to threshold: ", measure_count);
+
+			measure_count = 0;
+			hrs_state = HRS_STATE_READING;
+
+			// Fallthrough
+		}
+	case HRS_STATE_READING:
+		if (measure_count < hrs_parameters.samples) {
+			buffer[buf_lvl++] = val;
+
+#ifdef DEBUG
+			if(measure_count % 20 == 0) {
+				DEBUG("Read samples: ", measure_count);
+			}
+#endif
+
+			break;
+		} else {
+			PRINTS("Finished HRS reading\r\n");
+			hrs_state = HRS_STATE_FINISHED;
+
+			// Fallthrough
+		}
+	case HRS_STATE_FINISHED:
+		PRINTS("HRS finished\r\n");
+
+		hrs_postflight();
+		return;
+	}
+
+	++measure_count;
+
+	watchdog_pet();
 }
+
+void
+hrs_run_test2(hrs_parameters_t parameters) {
+	hrs_parameters = parameters;
+
+	hrs_preflight();
+}
+
+#define MDELAY  4000
 
 void
 ADC_IRQHandler(void)
 {
-    if(!NRF_ADC->EVENTS_END)
+    if(!NRF_ADC->EVENTS_END) {
         PRINTS("ARGH");
+	}
 
-
-    // Read the ADC result, and dispatch the callback
     adc_callback(NRF_ADC->RESULT);
 
-    // Clear the END event
-    NRF_ADC->EVENTS_END = 0;
-
-    ++measure_count;
-
-// Prevent further sampling
+	NRF_ADC->EVENTS_END = 0;
     NRF_ADC->TASKS_STOP = 1;
-    // for free-sampling, trigger a new sample cycle
-    //nrf_delay_ms(8);
-    //NRF_ADC->TASKS_START = 1;
 }
 
-void
-adc_test() {
-    uint32_t err_code;
-
-    hrs_adc_conf();
-
-    hrs_sensor_enable();
-
-    // configure LED
-    uint32_t gpios[] = {
-        GPIO_HRS_PWM_G1
-    };
-
-    err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
-    APP_ERROR_CHECK(err_code);
-    err_code = pwm_set_value(PWM_Channel_1, 66);
-    APP_ERROR_CHECK(err_code);
-
-    hrs_adc_start();
-
-    while (true)
-    {
-        __WFE();
-    }
-}
+// TODO: use hrs_parameters.delay
