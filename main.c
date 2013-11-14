@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
