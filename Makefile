@@ -160,6 +160,9 @@ JLINK_COMMANDS = \
 	$(info [JPROG] $@.jlink) \
 	@$(JPROG) < $@.jlink
 
+jlink:
+	@$(JPROG)
+
 # sha1 invocation
 
 %.sha1: %.bin
