@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 /* Copyright (c) 2013 Nordic Semiconductor. All Rights Reserved.
  *
  * The information contained herein is property of Nordic Semiconductor ASA.
