@@ -28,8 +28,6 @@
 static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
 
-static app_timer_id_t imu_sampler;
-
 void
 test_3v3() {
     nrf_gpio_cfg_output(GPIO_3v3_Enable);
@@ -150,7 +148,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
-    uint8_t *buf;
+    //uint8_t *buf;
 
     hrs_parameters_t hrs_parameters;
     memset(&hrs_parameters, 0, sizeof(hrs_parameters));
@@ -273,25 +271,6 @@ stop_sampling_on_disconnect(void) {
     //uint32_t err_code;
     //err_code = app_timer_stop(imu_sampler);
     //APP_ERROR_CHECK(err_code);
-}
-
-void
-sample_imu(void * p_context) {
-    static uint8_t counter;
-    uint8_t sample[20];
-    uint32_t read, sent;
-
-    read = imu_fifo_read(12, &sample[1]);
-    if (read == 0)
-        return;
-
-    sample[0] = counter++;
-    sent = ble_hello_demo_data_send(sample, ++read);
-    if (read != sent) {
-        DEBUG("Short send of 0x", sent);
-    }
-    //DEBUG("fifo read bytes: 0x", read);
-    //DEBUG("data", sample);
 }
 
 void
