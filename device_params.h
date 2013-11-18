@@ -24,6 +24,11 @@
 #define IMU_SPI_nCS        17
 #define IMU_INT             2
 
+#define SERIAL_TX_PIN   1
+#define SERIAL_RX_PIN   8
+#define SERIAL_RTS_PIN  0
+#define SERIAL_CTS_PIN  0
+
 #define MOSI         7
 #define MISO        11
 #define SCLK        15

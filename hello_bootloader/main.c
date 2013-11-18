@@ -95,7 +95,7 @@ _start()
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
-    simple_uart_config(0, 5, 0, 8, false);
+    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
     PRINTS("Bootloader is alive.\r\n");
 
