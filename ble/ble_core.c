@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #include <ble_gap.h>
 #include <ble_hci.h>
 #include <ble_l2cap.h>
