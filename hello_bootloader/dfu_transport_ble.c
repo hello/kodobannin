@@ -47,8 +47,6 @@
 
 #define APP_TIMER_PRESCALER                  0                                                       /**< Value of the RTC1 PRESCALER register. */
 
-#define MAX_CONN_PARAMS_UPDATE_COUNT         3                                                       /**< Number of attempts before giving up the connection parameter negotiation. */
-
 #define SCHED_MAX_EVENT_DATA_SIZE            MAX(APP_TIMER_SCHED_EVT_SIZE,\
                                                  BLE_STACK_HANDLER_SCHED_EVT_SIZE)                   /**< Maximum size of scheduler events. */
 #define SCHED_QUEUE_SIZE                     20                                                      /**< Maximum number of events in the scheduler queue. */
@@ -371,39 +369,6 @@ static void on_dfu_pkt_write(ble_dfu_t * p_dfu, ble_dfu_evt_t * p_evt)
             // mechanism to notify the DFU Controller about this error condition.
             break;
     }
-}
-
-
-/**@brief       Function for handling a Connection Parameters error.
- *
- * @param[in]   nrf_error   Error code.
- */
-static void conn_params_error_handler(uint32_t nrf_error)
-{
-    APP_ERROR_HANDLER(nrf_error);
-}
-
-
-/**@brief Function for initializing the Connection Parameters module.
- */
-static void conn_params_init(void)
-{
-    uint32_t               err_code;
-    ble_conn_params_init_t cp_init;
-
-    memset(&cp_init, 0, sizeof(cp_init));
-
-    cp_init.p_conn_params                  = NULL;
-    cp_init.first_conn_params_update_delay = FIRST_CONN_PARAMS_UPDATE_DELAY;
-    cp_init.next_conn_params_update_delay  = NEXT_CONN_PARAMS_UPDATE_DELAY;
-    cp_init.max_conn_params_update_count   = MAX_CONN_PARAMS_UPDATE_COUNT;
-    cp_init.start_on_notify_cccd_handle    = BLE_GATT_HANDLE_INVALID;
-    cp_init.disconnect_on_fail             = false;
-    cp_init.evt_handler                    = NULL;
-    cp_init.error_handler                  = conn_params_error_handler;
-
-    err_code = ble_conn_params_init(&cp_init);
-    APP_ERROR_CHECK(err_code);
 }
 
 
@@ -762,7 +727,7 @@ uint32_t dfu_transport_update_start()
     ble_gap_params_init();
     services_init();
     advertising_init();
-    conn_params_init();
+    ble_conn_params_init(NULL);
     ble_gap_sec_params_init();
 
     err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
