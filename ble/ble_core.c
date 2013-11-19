@@ -13,13 +13,13 @@
 #include "device_params.h"
 #include <ble_radio_notification.h>
 #include <ble_flash.h>
+#include <ble_conn_params.h>
 
 extern void ble_bond_manager_init(void);
 extern void ble_gap_params_init(void);
 extern void ble_advertising_init(void);
 extern void ble_advertising_start(void);
 extern void ble_services_init(void);
-extern void ble_conn_params_init(void);
 
 extern void services_init();
 
@@ -192,7 +192,7 @@ ble_init()
 	services_init();  // Must come before ble_advertising_init()
 	ble_advertising_init();
 	ble_services_init();
-	ble_conn_params_init();
+	ble_conn_params_init(NULL);
 	ble_gap_sec_params_init();
 
 	err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
