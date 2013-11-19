@@ -38,6 +38,7 @@
 #include <string.h>
 
 #include "device_params.h"
+#include "ble_core.h"
 
 #define DEVICE_NAME                          BLE_DEVICE_NAME
 #define MANUFACTURER_NAME                    BLE_MANUFACTURER_NAME
@@ -46,24 +47,11 @@
 
 #define APP_TIMER_PRESCALER                  0                                                       /**< Value of the RTC1 PRESCALER register. */
 
-#define MAX_CONN_PARAMS_UPDATE_COUNT         3                                                       /**< Number of attempts before giving up the connection parameter negotiation. */
-
-#define SEC_PARAM_TIMEOUT                    30                                                      /**< Timeout for Pairing Request or Security Request (in seconds). */
-#define SEC_PARAM_BOND                       1                                                       /**< Perform bonding. */
-#define SEC_PARAM_MITM                       0                                                       /**< Man In The Middle protection not required. */
-#define SEC_PARAM_IO_CAPABILITIES            BLE_GAP_IO_CAPS_NONE                                    /**< No I/O capabilities. */
-#define SEC_PARAM_OOB                        0                                                       /**< Out Of Band data not available. */
-#define SEC_PARAM_MIN_KEY_SIZE               7                                                       /**< Minimum encryption key size. */
-#define SEC_PARAM_MAX_KEY_SIZE               16                                                      /**< Maximum encryption key size. */
-
 #define SCHED_MAX_EVENT_DATA_SIZE            MAX(APP_TIMER_SCHED_EVT_SIZE,\
                                                  BLE_STACK_HANDLER_SCHED_EVT_SIZE)                   /**< Maximum size of scheduler events. */
 #define SCHED_QUEUE_SIZE                     20                                                      /**< Maximum number of events in the scheduler queue. */
 
 #define DFU_PACKET_SIZE                      20                                                      /**< Maximum size (in bytes) of the DFU Packet characteristic. */
-
-#define MAX_SIZE_OF_BLE_STACK_EVT            (sizeof(ble_evt_t) + BLE_L2CAP_MTU_DEF)                 /**< Maximum size (in bytes) of the event received from BLE stack.*/
-#define NUM_WORDS_RESERVED_FOR_BLE_EVENTS    CEIL_DIV(MAX_SIZE_OF_BLE_STACK_EVT, sizeof(uint32_t))   /**< Size of the memory (in words) reserved for receiving BLE stack events. */
 
 #define IS_CONNECTED()                       (m_conn_handle != BLE_CONN_HANDLE_INVALID)              /**< Macro to determine if the device is in connected state. */
 
@@ -77,11 +65,9 @@ typedef enum
     PKT_TYPE_FIRMWARE_DATA                                                                           /**< Firmware data packet.*/
 } pkt_type_t;
 
-static ble_gap_sec_params_t                m_sec_params;                                             /**< Security requirements for this application. */
 static ble_gap_adv_params_t                m_adv_params;                                             /**< Parameters to be passed to the stack when starting advertising. */
 static ble_dfu_t                           m_dfu;                                                    /**< Structure used to identify the Device Firmware Update service. */
 static pkt_type_t                          m_pkt_type;                                               /**< Type of packet to be expected from the DFU Controller. */
-static uint32_t                            m_evt_buffer[NUM_WORDS_RESERVED_FOR_BLE_EVENTS];          /**< Word aligned memory reserved for receiving BLE events. */
 static uint16_t                            m_num_of_firmware_bytes_rcvd;                             /**< Cumulative number of bytes of firmware data received. */
 static uint16_t                            m_pkt_notif_target;                                       /**< Number of packets of firmware data to be received before transmitting the next Packet Receipt Notification to the DFU Controller. */
 static uint16_t                            m_pkt_notif_target_cnt;                                   /**< Number of packets of firmware data received after sending last Packet Receipt Notification or since the receipt of a @ref BLE_DFU_PKT_RCPT_NOTIF_ENABLED event from the DFU service, which ever occurs later.*/
@@ -382,39 +368,6 @@ static void on_dfu_pkt_write(ble_dfu_t * p_dfu, ble_dfu_evt_t * p_evt)
 }
 
 
-/**@brief       Function for handling a Connection Parameters error.
- *
- * @param[in]   nrf_error   Error code.
- */
-static void conn_params_error_handler(uint32_t nrf_error)
-{
-    APP_ERROR_HANDLER(nrf_error);
-}
-
-
-/**@brief Function for initializing the Connection Parameters module.
- */
-static void conn_params_init(void)
-{
-    uint32_t               err_code;
-    ble_conn_params_init_t cp_init;
-
-    memset(&cp_init, 0, sizeof(cp_init));
-
-    cp_init.p_conn_params                  = NULL;
-    cp_init.first_conn_params_update_delay = FIRST_CONN_PARAMS_UPDATE_DELAY;
-    cp_init.next_conn_params_update_delay  = NEXT_CONN_PARAMS_UPDATE_DELAY;
-    cp_init.max_conn_params_update_count   = MAX_CONN_PARAMS_UPDATE_COUNT;
-    cp_init.start_on_notify_cccd_handle    = BLE_GATT_HANDLE_INVALID;
-    cp_init.disconnect_on_fail             = false;
-    cp_init.evt_handler                    = NULL;
-    cp_init.error_handler                  = conn_params_error_handler;
-
-    err_code = ble_conn_params_init(&cp_init);
-    APP_ERROR_CHECK(err_code);
-}
-
-
 /**@brief       Function for the Device Firmware Update Service event handler.
  *
  * @details     This function will be called for all Device Firmware Update Service events which
@@ -567,7 +520,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
             err_code = sd_ble_gap_sec_params_reply(m_conn_handle,
                                                    BLE_GAP_SEC_STATUS_SUCCESS,
-                                                   &m_sec_params);
+                                                   ble_gap_sec_params_get());
             APP_ERROR_CHECK(err_code);
             break;
 
@@ -604,112 +557,6 @@ static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
     ble_conn_params_on_ble_evt(p_ble_evt);
     ble_dfu_on_ble_evt(&m_dfu, p_ble_evt);
     on_ble_evt(p_ble_evt);
-}
-
-
-/**@brief       Function for the LEDs initialization.
- *
- * @details     Initializes all LEDs used by this application.
- */
-static void leds_init(void)
-{
-    GPIO_LED_CONFIG(ADVERTISING_LED_PIN_NO);
-    GPIO_LED_CONFIG(CONNECTED_LED_PIN_NO);
-    GPIO_LED_CONFIG(ASSERT_LED_PIN_NO);
-}
-
-
-/**@brief       Function for fetching BLE events from the S110 Stack.
- *
- * @param[in]   p_event_data Unused by this function.
- * @param[in]   event_size   Unused by this function.
- */
-static void stack_evt_get(void * p_event_data, uint16_t event_size)
-{
-    // This function expects the p_event_data and event_size to be zero. This function will fetch
-    // the event from the S110 Stack.
-    UNUSED_PARAMETER(p_event_data);
-    UNUSED_PARAMETER(event_size);
-
-    for (;;)
-    {
-        uint32_t err_code;
-        uint16_t evt_len = sizeof(m_evt_buffer);
-
-        // Pull the event from stack.
-        err_code = sd_ble_evt_get((uint8_t *) m_evt_buffer, &evt_len);
-        if ((err_code == NRF_ERROR_NOT_FOUND) || (err_code == NRF_ERROR_SOFTDEVICE_NOT_ENABLED))
-        {
-            // Either there are no more events OR the S110 Stack has been disabled. This additional
-            // error code check is the only difference between this function and @ref
-            // ble_stack_evt_get. This check is needed because the bootloader may have disabled
-            // the S110 stack after finishing the firmware update.
-            break;
-        }
-        else if (err_code != NRF_SUCCESS)
-        {
-            APP_ERROR_HANDLER(err_code);
-        }
-
-        // Call the BLE stack event handler.
-        ble_evt_dispatch((ble_evt_t *)m_evt_buffer);
-    }
-}
-
-
-/**@brief   Function for passing BLE events to the scheduler
- *
- * @return  NRF_SUCCESS if the BLE event was passed successfully to the scheduler. Otherwise an
- *          error code.
- */
-static uint32_t stack_evt_schedule(void)
-{
-    return app_sched_event_put(NULL, 0, stack_evt_get);
-}
-
-
-/**@brief   Function for the BLE stack initialization.
- *
- * @details This function initializes the SoftDevice and the BLE event interrupt.
- */
-static void ble_stack_init(void)
-{
-    uint32_t err_code = ble_stack_handler_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
-                                               m_evt_buffer,
-                                               sizeof(m_evt_buffer),
-                                               NULL,
-                                               stack_evt_schedule);
-    APP_ERROR_CHECK(err_code);
-}
-
-
-/**@brief   Function for the GAP initialization.
- *
- * @details This function will setup all the necessary GAP (Generic Access Profile)
- *          parameters of the device. It also sets the permissions and appearance.
- */
-static void gap_params_init(void)
-{
-    uint32_t                err_code;
-    ble_gap_conn_params_t   gap_conn_params;
-    ble_gap_conn_sec_mode_t sec_mode;
-
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
-
-    err_code = sd_ble_gap_device_name_set(&sec_mode,
-                                          (const uint8_t *)DEVICE_NAME,
-                                          strlen(DEVICE_NAME));
-    APP_ERROR_CHECK(err_code);
-
-    memset(&gap_conn_params, 0, sizeof(gap_conn_params));
-
-    gap_conn_params.min_conn_interval = MIN_CONN_INTERVAL;
-    gap_conn_params.max_conn_interval = MAX_CONN_INTERVAL;
-    gap_conn_params.slave_latency     = SLAVE_LATENCY;
-    gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
-
-    err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
-    APP_ERROR_CHECK(err_code);
 }
 
 
@@ -790,55 +637,32 @@ static void services_init(void)
 }
 
 
-/**@brief Function for initializing security parameters.
- */
-static void sec_params_init(void)
-{
-    m_sec_params.timeout      = SEC_PARAM_TIMEOUT;
-    m_sec_params.bond         = SEC_PARAM_BOND;
-    m_sec_params.mitm         = SEC_PARAM_MITM;
-    m_sec_params.io_caps      = SEC_PARAM_IO_CAPABILITIES;
-    m_sec_params.oob          = SEC_PARAM_OOB;
-    m_sec_params.min_key_size = SEC_PARAM_MIN_KEY_SIZE;
-    m_sec_params.max_key_size = SEC_PARAM_MAX_KEY_SIZE;
-}
+extern void ble_gap_params_init(void);
 
-
-/**@brief Function for event scheduler initialization.
- */
-static void scheduler_init(void)
-{
-    APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
-}
-
-
-/**@brief Function for handling initializing Radio Notification event.
- */
-static void radio_notification_init(void)
+uint32_t dfu_transport_update_start()
 {
     uint32_t err_code;
+
+    m_pkt_type = PKT_TYPE_INVALID;
+
+    APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+
+	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
+						   sizeof(ble_evt_t) + BLE_L2CAP_MTU_DEF,
+						   ble_evt_dispatch,
+						   true);
+
+    ble_gap_params_init();
+    services_init();
+    advertising_init();
+    ble_conn_params_init(NULL);
+    ble_gap_sec_params_init();
 
     err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
                                            NRF_RADIO_NOTIFICATION_DISTANCE_4560US,
                                            ble_flash_on_radio_active_evt);
     APP_ERROR_CHECK(err_code);
-}
 
-
-uint32_t dfu_transport_update_start()
-{
-    m_pkt_type = PKT_TYPE_INVALID;
-
-    leds_init();
-    // Initialize the S110 Stack.
-    ble_stack_init();
-    scheduler_init();
-    gap_params_init();
-    services_init();
-    advertising_init();
-    conn_params_init();
-    sec_params_init();
-    radio_notification_init();
     advertising_start();
 
     wait_for_events();
