@@ -560,19 +560,6 @@ static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
 }
 
 
-/**@brief   Function for the BLE stack initialization.
- *
- * @details This function initializes the SoftDevice and the BLE event interrupt.
- */
-static void ble_stack_init(void)
-{
-	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
-						   sizeof(ble_evt_t) + BLE_L2CAP_MTU_DEF,
-						   ble_evt_dispatch,
-						   true);
-}
-
-
 /**@brief   Function for the Advertising functionality initialization.
  *
  * @details Encodes the required advertising data and passes it to the stack.
@@ -666,8 +653,11 @@ uint32_t dfu_transport_update_start()
 
     m_pkt_type = PKT_TYPE_INVALID;
 
-    // Initialize the S110 Stack.
-    ble_stack_init();
+	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
+						   sizeof(ble_evt_t) + BLE_L2CAP_MTU_DEF,
+						   ble_evt_dispatch,
+						   true);
+
     scheduler_init();
     ble_gap_params_init();
     services_init();

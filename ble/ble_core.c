@@ -141,20 +141,6 @@ on_ble_event(ble_evt_t *p_ble_evt)
 	APP_ERROR_CHECK(err_code);
 }
 
-/**@brief BLE stack initialization.
-*
-* @details Initializes the SoftDevice and the BLE event interrupt.
-*/
-static void
-ble_stack_init(void)
-{
-	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
-				BLE_L2CAP_MTU_DEF,
-				ble_event_dispatch,
-				false);
-}
-
-
 #define SEC_PARAM_TIMEOUT          30                    /**< Timeout for Pairing Request or Security Request (in seconds). */
 #define SEC_PARAM_BOND             1                     /**< Perform bonding. */
 #define SEC_PARAM_MITM             0                     /**< Man In The Middle protection not required. */
@@ -218,7 +204,11 @@ ble_init()
 {
 	uint32_t err_code;
 
-	ble_stack_init();
+	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
+				BLE_L2CAP_MTU_DEF,
+				ble_event_dispatch,
+				false);
+
 	ble_bond_manager_init();
 	ble_gap_params_init();
 	services_init();  // Must come before ble_advertising_init()
