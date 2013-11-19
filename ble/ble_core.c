@@ -84,10 +84,6 @@ ble_advertising_start(void)
 
 	err_code = sd_ble_gap_adv_start(&m_adv_params);
 	APP_ERROR_CHECK(err_code);
-
-#ifdef ADVERTISING_LED_PIN_NO
-	nrf_gpio_pin_set(ADVERTISING_LED_PIN_NO);
-#endif
 }
 
 /**@brief Application's BLE Stack event handler.
@@ -102,19 +98,9 @@ on_ble_event(ble_evt_t *p_ble_evt)
 	switch (p_ble_evt->header.evt_id)
 	{
 	case BLE_GAP_EVT_CONNECTED:
-#ifdef CONNECTED_LED_PIN_NO
-		nrf_gpio_pin_set(CONNECTED_LED_PIN_NO);
-#endif
-#ifdef ADVERTISING_LED_PIN_NO
-		nrf_gpio_pin_clear(ADVERTISING_LED_PIN_NO);
-#endif
 		break;
 
 	case BLE_GAP_EVT_DISCONNECTED:
-#ifdef CONNECTED_LED_PIN_NO
-		nrf_gpio_pin_clear(CONNECTED_LED_PIN_NO);
-#endif
-
 		m_conn_handle               = BLE_CONN_HANDLE_INVALID;
 
 		// Since we are not in a connection and have not started advertising, store bonds
@@ -132,9 +118,6 @@ on_ble_event(ble_evt_t *p_ble_evt)
 
 	case BLE_GAP_EVT_TIMEOUT:
 		if (p_ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
-#ifdef ADVERTISING_LED_PIN_NO
-			nrf_gpio_pin_clear(ADVERTISING_LED_PIN_NO);
-#endif
 			//while(1) { __WFE(); }
 			// Go to system-off mode (this function will not return; wakeup will cause a reset)
 			// why would we want this?
@@ -235,15 +218,6 @@ ble_init()
 {
 	uint32_t err_code;
 
-#ifdef ADVERTISING_LED_PIN_NO
-	GPIO_LED_CONFIG(ADVERTISING_LED_PIN_NO);
-#endif
-#ifdef CONNECTED_LED_PIN_NO
-	GPIO_LED_CONFIG(CONNECTED_LED_PIN_NO);
-#endif
-#ifdef ASSERT_LED_PIN_NO
-	GPIO_LED_CONFIG(ASSERT_LED_PIN_NO);
-#endif
 	ble_stack_init();
 	ble_bond_manager_init();
 	ble_gap_params_init();
