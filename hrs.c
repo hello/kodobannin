@@ -115,6 +115,14 @@ hrs_sensor_disable() {
 
 static uint8_t buffer[MAX_SAMPLE_COUNT];
 
+void
+hrs_wait() {
+	while(_hrs_state != HRS_STATE_INACTIVE) {
+		__WFE();
+		watchdog_pet();
+	}
+}
+
 uint8_t *
 get_hrs_buffer() {
     return buffer;
