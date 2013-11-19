@@ -53,9 +53,6 @@
 
 #define DFU_PACKET_SIZE                      20                                                      /**< Maximum size (in bytes) of the DFU Packet characteristic. */
 
-#define MAX_SIZE_OF_BLE_STACK_EVT            (sizeof(ble_evt_t) + BLE_L2CAP_MTU_DEF)                 /**< Maximum size (in bytes) of the event received from BLE stack.*/
-#define NUM_WORDS_RESERVED_FOR_BLE_EVENTS    CEIL_DIV(MAX_SIZE_OF_BLE_STACK_EVT, sizeof(uint32_t))   /**< Size of the memory (in words) reserved for receiving BLE stack events. */
-
 #define IS_CONNECTED()                       (m_conn_handle != BLE_CONN_HANDLE_INVALID)              /**< Macro to determine if the device is in connected state. */
 
 /**@brief Packet type enumeration.
@@ -71,7 +68,6 @@ typedef enum
 static ble_gap_adv_params_t                m_adv_params;                                             /**< Parameters to be passed to the stack when starting advertising. */
 static ble_dfu_t                           m_dfu;                                                    /**< Structure used to identify the Device Firmware Update service. */
 static pkt_type_t                          m_pkt_type;                                               /**< Type of packet to be expected from the DFU Controller. */
-static uint32_t                            m_evt_buffer[NUM_WORDS_RESERVED_FOR_BLE_EVENTS];          /**< Word aligned memory reserved for receiving BLE events. */
 static uint16_t                            m_num_of_firmware_bytes_rcvd;                             /**< Cumulative number of bytes of firmware data received. */
 static uint16_t                            m_pkt_notif_target;                                       /**< Number of packets of firmware data to be received before transmitting the next Packet Receipt Notification to the DFU Controller. */
 static uint16_t                            m_pkt_notif_target_cnt;                                   /**< Number of packets of firmware data received after sending last Packet Receipt Notification or since the receipt of a @ref BLE_DFU_PKT_RCPT_NOTIF_ENABLED event from the DFU service, which ever occurs later.*/
@@ -564,67 +560,16 @@ static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
 }
 
 
-/**@brief       Function for fetching BLE events from the S110 Stack.
- *
- * @param[in]   p_event_data Unused by this function.
- * @param[in]   event_size   Unused by this function.
- */
-static void stack_evt_get(void * p_event_data, uint16_t event_size)
-{
-    // This function expects the p_event_data and event_size to be zero. This function will fetch
-    // the event from the S110 Stack.
-    UNUSED_PARAMETER(p_event_data);
-    UNUSED_PARAMETER(event_size);
-
-    for (;;)
-    {
-        uint32_t err_code;
-        uint16_t evt_len = sizeof(m_evt_buffer);
-
-        // Pull the event from stack.
-        err_code = sd_ble_evt_get((uint8_t *) m_evt_buffer, &evt_len);
-        if ((err_code == NRF_ERROR_NOT_FOUND) || (err_code == NRF_ERROR_SOFTDEVICE_NOT_ENABLED))
-        {
-            // Either there are no more events OR the S110 Stack has been disabled. This additional
-            // error code check is the only difference between this function and @ref
-            // ble_stack_evt_get. This check is needed because the bootloader may have disabled
-            // the S110 stack after finishing the firmware update.
-            break;
-        }
-        else if (err_code != NRF_SUCCESS)
-        {
-            APP_ERROR_HANDLER(err_code);
-        }
-
-        // Call the BLE stack event handler.
-        ble_evt_dispatch((ble_evt_t *)m_evt_buffer);
-    }
-}
-
-
-/**@brief   Function for passing BLE events to the scheduler
- *
- * @return  NRF_SUCCESS if the BLE event was passed successfully to the scheduler. Otherwise an
- *          error code.
- */
-static uint32_t stack_evt_schedule(void)
-{
-    return app_sched_event_put(NULL, 0, stack_evt_get);
-}
-
-
 /**@brief   Function for the BLE stack initialization.
  *
  * @details This function initializes the SoftDevice and the BLE event interrupt.
  */
 static void ble_stack_init(void)
 {
-    uint32_t err_code = ble_stack_handler_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
-                                               m_evt_buffer,
-                                               sizeof(m_evt_buffer),
-                                               NULL,
-                                               stack_evt_schedule);
-    APP_ERROR_CHECK(err_code);
+	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
+						   sizeof(ble_evt_t) + BLE_L2CAP_MTU_DEF,
+						   ble_evt_dispatch,
+						   true);
 }
 
 
