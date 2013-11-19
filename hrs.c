@@ -192,8 +192,6 @@ hrs_preflight()
 static void
 hrs_postflight()
 {
-    uint32_t err_code;
-
 	watchdog_pet();
 
 	TRACE();
