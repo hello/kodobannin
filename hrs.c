@@ -145,7 +145,7 @@ hrs_preflight()
 #endif
     };
 
-    APP_ERROR_CHECK(hrs_parameters.samples > sizeof(buffer));
+    APP_ASSERT(hrs_parameters.samples <= sizeof(buffer)/sizeof(buffer[0]));
 
     // enable the HRS sensor
     hrs_sensor_enable();
