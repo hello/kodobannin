@@ -25,6 +25,11 @@ extern void services_init();
 
 static ble_gap_sec_params_t sec_params;
 
+ble_gap_sec_params_t* ble_gap_sec_params_get()
+{
+	return &sec_params;
+}
+
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;   /**< Handle of the current connection. */
 
 /**@brief Application's BLE Stack event handler.
@@ -122,7 +127,7 @@ ble_stack_init(void)
 /**@brief Initialize security parameters.
  */
 void
-ble_sec_params_init(void)
+ble_gap_sec_params_init(void)
 {
 	memset(&sec_params, 0, sizeof(sec_params));
 
@@ -188,7 +193,7 @@ ble_init()
 	ble_advertising_init();
 	ble_services_init();
 	ble_conn_params_init();
-	ble_sec_params_init();
+	ble_gap_sec_params_init();
 
 	err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
 										   NRF_RADIO_NOTIFICATION_DISTANCE_4560US,

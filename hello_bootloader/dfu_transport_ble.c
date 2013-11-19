@@ -38,6 +38,7 @@
 #include <string.h>
 
 #include "device_params.h"
+#include "ble_core.h"
 
 #define DEVICE_NAME                          BLE_DEVICE_NAME
 #define MANUFACTURER_NAME                    BLE_MANUFACTURER_NAME
@@ -47,14 +48,6 @@
 #define APP_TIMER_PRESCALER                  0                                                       /**< Value of the RTC1 PRESCALER register. */
 
 #define MAX_CONN_PARAMS_UPDATE_COUNT         3                                                       /**< Number of attempts before giving up the connection parameter negotiation. */
-
-#define SEC_PARAM_TIMEOUT                    30                                                      /**< Timeout for Pairing Request or Security Request (in seconds). */
-#define SEC_PARAM_BOND                       1                                                       /**< Perform bonding. */
-#define SEC_PARAM_MITM                       0                                                       /**< Man In The Middle protection not required. */
-#define SEC_PARAM_IO_CAPABILITIES            BLE_GAP_IO_CAPS_NONE                                    /**< No I/O capabilities. */
-#define SEC_PARAM_OOB                        0                                                       /**< Out Of Band data not available. */
-#define SEC_PARAM_MIN_KEY_SIZE               7                                                       /**< Minimum encryption key size. */
-#define SEC_PARAM_MAX_KEY_SIZE               16                                                      /**< Maximum encryption key size. */
 
 #define SCHED_MAX_EVENT_DATA_SIZE            MAX(APP_TIMER_SCHED_EVT_SIZE,\
                                                  BLE_STACK_HANDLER_SCHED_EVT_SIZE)                   /**< Maximum size of scheduler events. */
@@ -77,7 +70,6 @@ typedef enum
     PKT_TYPE_FIRMWARE_DATA                                                                           /**< Firmware data packet.*/
 } pkt_type_t;
 
-static ble_gap_sec_params_t                m_sec_params;                                             /**< Security requirements for this application. */
 static ble_gap_adv_params_t                m_adv_params;                                             /**< Parameters to be passed to the stack when starting advertising. */
 static ble_dfu_t                           m_dfu;                                                    /**< Structure used to identify the Device Firmware Update service. */
 static pkt_type_t                          m_pkt_type;                                               /**< Type of packet to be expected from the DFU Controller. */
@@ -567,7 +559,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
             err_code = sd_ble_gap_sec_params_reply(m_conn_handle,
                                                    BLE_GAP_SEC_STATUS_SUCCESS,
-                                                   &m_sec_params);
+                                                   ble_gap_sec_params_get());
             APP_ERROR_CHECK(err_code);
             break;
 
@@ -748,20 +740,6 @@ static void services_init(void)
 }
 
 
-/**@brief Function for initializing security parameters.
- */
-static void sec_params_init(void)
-{
-    m_sec_params.timeout      = SEC_PARAM_TIMEOUT;
-    m_sec_params.bond         = SEC_PARAM_BOND;
-    m_sec_params.mitm         = SEC_PARAM_MITM;
-    m_sec_params.io_caps      = SEC_PARAM_IO_CAPABILITIES;
-    m_sec_params.oob          = SEC_PARAM_OOB;
-    m_sec_params.min_key_size = SEC_PARAM_MIN_KEY_SIZE;
-    m_sec_params.max_key_size = SEC_PARAM_MAX_KEY_SIZE;
-}
-
-
 /**@brief Function for event scheduler initialization.
  */
 static void scheduler_init(void)
@@ -785,7 +763,7 @@ uint32_t dfu_transport_update_start()
     services_init();
     advertising_init();
     conn_params_init();
-    sec_params_init();
+    ble_gap_sec_params_init();
 
     err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
                                            NRF_RADIO_NOTIFICATION_DISTANCE_4560US,
