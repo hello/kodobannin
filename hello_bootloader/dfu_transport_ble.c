@@ -770,22 +770,12 @@ static void scheduler_init(void)
 }
 
 
-/**@brief Function for handling initializing Radio Notification event.
- */
-static void radio_notification_init(void)
-{
-    uint32_t err_code;
-
-    err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
-                                           NRF_RADIO_NOTIFICATION_DISTANCE_4560US,
-                                           ble_flash_on_radio_active_evt);
-    APP_ERROR_CHECK(err_code);
-}
-
 extern void ble_gap_params_init(void);
 
 uint32_t dfu_transport_update_start()
 {
+    uint32_t err_code;
+
     m_pkt_type = PKT_TYPE_INVALID;
 
     // Initialize the S110 Stack.
@@ -796,7 +786,12 @@ uint32_t dfu_transport_update_start()
     advertising_init();
     conn_params_init();
     sec_params_init();
-    radio_notification_init();
+
+    err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
+                                           NRF_RADIO_NOTIFICATION_DISTANCE_4560US,
+                                           ble_flash_on_radio_active_evt);
+    APP_ERROR_CHECK(err_code);
+
     advertising_start();
 
     wait_for_events();

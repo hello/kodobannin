@@ -9,6 +9,8 @@
 #include "ble_event.h"
 #include <ble_stack_handler.h>
 #include "device_params.h"
+#include <ble_radio_notification.h>
+#include <ble_flash.h>
 
 extern void ble_bond_manager_init(void);
 extern void ble_gap_params_init(void);
@@ -17,7 +19,6 @@ extern void ble_advertising_start(void);
 extern void ble_services_init(void);
 extern void ble_conn_params_init(void);
 extern void ble_sec_params_init(void);
-extern void ble_radio_notification_init(void);
 
 extern void services_init();
 
@@ -109,6 +110,8 @@ ble_stack_init(void)
 void
 ble_init()
 {
+	uint32_t err_code;
+
 #ifdef ADVERTISING_LED_PIN_NO
 	GPIO_LED_CONFIG(ADVERTISING_LED_PIN_NO);
 #endif
@@ -126,5 +129,9 @@ ble_init()
 	ble_services_init();
 	ble_conn_params_init();
 	ble_sec_params_init();
-	ble_radio_notification_init();
+
+	err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
+										   NRF_RADIO_NOTIFICATION_DISTANCE_4560US,
+										   ble_flash_on_radio_active_evt);
+	APP_ERROR_CHECK(err_code);
 }
