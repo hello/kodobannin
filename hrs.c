@@ -19,6 +19,7 @@ static hrs_parameters_t hrs_parameters;
 static uint32_t ppi_chan = -1;
 
 typedef enum {
+	HRS_STATE_INACTIVE,
 	HRS_STATE_START,
 	HRS_STATE_DISCARD,
 	HRS_STATE_THRESHOLD,
@@ -26,7 +27,7 @@ typedef enum {
 	HRS_STATE_FINISHED,
 } hrs_state_t;
 
-static hrs_state_t hrs_state = HRS_STATE_START;
+static hrs_state_t _hrs_state = HRS_STATE_INACTIVE;
 
 #define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
 
@@ -185,7 +186,7 @@ hrs_preflight()
 
 	hrs_adc_start();
 
-	hrs_state = HRS_STATE_START;
+	_hrs_state = HRS_STATE_START;
 }
 
 static void
@@ -214,6 +215,8 @@ hrs_postflight()
         pwm_set_value(PWM_Channel_2, 0);
 #endif
     }
+
+	_hrs_state = HRS_STATE_INACTIVE;
 }
 
 static void
@@ -221,12 +224,13 @@ adc_callback(uint8_t val) {
 	static uint32_t measure_count;
 	static uint16_t buf_lvl;
 
-	switch(hrs_state) {
+	switch(_hrs_state) {
+	case HRS_STATE_INACTIVE:
 	case HRS_STATE_START:
 		measure_count = 0;
 		buf_lvl = 0;
 
-		hrs_state = HRS_STATE_DISCARD;
+		_hrs_state = HRS_STATE_DISCARD;
 
 		// Fallthrough
 	case HRS_STATE_DISCARD:
@@ -236,7 +240,7 @@ adc_callback(uint8_t val) {
 			DEBUG("Discarded number of samples: ", measure_count);
 
 			measure_count = 0;
-			hrs_state = HRS_STATE_THRESHOLD;
+			_hrs_state = HRS_STATE_THRESHOLD;
 
 			// Fallthrough
 		}
@@ -249,7 +253,7 @@ adc_callback(uint8_t val) {
 			DEBUG("Discarded sample count due to threshold: ", measure_count);
 
 			measure_count = 0;
-			hrs_state = HRS_STATE_READING;
+			_hrs_state = HRS_STATE_READING;
 
 			// Fallthrough
 		}
@@ -266,7 +270,7 @@ adc_callback(uint8_t val) {
 			break;
 		} else {
 			PRINTS("Finished HRS reading\r\n");
-			hrs_state = HRS_STATE_FINISHED;
+			_hrs_state = HRS_STATE_FINISHED;
 
 			// Fallthrough
 		}
