@@ -637,14 +637,6 @@ static void services_init(void)
 }
 
 
-/**@brief Function for event scheduler initialization.
- */
-static void scheduler_init(void)
-{
-    APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
-}
-
-
 extern void ble_gap_params_init(void);
 
 uint32_t dfu_transport_update_start()
@@ -653,12 +645,13 @@ uint32_t dfu_transport_update_start()
 
     m_pkt_type = PKT_TYPE_INVALID;
 
+    APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+
 	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
 						   sizeof(ble_evt_t) + BLE_L2CAP_MTU_DEF,
 						   ble_evt_dispatch,
 						   true);
 
-    scheduler_init();
     ble_gap_params_init();
     services_init();
     advertising_init();
