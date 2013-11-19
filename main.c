@@ -274,7 +274,7 @@ stop_sampling_on_disconnect(void) {
 }
 
 void
-hello_demo_service_init() {
+services_init() {
     uint32_t err_code;
 
     // add hello demo service
