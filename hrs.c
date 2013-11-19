@@ -291,8 +291,6 @@ hrs_run_test2(hrs_parameters_t parameters) {
 	hrs_preflight();
 }
 
-#define MDELAY  4000
-
 void
 ADC_IRQHandler(void)
 {
