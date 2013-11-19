@@ -182,6 +182,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 		    .discard_threshold = event->data[9],
 	    };
 	    hrs_run_test2(hrs_parameters);
+		hrs_wait();
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
