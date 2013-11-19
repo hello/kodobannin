@@ -607,18 +607,6 @@ static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
 }
 
 
-/**@brief       Function for the LEDs initialization.
- *
- * @details     Initializes all LEDs used by this application.
- */
-static void leds_init(void)
-{
-    GPIO_LED_CONFIG(ADVERTISING_LED_PIN_NO);
-    GPIO_LED_CONFIG(CONNECTED_LED_PIN_NO);
-    GPIO_LED_CONFIG(ASSERT_LED_PIN_NO);
-}
-
-
 /**@brief       Function for fetching BLE events from the S110 Stack.
  *
  * @param[in]   p_event_data Unused by this function.
@@ -829,7 +817,6 @@ uint32_t dfu_transport_update_start()
 {
     m_pkt_type = PKT_TYPE_INVALID;
 
-    leds_init();
     // Initialize the S110 Stack.
     ble_stack_init();
     scheduler_init();
