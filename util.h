@@ -20,3 +20,5 @@
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
+
+#define APP_ASSERT(condition) APP_ERROR_CHECK(!condition)
