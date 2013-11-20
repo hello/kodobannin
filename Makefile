@@ -171,7 +171,7 @@ jlink:
 
 # gdb
 
-.PHONY: gdbs gdb cgdb
+.PHONY: gdbs gdb blgdb cgdb
 
 gdbs:
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
