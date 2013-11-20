@@ -3,7 +3,6 @@ MAKEFLAGS = -j$(shell sysctl -n hw.ncpu)
 
 # tool locations
 BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q3/bin
-#BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
 # enable debug mode?
@@ -19,10 +18,6 @@ NRFREV = NRF51822_QFAA_CA
 
 # don't mess with teh NULL!
 NULL =
-
-#	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_bas.c \
-#	$(wildcard micro-ecc/*.c) \
-#	nRF51_SDK/nrf51822/Source/app_common/crc16.c \
 
 SRCS = \
 	error_handler.c \
@@ -77,7 +72,6 @@ INCS =  ./ \
 #	./SoftDevice/s110_nrf51822_5.2.1_API/include \
 
 # optimization flags
-
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=1
@@ -136,6 +130,8 @@ LDFLAGS := -L$(LIB) -lgcc --gc-sections
 
 ifneq ($(BLE_DEVICE_NAME),)
 CFLAGS += -DBLE_DEVICE_NAME="\"$(BLE_DEVICE_NAME)\""
+else
+$(error Please specify a device name with BLE_DEVICE_NAME env variable)
 endif
 
 #-L/Users/jkelley/Downloads/gcc-arm-none-eabi-4_7-2013q1/lib/gcc/arm-none-eabi/4.7.3/armv6-m -lgcc
