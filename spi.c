@@ -117,7 +117,7 @@ spi_read_multi(const enum SPI_Channel chan, const uint8_t nCS, const uint8_t tx,
     else if (chan == SPI_Channel_1)
         spi = NRF_SPI1;
     else
-        return 0;    
+        return 0;
 
     // select perhipheral
     nrf_gpio_pin_clear(nCS);

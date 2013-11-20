@@ -21,10 +21,18 @@ null_cb(uint8_t val __attribute__((unused))) {
 static hrs_adc_callback adc_callback = &null_cb;
 
 static uint16_t buckets[NUM_BUCKETS];
-static uint32_t measure_count = 0;
+static volatile uint32_t measure_count = 0;
 static uint32_t measure_limit = 0;
 static uint32_t ppi_chan = 0;
 static uint32_t conf_done = 2;
+
+static uint8_t discard_threshold = UCHAR_MAX;
+static volatile bool discard_threshold_passed = false;
+
+#define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
+
+static uint8_t buffer[MAX_SAMPLE_COUNT];
+static uint16_t buf_lvl;
 
 #define HRS_TIMER               NRF_TIMER1
 #define HRS_IRQHandler          TIMER1_IRQHandler
@@ -154,18 +162,11 @@ hrs_calibration_cb(uint8_t val) {
     }*/
 }
 
-#define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
-
-static uint8_t buffer[MAX_SAMPLE_COUNT];
-static uint16_t buf_lvl;
 
 uint8_t *
 get_hrs_buffer() {
     return buffer;
 }
-
-static uint8_t discard_threshold = UCHAR_MAX;
-static bool discard_threshold_passed = false;
 
 void
 hrs_threshold_cb(uint8_t val) {
@@ -217,7 +218,9 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     uint32_t i;
     uint32_t gpios[] = {
 	    GPIO_HRS_PWM_G1,
+#ifndef ONE_HRS_LED
         GPIO_HRS_PWM_G2
+#endif
     };
 
     APP_ERROR_CHECK(parameters.samples > sizeof(buffer));
@@ -232,7 +235,11 @@ void hrs_run_test2(hrs_parameters_t parameters) {
         PRINTS("HRS_RUN INIT");
 
         // drive PWM at 20kHz and range is 0-100 for intensity
+#ifdef ONE_HRS_LED
+        err_code = pwm_init(PWM_1_Channel, gpios, PWM_Mode_20kHz_100);
+#else
         err_code = pwm_init(PWM_2_Channels, gpios, PWM_Mode_20kHz_100);
+#endif
         APP_ERROR_CHECK(err_code);
 
         // configure ADC
@@ -245,8 +252,11 @@ void hrs_run_test2(hrs_parameters_t parameters) {
 
     // turn on LED at specified brightness
     err_code = pwm_set_value(PWM_Channel_1, (uint32_t)parameters.power_level);
+    APP_ERROR_CHECK(err_code);
+#ifndef ONE_HRS_LED
     err_code = pwm_set_value(PWM_Channel_2, (uint32_t)parameters.power_level);
     APP_ERROR_CHECK(err_code);
+#endif
 
     // setup counters for limiting
     measure_count = 0;
@@ -275,10 +285,10 @@ void hrs_run_test2(hrs_parameters_t parameters) {
         __WFE();
     	watchdog_pet();
 
-	if(discard_threshold_passed) {
-	    discard_threshold_passed = false;
-	    break;
-	}
+    	if(discard_threshold_passed) {
+    	    discard_threshold_passed = false;
+    	    break;
+    	}
     }
 
     // read samples and wait for completion
@@ -295,7 +305,9 @@ void hrs_run_test2(hrs_parameters_t parameters) {
     // turn off LED
     if (!parameters.keep_the_lights_on) {
         pwm_set_value(PWM_Channel_1, 0);
+#ifndef ONE_HRS_LED
         pwm_set_value(PWM_Channel_2, 0);
+#endif
     }
 }
 

@@ -1,6 +1,8 @@
+# default parallel
+MAKEFLAGS = -j$(shell sysctl -n hw.ncpu)
+
 # tool locations
 BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q3/bin
-#BIN=~/Downloads/gcc-arm-none-eabi-4_7-2012q4/bin
 JLINK_BIN=~/Work/jlink_462b
 
 # enable debug mode?
@@ -17,10 +19,6 @@ NRFREV = NRF51822_QFAA_CA
 # don't mess with teh NULL!
 NULL =
 
-#	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_bas.c \
-#	$(wildcard micro-ecc/*.c) \
-#	nRF51_SDK/nrf51822/Source/app_common/crc16.c \
-
 SRCS = \
 	error_handler.c \
 	sha1.c \
@@ -30,6 +28,7 @@ SRCS = \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
+	./gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
@@ -48,7 +47,6 @@ SRCS = \
 
 APP_SRCS = \
 	$(SRCS) \
-	./app_startup_nrf51.s \
 	hrs.c \
 	mpu-6500.c \
 	pwm.c \
@@ -56,7 +54,6 @@ APP_SRCS = \
 
 BOOTLOADER_SRCS = \
 	$(SRCS) \
-	./bootloader_startup_nrf51.s \
 	$(wildcard hello_bootloader/*.c) \
 	hello_bootloader/ble/ble_services/ble_dfu.c \
 
@@ -75,7 +72,6 @@ INCS =  ./ \
 #	./SoftDevice/s110_nrf51822_5.2.1_API/include \
 
 # optimization flags
-
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=1
@@ -129,8 +125,15 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
-CFLAGS := -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS) -DBLE_DEVICE_NAME="\"$(BLE_DEVICE_NAME)\""
+CFLAGS := -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 LDFLAGS := -L$(LIB) -lgcc --gc-sections
+
+ifneq ($(BLE_DEVICE_NAME),)
+CFLAGS += -DBLE_DEVICE_NAME="\"$(BLE_DEVICE_NAME)\""
+else
+$(error Please specify a device name with BLE_DEVICE_NAME env variable)
+endif
+
 #-L/Users/jkelley/Downloads/gcc-arm-none-eabi-4_7-2013q1/lib/gcc/arm-none-eabi/4.7.3/armv6-m -lgcc
 #-T./nRF51_SDK/nrf51822/Source/templates/gcc/gcc_nrf51_s110_xxaa.ld -I./nRF51_SDK/nrf51822/Source/templates/gcc/
 
@@ -156,6 +159,9 @@ JLINK_COMMANDS = \
 	$(info [JPROG] $@.jlink) \
 	@$(JPROG) < $@.jlink
 
+jlink:
+	@$(JPROG)
+
 # sha1 invocation
 
 %.sha1: %.bin
@@ -165,13 +171,16 @@ JLINK_COMMANDS = \
 
 # gdb
 
-.PHONY: gdbs gdb cgdb
+.PHONY: gdbs gdb blgdb cgdb
 
 gdbs:
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
 gdb:
 	$(BIN)/arm-none-eabi-gdb app.elf -ex "tar remote :2331" -ex "mon reset"
+
+blgdb:
+	$(BIN)/arm-none-eabi-gdb bootloader.elf -ex "tar remote :2331" -ex "mon reset"
 
 cgdb:
 	cgdb -d $(BIN)/arm-none-eabi-gdb -- app.elf -ex "tar remote :2331" -ex "mon reset"

@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
@@ -93,11 +95,15 @@ _start()
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
-    debug_uart_init();
+    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
     PRINTS("Bootloader is alive.\r\n");
 
 #ifdef DEBUG
+    PRINTS("Device name: ");
+    PRINTS(BLE_DEVICE_NAME);
+    PRINTS("\r\n");
+
 	{
 		uint8_t mac_address[6];
 
