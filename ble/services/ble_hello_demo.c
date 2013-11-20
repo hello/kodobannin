@@ -20,7 +20,6 @@ static ble_hello_demo_write_handler    mode_write_handler;
 static ble_hello_demo_write_handler    cmd_write_handler;
 static ble_hello_demo_connect_handler  conn_handler;
 static ble_hello_demo_connect_handler  disconn_handler;
-static volatile uint32_t buffers_available = 0;
 
 typedef uint32_t (*notify_data_send_cb)(const uint8_t *data, const uint16_t len);
 static notify_data_send_cb data_cb = NULL;
