@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 /* Copyright (c) 2013 Hello Inc. All Rights Reserved. */
 
 #include "ble_hello_demo.h"
