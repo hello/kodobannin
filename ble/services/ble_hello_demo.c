@@ -15,9 +15,6 @@
 uint8_t hello_type;
 static uint16_t                 service_handle;
 static uint16_t                 conn_handle;
-static ble_gatts_char_handles_t sys_mode_handles;
-static ble_gatts_char_handles_t sys_cmd_handles;
-static ble_gatts_char_handles_t sys_data_handles;
 static ble_hello_demo_write_handler    data_write_handler;
 static ble_hello_demo_write_handler    mode_write_handler;
 static ble_hello_demo_write_handler    cmd_write_handler;
@@ -30,10 +27,6 @@ static notify_data_send_cb data_cb = NULL;
 static uint8_t *data_cb_data;
 static uint16_t data_cb_len;
 
-uint16_t ble_hello_demo_get_handle() {
-    return sys_cmd_handles.value_handle;
-}
-
 static void
 default_write_handler(ble_gatts_evt_write_t *event) {
     DEBUG("Default write handler called for 0x", event->handle);
@@ -44,21 +37,47 @@ default_conn_handler(void) {
     PRINTS("Default conn handler called");
 }
 
+typedef void(*char_write_handler_t)(ble_gatts_evt_write_t*);
+
+typedef struct {
+	uint16_t uuid;
+	ble_gatts_char_handles_t handles;
+	char_write_handler_t handler;
+} uuid_handler_t;
+
+#define MAX_CHARACTERISTICS 4
+static uuid_handler_t _uuid_handlers[MAX_CHARACTERISTICS];
+static uuid_handler_t* _p_uuid_handler = _uuid_handlers;
+
+uint16_t _value_handle(const uint16_t uuid) {
+	uuid_handler_t* p;
+	for(p = _uuid_handlers; p < _uuid_handlers+MAX_CHARACTERISTICS; p++) {
+		if(p->uuid == uuid) {
+			return p->handles.value_handle;
+		}
+	}
+
+	APP_ASSERT(0);
+}
+
+uint16_t ble_hello_demo_get_handle() {
+	return _value_handle(BLE_UUID_CMD_CHAR);
+}
+
 static void
 dispatch_write(ble_evt_t *event) {
-    ble_gatts_evt_write_t *write_evt = &event->evt.gatts_evt.params.write;
-    uint16_t handle = write_evt->handle;
-    DEBUG("write, handle: 0x", handle);
-    DEBUG("data, handle: 0x", sys_data_handles.cccd_handle);
-    DEBUG("mode, handle: 0x", sys_mode_handles.value_handle);
-    DEBUG("cmd, handle: 0x", sys_cmd_handles.value_handle);
-    if (handle == sys_data_handles.cccd_handle) {
-        data_write_handler(write_evt);
-    } else if (handle == sys_mode_handles.value_handle) {
-        mode_write_handler(write_evt);
-    } else if (handle == sys_cmd_handles.value_handle) {
-        cmd_write_handler(write_evt);
-    }
+    ble_gatts_evt_write_t* const write_evt = &event->evt.gatts_evt.params.write;
+    const uint16_t handle = write_evt->handle;
+
+	uuid_handler_t* p;
+	for(p = _uuid_handlers; p < _uuid_handlers+MAX_CHARACTERISTICS; p++) {
+		if(p->handles.value_handle == handle) {
+			p->handler(write_evt);
+			return;
+		}
+	}
+
+	DEBUG("Couldn't locate write handler for handle: ", handle);
 }
 
 void
@@ -117,7 +136,7 @@ ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
 
     memset(&hvx_params, 0, sizeof(hvx_params));
 
-    hvx_params.handle   = sys_data_handles.value_handle;
+    hvx_params.handle   = _value_handle(BLE_UUID_DATA_CHAR);
     hvx_params.type     = BLE_GATT_HVX_NOTIFICATION;
     hvx_params.offset   = 0;
 
@@ -171,7 +190,7 @@ ble_hello_demo_data_send(const uint8_t *data, const uint16_t len) {
 
     memset(&hvx_params, 0, sizeof(hvx_params));
 
-    hvx_params.handle   = sys_data_handles.value_handle;
+    hvx_params.handle   = _value_handle(BLE_UUID_DATA_CHAR);
     hvx_params.type     = BLE_GATT_HVX_NOTIFICATION;
     hvx_params.offset   = 0;
     hvx_params.p_len    = &hvx_len;
@@ -191,8 +210,10 @@ _char_add(const uint16_t uuid,
 		   ble_gatt_char_props_t* const props,
 		   uint8_t* const p_value,
 		   const uint16_t max_value_size,
-		   ble_gatts_char_handles_t* const out_handles)
+		   char_write_handler_t write_handler)
 {
+	APP_ASSERT(_p_uuid_handler >= _uuid_handlers && _p_uuid_handler < _uuid_handlers+MAX_CHARACTERISTICS);
+
     ble_uuid_t ble_uuid;
     BLE_UUID_BLE_ASSIGN(ble_uuid, uuid);
 
@@ -209,7 +230,7 @@ _char_add(const uint16_t uuid,
     attr_md.wr_auth = 0;
     attr_md.vlen = 1;
 
-    ble_gatts_attr_t  attr_char_value;
+    ble_gatts_attr_t attr_char_value;
     memset(&attr_char_value, 0, sizeof(attr_char_value));
     attr_char_value.p_uuid = &ble_uuid;
     attr_char_value.p_attr_md = &attr_md;
@@ -218,10 +239,21 @@ _char_add(const uint16_t uuid,
     attr_char_value.max_len = max_value_size;
     attr_char_value.p_value = p_value;
 
-    return sd_ble_gatts_characteristic_add(service_handle,
-										   &char_md,
-										   &attr_char_value,
-										   out_handles);
+	ble_gatts_char_handles_t handles;
+    uint32_t err_code = sd_ble_gatts_characteristic_add(service_handle,
+														&char_md,
+														&attr_char_value,
+														&handles);
+	if(err_code)
+		return err_code;
+
+	*_p_uuid_handler++ = (uuid_handler_t) {
+		.uuid = uuid,
+		.handles = handles,
+		.handler = write_handler
+	};
+
+	return err_code;
 }
 
 uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
@@ -280,26 +312,26 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
 
     // Add characteristics
     err_code = _char_add(BLE_UUID_DATA_CHAR,
-						  &notify_props,
-						  zeroes,
-						  BLE_GAP_DEVNAME_MAX_WR_LEN,
-						  &sys_data_handles);
+						 &notify_props,
+						 zeroes,
+						 BLE_GAP_DEVNAME_MAX_WR_LEN,
+						 data_write_handler);
     if (err_code != NRF_SUCCESS)
         return err_code;
 
     err_code = _char_add(BLE_UUID_CONF_CHAR,
-						  &rw_props,
-						  zeroes,
-						  4,
-						  &sys_mode_handles);
+						 &rw_props,
+						 zeroes,
+						 4,
+						 mode_write_handler);
     if (err_code != NRF_SUCCESS)
         return err_code;
 
     err_code = _char_add(BLE_UUID_CMD_CHAR,
-						  &rw_props,
-						  zeroes,
-						  10,
-						  &sys_cmd_handles);
+						 &rw_props,
+						 zeroes,
+						 10,
+						 cmd_write_handler);
     if (err_code != NRF_SUCCESS)
         return err_code;
 
