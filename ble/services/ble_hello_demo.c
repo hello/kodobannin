@@ -222,7 +222,7 @@ on_data_fetch_cccd_write(ble_gatts_evt_write_t * p_evt_write)
  * @return      NRF_SUCCESS on success, otherwise an error code.
  */
 static uint32_t
-_char_add3(const uint16_t uuid,
+_char_add(const uint16_t uuid,
 		   ble_gatt_char_props_t* const props,
 		   uint8_t* const p_value,
 		   const uint16_t max_value_size,
@@ -314,7 +314,7 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
 	rw_props.write = 1;
 
     // Add characteristics
-    err_code = _char_add3(BLE_UUID_DATA_CHAR,
+    err_code = _char_add(BLE_UUID_DATA_CHAR,
 						  &notify_props,
 						  zeroes,
 						  BLE_GAP_DEVNAME_MAX_WR_LEN,
@@ -322,7 +322,7 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
     if (err_code != NRF_SUCCESS)
         return err_code;
 
-    err_code = _char_add3(BLE_UUID_CONF_CHAR,
+    err_code = _char_add(BLE_UUID_CONF_CHAR,
 						  &rw_props,
 						  zeroes,
 						  4,
@@ -330,7 +330,7 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
     if (err_code != NRF_SUCCESS)
         return err_code;
 
-    err_code = _char_add3(BLE_UUID_CMD_CHAR,
+    err_code = _char_add(BLE_UUID_CMD_CHAR,
 						  &rw_props,
 						  zeroes,
 						  10,
