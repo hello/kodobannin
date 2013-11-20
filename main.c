@@ -313,6 +313,7 @@ _start()
     err_code = init_spi(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
     APP_ERROR_CHECK(err_code);
 
+    uint8_t buf[20];
     PRINTS("What does the flash say?\r\n");
     memset(buf, 0, sizeof(buf));
     buf[0] = SPI_Write(0x05);//9F);
