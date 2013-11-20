@@ -185,42 +185,7 @@ ble_hello_demo_data_send(const uint8_t *data, const uint16_t len) {
     }
     return 0;
 }
-/*
-static void
-on_data_fetch_cccd_write(ble_gatts_evt_write_t * p_evt_write)
-{
-    if (p_evt_write->len == 2)
-    {
-        // CCCD written, update notification state
-        if (p_dts->evt_handler != NULL)
-        {
-            ble_dts_evt_t evt;
 
-            if (ble_srv_is_notification_enabled(p_evt_write->data))
-            {
-                evt.evt_type = BLE_DTS_EVT_NOTIFICATION_ENABLED;
-            }
-            else
-            {
-                evt.evt_type = BLE_DTS_EVT_NOTIFICATION_DISABLED;
-            }
-
-            p_dts->evt_handler(p_dts, &evt);
-        }
-    }
-}
-*/
-
-/**@brief Function for adding the Characteristic.
- *
- * @param[in]   uuid           UUID of characteristic to be added.
- * @param[in]   p_char_value   Initial value of characteristic to be added.
- * @param[in]   char_len       Length of initial value. This will also be the maximum value.
- * @param[in]   dis_attr_md    Security settings of characteristic to be added.
- * @param[out]  p_handles      Handles of new characteristic.
- *
- * @return      NRF_SUCCESS on success, otherwise an error code.
- */
 static uint32_t
 _char_add(const uint16_t uuid,
 		   ble_gatt_char_props_t* const props,
