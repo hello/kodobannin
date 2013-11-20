@@ -25,6 +25,7 @@ SRCS = \
 	spi.c \
 	util.c \
 	watchdog.c \
+	norflash.c \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
