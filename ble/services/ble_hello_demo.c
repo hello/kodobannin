@@ -257,7 +257,8 @@ _char_add(const uint16_t uuid,
 	return err_code;
 }
 
-uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init) {
+uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init)
+{
     uint32_t   err_code;
     ble_uuid_t ble_uuid;
     const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
