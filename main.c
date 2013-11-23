@@ -316,12 +316,12 @@ _start()
     uint8_t buf[20];
     PRINTS("What does the flash say?\r\n");
     memset(buf, 0, sizeof(buf));
-    buf[0] = SPI_Write(0x05);//9F);
+    buf[0] = SPI_Read(0x05);//9F);
     err_code = spi_xfer(SPI_Channel_0, FLASH_nCS, 3, buf, buf);
     PRINTS("Eep, eep-eep, eep-eep-a-meep ");
     PRINT_HEX(&buf[1], 1);
     memset(buf, 0, sizeof(buf));
-    buf[0] = SPI_Write(0x90);
+    buf[0] = SPI_Read(0x90);
     buf[1] = 0xFF;
     buf[2] = 0xFF;
     buf[3] = 0;
