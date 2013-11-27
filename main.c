@@ -16,6 +16,7 @@
 #include <simple_uart.h>
 #include <string.h>
 #include <spi.h>
+#include <spi_nor.h>
 #include <util.h>
 #include <imu.h>
 #include <ble_hello_demo.h>
@@ -306,7 +307,7 @@ _start()
 
     //pwm_test();
 
-#if 0
+#if 1
     //flash test code
     nrf_gpio_cfg_output(GPS_nCS);
     nrf_gpio_pin_set(GPS_nCS);
@@ -314,30 +315,19 @@ _start()
     err_code = spinor_init(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
     APP_ERROR_CHECK(err_code);
     PRINTS("SPI NOR configured\r\n");
-/*
-    uint8_t buf[20];
-    PRINTS("Status: ");
-    memset(buf, 0, sizeof(buf));
-    buf[0] = SPI_Read(0x05);//9F);
-    err_code = spi_xfer2(SPI_Channel_0, FLASH_nCS, 2, buf, 1, buf);
 
-    PRINTS("\r\n ");
-    PRINT_HEX(buf, 1);
-    memset(buf, 0, sizeof(buf));
-    buf[0] = SPI_Read(0x90);
-    buf[1] = 0xFF;
-    buf[2] = 0xFF;
-    buf[3] = 0;
-    err_code = spi_xfer2(SPI_Channel_0, FLASH_nCS, 4, buf, 2, buf);
-    PRINT_HEX(buf, 2);
+    PRINTS("SPI NOR Data\r\n");
+    err_code = spinor_read(0, 20, sample);
+    APP_ERROR_CHECK(err_code <= 0);
+    PRINT_HEX(sample, 20);
     PRINTS("\r\n");
-*/
+
     while(1) {
         __WFE();
     }
 #endif
     // IMU standalone test code
-#if 1
+#if 0
     err_code = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
 
