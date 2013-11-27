@@ -107,38 +107,42 @@ cleanup:
     return ret;
 }
 
-bool
+int32_t
 spi_xfer2(const enum SPI_Channel chan, const uint8_t nCS, const uint32_t tx_len, const uint8_t *tx, const uint32_t rx_len, uint8_t *rx) {
     NRF_SPI_Type *spi;
     uint8_t dummy;
     int i;
-    bool ret = false;
+    int32_t ret = -1;
 
     if (chan == SPI_Channel_0)
         spi = NRF_SPI0;
     else if (chan == SPI_Channel_1)
         spi = NRF_SPI1;
     else
-        return false;    
+        return -1;    
 
     // select perhipheral
     nrf_gpio_pin_clear(nCS);
 
     // send command
     for (i = 0; i < tx_len; ++i) {
-        if (!spi_one_byte(spi,nCS, tx[i], &dummy))
+        if (!spi_one_byte(spi,nCS, tx[i], &dummy)) {
+            ret = -2;
             goto cleanup;
+        }
     }
 
     // read back data
     dummy = 0;
     
     for (i = 0; i < rx_len; i++) {
-        if (!spi_one_byte(spi, nCS, dummy, &rx[i]))
+        if (!spi_one_byte(spi, nCS, dummy, &rx[i])) {
+            ret = i;
             goto cleanup;
+        }
     }
 
-    ret = true;
+    ret = rx_len;
 
 cleanup:
     nrf_gpio_pin_set(nCS);
