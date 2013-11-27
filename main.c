@@ -306,6 +306,7 @@ _start()
 
     //pwm_test();
 
+#if 0
     //flash test code
     nrf_gpio_cfg_output(GPS_nCS);
     nrf_gpio_pin_set(GPS_nCS);
@@ -334,26 +335,23 @@ _start()
     while(1) {
         __WFE();
     }
-    //imu_selftest(SPI_Channel_0);
+#endif
     // IMU standalone test code
-#if 0
-    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err_code);
-
-    err_code = imu_init(SPI_Channel_0);
+#if 1
+    err_code = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
 
     // for do_imu code
-    int16_t *values = sample;
+    int16_t *values = (int16_t *)sample;
     int16_t old_values[6];
     uint16_t diff[6];
     uint32_t read, sent;
 
-    imu_read_regs(old_values);
+    imu_read_regs((uint8_t *)old_values);
     int i;
-    while(1) {}
+    while(1) {
         //read = imu_accel_reg_read(sample);
-        read = imu_read_regs(sample);
+        read = imu_read_regs((uint8_t *)sample);
 
         // let's play around with calc'ing diffs
         for (i=0; i < 6; i++) {
@@ -378,18 +376,8 @@ _start()
 	ble_advertising_start();
 
     // init imu SPI channel and interface
-
-    err_code = spi_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    err_code = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
-
-    //imu_selftest(SPI_Channel_0);
-
-    err_code = imu_init(SPI_Channel_0);
-    if(err_code == -1) {
-	    // This is probably Andre's development board that has a weird chip ID (0xFF instead of 0x70). Just ignore this for now...
-    } else {
-	    APP_ERROR_CHECK(err_code);
-    }
 
     // loop on BLE events FOREVER
     while(1) {
