@@ -97,3 +97,15 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 		
 	return 0;
 }
+
+int32_t
+spinor_read(uint32_t address, uint16_t len, uint8_t *buffer) {
+	uint8_t data[4];
+
+	data[0] = SPI_Read(CMD_READ);
+	data[1] = address & 0xFF;
+	data[2] = (address >> 8) & 0xFF;
+	data[3] = (address >> 16) & 0xFF;
+
+	return spi_xfer2(_chan, _nCS, 4, data, len, buffer); 
+}
