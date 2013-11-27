@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spi.h>
+
 enum SPI_NOR_Commands {
 	CMD_NOP     = 0x00,
 	CMD_WRSR    = 0x01, // Write Status / Config Register
@@ -37,3 +39,32 @@ enum SPI_NOR_Commands {
 	CMD_BE64k   = 0xD8, // Block Erase 64k
 };
 
+// Chip oriented constants and structures
+#define NOR_CAPACITY_16M     (16 * 1024 * 1024)
+#define NOR_CAPACITY_32M     (32 * 1024 * 1024)
+#define NOR_PAGE_SIZE_256    (256)
+#define NOR_PAGE_SIZE_512    (512)
+#define NOR_BLOCK_SIZE_4K    (4096)
+
+#define NOR_CHIP(vid, cid, cap, bs, ps) {vid, cid, cap, bs, ps, (cap/bs), (bs/ps)}
+
+enum NOR_MfgID {
+	NOR_Mfg_Macronix = 0xC2,
+};
+
+enum NOR_ChipID {
+	NOR_Chip_MX25U128 = 0x38,
+	NOR_Chip_MX25U256 = 0x39,
+};
+
+typedef struct {
+	uint8_t  vendor_id;
+	uint8_t  chip_id;
+	uint32_t capacity;
+	uint16_t block_size;
+	uint16_t page_size;
+	uint16_t total_blocks;
+	uint16_t pages_per_block;
+} NOR_Chip_Config;
+
+uint32_t spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t mosi, uint32_t sclk, uint32_t nCS);
