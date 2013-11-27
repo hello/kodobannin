@@ -17,7 +17,7 @@ static NOR_Chip_Config *_nor_config;
 static bool
 _read_status(uint8_t *status) {
 	uint8_t data;
-	bool ret;
+	int32_t ret;
 
 	data = SPI_Read(CMD_RDSR);
 
@@ -25,13 +25,13 @@ _read_status(uint8_t *status) {
     
     *status = data;
     
-    return ret;
+    return ret == 1;
 }
 
 static bool
 _read_id(uint8_t *mfg_id, uint8_t *chip_id) {
 	uint8_t data[4];
-	bool ret = false;
+	int32_t ret;
 
 	data[0] = SPI_Read(CMD_REMS);
 	data[1] = 0xFF;
@@ -43,7 +43,7 @@ _read_id(uint8_t *mfg_id, uint8_t *chip_id) {
     *mfg_id  = data[0];
     *chip_id = data[1];
 
-    return ret;
+    return ret == 2;
 }
 
 static NOR_Chip_Config *
