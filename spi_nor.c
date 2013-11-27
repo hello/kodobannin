@@ -2,6 +2,7 @@
 #include <spi_nor.h>
 #include <stdlib.h>
 #include <util.h>
+#include <app_error.h>
 
 static enum SPI_Channel _chan = SPI_Channel_Invalid;
 static uint32_t _nCS;
@@ -44,6 +45,26 @@ _read_id(uint8_t *mfg_id, uint8_t *chip_id) {
     *chip_id = data[1];
 
     return ret == 2;
+}
+
+static int32_t
+_write_enable() {
+	uint8_t data = SPI_Write(CMD_WREN);
+
+	if (spi_xfer2(_chan, _nCS, 1, &data, 0, NULL) != 0) {
+		return -1;
+	}
+
+	if (!_read_status(&data)) {
+		return -2;
+	}
+
+	// ensure the chip acknoledges the write enable
+	if (!(data & NOR_RDSR_WEL)) {
+		return -3;
+	}
+
+	return 0;
 }
 
 static NOR_Chip_Config *
@@ -108,4 +129,104 @@ spinor_read(uint32_t address, uint16_t len, uint8_t *buffer) {
 	data[3] = (address >> 16) & 0xFF;
 
 	return spi_xfer2(_chan, _nCS, 4, data, len, buffer); 
+}
+
+int32_t
+spinor_write(uint32_t address, uint16_t len, uint8_t *buffer) {
+	uint8_t data[4];
+	int32_t err;
+	uint16_t page_size;
+	uint16_t written;
+
+	err = _write_enable();
+	if (err != 0)
+		return err;
+
+	if (address & 0xFF000000) {
+		PRINTS("Address for write is too large");
+		return -1;
+	}
+
+	page_size = _nor_config->page_size;
+	written = 0;
+
+	while (written < len) {
+		uint16_t to_write;
+		uint32_t addr;
+
+		// calculate address for this write		
+		addr = address + written;
+
+		data[0] = SPI_Write(CMD_PP);
+		data[1] = (addr >> 16) & 0xFF;
+		data[2] = (addr >>  8) & 0xFF;
+		data[4] = addr & 0xFF;
+
+		// cap write amount to page size
+		to_write = len - written;
+
+		if (to_write > page_size)
+			to_write = page_size;
+		
+		err = spi_xfer2(_chan, _nCS, 4, data, to_write, &buffer[written]);
+		if (err < 0)
+			return err;
+
+		written += err;
+	}
+
+	return written;
+}
+
+int32_t
+spinor_chip_erase() {
+	uint8_t data;
+	int32_t err;
+
+	err = _write_enable();
+	if (err != 0)
+		return err;
+
+	data = SPI_Write(CMD_CE);
+
+	err = spi_xfer2(_chan, _nCS, 1, &data, 0, NULL);
+
+	return err;
+}
+
+int32_t
+spinor_block_erase(uint16_t block) {
+	uint8_t data[4];
+	int32_t err;
+
+	if (block >= _nor_config->total_blocks) {
+		PRINTS("Cannot erase invalid block number");
+		return -1;
+	}
+
+	err = _write_enable();
+	if (err != 0)
+		return err;
+
+	data[0] = SPI_Write(CMD_SE);
+	data[1] = 0;
+	data[2] = (block >> 8) & 0xFF;
+	data[3] = block & 0xFF;
+
+	err = spi_xfer2(_chan, _nCS, 4, data, 0, NULL);
+	
+	return err;
+}
+
+void
+spinor_wait_completion() {
+	bool ret;
+	uint8_t status;
+
+	do {
+		ret = _read_status(&status);
+		APP_ERROR_CHECK(ret != 1);
+
+		// might want a sleep here
+	} while (status & NOR_RDSR_WIP);
 }

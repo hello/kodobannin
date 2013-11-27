@@ -39,6 +39,17 @@ enum SPI_NOR_Commands {
 	CMD_BE64k   = 0xD8, // Block Erase 64k
 };
 
+enum NOR_RDSR_Bits {
+	NOR_RDSR_WIP  = (1U << 0),
+	NOR_RDSR_WEL  = (1U << 1),
+	NOR_RDSR_BP0  = (1U << 2),
+	NOR_RDSR_BP1  = (1U << 3),
+	NOR_RDSR_BP2  = (1U << 4),
+	NOR_RDSR_BP3  = (1U << 5),
+	NOR_RDSR_QE   = (1U << 6),
+	NOR_RDSR_SRWD = (1U << 7)
+};
+
 // Chip oriented constants and structures
 #define NOR_CAPACITY_16M     (16 * 1024 * 1024)
 #define NOR_CAPACITY_32M     (32 * 1024 * 1024)
@@ -69,3 +80,7 @@ typedef struct {
 
 uint32_t spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t mosi, uint32_t sclk, uint32_t nCS);
 int32_t  spinor_read(uint32_t address, uint16_t len, uint8_t *buffer);
+int32_t  spinor_write(uint32_t address, uint16_t len, uint8_t *buffer);
+int32_t  spinor_chip_erase();
+int32_t  spinor_block_erase(uint16_t block);
+void     spinor_wait_completion();
