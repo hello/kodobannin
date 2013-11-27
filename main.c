@@ -322,6 +322,20 @@ _start()
     PRINT_HEX(sample, 20);
     PRINTS("\r\n");
 
+    memset(sample, 0xAA, 20);
+    PRINTS("SPI NOR AA Write\r\n");
+    err_code = spinor_write(0, 16, sample);
+    PRINT_HEX(&err_code, 4);
+    PRINTS("\r\n");
+
+    spinor_wait_completion();
+
+    PRINTS("SPI NOR Data\r\n");
+    err_code = spinor_read(0, 20, sample);
+    APP_ERROR_CHECK(err_code <= 0);
+    PRINT_HEX(sample, 20);
+    PRINTS("\r\n");
+
     while(1) {
         __WFE();
     }
