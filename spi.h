@@ -30,4 +30,5 @@ enum SPI_Freq {
 
 uint32_t spi_init(const enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS);
 bool spi_xfer(const enum SPI_Channel chan, const uint8_t nCS, const uint32_t len, const uint8_t *tx, uint8_t *rx);
+bool spi_xfer2(const enum SPI_Channel chan, const uint8_t nCS, const uint32_t tx_len, const uint8_t *tx, const uint32_t rx_len, uint8_t *rx);
 uint16_t spi_read_multi(const enum SPI_Channel chan, const uint8_t nCS, const uint8_t tx, const uint32_t rxlen, uint8_t *rx);
