@@ -52,11 +52,15 @@ APP_SRCS = \
 	mpu-6500.c \
 	pwm.c \
 	main.c \
+	spi_nor.c \
+	norflash.c \
+	$(NULL)
 
 BOOTLOADER_SRCS = \
 	$(SRCS) \
 	$(wildcard hello_bootloader/*.c) \
 	hello_bootloader/ble/ble_services/ble_dfu.c \
+	$(NULL)
 
 INCS =  ./ \
 	./ble \
