@@ -28,6 +28,6 @@ enum SPI_Freq {
     Freq_8Mbps               /*!< drive SClk with frequency 8Mbps */
 };
 
-uint32_t init_spi(uint32_t chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS);
+uint32_t spi_init(const enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS);
 bool spi_xfer(const enum SPI_Channel chan, const uint8_t nCS, const uint32_t len, const uint8_t *tx, uint8_t *rx);
 uint16_t spi_read_multi(const enum SPI_Channel chan, const uint8_t nCS, const uint8_t tx, const uint32_t rxlen, uint8_t *rx);

@@ -6,7 +6,7 @@
 #define TIMEOUT_COUNTER          0x3000UL
 
 uint32_t
-init_spi(uint32_t chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS) {
+spi_init(enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS) {
     NRF_SPI_Type *spi;
 
     if (chan == SPI_Channel_0)
