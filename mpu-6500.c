@@ -168,10 +168,16 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,
 }
 */
 uint32_t
-imu_init(enum SPI_Channel channel) {
+imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS) {
 	uint32_t err;
+	
 	chan = channel;
 
+	// init SPI hardware block
+	err = spi_init(channel, mode, miso, mosi, sclk, nCS);
+	if (err != 0)
+		return err;
+	
 	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
 	// page 43
 
