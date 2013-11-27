@@ -1,13 +1,1 @@
-*.o
-*.d
-*.elf
-*.map
-bootloader.bin
-hrs.bin
-hrs_packet_encoded.bin
 JLink.log
-jl.jlink
-app.bin
-blprog.jlink
-prog.jlink
-app.sha1
