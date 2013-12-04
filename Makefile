@@ -155,13 +155,13 @@ $(BUILD_DIR):
 
 # jlink invocation
 
-%.jlink: %.jlink.in
+$(BUILD_DIR)/%.jlink: %.jlink.in
 	$(info [JLINK_SCRIPT] $@)
-	sed -e 's,$$PWD,$(PWD),g' < $< > $@
+	sed -e 's,$$PWD,$(PWD),g' -e 's,$$BUILD_DIR,$(abspath $(BUILD_DIR)),g' < $< > $@
 
 JLINK_COMMANDS = \
 	$(info [JPROG] $@.jlink) \
-	@$(JPROG) < $@.jlink
+	@$(JPROG) < $(BUILD_DIR)/$@.jlink
 
 jlink:
 	@$(JPROG)
@@ -199,7 +199,7 @@ app: $(APP)
 APP_OBJS := $(addprefix $(BUILD_DIR)/, $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(APP_SRCS))))
 $(BUILD_DIR)/app.elf: $(APP_OBJS)
 
-prog: app SoftDevice prog.jlink
+prog: app SoftDevice $(BUILD_DIR)/prog.jlink
 	$(JLINK_COMMANDS)
 
 # building and debugging the bootloader
@@ -211,7 +211,7 @@ bl: $(BOOTLOADER)
 BOOTLOADER_OBJS = $(patsubst %, $(BUILD_DIR)/%, $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(BOOTLOADER_SRCS))))
 $(BUILD_DIR)/bootloader.elf: $(BOOTLOADER_OBJS)
 
-blprog: bl SoftDevice blprog.jlink
+blprog: bl SoftDevice $(BUILD_DIR)/blprog.jlink
 	$(JLINK_COMMANDS)
 
 # SoftDevice
