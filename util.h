@@ -22,3 +22,47 @@ void serial_print_hex(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
 
 #define APP_ASSERT(condition) APP_ERROR_CHECK(!(condition))
+
+union int16_bits {
+	int16_t value;
+	uint8_t bytes[sizeof(int16_t)];
+};
+
+union uint16_bits {
+	uint16_t value;
+	uint8_t bytes[sizeof(uint16_t)];
+};
+
+union int32_bits {
+	int32_t value;
+	uint8_t bytes[sizeof(int32_t)];
+};
+
+union uint32_bits {
+	uint32_t value;
+	uint8_t bytes[sizeof(uint32_t)];
+};
+
+union generic_pointer {
+	uint8_t* p8;
+	uint16_t* p16;
+	uint32_t* p32;
+
+	int8_t* pi8;
+	int16_t* pi16;
+	int32_t* pi32;
+};
+
+static inline uint16_t __attribute__((const)) bswap16(uint16_t x)
+{
+	__asm__ ("rev16 %0, %1" : "=r" (x) : "r" (x));
+
+	return x;
+}
+
+static inline uint32_t __attribute__((const)) bswap32(uint32_t x)
+{
+	__asm__ ("rev %0, %1" : "=r" (x) : "r" (x));
+
+	return x;
+}
