@@ -162,6 +162,9 @@ JLINK_COMMANDS = \
 jlink:
 	@$(JPROG)
 
+reset:
+	@/usr/bin/printf 'r\nq' | $(JPROG)
+
 # sha1 invocation
 
 %.sha1: %.bin
