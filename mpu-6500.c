@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #include <spi.h>
 #include <simple_uart.h>
 #include <util.h>
