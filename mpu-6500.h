@@ -64,6 +64,8 @@ enum MPU_Reg_Bits {
 	INT_EN_FSYNC       = (1UL << 3),
 	INT_EN_RAW_READY   = (1UL << 0),
 
+	INT_STS_FIFO_OVRFLO = (1UL << 4),
+
 	CONFIG_LPF_32kHz_8800bw = 0,
 	CONFIG_LPF_32kHz_3600bw = 0,
 	CONFIG_LPF_8kHz_250bw   = 0,
@@ -97,9 +99,8 @@ enum MPU_Reg_Bits {
 	ACCEL_CFG_SCALE_16G  = (1UL << 4) | (1UL << 3),
 	ACCEL_CFG_SCALE_OFFSET = 0x3,
 
-	ACCEL_CFG2_FCHOICE_1        = 0,
-	ACCEL_CFG2_FCHOICE_0        = 1,
-	ACCEL_CFG2_FCHOICE_B_SHIFT  = (1 << 3),
+	ACCEL_CFG2_FCHOICE_1        = (0UL << 3),
+	ACCEL_CFG2_FCHOICE_0        = (1UL << 3),
 	ACCEL_CFG2_LPF_4kHz_1130bw  = 0,
 	ACCEL_CFG2_LPF_1kHz_460bw   = 0,
 	ACCEL_CFG2_LPF_1kHz_184bw   = 1,
@@ -109,6 +110,10 @@ enum MPU_Reg_Bits {
 	ACCEL_CFG2_LPF_1kHz_10bw    = 5,
 	ACCEL_CFG2_LPF_1kHz_5bw     = 6,
 	ACCEL_CFG2_LPF_1kHz_460bw_2 = 7,
+	ACCEL_CFG2_FIFO_SIZE_512    = (0UL << 7) | (0UL << 6),
+	ACCEL_CFG2_FIFO_SIZE_1024   = (0UL << 7) | (1UL << 6),
+	ACCEL_CFG2_FIFO_SIZE_2048   = (1UL << 7) | (0UL << 6),
+	ACCEL_CFG2_FIFO_SIZE_4096   = (1UL << 7) | (1UL << 6),
 
 	FIFO_EN_QUEUE_TEMP   = (1UL << 7),
 	FIFO_EN_QUEUE_GYRO_X = (1UL << 6),

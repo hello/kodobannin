@@ -10,33 +10,54 @@
 
 #define BUF_SIZE 4
 
+#define SENSORS FIFO_EN_QUEUE_ACCEL
+//#define SENSORS (FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z | FIFO_EN_QUEUE_ACCEL)
+
 static enum SPI_Channel chan = SPI_Channel_Invalid;
 static uint8_t buf[BUF_SIZE];
 
-static inline bool
-mpu_reg_read(MPU_Register_t register_address, uint8_t* const out_value)
+static inline void
+_register_read(MPU_Register_t register_address, uint8_t* const out_value)
 {
 	uint8_t buf[2];
 	buf[0] = SPI_Read(register_address);
 
 	bool success = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	APP_ASSERT(success);
 	if(success) {
 		*out_value = buf[1];
 	}
-
-	return success;
 }
 
-static inline bool
-mpu_reg_write(MPU_Register_t register_address, uint32_t value)
+static inline void
+_register_write(MPU_Register_t register_address, uint8_t value)
 {
 	uint8_t buf[2] = { SPI_Write(register_address), value };
 
-	return spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	bool success = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	APP_ASSERT(success);
 }
 
 static void
-imu_uart_debug(const uint32_t result, const uint8_t *buf, const uint32_t len) {
+_fifo_reset()
+{
+	_register_write(MPU_REG_INT_EN, 0);
+	_register_write(MPU_REG_FIFO_EN, 0);
+	_register_write(MPU_REG_USER_CTL, 0);
+
+	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_RST);
+	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN);
+	nrf_delay_ms(50);
+
+	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
+	_register_write(MPU_REG_INT_EN, 0x1);
+	_register_write(MPU_REG_INT_EN, 0);
+
+	_register_write(MPU_REG_FIFO_EN, SENSORS);
+}
+
+static void
+_uart_debug(const uint32_t result, const uint8_t *buf, const uint32_t len) {
 	int i;
 	PRINT_HEX(&result, 4);
 	PRINTS(": ");
@@ -47,75 +68,42 @@ imu_uart_debug(const uint32_t result, const uint8_t *buf, const uint32_t len) {
 
 uint16_t
 imu_get_fifo_count() {
-	uint16_t count;
-	uint32_t err;
+	//APP_ASSERT(chan != SPI_Channel_Invalid);
 
-	APP_ERROR_CHECK(chan == SPI_Channel_Invalid);
+	union uint16_bits fifo_count;
+	_register_read(MPU_REG_FIFO_CNT_HI, &fifo_count.bytes[1]);
+	_register_read(MPU_REG_FIFO_CNT_LO, &fifo_count.bytes[0]);
 
-	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_HI);
-	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
-	APP_ERROR_CHECK(!err);
-
-	count = buf[1] << 8;
-
-	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_LO);
-	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
-	APP_ERROR_CHECK(!err);
-
-	count |= buf[1];
-
-	return count;
+	return fifo_count.value;
 }
 
 uint16_t
 imu_accel_reg_read(uint8_t *buf) {
-	bool good = 0;
-
-	good = mpu_reg_read(MPU_REG_ACC_X_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_X_HI, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Y_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Y_HI, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Z_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Z_HI, buf++);
-	APP_ERROR_CHECK(!good);
+	_register_read(MPU_REG_ACC_X_LO, buf++);
+	_register_read(MPU_REG_ACC_X_HI, buf++);
+	_register_read(MPU_REG_ACC_Y_LO, buf++);
+	_register_read(MPU_REG_ACC_Y_HI, buf++);
+	_register_read(MPU_REG_ACC_Z_LO, buf++);
+	_register_read(MPU_REG_ACC_Z_HI, buf++);
 
 	return 6;
 }
 
 uint16_t
 imu_read_regs(uint8_t *buf) {
-	bool good = 0;
+	_register_read(MPU_REG_ACC_X_LO, buf++);
+	_register_read(MPU_REG_ACC_X_HI, buf++);
+	_register_read(MPU_REG_ACC_Y_LO, buf++);
+	_register_read(MPU_REG_ACC_Y_HI, buf++);
+	_register_read(MPU_REG_ACC_Z_LO, buf++);
+	_register_read(MPU_REG_ACC_Z_HI, buf++);
 
-	good = mpu_reg_read(MPU_REG_ACC_X_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_X_HI, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Y_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Y_HI, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Z_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Z_HI, buf++);
-	APP_ERROR_CHECK(!good);
-
-	good = mpu_reg_read(MPU_REG_GYRO_X_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_X_HI, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_Y_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_Y_HI, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_Z_LO, buf++);
-	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_Z_HI, buf++);
-	APP_ERROR_CHECK(!good);
+	_register_read(MPU_REG_GYRO_X_LO, buf++);
+	_register_read(MPU_REG_GYRO_X_HI, buf++);
+	_register_read(MPU_REG_GYRO_Y_LO, buf++);
+	_register_read(MPU_REG_GYRO_Y_HI, buf++);
+	_register_read(MPU_REG_GYRO_Z_LO, buf++);
+	_register_read(MPU_REG_GYRO_Z_HI, buf++);
 
 	return 12;
 }
@@ -126,22 +114,20 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 
 	avail = imu_get_fifo_count();
 
-	if (count > avail)
+	if (avail < count)
 		count = avail;
 
 	if (count == 0)
 		return 0;
 
+	DEBUG("count: ", count);
 	return spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
 }
 
 void
 imu_reset_fifo() {
-	uint32_t err;
-	// Reset FIFO, disable i2c, and clear regs
-	PRINTS("FIFO / buffer reset\r\n");
-	err = mpu_reg_write(MPU_REG_USER_CTL, USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_RST); // | USR_CTL_SIG_RST);
+	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN);
 }
 
 /*
@@ -171,23 +157,60 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,
 */
 
 static void
-imu_accelerometer_continuous()
+_continuous()
 {
-	int16_t values[3];
+	union fifo_buffer {
+		uint8_t bytes[4096];
+		uint32_t uint32s[1024];
+
+		int16_t values[2048];
+	};
+
+	union fifo_buffer buffer;
 
 	for(;;) {
-		mpu_reg_read(MPU_REG_ACC_X_HI, (uint8_t*)&values[0]+1);
-		mpu_reg_read(MPU_REG_ACC_X_LO, (uint8_t*)&values[0]);
-		mpu_reg_read(MPU_REG_ACC_Y_HI, (uint8_t*)&values[1]+1);
-		mpu_reg_read(MPU_REG_ACC_Y_LO, (uint8_t*)&values[1]);
-		mpu_reg_read(MPU_REG_ACC_Z_HI, (uint8_t*)&values[2]+1);
-		mpu_reg_read(MPU_REG_ACC_Z_LO, (uint8_t*)&values[2]);
+		uint16_t bufsize = imu_fifo_read(4096, buffer.bytes);
+		DEBUG("bufsize: ", bufsize);
+
+		unsigned i = 0;
+		union generic_pointer p;
+		for(p.pi16 = buffer.values; p.p8 < buffer.bytes+bufsize; p.pi16++) {
+			*p.pi16 = bswap16(*p.pi16);
+			PRINT_HEX(p.pi16, sizeof(*p.pi16));
+			i++;
+			if(i == 3) {
+				PRINTS("\r\n");
+				i = 0;
+			}
+		}
+
+		PRINTS("\r\n");
+
+		uint8_t int_status;
+		_register_read(MPU_REG_INT_STS, &int_status);
+		if(int_status & INT_STS_FIFO_OVRFLO) {
+			PRINTS("Overflowed!\r\n");
+			//imu_reset_fifo();
+			_fifo_reset();
+		}
+
+		//_fifo_reset();
+		nrf_delay_ms(300);
+
+		/*
+		_register_read(MPU_REG_ACC_X_HI, (uint8_t*)&values[0]+1);
+		_register_read(MPU_REG_ACC_X_LO, (uint8_t*)&values[0]);
+		_register_read(MPU_REG_ACC_Y_HI, (uint8_t*)&values[1]+1);
+		_register_read(MPU_REG_ACC_Y_LO, (uint8_t*)&values[1]);
+		_register_read(MPU_REG_ACC_Z_HI, (uint8_t*)&values[2]+1);
+		_register_read(MPU_REG_ACC_Z_LO, (uint8_t*)&values[2]);
 
 		PRINT_HEX(&values[0], sizeof(values[0]));
 		PRINT_HEX(&values[1], sizeof(values[1]));
 		PRINT_HEX(&values[2], sizeof(values[2]));
 
 		PRINTS("\r\n");
+		*/
 	}
 }
 
@@ -196,9 +219,9 @@ static void imu_accelerometer_self_test()
 {
 	bool success = false;
 
-	//mpu_reg_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_8G);
+	//_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_8G);
 
-	//mpu_reg_write(MPU_REG_FIFO_EN, FIFO_EN_QUEUE_ACCEL);
+	//_register_write(MPU_REG_FIFO_EN, SENSORS);
 
 	// See page 11 of the MPU-6500 Register Map descriptions for this algorithm
 
@@ -238,8 +261,7 @@ static void imu_accelerometer_self_test()
 	imu_fifo_read(sample_count*sizeof(int16_t), non_self_test_data);
 	DEBUG("non_self_test_data: ", non_self_test_data);
 
-	success = mpu_reg_write(MPU_REG_ACC_CFG, AX_ST_EN|AY_ST_EN|AZ_ST_EN);
-	APP_ERROR_CHECK(!success);
+	_register_write(MPU_REG_ACC_CFG, AX_ST_EN|AY_ST_EN|AZ_ST_EN);
 
 	int16_t self_test_data[sample_count];
 	memset(self_test_data, 0x55, sizeof(self_test_data));
@@ -267,7 +289,6 @@ static void imu_accelerometer_self_test()
 
 uint32_t
 imu_init(enum SPI_Channel channel) {
-	uint32_t err;
 	chan = channel;
 
 	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
@@ -275,19 +296,16 @@ imu_init(enum SPI_Channel channel) {
 
 	// Reset chip
 	PRINTS("Chip reset\r\n");
-	err = mpu_reg_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
 
 	nrf_delay_ms(100);
 
 	PRINTS("Chip wakeup\r\n");
-	err = mpu_reg_write(MPU_REG_PWR_MGMT_1, 0);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_PWR_MGMT_1, 0);
 
 	// Check for valid Chip ID
 	PRINTS("MPU-6500 Chip ID: ");
-	err = mpu_reg_read(MPU_REG_WHO_AM_I, buf);
-	APP_ERROR_CHECK(!err);
+	_register_read(MPU_REG_WHO_AM_I, buf);
 
 	PRINT_HEX(&buf[0], 0);
 	PRINTS("\r\n");
@@ -300,62 +318,40 @@ imu_init(enum SPI_Channel channel) {
 	}
 
 	// Reset buffers
-	PRINTS("Signal reset\r\n");
-	err = mpu_reg_write(MPU_REG_SIG_RST, 0xFF);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_SIG_RST, 0xFF);
 
 	nrf_delay_ms(100);
 
 	// Init interrupts
-	PRINTS("Int Init\r\n");
-	err = mpu_reg_write(MPU_REG_INT_CFG, INT_CFG_ACT_HI | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_HI | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
 
 	// Config interrupts
-	PRINTS("Int config\r\n");
-	err = mpu_reg_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
 
 	// Set sample rate div  F = (DPLF_Freq / (Sample Rate Div + 1))
-	PRINTS("Sample Rate config\r\n");
-	err = mpu_reg_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9);
 
 	// Init accel
-	PRINTS("Accel scale config\r\n");
-	err = mpu_reg_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
 
-	// Set Accel Low Pass Filter
-	PRINTS("Accel LPF Config\r\n");
-	err = mpu_reg_write(MPU_REG_ACC_CFG2, (ACCEL_CFG2_FCHOICE_1 << ACCEL_CFG2_FCHOICE_B_SHIFT) | ACCEL_CFG2_LPF_1kHz_460bw);
-	APP_ERROR_CHECK(!err);
+	// Set Accel Low Pass Filter, and make FIFO size 4096
+	_register_write(MPU_REG_ACC_CFG2, ACCEL_CFG2_FCHOICE_1 | ACCEL_CFG2_LPF_1kHz_41bw | ACCEL_CFG2_FIFO_SIZE_4096);
 
 	// Set Gyro Low Pass Filter
-	PRINTS("Gyro LPF Config\r\n");
-	err = mpu_reg_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_184bw);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_41bw);
 
-	bool success = false;
-	success = mpu_reg_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9); // 1000=(1+9) = 100 Hz
-	APP_ERROR_CHECK(!success);
+	//_register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9); // 1000=(1+9) = 100 Hz
 
 	// Init Gyro
-	PRINTS("Gyro config\r\n");
-	err = mpu_reg_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_2k_DPS << GYRO_CFG_RATE_OFFET));
-	APP_ERROR_CHECK(!err);
-
-	// Reset FIFO, disable i2c, and clear regs
-	PRINTS("FIFO / buffer reset\r\n");
-	err = mpu_reg_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_2k_DPS << GYRO_CFG_RATE_OFFET));
 
 	// Init FIFO
-	PRINTS("FIFO config\r\n");
-	err = mpu_reg_write(MPU_REG_FIFO_EN, FIFO_EN_QUEUE_ACCEL); // | FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z;
-	APP_ERROR_CHECK(!err);
+	_register_write(MPU_REG_FIFO_EN, SENSORS); // FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z); //
 
-	imu_accelerometer_continuous();
+	// Reset FIFO, disable i2c, and clear regs
+	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
+
+	_continuous();
 
 	return 0;
 }
