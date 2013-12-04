@@ -248,8 +248,6 @@ $(BUILD_DIR)/%.elf: %.ld | $(dir $@)
 	@$(OBJCOPY) -O binary $< $@
 #-j .text -j .data
 
-ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink app.sha1
-
 .PHONY: clean
 clean:
 	@-rm -rf $(BUILD_DIR)
