@@ -250,7 +250,7 @@ $(BUILD_DIR)/%.elf: %.ld | $(dir $@)
 
 .PHONY: clean
 clean:
-	@-rm -rf $(BUILD_DIR)
+	-rm -rf $(BUILD_DIR)
 
 # dependency info
 -include $(ALL_DEPS)
