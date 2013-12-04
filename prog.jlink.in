@@ -10,4 +10,5 @@ speed 1000
 loadbin $PWD/uicr_14000.bin 0x10001000
 loadbin $PWD/SoftDevice/softdevice_main.bin 0x0
 loadbin $PWD/app.bin 0x14000
+r
 q

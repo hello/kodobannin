@@ -82,7 +82,7 @@ ble_hello_demo_on_ble_evt(ble_evt_t *event)
             break;
 
         case BLE_EVT_TX_COMPLETE:
-            PRINTS("BUF AVAIL\n");
+            //PRINTS("BUF AVAIL\n");
             if (data_cb) {
                 notify_data_send_cb cb = data_cb;
                 data_cb = NULL;
@@ -139,9 +139,9 @@ ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
         if (err == NRF_SUCCESS) {
             hvx_len -= pkt_len;
             ptr += pkt_len;
-            DEBUG("SENT PKT ", hvx_len);
+            //DEBUG("SENT PKT ", hvx_len);
         } else if (err == BLE_ERROR_NO_TX_BUFFERS) {
-            DEBUG("NEED BUF, ", hvx_len);
+            //DEBUG("NEED BUF, ", hvx_len);
             // so we cant wait here because we're blocking the softdevice from actually sending
             // right now, we return an in progress indicator, and request that we be called back
             // with our in-progress data ptr and bytes

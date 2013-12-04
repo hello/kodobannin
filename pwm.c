@@ -5,6 +5,7 @@
 #include <nrf_delay.h>
 #include <nrf_gpiote.h>
 #include <nrf_gpio.h>
+#include <nrf_sdm.h>
 #include <nrf_soc.h>
 #include <util.h>
 
@@ -69,14 +70,22 @@ ppi_enable_first_available_channel(volatile uint32_t *event_ptr, volatile uint32
     uint32_t channel_num;
     uint32_t chen;
     uint32_t err;
+    uint8_t sd_enabled = 0;
 
-    err = sd_ppi_channel_enable_get(&chen);
-    APP_ERROR_CHECK(err);
+    sd_softdevice_is_enabled(&sd_enabled);
+
+    if (sd_enabled) {
+        err = sd_ppi_channel_enable_get(&chen);
+        APP_ERROR_CHECK(err);
+    } else {
+        chen = NRF_PPI->CHEN;
+    }
+
     DEBUG("PPI chan msk: ", chen);
+    
     // Traverse the total list of channels
     for(channel_num = 0; channel_num < 16; channel_num++) {
         // Look for a channel that is not set
-        //if((NRF_PPI->CHEN & (1 << channel_num)) == 0) {
         if((chen & (1 << channel_num)) == 0) {
             // When a free channel is found, exit the loop
             break;
@@ -88,15 +97,19 @@ ppi_enable_first_available_channel(volatile uint32_t *event_ptr, volatile uint32
         return -1;
     } else {
         // Otherwise we configure the channel and return the channel number
-        err = sd_ppi_channel_assign(channel_num, event_ptr, task_ptr);
-         APP_ERROR_CHECK(err);
-        //*(&(NRF_PPI->CH0_EEP) + (channel_num * 2)) = (uint32_t)event_ptr;
-        //*(&(NRF_PPI->CH0_TEP) + (channel_num * 2)) = (uint32_t)task_ptr;
-        //NRF_PPI->CHENSET = (1 << channel_num);
-        err = sd_ppi_channel_enable_set(1<<channel_num);
-         APP_ERROR_CHECK(err);
-         DEBUG("new PPI: ", channel_num);
-         return channel_num;
+        if (sd_enabled) {
+            err = sd_ppi_channel_assign(channel_num, event_ptr, task_ptr);
+            APP_ERROR_CHECK(err);
+            err = sd_ppi_channel_enable_set(1<<channel_num);
+            APP_ERROR_CHECK(err);
+        } else {
+            *(&(NRF_PPI->CH0_EEP) + (channel_num * 2)) = (uint32_t)event_ptr;
+            *(&(NRF_PPI->CH0_TEP) + (channel_num * 2)) = (uint32_t)task_ptr;
+            NRF_PPI->CHENSET = (1 << channel_num);
+        }
+
+        DEBUG("new PPI: ", channel_num);
+        return channel_num;
     }
 }
 
@@ -104,6 +117,9 @@ uint32_t
 pwm_init(PWM_Channel_Count num_channels, uint32_t *gpios, PWM_Mode mode) {
 	uint32_t i;
     uint32_t err;
+    uint8_t sd_enabled = 0;
+
+    sd_softdevice_is_enabled(&sd_enabled);
 
 	if (num_channels >= PWM_Num_Channels)
 		return 1;
@@ -140,12 +156,16 @@ pwm_init(PWM_Channel_Count num_channels, uint32_t *gpios, PWM_Mode mode) {
         ppi_enable_first_available_channel(&PWM_TIMER->EVENTS_COMPARE[3], &NRF_GPIOTE->TASKS_OUT[pwm_gpiote_channel[i]]);
     }
 
-    //NVIC_SetPriority(PWM_IRQn, 3);
-    err = sd_nvic_SetPriority(PWM_IRQn, 1);
-    APP_ERROR_CHECK(err);
-    err = sd_nvic_EnableIRQ(PWM_IRQn);
-    APP_ERROR_CHECK(err);
-    //NVIC_EnableIRQ(PWM_IRQn);
+    if (sd_enabled) {
+        err = sd_nvic_SetPriority(PWM_IRQn, 1);
+        APP_ERROR_CHECK(err);
+        err = sd_nvic_EnableIRQ(PWM_IRQn);
+        APP_ERROR_CHECK(err);
+    } else {
+        NVIC_SetPriority(PWM_IRQn, 1);  
+        NVIC_EnableIRQ(PWM_IRQn);
+    }
+
     PWM_TIMER->TASKS_START = 1;
 
 	return 0;

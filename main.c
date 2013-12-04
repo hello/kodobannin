@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
@@ -25,8 +27,6 @@
 
 static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
-
-static app_timer_id_t imu_sampler;
 
 void
 test_3v3() {
@@ -140,19 +140,22 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 #define TEST_STATE_IDLE 0x66
 #define TEST_ENTER_DFU  0x99
 
+static volatile uint8_t do_imu = 0;
+
 void
 cmd_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("cmd_write_handler called\n");
+    PRINTS("cmd_write_handler called\r\n");
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
-    uint8_t *buf;
+    //uint8_t *buf;
 
     hrs_parameters_t hrs_parameters;
     memset(&hrs_parameters, 0, sizeof(hrs_parameters));
 
     switch (state) {
         case TEST_START_HRS:
+            do_imu = 0;
             PRINT_HEX(event->data, 6);
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS job: ", test_size);
@@ -164,6 +167,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             break;
 
     case TEST_START_HRS2:
+            do_imu = 0;
             PRINT_HEX(event->data, 9);
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS job: ", test_size);
@@ -183,6 +187,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             break;
 
         case TEST_CAL_HRS:
+            do_imu = 0;
             PRINT_HEX(event->data, 6);
             test_size = *(uint16_t *)&event->data[4];
             DEBUG("Starting HRS cal: ", test_size);
@@ -196,13 +201,15 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 
         case TEST_START_IMU:
                 //steal the HRS buffer
-                buf = get_hrs_buffer();
-                imu_reset_fifo();
+                //buf = get_hrs_buffer();
+                do_imu = 1;
+                /*imu_reset_fifo();
                 err = imu_fifo_read(480, buf);
                 ble_hello_demo_data_send_blocking(buf, err);
-                break;
+                */break;
 
         case TEST_ENTER_DFU:
+            do_imu = 0;
             PRINTS("Rebooting into DFU");
             // set the trap bit for the bootloader and kick the system
             //NRF_POWER->GPREGRET |= 0x1;
@@ -211,6 +218,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             break;
 
         case TEST_SEND_DATA:
+            do_imu = 0;
             DEBUG("Sending HRS data: ", test_size);
 
             err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
@@ -219,9 +227,18 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             // update device state
             if (err == NRF_SUCCESS) {
                 _state = TEST_STATE_IDLE;
-                err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
+                err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
                 APP_ERROR_CHECK(err);
             }
+            break;
+
+        case TEST_STATE_IDLE:
+            do_imu = 0;
+            if (_state == TEST_START_IMU) {
+                _state = TEST_STATE_IDLE;
+            }
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
             break;
 
         default:
@@ -242,32 +259,22 @@ start_sampling_on_connect(void) {
 
 void
 stop_sampling_on_disconnect(void) {
+    uint32_t err;
+    uint16_t len = 1;
+    PRINTS("\r\n*******Stop*******\r\n");
+    do_imu = 0;
+
+    _state = TEST_STATE_IDLE;
+    err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+    APP_ERROR_CHECK(err);
+
     //uint32_t err_code;
     //err_code = app_timer_stop(imu_sampler);
     //APP_ERROR_CHECK(err_code);
 }
 
 void
-sample_imu(void * p_context) {
-    static uint8_t counter;
-    uint8_t sample[20];
-    uint32_t read, sent;
-
-    read = imu_fifo_read(12, &sample[1]);
-    if (read == 0)
-        return;
-
-    sample[0] = counter++;
-    sent = ble_hello_demo_data_send(sample, ++read);
-    if (read != sent) {
-        DEBUG("Short send of 0x", sent);
-    }
-    //DEBUG("fifo read bytes: 0x", read);
-    //DEBUG("data", sample);
-}
-
-void
-hello_demo_service_init() {
+services_init() {
     uint32_t err_code;
 
     // add hello demo service
@@ -288,51 +295,55 @@ _start()
 {
 	uint32_t err_code;
 	watchdog_init(10, 1);
+    uint8_t sample[20];
+
+    memset(sample, 0, 20);
+
     //_state = Demo_Config_Standby;
     _state = TEST_STATE_IDLE;
 
+    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
+
     //pwm_test();
 
-    debug_uart_init();
-
-    //imu_selftest(SPI_Channel_0);
-/*
     // IMU standalone test code
+#if 0
+    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err_code);
 
     err_code = imu_init(SPI_Channel_0);
     APP_ERROR_CHECK(err_code);
 
-    uint8_t sample[20];
+    // for do_imu code
+    int16_t *values = sample;
+    int16_t old_values[6];
+    uint16_t diff[6];
     uint32_t read, sent;
 
-    while(1) {
-        read = imu_fifo_read(12, &sample[1]);
-        if (read > 0) {
-            PRINT_HEX(&sample[1], 12);
-            PRINTS("\r\n");
+    imu_read_regs(old_values);
+    int i;
+    while(1) {}
+        //read = imu_accel_reg_read(sample);
+        read = imu_read_regs(sample);
+
+        // let's play around with calc'ing diffs
+        for (i=0; i < 6; i++) {
+            diff[i] = old_values[i] - values[i];
+            old_values[i] = values[i];
         }
+        //read = imu_fifo_read(6, sample);
+        //if (read > 0) {
+            PRINT_HEX(diff, read);
+            PRINTS("\r\n");
+        //}
         nrf_delay_ms(5);
     }
-*/
+#endif
+
     //adc_test();
 
-    // setup timer system
-    //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, false);
-    //APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
-/*
-    err_code = app_timer_create(&imu_sampler, APP_TIMER_MODE_REPEATED, &sample_imu);
-    APP_ERROR_CHECK(err_code);
-
-    hrs_calibrate();
-    while(1) {
-        __WFE();
-    }
-*/
     // init ble
 	ble_init();
-
-    // init demo app ble service
-    // hello_demo_service_init();
 
     // start advertising
 	ble_advertising_start();
@@ -351,16 +362,20 @@ _start()
 	    APP_ERROR_CHECK(err_code);
     }
 
-    // start imu sampler - now done on BLE connect
-    //err_code = app_timer_start(imu_sampler, 200, NULL);
-    //APP_ERROR_CHECK(err_code);
-
     // loop on BLE events FOREVER
     while(1) {
     	watchdog_pet();
-        // Switch to a low power state until an event is available for the application
-        err_code = sd_app_event_wait();
-        APP_ERROR_CHECK(err_code);
+
+        if (do_imu) {
+            // sample IMU and queue up to send over BLE
+            //imu_accel_reg_read(sample);
+            imu_read_regs(sample);
+            ble_hello_demo_data_send_blocking(sample, 12);
+        } else {
+            // Switch to a low power state until an event is available for the application
+            err_code = sd_app_event_wait();
+            APP_ERROR_CHECK(err_code);
+        }
     }
 
 	NVIC_SystemReset();

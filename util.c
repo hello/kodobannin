@@ -57,6 +57,7 @@ strlen(const char *a)
 	return count;
 }
 
+#ifdef DEBUG_SERIAL
 static const uint8_t hex[] = "0123456789ABCDEF";
 
 void
@@ -76,10 +77,4 @@ binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
 		*(out++) = hex[0xF&*ptr++];
 	}
 }
-
-void debug_uart_init()
-{
-    simple_uart_config(0, 5, 0, 8, false);
-    uint32_t err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err_code);
-}
+#endif

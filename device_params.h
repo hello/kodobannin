@@ -24,6 +24,13 @@
 #define IMU_SPI_nCS        17
 #define IMU_INT             2
 
+typedef enum {
+	SERIAL_TX_PIN = 1,
+	SERIAL_RX_PIN = 8,
+	SERIAL_CTS_PIN = 0,
+	SERIAL_RTS_PIN = 0,
+} serial_pin_t;
+
 #define MOSI         7
 #define MISO        11
 #define SCLK        15
@@ -72,8 +79,8 @@
 /*
  * BLE Bond Parameters
  */
-#define FLASH_PAGE_BOND     255
-#define FLASH_PAGE_SYS_ATTR 253
+#define FLASH_PAGE_BOND     253 // FLASH_PAGE_SYS_ATTR+2
+#define FLASH_PAGE_SYS_ATTR 251 // 3xEC00 (__user_data__)/BLE_FLASH_PAGE_SIZE (1024)
 
 /*
  * BLE Connection Parameters

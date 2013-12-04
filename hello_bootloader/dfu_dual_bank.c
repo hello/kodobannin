@@ -9,9 +9,9 @@
  * the file.
  *
  */
- 
+
 #include <stdint.h>
-#include <stddef.h> 
+#include <stddef.h>
 #include "dfu.h"
 #include "dfu_types.h"
 #include "nrf.h"
@@ -46,7 +46,7 @@ typedef enum
 static dfu_state_t            m_dfu_state;     /**< Current DFU state. */
 static uint32_t               m_image_size;    /**< Size of the image that will be transmitted. */
 
-static uint32_t               m_init_packet[16];          /**< Init packet, can hold CRC, Hash, Signed Hash and similar, for image validation, integrety check and authorization checking. */ 
+static uint32_t               m_init_packet[16];          /**< Init packet, can hold CRC, Hash, Signed Hash and similar, for image validation, integrety check and authorization checking. */
 static uint8_t                m_init_packet_length;       /**< Length of init packet received. */
 static uint16_t               m_image_crc;                /**< Calculated CRC of the image received. */
 static uint32_t               m_new_app_max_size;         /**< Maximum size allowed for new application image. */
@@ -56,7 +56,7 @@ static bool                   m_dfu_timed_out = false;    /**< Boolean flag valu
 
 #define IMAGE_WRITE_IN_PROGRESS() (mp_app_write_address > (uint32_t *)DFU_BANK_1_REGION_START)      /**< Macro for determining is image write in progress. */
 #define APP_TIMER_PRESCALER       0                                                                 /**< Value of the RTC1 PRESCALER register. */
-#define DFU_TIMEOUT_INTERVAL      APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER)                       /**< DFU timeout interval in units of timer ticks. */             
+#define DFU_TIMEOUT_INTERVAL      APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER)                       /**< DFU timeout interval in units of timer ticks. */
 
 
 /**@brief Function for handling the DFU timeout.
@@ -67,7 +67,7 @@ static void dfu_timeout_handler(void * p_context)
 {
     UNUSED_PARAMETER(p_context);
     dfu_update_status_t update_status;
-    
+
     m_dfu_timed_out           = true;
     update_status.status_code = DFU_TIMEOUT;
 
@@ -77,8 +77,8 @@ static void dfu_timeout_handler(void * p_context)
 
 /**@brief   Function for restarting the DFU Timer.
 *
- * @details This function will stop and restart the DFU timer. This function will be called by the 
- *          functions handling any DFU packet received from the peer that is transferring a firmware 
+ * @details This function will stop and restart the DFU timer. This function will be called by the
+ *          functions handling any DFU packet received from the peer that is transferring a firmware
  *          image.
  */
 static uint32_t dfu_timer_restart(void)
@@ -93,8 +93,8 @@ static uint32_t dfu_timer_restart(void)
     APP_ERROR_CHECK(err_code);
 
     err_code = app_timer_start(m_dfu_timer_id, DFU_TIMEOUT_INTERVAL, NULL);
-    APP_ERROR_CHECK(err_code);    
-    
+    APP_ERROR_CHECK(err_code);
+
     return err_code;
 }
 
@@ -104,17 +104,17 @@ uint32_t dfu_init(void)
     uint32_t              page_count;
     uint32_t              err_code;
     dfu_update_status_t   update_status;
-    
+
     // Clear swap area.
     uint32_t   flash_page_size      = NRF_FICR->CODEPAGESIZE;
     // Erase swap.
-    uint32_t * p_bank_start_address = (uint32_t *)DFU_BANK_1_REGION_START; 
-    
+    uint32_t * p_bank_start_address = (uint32_t *)DFU_BANK_1_REGION_START;
+
     uint32_t page         = DFU_BANK_1_REGION_START / flash_page_size;
-    uint32_t num_of_pages = DFU_IMAGE_MAX_SIZE_BANKED / flash_page_size;    
+    uint32_t num_of_pages = DFU_IMAGE_MAX_SIZE_BANKED / flash_page_size;
     m_init_packet_length  = 0;
-    m_image_crc           = 0;    
-           
+    m_image_crc           = 0;
+
     if (true)
     {
         for (page_count = 0; page_count < num_of_pages; page_count++)
@@ -123,15 +123,15 @@ uint32_t dfu_init(void)
             if (err_code != NRF_SUCCESS)
             {
                 m_dfu_state = DFU_STATE_INIT_ERROR;
-                
+
                 return err_code;
             }
         }
-        
+
         update_status.status_code = DFU_BANK_1_ERASED;
         bootloader_dfu_update_process(update_status);
     }
-    
+
     // Create the timer to monitor the activity by the peer doing the firmware update.
     err_code = app_timer_create(&m_dfu_timer_id,
                                 APP_TIMER_MODE_SINGLE_SHOT,
@@ -146,9 +146,9 @@ uint32_t dfu_init(void)
     // The pages not erased has been locked by the running application, and is considered
     // to be application data save space.
     m_new_app_max_size = num_of_pages * flash_page_size;
-    
+
     mp_app_write_address = p_bank_start_address;
-    m_dfu_state          = DFU_STATE_IDLE;        
+    m_dfu_state          = DFU_STATE_IDLE;
 
     return NRF_SUCCESS;
 }
@@ -157,7 +157,7 @@ uint32_t dfu_init(void)
 uint32_t dfu_image_size_set(uint32_t image_size)
 {
     uint32_t err_code;
-    
+
     if (image_size > m_new_app_max_size)
     {
         return NRF_ERROR_DATA_SIZE;
@@ -168,27 +168,27 @@ uint32_t dfu_image_size_set(uint32_t image_size)
         // Image_size is not a multiple of 4 (word size).
         return NRF_ERROR_NOT_SUPPORTED;
     }
-    
+
     switch (m_dfu_state)
     {
-        case DFU_STATE_IDLE:    
+        case DFU_STATE_IDLE:
             // Valid peer activity detected. Hence restart the DFU timer.
             err_code = dfu_timer_restart();
             if (err_code != NRF_SUCCESS)
             {
                 return err_code;
-            }        
-            
+            }
+
             m_image_size = image_size;
-            m_dfu_state  = DFU_STATE_RDY;    
+            m_dfu_state  = DFU_STATE_RDY;
             break;
-            
+
         default:
             err_code = NRF_ERROR_INVALID_STATE;
             break;
     }
-    
-    return err_code;    
+
+    return err_code;
 }
 
 
@@ -197,7 +197,7 @@ uint32_t dfu_data_pkt_handle(dfu_update_packet_t * p_packet)
     uint32_t   data_length;
     uint32_t   err_code;
     uint32_t * p_data;
-    
+
     if (p_packet == NULL)
     {
         return NRF_ERROR_NULL;
@@ -220,19 +220,19 @@ uint32_t dfu_data_pkt_handle(dfu_update_packet_t * p_packet)
         case DFU_STATE_RX_DATA_PKT:
             data_length = p_packet->packet_length;
 
-            if (((uint32_t)(mp_app_write_address + data_length) - DFU_BANK_1_REGION_START) > 
+            if (((uint32_t)(mp_app_write_address + data_length) - DFU_BANK_1_REGION_START) >
                 m_image_size)
             {
-                // The caller is trying to write more bytes into the flash than the size provided to 
-                // the dfu_image_size_set function. This is treated as a serious error condition and 
-                // an unrecoverable one. Hence point the variable mp_app_write_address to the top of 
-                // the flash area. This will ensure that all future application data packet writes 
+                // The caller is trying to write more bytes into the flash than the size provided to
+                // the dfu_image_size_set function. This is treated as a serious error condition and
+                // an unrecoverable one. Hence point the variable mp_app_write_address to the top of
+                // the flash area. This will ensure that all future application data packet writes
                 // will be blocked because of the above check.
                 mp_app_write_address = (uint32_t *)(NRF_FICR->CODESIZE * NRF_FICR->CODEPAGESIZE);
 
                 return NRF_ERROR_DATA_SIZE;
             }
-            
+
             // Valid peer activity detected. Hence restart the DFU timer.
             err_code = dfu_timer_restart();
             if (err_code != NRF_SUCCESS)
@@ -247,7 +247,7 @@ uint32_t dfu_data_pkt_handle(dfu_update_packet_t * p_packet)
             {
                 return err_code;
             }
-            
+
             mp_app_write_address += data_length;
 
             if (((uint32_t)mp_app_write_address - DFU_BANK_1_REGION_START) != m_image_size)
@@ -264,10 +264,10 @@ uint32_t dfu_data_pkt_handle(dfu_update_packet_t * p_packet)
 
         default:
             err_code = NRF_ERROR_INVALID_STATE;
-            break;            
-    }     
+            break;
+    }
 
-    return err_code;    
+    return err_code;
 }
 
 
@@ -280,8 +280,8 @@ uint32_t dfu_init_pkt_handle(dfu_update_packet_t * p_packet)
     {
         case DFU_STATE_RDY:
             m_dfu_state = DFU_STATE_RX_INIT_PKT;
-            /* fall-through */         
-        
+            /* fall-through */
+
         case DFU_STATE_RX_INIT_PKT:
             // DFU initialization has been done and a start packet has been received.
             if (IMAGE_WRITE_IN_PROGRESS())
@@ -289,39 +289,39 @@ uint32_t dfu_init_pkt_handle(dfu_update_packet_t * p_packet)
                 // Image write is already in progress. Cannot handle an init packet now.
                 return NRF_ERROR_INVALID_STATE;
             }
-                    
+
             // Valid peer activity detected. Hence restart the DFU timer.
             err_code = dfu_timer_restart();
             if (err_code != NRF_SUCCESS)
             {
                 return err_code;
             }
-            
+
             for (i = 0; i < p_packet->packet_length; i++)
             {
                 m_init_packet[m_init_packet_length++] = p_packet->p_data_packet[i];
-            }            
+            }
             break;
-            
+
         default:
             // Either the start packet was not received or dfu_init function was not called before.
-            err_code = NRF_ERROR_INVALID_STATE;        
-            break;            
+            err_code = NRF_ERROR_INVALID_STATE;
+            break;
     }
-    
-    return err_code;       
+
+    return err_code;
 }
 
 
 uint32_t dfu_image_validate()
 {
     uint32_t err_code;
-    
+
     switch (m_dfu_state)
     {
         case DFU_STATE_RX_DATA_PKT:
             m_dfu_state = DFU_STATE_VALIDATE;
-            
+
             // Check if the application image write has finished.
             if (((uint32_t)mp_app_write_address - DFU_BANK_1_REGION_START) != m_image_size)
             {
@@ -330,19 +330,19 @@ uint32_t dfu_image_validate()
                 err_code = NRF_ERROR_INVALID_STATE;
             }
             else
-            {                        
+            {
                 // Valid peer activity detected. Hence restart the DFU timer.
                 err_code = dfu_timer_restart();
                 if (err_code == NRF_SUCCESS)
-                {                    
+                {
                     // calculate CRC from DFU_BANK_1_REGION_START to mp_app_write_address.
-                    m_image_crc = crc16_compute((uint8_t*)DFU_BANK_1_REGION_START, 
-						m_image_size, 
+                    m_image_crc = crc16_compute((uint8_t*)DFU_BANK_1_REGION_START,
+						m_image_size,
 						NULL);
 
                     if(m_init_packet_length != 0) {
 			uint8_t* client_sent_sha1 = (uint8_t*)m_init_packet;
-			    
+
 			uint8_t received_data_sha1[SHA1_DIGEST_LENGTH];
 			sha1_ctx_t ctx;
 			sha1_init(&ctx);
@@ -350,28 +350,28 @@ uint32_t dfu_image_validate()
 			sha1_final(&ctx, (uint32_t*)received_data_sha1);
 			    
 			uint8_t cmp_result = 0;
-			    
+
 			int i;
 			for (i = 0; i < SHA1_DIGEST_LENGTH; i++) {
 				cmp_result |= received_data_sha1[i] ^ client_sent_sha1[i];
 			}
-			
+
 			if(cmp_result != 0) {
 				return NRF_ERROR_INVALID_DATA;
 			}
 		    }
-		    
+
                     m_dfu_state = DFU_STATE_WAIT_4_ACTIVATE;
                 }
             }
             break;
-            
+
         default:
             err_code = NRF_ERROR_INVALID_STATE;
-            break;              
+            break;
     }
-    
-    return err_code;        
+
+    return err_code;
 }
 
 
@@ -384,17 +384,17 @@ uint32_t dfu_image_activate()
     uint32_t            num_of_pages;
     uint32_t            page_count;
     uint32_t *          p_bank_0_start_address;
-    uint32_t *          p_bank_1_start_address;    
+    uint32_t *          p_bank_1_start_address;
     dfu_update_status_t update_status;
-    
+
     switch (m_dfu_state)
-    {    
+    {
         case DFU_STATE_WAIT_4_ACTIVATE:
-            
+
             // Stop the DFU Timer because the peer activity need not be monitored any longer.
             err_code = app_timer_stop(m_dfu_timer_id);
             APP_ERROR_CHECK(err_code);
-            
+
             flash_page_size        = NRF_FICR->CODEPAGESIZE;
             p_bank_0_start_address = (uint32_t *)DFU_BANK_0_REGION_START;
             p_bank_1_start_address = (uint32_t *)DFU_BANK_1_REGION_START;
@@ -410,26 +410,26 @@ uint32_t dfu_image_activate()
                     return err_code;
                 }
             }
-        
+
             // Copying bytes from BANK 1 (SWAP) to BANK 0.
             num_of_words = m_image_size / sizeof(uint32_t);
-            err_code     = ble_flash_block_write(p_bank_0_start_address, 
-                                                 p_bank_1_start_address, 
+            err_code     = ble_flash_block_write(p_bank_0_start_address,
+                                                 p_bank_1_start_address,
                                                  num_of_words);
             if (err_code == NRF_SUCCESS)
             {
                 update_status.status_code = DFU_UPDATE_COMPLETE;
-                update_status.app_crc     = m_image_crc;                
+                update_status.app_crc     = m_image_crc;
                 update_status.app_size    = m_image_size;
 
-                bootloader_dfu_update_process(update_status);        
+                bootloader_dfu_update_process(update_status);
             }
             break;
-            
+
         default:
             err_code = NRF_ERROR_INVALID_STATE;
             break;
     }
-    
-    return err_code;    
+
+    return err_code;
 }
