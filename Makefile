@@ -196,8 +196,8 @@ cgdb:
 
 app: $(APP)
 
-APP_OBJS := $(patsubst %, $(BUILD_DIR)/%, $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(APP_SRCS))))
-app.elf: $(APP_OBJS)
+APP_OBJS := $(addprefix $(BUILD_DIR)/, $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(APP_SRCS))))
+$(BUILD_DIR)/app.elf: $(APP_OBJS)
 
 prog: app SoftDevice prog.jlink
 	$(JLINK_COMMANDS)
@@ -209,7 +209,7 @@ prog: app SoftDevice prog.jlink
 bl: $(BOOTLOADER)
 
 BOOTLOADER_OBJS = $(patsubst %, $(BUILD_DIR)/%, $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(BOOTLOADER_SRCS))))
-bootloader.elf: $(BOOTLOADER_OBJS)
+$(BUILD_DIR)/bootloader.elf: $(BOOTLOADER_OBJS)
 
 blprog: bl SoftDevice blprog.jlink
 	$(JLINK_COMMANDS)
@@ -230,27 +230,29 @@ $(BUILD_DIR)/softdevice_uicr.bin: $(SOFTDEV_SRC)
 # building the entire firmware
 
 $(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(info [CC] $(notdir $<))
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -MF $(basename $@).d -c $< -o $@
 
-$(BUILD_DIR/)%.o: %.s
+$(BUILD_DIR)/%.o: %.s
+	@mkdir -p $(dir $@)
 	$(info [AS] $(notdir $<))
 	@$(AS) $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.elf: %.ld
+$(BUILD_DIR)/%.elf: %.ld | $(dir $@)
 	$(info [LD] $@)
 	@$(LD) -o $@ $(filter %.o, $^) -T$< $(LDFLAGS)
 
 %.bin: %.elf
 	$(info [BIN] $@)
-	@$(OBJCOPY)  -O binary $< $@
+	@$(OBJCOPY) -O binary $< $@
 #-j .text -j .data
 
 ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink app.sha1
 
 .PHONY: clean
 clean:
-	@-rm -f $(ALL_PRODUCTS)
+	@-rm -rf $(BUILD_DIR)
 
 # dependency info
 -include $(ALL_DEPS)
