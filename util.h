@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #pragma once
 
 #ifdef DEBUG_SERIAL //=====================================
