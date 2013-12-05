@@ -60,18 +60,6 @@ imu_get_fifo_count() {
 }
 
 uint16_t
-imu_accel_reg_read(uint8_t *buf) {
-	_register_read(MPU_REG_ACC_X_LO, buf++);
-	_register_read(MPU_REG_ACC_X_HI, buf++);
-	_register_read(MPU_REG_ACC_Y_LO, buf++);
-	_register_read(MPU_REG_ACC_Y_HI, buf++);
-	_register_read(MPU_REG_ACC_Z_LO, buf++);
-	_register_read(MPU_REG_ACC_Z_HI, buf++);
-
-	return 6;
-}
-
-uint16_t
 imu_read_regs(uint8_t *buf) {
 	_register_read(MPU_REG_ACC_X_LO, buf++);
 	_register_read(MPU_REG_ACC_X_HI, buf++);
