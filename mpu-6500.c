@@ -12,7 +12,7 @@ static enum SPI_Channel chan = SPI_Channel_Invalid;
 static uint8_t buf[BUF_SIZE];
 
 static inline bool
-mpu_reg_read(MPU_Register_t register_address, uint8_t* const out_value)
+_register_read(MPU_Register_t register_address, uint8_t* const out_value)
 {
 	uint8_t buf[2];
 	buf[0] = SPI_Read(register_address);
@@ -69,17 +69,17 @@ uint16_t
 imu_accel_reg_read(uint8_t *buf) {
 	bool good = 0;
 
-	good = mpu_reg_read(MPU_REG_ACC_X_LO, buf++);
+	good = _register_read(MPU_REG_ACC_X_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_X_HI, buf++);
+	good = _register_read(MPU_REG_ACC_X_HI, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Y_LO, buf++);
+	good = _register_read(MPU_REG_ACC_Y_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Y_HI, buf++);
+	good = _register_read(MPU_REG_ACC_Y_HI, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Z_LO, buf++);
+	good = _register_read(MPU_REG_ACC_Z_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Z_HI, buf++);
+	good = _register_read(MPU_REG_ACC_Z_HI, buf++);
 	APP_ERROR_CHECK(!good);
 
 	return 6;
@@ -89,30 +89,30 @@ uint16_t
 imu_read_regs(uint8_t *buf) {
 	bool good = 0;
 
-	good = mpu_reg_read(MPU_REG_ACC_X_LO, buf++);
+	good = _register_read(MPU_REG_ACC_X_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_X_HI, buf++);
+	good = _register_read(MPU_REG_ACC_X_HI, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Y_LO, buf++);
+	good = _register_read(MPU_REG_ACC_Y_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Y_HI, buf++);
+	good = _register_read(MPU_REG_ACC_Y_HI, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Z_LO, buf++);
+	good = _register_read(MPU_REG_ACC_Z_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_ACC_Z_HI, buf++);
+	good = _register_read(MPU_REG_ACC_Z_HI, buf++);
 	APP_ERROR_CHECK(!good);
 
-	good = mpu_reg_read(MPU_REG_GYRO_X_LO, buf++);
+	good = _register_read(MPU_REG_GYRO_X_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_X_HI, buf++);
+	good = _register_read(MPU_REG_GYRO_X_HI, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_Y_LO, buf++);
+	good = _register_read(MPU_REG_GYRO_Y_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_Y_HI, buf++);
+	good = _register_read(MPU_REG_GYRO_Y_HI, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_Z_LO, buf++);
+	good = _register_read(MPU_REG_GYRO_Z_LO, buf++);
 	APP_ERROR_CHECK(!good);
-	good = mpu_reg_read(MPU_REG_GYRO_Z_HI, buf++);
+	good = _register_read(MPU_REG_GYRO_Z_HI, buf++);
 	APP_ERROR_CHECK(!good);
 
 	return 12;
@@ -129,7 +129,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 
 	if (count == 0)
 		return 0;
-	
+
 	return spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
 }
 
@@ -188,7 +188,7 @@ imu_init(enum SPI_Channel channel) {
 
 	// Check for valid Chip ID
 	PRINTS("MPU-6500 Chip ID: ");
-	err = mpu_reg_read(MPU_REG_WHO_AM_I, buf);
+	err = _register_read(MPU_REG_WHO_AM_I, buf);
 	APP_ERROR_CHECK(!err);
 
 	PRINT_HEX(&buf[0], 0);
@@ -219,7 +219,7 @@ imu_init(enum SPI_Channel channel) {
     /*
     // MPU6500 shares 4kB of memory between the DMP and the FIFO. Since the
     // first 3kB are needed by the DMP, we'll use the last 1kB for the FIFO.
-    
+
     data[0] = BIT_FIFO_SIZE_1024 | 0x8;
     if (i2c_write(st.hw->addr, st.reg->accel_cfg2, 1, data))
         return -1;
@@ -285,7 +285,7 @@ imu_init(enum SPI_Channel channel) {
 	buf[1] = USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
-	PRINTC('\n');	
+	PRINTC('\n');
 
 	// Init interrupts
 	PRINTS("Int Init\n");
@@ -370,4 +370,3 @@ imu_init(enum SPI_Channel channel) {
 
 	return 0;
 }
-
