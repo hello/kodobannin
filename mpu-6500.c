@@ -26,7 +26,7 @@ _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 }
 
 static inline bool
-mpu_reg_write(MPU_Register_t register_address, uint32_t value)
+_register_write(MPU_Register_t register_address, uint32_t value)
 {
 	uint8_t buf[2] = { SPI_Write(register_address), value };
 
@@ -138,7 +138,7 @@ imu_reset_fifo() {
 	uint32_t err;
 	// Reset FIFO, disable i2c, and clear regs
 	PRINTS("FIFO / buffer reset\r\n");
-	err = mpu_reg_write(MPU_REG_USER_CTL, USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
+	err = _register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
 	APP_ERROR_CHECK(!err);
 }
 
@@ -177,13 +177,13 @@ imu_init(enum SPI_Channel channel) {
 
 	// Reset chip
 	PRINTS("Chip reset\r\n");
-	err = mpu_reg_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
+	err = _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
 	APP_ERROR_CHECK(!err);
 
 	nrf_delay_ms(100);
 
 	PRINTS("Chip wakeup\r\n");
-	err = mpu_reg_write(MPU_REG_PWR_MGMT_1, 0);
+	err = _register_write(MPU_REG_PWR_MGMT_1, 0);
 	APP_ERROR_CHECK(!err);
 
 	// Check for valid Chip ID
@@ -315,54 +315,54 @@ imu_init(enum SPI_Channel channel) {
 #if 1
 	// Reset buffers
 	PRINTS("Signal reset\r\n");
-	err = mpu_reg_write(MPU_REG_SIG_RST, 0xFF);
+	err = _register_write(MPU_REG_SIG_RST, 0xFF);
 	APP_ERROR_CHECK(!err);
 
 	nrf_delay_ms(100);
 
 	// Init interrupts
 	PRINTS("Int Init\r\n");
-	err = mpu_reg_write(MPU_REG_INT_CFG, INT_CFG_ACT_HI | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
+	err = _register_write(MPU_REG_INT_CFG, INT_CFG_ACT_HI | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
 	APP_ERROR_CHECK(!err);
 
 	// Config interrupts
 	PRINTS("Int config\r\n");
-	err = mpu_reg_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
+	err = _register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
 	APP_ERROR_CHECK(!err);
 
 	// Set sample rate div  F = (DPLF_Freq / (Sample Rate Div + 1))
 	PRINTS("Sample Rate config\r\n");
-	err = mpu_reg_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9);
+	err = _register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9);
 	APP_ERROR_CHECK(!err);
 
 	// Init accel
 	PRINTS("Accel scale config\r\n");
-	err = mpu_reg_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
+	err = _register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
 	APP_ERROR_CHECK(!err);
 
 	// Set Accel Low Pass Filter
 	PRINTS("Accel LPF Config\r\n");
-	err = mpu_reg_write(MPU_REG_ACC_CFG2, (ACCEL_CFG2_FCHOICE_1 << ACCEL_CFG2_FCHOICE_B_SHIFT) | ACCEL_CFG2_LPF_1kHz_460bw);
+	err = _register_write(MPU_REG_ACC_CFG2, (ACCEL_CFG2_FCHOICE_1 << ACCEL_CFG2_FCHOICE_B_SHIFT) | ACCEL_CFG2_LPF_1kHz_460bw);
 	APP_ERROR_CHECK(!err);
 
 	// Set Gyro Low Pass Filter
 	PRINTS("Gyro LPF Config\r\n");
-	err = mpu_reg_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_184bw);
+	err = _register_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_184bw);
 	APP_ERROR_CHECK(!err);
 
 	// Init Gyro
 	PRINTS("Gyro config\r\n");
-	err = mpu_reg_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_250_DPS << GYRO_CFG_RATE_OFFET) | GYRO_CFG_FCHOICE_11);
+	err = _register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_250_DPS << GYRO_CFG_RATE_OFFET) | GYRO_CFG_FCHOICE_11);
 	APP_ERROR_CHECK(!err);
 
 	// Reset FIFO, disable i2c, and clear regs
 	PRINTS("FIFO / buffer reset\r\n");
-	err = mpu_reg_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
+	err = _register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
 	APP_ERROR_CHECK(!err);
 
 	// Init FIFO
 	PRINTS("FIFO config\r\n");
-	err = mpu_reg_write(MPU_REG_FIFO_EN, FIFO_EN_QUEUE_ACCEL); // | FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z;
+	err = _register_write(MPU_REG_FIFO_EN, FIFO_EN_QUEUE_ACCEL); // | FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z;
 	APP_ERROR_CHECK(!err);
 
 
