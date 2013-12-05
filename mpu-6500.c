@@ -146,9 +146,7 @@ imu_init(enum SPI_Channel channel) {
 	_register_read(MPU_REG_WHO_AM_I, &whoami_value);
 
 	if (whoami_value != CHIP_ID) {
-		PRINTS("Invalid MPU-6500 ID found. Expected 0x70, got 0x");
-		PRINT_HEX(&whoami_value, sizeof(whoami_value));
-		PRINTS("\r\n");
+		DEBUG("Invalid MPU-6500 ID found. Expected 0x70, got 0x", whoami_value);
 		return -1;
 	}
 
