@@ -26,7 +26,7 @@ _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 }
 
 static inline void
-_register_write(MPU_Register_t register_address, uint32_t value)
+_register_write(MPU_Register_t register_address, uint8_t value)
 {
 	uint8_t buf[2] = { SPI_Write(register_address), value };
 
