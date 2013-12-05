@@ -11,7 +11,6 @@
 #define BUF_SIZE 4
 
 static enum SPI_Channel chan = SPI_Channel_Invalid;
-static uint8_t buf[BUF_SIZE];
 
 static inline void
 _register_read(MPU_Register_t register_address, uint8_t* const out_value)
@@ -47,21 +46,15 @@ imu_uart_debug(const uint32_t result, const uint8_t *buf, const uint32_t len) {
 uint16_t
 imu_get_fifo_count() {
 	uint16_t count;
-	uint32_t err;
+	uint8_t buf;
 
 	APP_ERROR_CHECK(chan == SPI_Channel_Invalid);
 
-	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_HI);
-	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
-	APP_ERROR_CHECK(!err);
+	_register_read(MPU_REG_FIFO_CNT_HI, &buf);
+	count = buf << 8;
 
-	count = buf[1] << 8;
-
-	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_LO);
-	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
-	APP_ERROR_CHECK(!err);
-
-	count |= buf[1];
+	_register_read(MPU_REG_FIFO_CNT_LO, &buf);
+	count |= buf;
 
 	return count;
 }
@@ -161,15 +154,13 @@ imu_init(enum SPI_Channel channel) {
 	_register_write(MPU_REG_PWR_MGMT_1, 0);
 
 	// Check for valid Chip ID
-	PRINTS("MPU-6500 Chip ID: ");
-	_register_read(MPU_REG_WHO_AM_I, buf);
+	uint8_t whoami_value;
+	_register_read(MPU_REG_WHO_AM_I, &whoami_value);
+	DEBUG("MPU-6500 Chip ID: ", whoami_value);
 
-	PRINT_HEX(&buf[0], 0);
-	PRINTS("\r\n");
-
-	if (buf[0] != CHIP_ID) {
+	if (whoami_value != CHIP_ID) {
 		PRINTS("Invalid MPU-6500 ID found. Expected 0x70, got 0x");
-		PRINT_HEX(&buf[0], 0);
+		PRINT_HEX(&whoami_value, sizeof(whoami_value));
 		PRINTS("\r\n");
 		return -1;
 	}
