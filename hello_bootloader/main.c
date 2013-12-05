@@ -22,6 +22,8 @@
 static void
 sha1_fw_area(uint8_t *hash)
 {
+	uint32_t err;
+
 	uint32_t code_size    = DFU_IMAGE_MAX_SIZE_FULL;
 	uint8_t *code_address = (uint8_t *)CODE_REGION_1_START;
 	uint32_t *index = (uint32_t *)BOOTLOADER_REGION_START - DFU_APP_DATA_RESERVED;
@@ -35,7 +37,21 @@ sha1_fw_area(uint8_t *hash)
     if (code_size ==  0)
         return;
 
+	NRF_RTC1->TASKS_START = 1;
+
+	uint32_t start_ticks, stop_ticks, diff_ticks;
+	start_ticks = NRF_RTC1->COUNTER;
+
     sha1_calc(code_address, code_size, hash);
+
+	stop_ticks = NRF_RTC1->COUNTER;
+
+	err = app_timer_cnt_diff_compute(stop_ticks, start_ticks, &diff_ticks);
+	APP_ERROR_CHECK(err);
+
+	NRF_RTC1->TASKS_STOP = 1;
+
+	DEBUG("SHA1 time in ticks: ", diff_ticks);
 }
 
 static bool
@@ -91,6 +107,9 @@ _start()
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+
+	NRF_CLOCK->TASKS_LFCLKSTART = 1;
+	while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
