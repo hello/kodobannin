@@ -266,45 +266,35 @@ imu_init(enum SPI_Channel channel) {
 
 #if 1
 	// Reset buffers
-	PRINTS("Signal reset\r\n");
 	_register_write(MPU_REG_SIG_RST, 0xFF);
 
 	nrf_delay_ms(100);
 
 	// Init interrupts
-	PRINTS("Int Init\r\n");
 	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_HI | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
 
 	// Config interrupts
-	PRINTS("Int config\r\n");
 	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
 
 	// Set sample rate div  F = (DPLF_Freq / (Sample Rate Div + 1))
-	PRINTS("Sample Rate config\r\n");
 	_register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9);
 
 	// Init accel
-	PRINTS("Accel scale config\r\n");
 	_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
 
 	// Set Accel Low Pass Filter
-	PRINTS("Accel LPF Config\r\n");
 	_register_write(MPU_REG_ACC_CFG2, (ACCEL_CFG2_FCHOICE_1 << ACCEL_CFG2_FCHOICE_B_SHIFT) | ACCEL_CFG2_LPF_1kHz_460bw);
 
 	// Set Gyro Low Pass Filter
-	PRINTS("Gyro LPF Config\r\n");
 	_register_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_184bw);
 
 	// Init Gyro
-	PRINTS("Gyro config\r\n");
 	_register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_250_DPS << GYRO_CFG_RATE_OFFET) | GYRO_CFG_FCHOICE_11);
 
 	// Reset FIFO, disable i2c, and clear regs
-	PRINTS("FIFO / buffer reset\r\n");
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
 
 	// Init FIFO
-	PRINTS("FIFO config\r\n");
 	_register_write(MPU_REG_FIFO_EN, FIFO_EN_QUEUE_ACCEL); // | FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z;
 
 
