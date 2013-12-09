@@ -67,7 +67,7 @@ _uart_debug(const uint32_t result, const uint8_t *buf, const uint32_t len) {
 }
 
 uint16_t
-imu_get_fifo_count() {
+imu_fifo_size() {
 	union uint16_bits fifo_count;
 
 	_register_read(MPU_REG_FIFO_CNT_HI, &fifo_count.bytes[1]);
@@ -111,7 +111,7 @@ uint16_t
 imu_fifo_read(uint16_t count, uint8_t *buf) {
 	uint16_t avail;
 
-	avail = imu_get_fifo_count();
+	avail = imu_fifo_size();
 
 	if (avail < count)
 		count = avail;
