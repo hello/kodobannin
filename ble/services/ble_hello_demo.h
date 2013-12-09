@@ -13,6 +13,7 @@
 #define BLE_UUID_DATA_CHAR      0xDA1A
 #define BLE_UUID_CONF_CHAR      0xC0FF
 #define BLE_UUID_CMD_CHAR       0xBEEF
+#define BLE_UUID_GIT_DESCRIPTION_CHAR 0x617D
 
 typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
 typedef void (*ble_hello_demo_connect_handler)(void);

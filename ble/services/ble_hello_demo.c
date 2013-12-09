@@ -314,6 +314,10 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init)
 	rw_props.read = 1;
 	rw_props.write = 1;
 
+	ble_gatt_char_props_t r_props;
+	memset(&rw_props, 0, sizeof(rw_props));
+	r_props.read = 1;
+
     // Add characteristics
     err_code = _char_add(BLE_UUID_DATA_CHAR,
 						 &notify_props,
@@ -335,6 +339,14 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init)
 						 &rw_props,
 						 zeroes,
 						 10,
+						 cmd_write_handler);
+    if (err_code != NRF_SUCCESS)
+        return err_code;
+
+    err_code = _char_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
+						 &r_props,
+						 (const uint8_t* const)GIT_DESCRIPTION,
+						 strlen(GIT_DESCRIPTION),
 						 cmd_write_handler);
     if (err_code != NRF_SUCCESS)
         return err_code;
