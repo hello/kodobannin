@@ -38,34 +38,6 @@ _register_write(MPU_Register_t register_address, uint8_t value)
 	APP_ASSERT(success);
 }
 
-static void
-_fifo_reset()
-{
-	_register_write(MPU_REG_INT_EN, 0);
-	_register_write(MPU_REG_FIFO_EN, 0);
-	_register_write(MPU_REG_USER_CTL, 0);
-
-	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_RST);
-	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN);
-	nrf_delay_ms(50);
-
-	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
-	_register_write(MPU_REG_INT_EN, 0x1);
-	_register_write(MPU_REG_INT_EN, 0);
-
-	_register_write(MPU_REG_FIFO_EN, SENSORS);
-}
-
-static void
-_uart_debug(const uint32_t result, const uint8_t *buf, const uint32_t len) {
-	int i;
-	PRINT_HEX(&result, 4);
-	PRINTS(": ");
-	for (i = 0; i < len; i++)
-		PRINT_HEX(&buf[i], 1);
-	PRINTS("\r\n");
-}
-
 uint16_t
 imu_fifo_size() {
 	union uint16_bits fifo_count;
