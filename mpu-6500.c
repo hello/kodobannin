@@ -186,9 +186,6 @@ _continuous()
 		uint8_t int_status;
 		_register_read(MPU_REG_INT_STS, &int_status);
 		if(int_status & INT_STS_FIFO_OVRFLO) {
-			PRINTS("Overflowed!\r\n");
-			//imu_reset_fifo();
-			_fifo_reset();
 		}
 
 		//_fifo_reset();
