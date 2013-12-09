@@ -316,7 +316,5 @@ imu_init(enum SPI_Channel channel) {
 	// Reset FIFO, disable i2c, and clear regs
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
 
-	_continuous();
-
 	return 0;
 }
