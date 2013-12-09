@@ -315,7 +315,7 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init)
 	rw_props.write = 1;
 
 	ble_gatt_char_props_t r_props;
-	memset(&rw_props, 0, sizeof(rw_props));
+	memset(&r_props, 0, sizeof(r_props));
 	r_props.read = 1;
 
     // Add characteristics
