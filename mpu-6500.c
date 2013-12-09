@@ -10,8 +10,8 @@
 
 #define BUF_SIZE 4
 
-#define SENSORS FIFO_EN_QUEUE_ACCEL
-//#define SENSORS (FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z | FIFO_EN_QUEUE_ACCEL)
+//#define SENSORS FIFO_EN_QUEUE_ACCEL
+#define SENSORS (FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z | FIFO_EN_QUEUE_ACCEL)
 
 static enum SPI_Channel chan = SPI_Channel_Invalid;
 
@@ -175,7 +175,7 @@ _continuous()
 			*p.pi16 = bswap16(*p.pi16);
 			PRINT_HEX(p.pi16, sizeof(*p.pi16));
 			i++;
-			if(i == 3) {
+			if(i == 6) {
 				PRINTS("\r\n");
 				i = 0;
 			}
