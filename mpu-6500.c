@@ -188,23 +188,7 @@ _continuous()
 		if(int_status & INT_STS_FIFO_OVRFLO) {
 		}
 
-		//_fifo_reset();
-		nrf_delay_ms(300);
-
-		/*
-		_register_read(MPU_REG_ACC_X_HI, (uint8_t*)&values[0]+1);
-		_register_read(MPU_REG_ACC_X_LO, (uint8_t*)&values[0]);
-		_register_read(MPU_REG_ACC_Y_HI, (uint8_t*)&values[1]+1);
-		_register_read(MPU_REG_ACC_Y_LO, (uint8_t*)&values[1]);
-		_register_read(MPU_REG_ACC_Z_HI, (uint8_t*)&values[2]+1);
-		_register_read(MPU_REG_ACC_Z_LO, (uint8_t*)&values[2]);
-
-		PRINT_HEX(&values[0], sizeof(values[0]));
-		PRINT_HEX(&values[1], sizeof(values[1]));
-		PRINT_HEX(&values[2], sizeof(values[2]));
-
-		PRINTS("\r\n");
-		*/
+		nrf_delay_ms(8000);
 	}
 }
 
