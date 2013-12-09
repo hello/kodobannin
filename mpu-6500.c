@@ -95,9 +95,11 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 }
 
 void
-imu_reset_fifo() {
-	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_RST); // | USR_CTL_SIG_RST);
-	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN);
+imu_fifo_reset()
+{
+	uint8_t null_buffer[IMU_FIFO_SIZE];
+
+	imu_fifo_read(IMU_FIFO_SIZE, null_buffer);
 }
 
 /*
@@ -190,7 +192,7 @@ static void imu_accelerometer_self_test()
 
 	DEBUG("X/Y/Z self-test accels: ", self_test_accels);
 
-	imu_reset_fifo();
+	imu_fifo_reset();
 
 	unsigned c;
 
