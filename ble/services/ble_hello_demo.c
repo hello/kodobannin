@@ -209,7 +209,7 @@ ble_hello_demo_data_send(const uint8_t *data, const uint16_t len) {
 static uint32_t
 _char_add(const uint16_t uuid,
 		   ble_gatt_char_props_t* const props,
-		   uint8_t* const p_value,
+		   const uint8_t* const p_value,
 		   const uint16_t max_value_size,
 		   char_write_handler_t write_handler)
 {
@@ -238,7 +238,7 @@ _char_add(const uint16_t uuid,
     attr_char_value.init_len = max_value_size;
     attr_char_value.init_offs = 0;
     attr_char_value.max_len = max_value_size;
-    attr_char_value.p_value = p_value;
+    attr_char_value.p_value = (uint8_t* const)p_value;
 
 	ble_gatts_char_handles_t handles;
     uint32_t err_code = sd_ble_gatts_characteristic_add(service_handle,
