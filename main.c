@@ -74,26 +74,26 @@ mode_write_handler(ble_gatts_evt_write_t *event) {
 
     switch (state) {
         case Demo_Config_Standby:
-            PRINTS("Enter into sleep mode");
+            PRINTS("Enter into sleep mode\r\n");
             // TODO: cancel timers and quiesce hardware
             //       schedule maintenance wakeup with RTC
             break;
 
         case Demo_Config_Calibrating:
-            PRINTS("Start HRS Calibration here");
+            PRINTS("Start HRS Calibration here\r\n");
             _state = Demo_Config_Calibrating;
             // TODO: notify HRS system here
             break;
 
         case Demo_Config_Enter_DFU:
-            PRINTS("Rebooting into DFU");
+            PRINTS("Rebooting into DFU\r\n");
             // set the trap bit for the bootloader and kick the system
             sd_power_gpregret_set(1);
             NVIC_SystemReset();
             break;
 
         case Demo_Config_ID_Band:
-            PRINTS("ID'ing Band with Vibe");
+            PRINTS("ID'ing Band with Vibe\r\n");
             nrf_gpio_cfg_output(GPIO_3v3_Enable);
             nrf_gpio_pin_set(GPIO_3v3_Enable);
             nrf_gpio_cfg_output(GPIO_VIBE_PWM);
@@ -295,9 +295,9 @@ _start()
 {
 	uint32_t err_code;
 	watchdog_init(10, 1);
-    uint8_t sample[20];
+    uint8_t sample[12];
 
-    memset(sample, 0, 20);
+    memset(sample, 0, sizeof(sample)/sizeof(sample[0]));
 
     //_state = Demo_Config_Standby;
     _state = TEST_STATE_IDLE;

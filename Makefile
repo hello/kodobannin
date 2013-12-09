@@ -8,16 +8,16 @@ JLINK_BIN=~/Work/jlink_462b
 # enable debug mode?
 DEBUG = 1
 
+# build directory
+BUILD_DIR = build
+
 # target to build
-APP = app.bin
-BOOTLOADER = bootloader.bin
-SOFTDEVICE_BINARIES = SoftDevice/softdevice_uicr.bin SoftDevice/softdevice_main.bin
+APP = $(BUILD_DIR)/app.bin
+BOOTLOADER = $(BUILD_DIR)/bootloader.bin
+SOFTDEVICE_BINARIES = $(BUILD_DIR)/softdevice_uicr.bin $(BUILD_DIR)/softdevice_main.bin
 
 # nRF51822 revision (for PAN workarounds in nRF SDK)
 NRFREV = NRF51822_QFAA_CA
-
-# don't mess with teh NULL!
-NULL =
 
 SRCS = \
 	error_handler.c \
@@ -43,7 +43,6 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
-	$(NULL)
 
 APP_SRCS = \
 	$(SRCS) \
@@ -68,8 +67,8 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/ble \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
 	./nRF51_SDK/nrf51822/Include/ble/softdevice/ \
-	$(NULL)
 #	./SoftDevice/s110_nrf51822_5.2.1_API/include \
+
 
 # optimization flags
 
@@ -146,18 +145,23 @@ ALL_DEPS = $(ALL_OBJS:.o=.d)
 .PHONY: all jl
 all: $(APP) $(BOOTLOADER) SoftDevice
 
-jl: all jl.jlink app.sha1
+jl: all $(BUILD_DIR)/jl.jlink $(BUILD_DIR)/app.sha1
 	$(JLINK_COMMANDS)
+
+# build dir
+
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
 
 # jlink invocation
 
-%.jlink: %.jlink.in
+$(BUILD_DIR)/%.jlink: %.jlink.in
 	$(info [JLINK_SCRIPT] $@)
-	sed -e 's,$$PWD,$(PWD),g' < $< > $@
+	sed -e 's,$$PWD,$(PWD),g' -e 's,$$BUILD_DIR,$(abspath $(BUILD_DIR)),g' < $< > $@
 
 JLINK_COMMANDS = \
 	$(info [JPROG] $@.jlink) \
-	@$(JPROG) < $@.jlink
+	@$(JPROG) < $(BUILD_DIR)/$@.jlink
 
 jlink:
 	@$(JPROG)
@@ -180,13 +184,13 @@ gdbs:
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
 gdb:
-	$(BIN)/arm-none-eabi-gdb app.elf -ex "tar remote :2331" -ex "mon reset"
+	$(BIN)/arm-none-eabi-gdb $(BUILD_DIR)/app.elf -ex "tar remote :2331" -ex "mon reset"
 
 blgdb:
-	$(BIN)/arm-none-eabi-gdb bootloader.elf -ex "tar remote :2331" -ex "mon reset"
+	$(BIN)/arm-none-eabi-gdb $(BUILD_DIR)/bootloader.elf -ex "tar remote :2331" -ex "mon reset"
 
 cgdb:
-	cgdb -d $(BIN)/arm-none-eabi-gdb -- app.elf -ex "tar remote :2331" -ex "mon reset"
+	cgdb -d $(BIN)/arm-none-eabi-gdb -- $(BUILD_DIR)/app.elf -ex "tar remote :2331" -ex "mon reset"
 
 
 # building and debugging the app
@@ -195,10 +199,10 @@ cgdb:
 
 app: $(APP)
 
-APP_OBJS := $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(APP_SRCS)))
-app.elf: $(APP_OBJS)
+APP_OBJS := $(addprefix $(BUILD_DIR)/, $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(APP_SRCS))))
+$(BUILD_DIR)/app.elf: $(APP_OBJS)
 
-prog: app SoftDevice prog.jlink
+prog: app SoftDevice $(BUILD_DIR)/prog.jlink
 	$(JLINK_COMMANDS)
 
 # building and debugging the bootloader
@@ -207,10 +211,10 @@ prog: app SoftDevice prog.jlink
 
 bl: $(BOOTLOADER)
 
-BOOTLOADER_OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(BOOTLOADER_SRCS)))
-bootloader.elf: $(BOOTLOADER_OBJS)
+BOOTLOADER_OBJS = $(patsubst %, $(BUILD_DIR)/%, $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(BOOTLOADER_SRCS))))
+$(BUILD_DIR)/bootloader.elf: $(BOOTLOADER_OBJS)
 
-blprog: bl SoftDevice blprog.jlink
+blprog: bl SoftDevice $(BUILD_DIR)/blprog.jlink
 	$(JLINK_COMMANDS)
 
 # SoftDevice
@@ -218,38 +222,38 @@ blprog: bl SoftDevice blprog.jlink
 .PHONY: SoftDevice
 SoftDevice: $(SOFTDEVICE_BINARIES)
 
-SoftDevice/softdevice_main.bin: $(SOFTDEV_SRC)
+$(BUILD_DIR)/softdevice_main.bin: $(SOFTDEV_SRC)
 	$(info [OBJCOPY] softdevice_main.bin)
 	@$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $< $@
 
-SoftDevice/softdevice_uicr.bin: $(SOFTDEV_SRC)
+$(BUILD_DIR)/softdevice_uicr.bin: $(SOFTDEV_SRC)
 	$(info [OBJCOPY] softdevice_uicr.bin)
 	@$(OBJCOPY) -I ihex -O binary --only-section .sec3 $< $@
 
 # building the entire firmware
 
-%.o: %.c
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(info [CC] $(notdir $<))
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -MF $(basename $@).d -c $< -o $@
 
-%.o: %.s
+$(BUILD_DIR)/%.o: %.s
+	@mkdir -p $(dir $@)
 	$(info [AS] $(notdir $<))
 	@$(AS) $(ASFLAGS) $< -o $@
 
-%.elf: %.ld
+$(BUILD_DIR)/%.elf: %.ld | $(dir $@)
 	$(info [LD] $@)
-	@$(LD) -o $@ $(filter %.o, $^) -T$(@:.elf=.ld) $(LDFLAGS)
+	@$(LD) -o $@ $(filter %.o, $^) -T$< $(LDFLAGS)
 
 %.bin: %.elf
 	$(info [BIN] $@)
-	@$(OBJCOPY)  -O binary $< $@
+	@$(OBJCOPY) -O binary $< $@
 #-j .text -j .data
-
-ALL_PRODUCTS = $(ALL_OBJS) $(APP) $(APP:.bin=.elf) $(BOOTLOADER) $(BOOTLOADER:.bin=.elf) $(ALL_DEPS) $(SOFTDEVICE_BINARIES) all.jlink app.jlink bootloader.jlink app.sha1
 
 .PHONY: clean
 clean:
-	@-rm -f $(ALL_PRODUCTS)
+	-rm -rf $(BUILD_DIR)
 
 # dependency info
 -include $(ALL_DEPS)
