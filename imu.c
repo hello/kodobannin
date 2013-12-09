@@ -4,9 +4,10 @@
 #include <simple_uart.h>
 #include <util.h>
 #include <device_params.h>
-#include <mpu-6500.h>
 #include <app_error.h>
 #include <nrf_delay.h>
+
+#include "imu.h"
 
 #define BUF_SIZE 4
 

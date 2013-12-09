@@ -47,7 +47,7 @@ SRCS = \
 APP_SRCS = \
 	$(SRCS) \
 	hrs.c \
-	mpu-6500.c \
+	imu.c \
 	pwm.c \
 	main.c \
 
