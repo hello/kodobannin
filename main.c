@@ -154,24 +154,24 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
     memset(&hrs_parameters, 0, sizeof(hrs_parameters));
 
     switch (state) {
-	case TEST_START_HRS:
-		do_imu = 0;
-		PRINT_HEX(event->data, 6);
-		test_size = *(uint16_t *)&event->data[4];
-		DEBUG("Starting HRS job: ", test_size);
+        case TEST_START_HRS:
+            do_imu = 0;
+            PRINT_HEX(event->data, 6);
+            test_size = *(uint16_t *)&event->data[4];
+            DEBUG("Starting HRS job: ", test_size);
 
-		hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 0);
-		hrs_wait();
-		_state = TEST_HRS_DONE;
-		err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
-		APP_ERROR_CHECK(err);
-		break;
+            hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 0);
+			hrs_wait();
+            _state = TEST_HRS_DONE;
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+            break;
 
     case TEST_START_HRS2:
-		do_imu = 0;
-		PRINT_HEX(event->data, 9);
-		test_size = *(uint16_t *)&event->data[4];
-		DEBUG("Starting HRS job: ", test_size);
+            do_imu = 0;
+            PRINT_HEX(event->data, 9);
+            test_size = *(uint16_t *)&event->data[4];
+            DEBUG("Starting HRS job: ", test_size);
 
 	    hrs_parameters = (hrs_parameters_t) {
 		    .power_level = event->data[1],
@@ -183,68 +183,68 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 	    };
 	    hrs_run_test2(hrs_parameters);
 		hrs_wait();
-		_state = TEST_HRS_DONE;
-		err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
-		APP_ERROR_CHECK(err);
-		break;
+            _state = TEST_HRS_DONE;
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+            break;
 
-	case TEST_CAL_HRS:
-		do_imu = 0;
-		PRINT_HEX(event->data, 6);
-		test_size = *(uint16_t *)&event->data[4];
-		DEBUG("Starting HRS cal: ", test_size);
+        case TEST_CAL_HRS:
+            do_imu = 0;
+            PRINT_HEX(event->data, 6);
+            test_size = *(uint16_t *)&event->data[4];
+            DEBUG("Starting HRS cal: ", test_size);
 
-		hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 1);
-		// hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &hrs_send_data);
-		_state = TEST_HRS_DONE;
-		err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
-		APP_ERROR_CHECK(err);
-		break;
+            hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 1);
+           // hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &hrs_send_data);
+            _state = TEST_HRS_DONE;
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+            break;
 
-	case TEST_START_IMU:
-		//steal the HRS buffer
-		//buf = get_hrs_buffer();
-		do_imu = 1;
-		/*imu_reset_fifo();
-		  err = imu_fifo_read(480, buf);
-		  ble_hello_demo_data_send_blocking(buf, err);
-		*/break;
+        case TEST_START_IMU:
+                //steal the HRS buffer
+                //buf = get_hrs_buffer();
+                do_imu = 1;
+                /*imu_reset_fifo();
+                err = imu_fifo_read(480, buf);
+                ble_hello_demo_data_send_blocking(buf, err);
+                */break;
 
-	case TEST_ENTER_DFU:
-		do_imu = 0;
-		PRINTS("Rebooting into DFU");
-		// set the trap bit for the bootloader and kick the system
-		//NRF_POWER->GPREGRET |= 0x1;
-		sd_power_gpregret_set(1);
-		NVIC_SystemReset();
-		break;
+        case TEST_ENTER_DFU:
+            do_imu = 0;
+            PRINTS("Rebooting into DFU");
+            // set the trap bit for the bootloader and kick the system
+            //NRF_POWER->GPREGRET |= 0x1;
+            sd_power_gpregret_set(1);
+            NVIC_SystemReset();
+            break;
 
-	case TEST_SEND_DATA:
-		do_imu = 0;
-		DEBUG("Sending HRS data: ", test_size);
+        case TEST_SEND_DATA:
+            do_imu = 0;
+            DEBUG("Sending HRS data: ", test_size);
 
-		err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
-		// APP_ERROR_CHECK(err);
+            err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
+            // APP_ERROR_CHECK(err);
 
-		// update device state
-		if (err == NRF_SUCCESS) {
-			_state = TEST_STATE_IDLE;
-			err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
-			APP_ERROR_CHECK(err);
-		}
-		break;
+            // update device state
+            if (err == NRF_SUCCESS) {
+                _state = TEST_STATE_IDLE;
+                err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+                APP_ERROR_CHECK(err);
+            }
+            break;
 
-	case TEST_STATE_IDLE:
-		do_imu = 0;
-		if (_state == TEST_START_IMU) {
-			_state = TEST_STATE_IDLE;
-		}
-		err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
-		APP_ERROR_CHECK(err);
-		break;
+        case TEST_STATE_IDLE:
+            do_imu = 0;
+            if (_state == TEST_START_IMU) {
+                _state = TEST_STATE_IDLE;
+            }
+            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            APP_ERROR_CHECK(err);
+            break;
 
-	default:
-		DEBUG("Unhandled state: ", state);
+        default:
+            DEBUG("Unhandled state: ", state);
     }
 }
 
