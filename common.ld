@@ -115,6 +115,8 @@ SECTIONS
 		__bss_start__ = .;
 		*(.bss*)
 		*(COMMON)
+
+                . = ALIGN(4);
 		__bss_end__ = .;
 	} > RAM
 
@@ -123,6 +125,8 @@ SECTIONS
 		__end__ = .;
 		end = __end__;
 		*(.heap*)
+
+                . = ALIGN(4);
 		__HeapLimit = .;
 	} > RAM
 

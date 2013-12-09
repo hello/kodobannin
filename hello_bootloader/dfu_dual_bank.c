@@ -344,11 +344,8 @@ uint32_t dfu_image_validate()
 			uint8_t* client_sent_sha1 = (uint8_t*)m_init_packet;
 
 			uint8_t received_data_sha1[SHA1_DIGEST_LENGTH];
-			sha1_ctx_t ctx;
-			sha1_init(&ctx);
-			sha1_update(&ctx, (void*)DFU_BANK_1_REGION_START, m_image_size);
-			sha1_final(&ctx, (uint32_t*)received_data_sha1);
-			    
+			sha1_calc((void*)DFU_BANK_1_REGION_START, m_image_size, received_data_sha1);
+
 			uint8_t cmp_result = 0;
 
 			int i;
