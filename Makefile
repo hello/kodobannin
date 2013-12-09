@@ -25,6 +25,7 @@ SRCS = \
 	spi.c \
 	util.c \
 	watchdog.c \
+	$(BUILD_DIR)/git_description.c \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
@@ -175,6 +176,17 @@ reset:
 	$(info [SHA1] $@)
 	@openssl sha1 -binary $< > $@
 	@stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
+
+# git description
+
+GIT_DESCRIPTION = $(shell git describe --long --dirty --tags)
+GIT_DESCRIPTION_C_CONTENTS = const char* const GIT_DESCRIPTION = "$(GIT_DESCRIPTION)";
+ifneq ($(GIT_DESCRIPTION_C_CONTENTS), $(shell cat git_description.c))
+.PHONY: git_description.c
+endif
+$(BUILD_DIR)/git_description.c:
+	$(info [GIT_DESCRIPTION] git_description.c)
+	@echo '$(GIT_DESCRIPTION_C_CONTENTS)' > $@
 
 # gdb
 

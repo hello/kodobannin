@@ -14,6 +14,8 @@
 #include <util.h>
 #include <ble.h>
 
+#include "git_description.h"
+
 uint8_t hello_type;
 static uint16_t                 service_handle;
 static uint16_t                 conn_handle;
