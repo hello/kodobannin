@@ -37,7 +37,7 @@ default_write_handler(ble_gatts_evt_write_t *event) {
 
 static void
 default_conn_handler(void) {
-    PRINTS("Default conn handler called");
+    PRINTS("Default conn handler called\r\n");
 }
 
 typedef void(*char_write_handler_t)(ble_gatts_evt_write_t*);
