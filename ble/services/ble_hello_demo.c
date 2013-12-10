@@ -42,21 +42,21 @@ default_conn_handler(void) {
 
 typedef void(*char_write_handler_t)(ble_gatts_evt_write_t*);
 
-typedef struct {
+struct uuid_handler {
 	uint16_t uuid;
-	ble_gatts_char_handles_t handles;
+	uint16_t value_handle;
 	char_write_handler_t handler;
-} uuid_handler_t;
+};
 
-#define MAX_CHARACTERISTICS 4
-static uuid_handler_t _uuid_handlers[MAX_CHARACTERISTICS];
-static uuid_handler_t* _p_uuid_handler = _uuid_handlers;
+#define MAX_CHARACTERISTICS 5
+static struct uuid_handler _uuid_handlers[MAX_CHARACTERISTICS];
+static struct uuid_handler* _p_uuid_handler = _uuid_handlers;
 
 uint16_t _value_handle(const uint16_t uuid) {
-	uuid_handler_t* p;
+	struct uuid_handler* p;
 	for(p = _uuid_handlers; p < _uuid_handlers+MAX_CHARACTERISTICS; p++) {
 		if(p->uuid == uuid) {
-			return p->handles.value_handle;
+			return p->value_handle;
 		}
 	}
 
@@ -72,9 +72,9 @@ dispatch_write(ble_evt_t *event) {
     ble_gatts_evt_write_t* const write_evt = &event->evt.gatts_evt.params.write;
     const uint16_t handle = write_evt->handle;
 
-	uuid_handler_t* p;
+	struct uuid_handler* p;
 	for(p = _uuid_handlers; p < _uuid_handlers+MAX_CHARACTERISTICS; p++) {
-		if(p->handles.value_handle == handle) {
+		if(p->value_handle == handle) {
 			p->handler(write_evt);
 			return;
 		}
@@ -250,9 +250,9 @@ _char_add(const uint16_t uuid,
 	if(err_code)
 		return err_code;
 
-	*_p_uuid_handler++ = (uuid_handler_t) {
+	*_p_uuid_handler++ = (struct uuid_handler) {
 		.uuid = uuid,
-		.handles = handles,
+		.value_handle = handles.value_handle,
 		.handler = write_handler
 	};
 
