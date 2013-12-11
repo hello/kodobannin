@@ -14,14 +14,9 @@
 #include <util.h>
 #include <ble.h>
 
-#include "git_description.h"
-
 uint8_t hello_type;
 static uint16_t                 service_handle;
 static uint16_t                 conn_handle;
-static ble_hello_demo_write_handler    data_write_handler;
-static ble_hello_demo_write_handler    mode_write_handler;
-static ble_hello_demo_write_handler    cmd_write_handler;
 static ble_hello_demo_connect_handler  conn_handler;
 static ble_hello_demo_connect_handler  disconn_handler;
 
@@ -212,14 +207,15 @@ ble_hello_demo_data_send(const uint8_t *data, const uint16_t len) {
     return 0;
 }
 
-static uint32_t
+static void
 _char_add(const uint16_t uuid,
 		   ble_gatt_char_props_t* const props,
-		   const uint8_t* const p_value,
+		   uint8_t* const p_value,
 		   const uint16_t max_value_size,
 		   char_write_handler_t write_handler)
 {
-	APP_ASSERT(_p_uuid_handler >= _uuid_handlers && _p_uuid_handler < _uuid_handlers+MAX_CHARACTERISTICS);
+	APP_ASSERT(_p_uuid_handler >= _uuid_handlers
+			   && _p_uuid_handler < _uuid_handlers+MAX_CHARACTERISTICS);
 
     ble_uuid_t ble_uuid;
     BLE_UUID_BLE_ASSIGN(ble_uuid, uuid);
@@ -251,19 +247,50 @@ _char_add(const uint16_t uuid,
 														&char_md,
 														&attr_char_value,
 														&handles);
-	if(err_code)
-		return err_code;
+	APP_ERROR_CHECK(err_code);
 
 	*_p_uuid_handler++ = (struct uuid_handler) {
 		.uuid = uuid,
 		.value_handle = handles.value_handle,
 		.handler = write_handler
 	};
-
-	return err_code;
 }
 
-uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init)
+void
+ble_char_notify_add(uint16_t uuid)
+{
+	uint8_t ignored[BLE_GAP_DEVNAME_MAX_WR_LEN];
+
+	ble_gatt_char_props_t notify_props;
+	memset(&notify_props, 0, sizeof(notify_props));
+	notify_props.notify = 1;
+
+	_char_add(uuid, &notify_props, ignored, sizeof(ignored), NULL);
+}
+
+void
+ble_char_write_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size)
+{
+	uint8_t ignored[max_buffer_size];
+
+	ble_gatt_char_props_t write_props;
+	memset(&write_props, 0, sizeof(write_props));
+	write_props.write = 1;
+
+	_char_add(uuid, &write_props, ignored, sizeof(ignored), write_handler);
+}
+
+void
+ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)
+{
+	ble_gatt_char_props_t read_props;
+	memset(&read_props, 0, sizeof(read_props));
+	read_props.read = 1;
+
+	_char_add(uuid, &read_props, value, value_size, NULL);
+}
+
+void ble_hello_demo_init(const ble_hello_demo_init_t *init)
 {
     uint32_t   err_code;
     ble_uuid_t ble_uuid;
@@ -274,22 +301,10 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init)
 
     // Init defaults
     conn_handle = BLE_CONN_HANDLE_INVALID;
-    data_write_handler = &default_write_handler;
-    mode_write_handler = &default_write_handler;
-    cmd_write_handler  = &default_write_handler;
     conn_handler       = &default_conn_handler;
     disconn_handler    = &default_conn_handler;
 
     // Assign write handlers
-    if (init->data_write_handler)
-        data_write_handler = init->data_write_handler;
-
-    if (init->mode_write_handler)
-        mode_write_handler = init->mode_write_handler;
-
-    if (init->cmd_write_handler)
-        cmd_write_handler = init->cmd_write_handler;
-
     if (init->conn_handler)
         conn_handler = init->conn_handler;
 
@@ -298,62 +313,12 @@ uint32_t ble_hello_demo_init(const ble_hello_demo_init_t *init)
 
     // Add Hello's Base UUID
     err_code = sd_ble_uuid_vs_add(&hello_uuid, &hello_type);
-    if (err_code != NRF_SUCCESS)
-        return err_code;
+	APP_ERROR_CHECK(err_code);
 
     // Add service
     ble_uuid.type = hello_type;
     ble_uuid.uuid = BLE_UUID_HELLO_DEMO_SVC;
 
     err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &service_handle);
-    if (err_code != NRF_SUCCESS)
-        return err_code;
-
-	ble_gatt_char_props_t notify_props;
-	memset(&notify_props, 0, sizeof(notify_props));
-	notify_props.notify = 1;
-
-	ble_gatt_char_props_t rw_props;
-	memset(&rw_props, 0, sizeof(rw_props));
-	rw_props.read = 1;
-	rw_props.write = 1;
-
-	ble_gatt_char_props_t r_props;
-	memset(&r_props, 0, sizeof(r_props));
-	r_props.read = 1;
-
-    // Add characteristics
-    err_code = _char_add(BLE_UUID_DATA_CHAR,
-						 &notify_props,
-						 zeroes,
-						 BLE_GAP_DEVNAME_MAX_WR_LEN,
-						 data_write_handler);
-    if (err_code != NRF_SUCCESS)
-        return err_code;
-
-    err_code = _char_add(BLE_UUID_CONF_CHAR,
-						 &rw_props,
-						 zeroes,
-						 4,
-						 mode_write_handler);
-    if (err_code != NRF_SUCCESS)
-        return err_code;
-
-    err_code = _char_add(BLE_UUID_CMD_CHAR,
-						 &rw_props,
-						 zeroes,
-						 10,
-						 cmd_write_handler);
-    if (err_code != NRF_SUCCESS)
-        return err_code;
-
-    err_code = _char_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
-						 &r_props,
-						 (const uint8_t* const)GIT_DESCRIPTION,
-						 strlen(GIT_DESCRIPTION),
-						 cmd_write_handler);
-    if (err_code != NRF_SUCCESS)
-        return err_code;
-
-    return NRF_SUCCESS;
+	APP_ERROR_CHECK(err_code);
 }

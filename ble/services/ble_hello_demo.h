@@ -57,3 +57,7 @@ uint16_t ble_hello_demo_data_send(const uint8_t * data, const uint16_t data_len)
 uint32_t ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len);
 
 uint16_t ble_hello_demo_get_handle();
+
+void ble_char_notify_add(uint16_t uuid);
+void ble_char_write_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size);
+void ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size);

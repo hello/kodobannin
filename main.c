@@ -23,6 +23,7 @@
 #include <hrs.h>
 #include <watchdog.h>
 
+#include "git_description.h"
 #include "hello_dfu.h"
 
 static uint16_t test_size;
@@ -247,47 +248,21 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 }
 
 void
-start_sampling_on_connect(void) {
-    //TODO: this is the wrong place for this, we must detect when
-    //      someone subscribes to the notification instead
-    /*
-    uint32_t err_code;
-    err_code = app_timer_start(imu_sampler, 250, NULL);
-    APP_ERROR_CHECK(err_code);
-    */
-}
-
-void
-stop_sampling_on_disconnect(void) {
-    uint32_t err;
-    uint16_t len = 1;
-    PRINTS("\r\n*******Stop*******\r\n");
-    do_imu = 0;
-
-    _state = TEST_STATE_IDLE;
-    err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
-    APP_ERROR_CHECK(err);
-
-    //uint32_t err_code;
-    //err_code = app_timer_stop(imu_sampler);
-    //APP_ERROR_CHECK(err_code);
-}
-
-void
 services_init() {
-    uint32_t err_code;
-
     // add hello demo service
     ble_hello_demo_init_t demo_init = {
-        .data_write_handler = &data_write_handler,
-        .mode_write_handler = &mode_write_handler,
-        .cmd_write_handler = &cmd_write_handler,
-        .conn_handler    = &start_sampling_on_connect,
-        .disconn_handler = &stop_sampling_on_disconnect,
+        .conn_handler    = NULL,
+        .disconn_handler = NULL,
     };
 
-    err_code = ble_hello_demo_init(&demo_init);
-    APP_ERROR_CHECK(err_code);
+    ble_hello_demo_init(&demo_init);
+
+	ble_char_notify_add(BLE_UUID_DATA_CHAR);
+	ble_char_write_add(BLE_UUID_CONF_CHAR, mode_write_handler, 4);
+	ble_char_write_add(BLE_UUID_CMD_CHAR, cmd_write_handler, 10);
+	ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
+					  (uint8_t* const)GIT_DESCRIPTION,
+					  sizeof(GIT_DESCRIPTION));
 }
 
 void
