@@ -65,13 +65,13 @@ static uint8_t _state;
     err_code = init_spi(SPI_Channel_1, SPI_Mode1, MISO, MOSI, SCLK, GPS_nCS);
     APP_ERROR_CHECK(err_code);
 */
-void
-mode_write_handler(ble_gatts_evt_write_t *event) {
+static void
+_mode_write_handler(ble_gatts_evt_write_t *event) {
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
 
-    DEBUG("mode_write_handler: 0x", state);
+    DEBUG("_mode_write_handler: 0x", state);
 
     switch (state) {
         case Demo_Config_Standby:
@@ -120,16 +120,17 @@ mode_write_handler(ble_gatts_evt_write_t *event) {
     };
 }
 
-void hrs_send_data(const uint8_t *data, const uint16_t len) {
+static void
+_hrs_send_data(const uint8_t *data, const uint16_t len) {
     uint32_t err;
 
     err = ble_hello_demo_data_send_blocking(data, len);
     APP_ERROR_CHECK(err);
 }
 
-void
-data_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("data_write_handler called\r\n");
+static void
+_data_write_handler(ble_gatts_evt_write_t *event) {
+    PRINTS("_data_write_handler called\r\n");
 }
 
 #define TEST_START_HRS  0x33
@@ -143,9 +144,9 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 
 static volatile uint8_t do_imu = 0;
 
-void
-cmd_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("cmd_write_handler called\r\n");
+static void
+_cmd_write_handler(ble_gatts_evt_write_t *event) {
+    PRINTS("_cmd_write_handler called\r\n");
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
@@ -194,7 +195,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             DEBUG("Starting HRS cal: ", test_size);
 
             hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 1);
-           // hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &hrs_send_data);
+           // hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &_hrs_send_data);
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
@@ -258,8 +259,8 @@ services_init() {
     ble_hello_demo_init(&demo_init);
 
 	ble_char_notify_add(BLE_UUID_DATA_CHAR);
-	ble_char_write_add(BLE_UUID_CONF_CHAR, mode_write_handler, 4);
-	ble_char_write_add(BLE_UUID_CMD_CHAR, cmd_write_handler, 10);
+	ble_char_write_add(BLE_UUID_CONF_CHAR, _mode_write_handler, 4);
+	ble_char_write_add(BLE_UUID_CMD_CHAR, _cmd_write_handler, 10);
 	ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
 					  (uint8_t* const)GIT_DESCRIPTION,
 					  sizeof(GIT_DESCRIPTION));
