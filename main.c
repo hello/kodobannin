@@ -128,7 +128,7 @@ void hrs_send_data(const uint8_t *data, const uint16_t len) {
 
 void
 data_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("data_write_handler called\n");
+    PRINTS("data_write_handler called\r\n");
 }
 
 #define TEST_START_HRS  0x33
