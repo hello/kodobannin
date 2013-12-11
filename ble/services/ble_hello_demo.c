@@ -86,7 +86,6 @@ dispatch_write(ble_evt_t *event) {
 void
 ble_hello_demo_on_ble_evt(ble_evt_t *event)
 {
-    DEBUG("event id: 0x", event->header.evt_id)
     switch (event->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
