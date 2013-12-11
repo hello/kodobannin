@@ -91,10 +91,15 @@ ble_hello_demo_on_ble_evt(ble_evt_t *event)
     {
         case BLE_GAP_EVT_CONNECTED:
             conn_handle = event->evt.gap_evt.conn_handle;
+			DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
+
             conn_handler();
             break;
 
         case BLE_GAP_EVT_DISCONNECTED:
+			DEBUG("Disconnect from MAC: ", event->evt.gap_evt.params.disconnected.peer_addr.addr);
+			DEBUG("Disconnect reason: ", event->evt.gap_evt.params.disconnected.reason);
+
             conn_handle = BLE_CONN_HANDLE_INVALID;
             disconn_handler();
             break;
