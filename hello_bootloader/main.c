@@ -20,7 +20,7 @@
 #define APP_GPIOTE_MAX_USERS            2
 
 static void
-sha1_fw_area(uint8_t *hash)
+_sha1_fw_area(uint8_t *hash)
 {
 	uint32_t err;
 
@@ -52,13 +52,13 @@ sha1_fw_area(uint8_t *hash)
 }
 
 static bool
-verify_fw_sha1(uint8_t *valid_hash)
+_verify_fw_sha1(uint8_t *valid_hash)
 {
 	uint8_t sha1[SHA1_DIGEST_LENGTH];
     uint8_t comp = 0;
     int i = 0;
 
-    sha1_fw_area(sha1);
+    _sha1_fw_area(sha1);
 
 #ifdef DEBUG
     DEBUG("SHA1: ", sha1);
@@ -70,7 +70,8 @@ verify_fw_sha1(uint8_t *valid_hash)
     return comp == 0;
 }
 
-static void flash_page_erase(uint32_t * p_page)
+static void
+_flash_page_erase(uint32_t * p_page)
 {
     // Turn on flash erase enable and wait until the NVMC is ready.
     NRF_NVMC->CONFIG = (NVMC_CONFIG_WEN_Een << NVMC_CONFIG_WEN_Pos);
@@ -129,7 +130,7 @@ _start()
 	}
 #endif
 
-	const bool firmware_verified = verify_fw_sha1((uint8_t*)proposed_fw_sha1);
+	const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
 	    PRINTS("Bootloader: in DFU mode...\r\n");
 		err_code = bootloader_dfu_start();
@@ -141,8 +142,8 @@ _start()
 			// Need to turn the radio off before calling ble_flash_block_write?
 			ble_flash_on_radio_active_evt(false);
 
-			sha1_fw_area(new_fw_sha1);
-			flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
+			_sha1_fw_area(new_fw_sha1);
+			_flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
 			ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
 		}
 
