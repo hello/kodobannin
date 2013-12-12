@@ -5,6 +5,7 @@
 #include <nrf51.h>
 
 #include "ecc.h"
+#include "sha1.h"
 #include "util.h"
 
 #if ECC_CURVE == 4
