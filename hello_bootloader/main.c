@@ -16,13 +16,13 @@
 #include <string.h>
 #include "hello_dfu.h"
 #include "util.h"
+#include "ecc_benchmark.h"
 
 #define APP_GPIOTE_MAX_USERS            2
 
 static void
 _sha1_fw_area(uint8_t *hash)
 {
-	uint32_t err;
 
 	uint32_t code_size    = DFU_IMAGE_MAX_SIZE_FULL;
 	uint8_t *code_address = (uint8_t *)CODE_REGION_1_START;
@@ -39,11 +39,10 @@ _sha1_fw_area(uint8_t *hash)
 
 	NRF_RTC1->TASKS_START = 1;
 
-	uint32_t start_ticks, stop_ticks, diff_ticks;
+	uint32_t start_ticks, stop_ticks;
+
 	start_ticks = NRF_RTC1->COUNTER;
-
     sha1_calc(code_address, code_size, hash);
-
 	stop_ticks = NRF_RTC1->COUNTER;
 
 	debug_print_ticks("SHA1 time in ticks: ", start_ticks, stop_ticks);
