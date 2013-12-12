@@ -46,12 +46,9 @@ sha1_fw_area(uint8_t *hash)
 
 	stop_ticks = NRF_RTC1->COUNTER;
 
-	err = app_timer_cnt_diff_compute(stop_ticks, start_ticks, &diff_ticks);
-	APP_ERROR_CHECK(err);
+	debug_print_ticks("SHA1 time in ticks: ", start_ticks, stop_ticks);
 
 	NRF_RTC1->TASKS_STOP = 1;
-
-	DEBUG("SHA1 time in ticks: ", diff_ticks);
 }
 
 static bool
