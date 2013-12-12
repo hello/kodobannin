@@ -17,8 +17,10 @@
 #include <ble_flash.h>
 #include <ble_conn_params.h>
 
+#include "ble_core.h"
+#include "util.h"
+
 extern void ble_bond_manager_init(void);
-extern void ble_gap_params_init(void);
 extern void ble_services_init(void);
 
 extern void services_init();

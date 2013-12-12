@@ -637,8 +637,6 @@ static void services_init(void)
 }
 
 
-extern void ble_gap_params_init(void);
-
 uint32_t dfu_transport_update_start()
 {
     uint32_t err_code;
