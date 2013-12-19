@@ -304,6 +304,10 @@ imu_get_sample_rate()
 void
 imu_set_sample_rate(uint8_t hz)
 {
+	// The logic here is largely copied from mpu_set_sample_rate() in
+	// inv_mpu.c. Using their source code to get things working seems
+	// far more effective than reading their documentation.
+
 	uint8_t sample_rate_divider = (1000/hz) - 1;
 
     _register_write(MPU_REG_SAMPLE_RATE_DIVIDER, sample_rate_divider);
