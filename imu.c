@@ -11,6 +11,8 @@
 
 #define BUF_SIZE 4
 
+#define IMU_DEFAULT_SAMPLE_RATE 25
+
 //#define SENSORS FIFO_EN_QUEUE_ACCEL
 #define SENSORS (FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z | FIFO_EN_QUEUE_ACCEL)
 
@@ -244,6 +246,71 @@ static void imu_accelerometer_self_test()
 }
 */
 
+static void
+_imu_set_low_pass_filter(uint8_t hz)
+{
+	uint8_t gyro_config;
+	_register_read(MPU_REG_GYRO_CFG, &gyro_config);
+	gyro_config &= ~(1UL << 0 | 1UL << 1);
+	_register_write(MPU_REG_GYRO_CFG, gyro_config);
+
+
+	uint8_t config_register;
+	_register_read(MPU_REG_CONFIG, &config_register);
+	config_register &= ~(1UL << 0 | 1UL << 1 | 1UL << 2);
+
+	uint8_t accel_config2;
+	_register_read(MPU_REG_ACC_CFG2, &accel_config2);
+	accel_config2 &= ~(1UL << 0 | 1UL << 1 | 1UL << 2);
+
+	if(hz >= 460) {
+		accel_config2 |= ACCEL_CFG2_LPF_1kHz_460bw;
+	} else if(hz >= 250) {
+		config_register |= CONFIG_LPF_8kHz_250bw;
+    } else if(hz >= 184) {
+        config_register |= CONFIG_LPF_1kHz_184bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_184bw;
+    } else if(hz >= 92) {
+        config_register |= CONFIG_LPF_1kHz_92bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_92bw;
+    } else if(hz >= 41) {
+        config_register |= CONFIG_LPF_1kHz_41bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_41bw;
+    } else if(hz >= 20) {
+        config_register |= CONFIG_LPF_1kHz_20bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_20bw;
+    } else if(hz >= 10) {
+        config_register |= CONFIG_LPF_1kHz_10bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_10bw;
+    } else if(hz >= 5) {
+        config_register |= CONFIG_LPF_1kHz_5bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_5bw;
+    }
+
+    _register_write(MPU_REG_CONFIG, config_register);
+    _register_write(MPU_REG_ACC_CFG2, accel_config2);
+}
+
+
+uint8_t
+imu_get_sample_rate()
+{
+	uint8_t sample_rate_divider;
+	_register_read(MPU_REG_SAMPLE_RATE_DIVIDER, &sample_rate_divider);
+
+	return 1000/(1+sample_rate_divider);
+}
+
+void
+imu_set_sample_rate(uint8_t hz)
+{
+	uint8_t sample_rate_divider = (1000/hz) - 1;
+
+    _register_write(MPU_REG_SAMPLE_RATE_DIVIDER, sample_rate_divider);
+
+	_imu_set_low_pass_filter(hz >> 1);
+}
+
 uint32_t
 imu_init(enum SPI_Channel channel) {
 	chan = channel;
@@ -280,13 +347,13 @@ imu_init(enum SPI_Channel channel) {
 	// Config interrupts
 	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
 
-	// Set sample rate div  F = (DPLF_Freq / (Sample Rate Div + 1))
-	_register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9);
-
 	// Init accel
 	_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
 
-	// Set Accel Low Pass Filter, and make FIFO size 4096
+	// Init Gyro
+	_register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_2k_DPS << GYRO_CFG_RATE_OFFET));
+
+	// Init FIFO
 	uint8_t fifo_size_bits;
 	switch(IMU_FIFO_SIZE) {
 	case 4096:
@@ -302,22 +369,13 @@ imu_init(enum SPI_Channel channel) {
 		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_512;
 		break;
 	}
-
-	_register_write(MPU_REG_ACC_CFG2, ACCEL_CFG2_FCHOICE_1 | ACCEL_CFG2_LPF_1kHz_41bw | fifo_size_bits);
-
-	// Set Gyro Low Pass Filter
-	_register_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_41bw);
-
-	//_register_write(MPU_REG_SAMPLE_RATE_DIVIDER, 9); // 1000=(1+9) = 100 Hz
-
-	// Init Gyro
-	_register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_2k_DPS << GYRO_CFG_RATE_OFFET));
-
-	// Init FIFO
-	_register_write(MPU_REG_FIFO_EN, SENSORS); // FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z); //
+	_register_write(MPU_REG_ACC_CFG2, fifo_size_bits);
+	_register_write(MPU_REG_FIFO_EN, SENSORS);
 
 	// Reset FIFO, disable i2c, and clear regs
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
+
+	imu_set_sample_rate(IMU_DEFAULT_SAMPLE_RATE);
 
 	return 0;
 }
