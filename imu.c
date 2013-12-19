@@ -92,7 +92,15 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 	if (count == 0)
 		return 0;
 
-	return spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
+	count = spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
+
+	// Note: You _must_ read the register 58 (Interrupt Status)
+	// after reading from the FIFO, otherwise the FIFO will not be
+	// cleared.
+	uint8_t int_status;
+	_register_read(MPU_REG_INT_STS, &int_status);
+
+	return count;
 }
 
 void
@@ -158,11 +166,6 @@ _continuous()
 		}
 
 		PRINTS("\r\n");
-
-		uint8_t int_status;
-		_register_read(MPU_REG_INT_STS, &int_status);
-		if(int_status & INT_STS_FIFO_OVRFLO) {
-		}
 
 		nrf_delay_ms(1000);
 	}
