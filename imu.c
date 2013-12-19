@@ -164,7 +164,7 @@ _continuous()
 		if(int_status & INT_STS_FIFO_OVRFLO) {
 		}
 
-		nrf_delay_ms(8000);
+		nrf_delay_ms(1000);
 	}
 }
 
