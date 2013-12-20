@@ -8,6 +8,7 @@
 #include <nrf_delay.h>
 
 #include "imu.h"
+#include "watchdog.h"
 
 #define BUF_SIZE 4
 
