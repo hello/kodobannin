@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #pragma once
 
 uint32_t imu_init(enum SPI_Channel channel);
