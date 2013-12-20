@@ -170,6 +170,8 @@ _continuous()
 		PRINTS("\r\n");
 
 		nrf_delay_ms(1000);
+
+		watchdog_pet();
 	}
 }
 
