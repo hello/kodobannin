@@ -298,7 +298,7 @@ _start()
 
     imu_read_regs(old_values);
     int i;
-    while(1) {}
+    while(1) {
         //read = imu_accel_reg_read(sample);
         read = imu_read_regs(sample);
 
