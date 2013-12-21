@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "imu.h"
+#include "mpu_6500_registers.h"
 #include "watchdog.h"
 
 #define BUF_SIZE 4
