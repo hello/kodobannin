@@ -354,8 +354,8 @@ imu_set_sample_rate(uint8_t hz)
 	_imu_set_low_pass_filter(hz >> 1);
 }
 
-void _wake_on_motion_setup() __attribute__((unused));
-void _wake_on_motion_setup()
+static void _wake_on_motion_setup() __attribute__((unused));
+static void _wake_on_motion_setup()
 {
 	// This code isn't used at all (thus the unused attribute in the
 	// function declaration); it's just here for safe-keeping.
@@ -371,8 +371,8 @@ void _wake_on_motion_setup()
     _register_write(MPU_REG_PWR_MGMT_1, 1UL << 5);
 }
 
-void _low_power_setup() __attribute__((unused));
-void _low_power_setup()
+static void _low_power_setup() __attribute__((unused));
+static void _low_power_setup()
 {
     // This code isn't used at all (thus the unused attribute in the
     // function declaration); it's just here for safe-keeping.
