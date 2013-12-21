@@ -176,6 +176,7 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,
 }
 */
 
+static void _continuous() __attribute__((unused));
 static void
 _continuous()
 {
