@@ -14,12 +14,11 @@
 
 #define IMU_DEFAULT_SAMPLE_RATE 25
 
-//#define SENSORS FIFO_EN_QUEUE_ACCEL
-#define SENSORS (FIFO_EN_QUEUE_GYRO_X | FIFO_EN_QUEUE_GYRO_Y | FIFO_EN_QUEUE_GYRO_Z | FIFO_EN_QUEUE_ACCEL)
-
 static enum SPI_Channel chan = SPI_Channel_Invalid;
 
 #define IMU_FIFO_SIZE 4096 // Must be 512, 1024, 2048 or 4096
+
+static enum imu_sensor_set _sensors;
 
 static inline void
 _register_read(MPU_Register_t register_address, uint8_t* const out_value)
@@ -82,6 +81,43 @@ imu_read_regs(uint8_t *buf) {
 
 	return 12;
 }
+
+void imu_set_sensors(enum imu_sensor_set sensors)
+{
+    if(sensors == _sensors) {
+        return;
+    }
+
+    uint8_t fifo_register, power_management_2_register;
+    _register_read(MPU_REG_FIFO_EN, &fifo_register);
+	_register_read(MPU_REG_PWR_MGMT_2, &power_management_2_register);
+
+    fifo_register &= ~(FIFO_EN_QUEUE_ACCEL|FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z);
+    power_management_2_register |= PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS|PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS;
+
+
+    if(sensors & IMU_SENSORS_ACCEL) {
+        fifo_register |= FIFO_EN_QUEUE_ACCEL;
+		power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS);
+    }
+
+    if(sensors & IMU_SENSORS_GYRO) {
+        fifo_register |= FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z;
+		power_management_2_register &= ~(PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
+    }
+
+    _register_write(MPU_REG_FIFO_EN, fifo_register);
+	_register_write(MPU_REG_PWR_MGMT_2, power_management_2_register);
+
+    _sensors = sensors;
+}
+
+enum imu_sensor_set
+imu_get_sensors()
+{
+    return _sensors;
+}
+
 
 uint16_t
 imu_fifo_read(uint16_t count, uint8_t *buf) {
@@ -377,7 +413,8 @@ imu_init(enum SPI_Channel channel) {
 		break;
 	}
 	_register_write(MPU_REG_ACC_CFG2, fifo_size_bits);
-	_register_write(MPU_REG_FIFO_EN, SENSORS);
+
+	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
 
 	// Reset FIFO, disable i2c, and clear regs
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
