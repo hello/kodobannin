@@ -293,7 +293,6 @@ _imu_set_low_pass_filter(uint8_t hz)
 	gyro_config &= ~(1UL << 0 | 1UL << 1);
 	_register_write(MPU_REG_GYRO_CFG, gyro_config);
 
-
 	uint8_t config_register;
 	_register_read(MPU_REG_CONFIG, &config_register);
 	config_register &= ~(1UL << 0 | 1UL << 1 | 1UL << 2);
