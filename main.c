@@ -332,11 +332,7 @@ _start()
     //imu_selftest(SPI_Channel_0);
 
     err_code = imu_init(SPI_Channel_0);
-    if(err_code == -1) {
-	    // This is probably Andre's development board that has a weird chip ID (0xFF instead of 0x70). Just ignore this for now...
-    } else {
-	    APP_ERROR_CHECK(err_code);
-    }
+    APP_ERROR_CHECK(err_code);
 
     // loop on BLE events FOREVER
     while(1) {
