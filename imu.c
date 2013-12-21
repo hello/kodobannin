@@ -6,6 +6,7 @@
 #include <device_params.h>
 #include <app_error.h>
 #include <nrf_delay.h>
+#include <string.h>
 
 #include "imu.h"
 #include "watchdog.h"
@@ -213,10 +214,12 @@ _continuous()
 	}
 }
 
-/*
-static void imu_accelerometer_self_test()
+static void _self_test() __attribute__((unused));
+static void _self_test()
 {
-	bool success = false;
+	// This code is unused and untested; it's been checked in for
+	// safe-keeping. You will probably have to futz with it to get it
+	// to work.
 
 	//_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_8G);
 
@@ -227,22 +230,16 @@ static void imu_accelerometer_self_test()
 	uint8_t self_test_accels[3];
 	memset(self_test_accels, 0x55, sizeof(self_test_accels));
 
-	success = register_read(MPU_REG_ACC_SELF_TEST_X, &self_test_accels[0]);
-	APP_ERROR_CHECK(!success);
-
-	register_read(MPU_REG_ACC_SELF_TEST_Y, &self_test_accels[1]);
-	APP_ERROR_CHECK(!success);
-
-	register_read(MPU_REG_ACC_SELF_TEST_Z, &self_test_accels[2]);
-	APP_ERROR_CHECK(!success);
-
+	_register_read(MPU_REG_ACC_SELF_TEST_X, &self_test_accels[0]);
+	_register_read(MPU_REG_ACC_SELF_TEST_Y, &self_test_accels[1]);
+	_register_read(MPU_REG_ACC_SELF_TEST_Z, &self_test_accels[2]);
 	DEBUG("X/Y/Z self-test accels: ", self_test_accels);
 
 	imu_fifo_reset();
 
 	unsigned c;
 
-	// These factory_trims values are _HARD-CODED_ to Board9 (Andre's
+	// These factory_trims values are _HARD-ENCODED_ to Board9 (Andre's
 	// dev board), because calculating them properly requires
 	// real-number arithmetic (see page 12 of the register PDF). We'll
 	// need to figure out a way to do this properly if we want to do a
@@ -257,14 +254,14 @@ static void imu_accelerometer_self_test()
 
 	int16_t non_self_test_data[sample_count];
 	memset(non_self_test_data, 0x55, sizeof(non_self_test_data));
-	imu_fifo_read(sample_count*sizeof(int16_t), non_self_test_data);
+	imu_fifo_read(sample_count*sizeof(int16_t), (uint8_t*)non_self_test_data);
 	DEBUG("non_self_test_data: ", non_self_test_data);
 
-	_register_write(MPU_REG_ACC_CFG, AX_ST_EN|AY_ST_EN|AZ_ST_EN);
+	_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_X_TEST|ACCEL_CFG_Y_TEST|ACCEL_CFG_Z_TEST);
 
 	int16_t self_test_data[sample_count];
 	memset(self_test_data, 0x55, sizeof(self_test_data));
-	imu_fifo_read(sample_count*sizeof(int16_t), self_test_data);
+	imu_fifo_read(sample_count*sizeof(int16_t), (uint8_t*)self_test_data);
 	DEBUG("self_test_data: ", self_test_data);
 
 	int16_t self_test_responses[sample_count];
@@ -284,7 +281,6 @@ static void imu_accelerometer_self_test()
 
 	DEBUG("Self-test responses: ", self_test_responses);
 }
-*/
 
 static void
 _imu_set_low_pass_filter(uint8_t hz)
