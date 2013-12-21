@@ -353,6 +353,41 @@ imu_set_sample_rate(uint8_t hz)
 	_imu_set_low_pass_filter(hz >> 1);
 }
 
+void _wake_on_motion_setup() __attribute__((unused));
+void _wake_on_motion_setup()
+{
+	// This code isn't used at all (thus the unused attribute in the
+	// function declaration); it's just here for safe-keeping.
+
+    // Figure 8 (page 29) of MPU-6500 v2.0.pdf.
+
+    _register_write(MPU_REG_PWR_MGMT_2, PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
+    _imu_set_low_pass_filter(184);
+    _register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO|INT_EN_WOM);
+    _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
+    _register_write(MPU_REG_WOM_THR, 20);
+    _register_write(MPU_REG_ACCEL_ODR, 5);
+    _register_write(MPU_REG_PWR_MGMT_1, 1UL << 5);
+}
+
+void _low_power_setup() __attribute__((unused));
+void _low_power_setup()
+{
+    // This code isn't used at all (thus the unused attribute in the
+    // function declaration); it's just here for safe-keeping.
+
+    // Attempt to get low-power mode to work, from reverse-engineering inv_mpu.c.
+
+    _register_write(MPU_REG_INT_EN, 0);
+    _register_write(MPU_REG_USER_CTL, 0);
+    _register_write(MPU_REG_PWR_MGMT_1, 0);
+    _register_write(MPU_REG_PWR_MGMT_2, PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
+    _register_write(MPU_REG_WOM_THR, 5);
+    _register_write(MPU_REG_ACCEL_ODR, 5);
+    _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
+    _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE);
+    _register_write(MPU_REG_INT_EN, INT_EN_WOM);
+}
 uint32_t
 imu_init(enum SPI_Channel channel) {
 	chan = channel;
