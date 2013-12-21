@@ -309,8 +309,8 @@ _start()
         }
         //read = imu_fifo_read(6, sample);
         //if (read > 0) {
-            PRINT_HEX(diff, read);
-            PRINTS("\r\n");
+		PRINT_HEX(diff, read);
+		PRINTS("\r\n");
         //}
         nrf_delay_ms(5);
     }
