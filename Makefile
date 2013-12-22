@@ -2,8 +2,10 @@
 MAKEFLAGS = -j$(shell sysctl -n hw.ncpu)
 
 # tool locations
-BIN=~/Downloads/gcc-arm-none-eabi-4_7-2013q3/bin
-JLINK_BIN=~/Work/jlink_462b
+KODOBANNIN_GCC_ROOT ?= ~/Downloads/gcc-arm-none-eabi-4_7-2013q3/
+KODOBANNIN_JLINK_ROOT ?= ~/Work/jlink_462b
+BIN = $(KODOBANNIN_GCC_ROOT)/bin
+JLINK_BIN = $(KODOBANNIN_JLINK_ROOT)
 
 # enable debug mode?
 DEBUG = 1
