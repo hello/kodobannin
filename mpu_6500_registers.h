@@ -1,3 +1,5 @@
+#pragma once
+
 // vi:sw=4:ts=4
 
 // Based on MPU-6500 Register Map and Descriptions Revision 2.0
