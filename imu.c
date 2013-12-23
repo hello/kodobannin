@@ -145,7 +145,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 }
 
 void
-imu_fifo_reset()
+imu_fifo_clear()
 {
 	uint8_t null_buffer[IMU_FIFO_SIZE];
 

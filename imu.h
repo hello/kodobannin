@@ -18,5 +18,5 @@ enum imu_sensor_set imu_get_sensors();
 
 uint16_t imu_fifo_size();
 uint16_t imu_fifo_read(uint16_t count, uint8_t *buf);
-void imu_fifo_reset();
+void imu_fifo_clear();
 
