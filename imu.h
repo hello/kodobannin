@@ -20,3 +20,4 @@ uint16_t imu_fifo_size();
 uint16_t imu_fifo_read(uint16_t count, uint8_t *buf);
 void imu_fifo_clear();
 
+#define IMU_FIFO_CAPACITY 4096 // Must be 512, 1024, 2048 or 4096

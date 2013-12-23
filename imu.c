@@ -18,8 +18,6 @@
 
 static enum SPI_Channel chan = SPI_Channel_Invalid;
 
-#define IMU_FIFO_SIZE 4096 // Must be 512, 1024, 2048 or 4096
-
 static enum imu_sensor_set _sensors;
 
 static inline void
@@ -147,9 +145,9 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 void
 imu_fifo_clear()
 {
-	uint8_t null_buffer[IMU_FIFO_SIZE];
+	uint8_t null_buffer[IMU_FIFO_CAPACITY];
 
-	imu_fifo_read(IMU_FIFO_SIZE, null_buffer);
+	imu_fifo_read(IMU_FIFO_CAPACITY, null_buffer);
 }
 
 /*
@@ -183,7 +181,7 @@ static void
 _continuous()
 {
 	union fifo_buffer {
-		uint8_t bytes[IMU_FIFO_SIZE];
+		uint8_t bytes[IMU_FIFO_CAPACITY];
 		uint32_t uint32s[1024];
 
 		int16_t values[2048];
@@ -192,7 +190,7 @@ _continuous()
 	union fifo_buffer buffer;
 
 	for(;;) {
-		uint16_t bufsize = imu_fifo_read(IMU_FIFO_SIZE, buffer.bytes);
+		uint16_t bufsize = imu_fifo_read(IMU_FIFO_CAPACITY, buffer.bytes);
 		DEBUG("bufsize: ", bufsize);
 
 		unsigned i = 0;
@@ -431,7 +429,7 @@ imu_init(enum SPI_Channel channel) {
 
 	// Init FIFO
 	uint8_t fifo_size_bits;
-	switch(IMU_FIFO_SIZE) {
+	switch(IMU_FIFO_CAPACITY) {
 	case 4096:
 		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_4096;
 		break;
