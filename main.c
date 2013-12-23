@@ -287,8 +287,7 @@ _start()
     err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
 
-    err_code = imu_init(SPI_Channel_0);
-    APP_ERROR_CHECK(err_code);
+    imu_init(SPI_Channel_0);
 
     // for do_imu code
     int16_t *values = sample;
@@ -331,8 +330,8 @@ _start()
 
     //imu_selftest(SPI_Channel_0);
 
-    err_code = imu_init(SPI_Channel_0);
-    APP_ERROR_CHECK(err_code);
+    imu_init(SPI_Channel_0);
+	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
 
     // loop on BLE events FOREVER
     while(1) {

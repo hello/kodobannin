@@ -386,7 +386,8 @@ static void _low_power_setup()
     _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE);
     _register_write(MPU_REG_INT_EN, INT_EN_WOM);
 }
-uint32_t
+
+void
 imu_init(enum SPI_Channel channel) {
 	chan = channel;
 
@@ -408,7 +409,7 @@ imu_init(enum SPI_Channel channel) {
 
 	if (whoami_value != CHIP_ID) {
 		DEBUG("Invalid MPU-6500 ID found. Expected 0x70, got 0x", whoami_value);
-		return -1;
+		APP_ASSERT(0);
 	}
 
 	// Reset buffers
@@ -452,6 +453,4 @@ imu_init(enum SPI_Channel channel) {
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
 
 	imu_set_sample_rate(IMU_DEFAULT_SAMPLE_RATE);
-
-	return 0;
 }
