@@ -234,7 +234,7 @@ static void _self_test()
 	_register_read(MPU_REG_ACC_SELF_TEST_Z, &self_test_accels[2]);
 	DEBUG("X/Y/Z self-test accels: ", self_test_accels);
 
-	imu_fifo_reset();
+	imu_fifo_clear();
 
 	unsigned c;
 
