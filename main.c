@@ -80,7 +80,7 @@ _mode_write_handler(ble_gatts_evt_write_t *event) {
             //       schedule maintenance wakeup with RTC
             break;
 
-        case Demo_Config_Calibrating:
+	case Demo_Config_Calibrating:
             PRINTS("Start HRS Calibration here\r\n");
             _state = Demo_Config_Calibrating;
             // TODO: notify HRS system here
@@ -206,7 +206,7 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
                 //buf = get_hrs_buffer();
                 do_imu = 1;
                 /*imu_reset_fifo();
-                err = imu_fifo_read(480, buf);
+				  err = imu_fifo_read(480, buf);
                 ble_hello_demo_data_send_blocking(buf, err);
                 */break;
 
