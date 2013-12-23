@@ -269,7 +269,7 @@ services_init() {
 void
 _start()
 {
-	uint32_t err_code;
+	uint32_t err;
 	watchdog_init(10, 1);
     uint8_t sample[12];
 
@@ -284,8 +284,8 @@ _start()
 
     // IMU standalone test code
 #if 0
-    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err_code);
+    err = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err);
 
     imu_init(SPI_Channel_0);
 
@@ -325,8 +325,8 @@ _start()
 
     // init imu SPI channel and interface
 
-    err_code = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err_code);
+    err = init_spi(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err);
 
     //imu_selftest(SPI_Channel_0);
 
@@ -344,8 +344,8 @@ _start()
             ble_hello_demo_data_send_blocking(sample, 12);
         } else {
             // Switch to a low power state until an event is available for the application
-            err_code = sd_app_event_wait();
-            APP_ERROR_CHECK(err_code);
+            err = sd_app_event_wait();
+            APP_ERROR_CHECK(err);
         }
     }
 
