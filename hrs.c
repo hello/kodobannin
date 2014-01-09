@@ -29,7 +29,7 @@ static uint32_t conf_done = 2;
 static uint8_t discard_threshold = UCHAR_MAX;
 static volatile bool discard_threshold_passed = false;
 
-#define MAX_SAMPLE_COUNT (100*50) // 100 samples/second * 60 seconds
+#define MAX_SAMPLE_COUNT 1500
 
 static uint8_t buffer[MAX_SAMPLE_COUNT];
 static uint16_t buf_lvl;
