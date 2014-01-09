@@ -471,6 +471,9 @@ imu_init(enum SPI_Channel channel) {
 	case 512:
 		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_512;
 		break;
+	default:
+		APP_ASSERT(0);
+		break;
 	}
 	_register_write(MPU_REG_ACC_CFG2, fifo_size_bits);
 
