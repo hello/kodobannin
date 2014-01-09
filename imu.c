@@ -351,6 +351,31 @@ imu_set_sample_rate(uint8_t hz)
 	// division when imu_get_sample_rate() is called.
 	_cached_sample_rate = hz;
 }
+
+uint32_t
+imu_timer_ticks_from_sample_rate(uint8_t hz)
+{
+    uint32_t bytes_per_sample = 0;
+
+    if(_sensors & IMU_SENSORS_ACCEL)
+        bytes_per_sample += sizeof(int16_t)*3;
+
+    if(_sensors & IMU_SENSORS_GYRO)
+        bytes_per_sample += sizeof(int16_t)*3;
+
+	uint32_t samples_to_fill_fifo = IMU_FIFO_CAPACITY/bytes_per_sample;
+    uint32_t ticks_per_sample = APP_TIMER_CLOCK_FREQ/hz;
+
+	uint32_t ticks_to_fill_fifo = (ticks_per_sample * samples_to_fill_fifo) >> 1;
+
+	const uint32_t ticks_headroom = 100000; // ~0.3s in timer ticks, rounded up to nearest 8. This leaves this long before the FIFO buffer overflows.
+
+	uint32_t ticks = ticks_to_fill_fifo - ticks_headroom;
+
+	DEBUG("IMU timer ticks: sample rate = ", hz);
+	DEBUG("IMU timer ticks: ticks = ", ticks);
+
+	return ticks;
 }
 
 static void _wake_on_motion_setup() __attribute__((unused));
