@@ -42,7 +42,7 @@ _register_write(MPU_Register_t register_address, uint8_t value)
 }
 
 uint16_t
-imu_fifo_size() {
+imu_fifo_bytes_available() {
 	union uint16_bits fifo_count;
 
 	_register_read(MPU_REG_FIFO_CNT_HI, &fifo_count.bytes[1]);
@@ -118,12 +118,11 @@ imu_get_sensors()
     return _sensors;
 }
 
-
 uint16_t
 imu_fifo_read(uint16_t count, uint8_t *buf) {
 	uint16_t avail;
 
-	avail = imu_fifo_size();
+	avail = imu_fifo_bytes_available();
 
 	if (avail < count)
 		count = avail;
