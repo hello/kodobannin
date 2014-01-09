@@ -203,7 +203,7 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
 
         case TEST_START_IMU:
                 //steal the HRS buffer
-                //buf = get_hrs_buffer();
+                //buf = hrs_get_buffer();
                 do_imu = 1;
                 /*imu_reset_fifo();
 				  err = imu_fifo_read(480, buf);
@@ -223,7 +223,7 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
             do_imu = 0;
             DEBUG("Sending HRS data: ", test_size);
 
-            err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
+            err = ble_hello_demo_data_send_blocking(hrs_get_buffer(), test_size);
             // APP_ERROR_CHECK(err);
 
             // update device state

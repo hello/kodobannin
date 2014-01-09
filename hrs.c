@@ -164,7 +164,7 @@ hrs_calibration_cb(uint8_t val) {
 
 
 uint8_t *
-get_hrs_buffer() {
+hrs_get_buffer() {
     return buffer;
 }
 

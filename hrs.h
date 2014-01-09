@@ -22,4 +22,4 @@ void hrs_calibrate(uint8_t power_lvl_min, uint8_t power_lvl_max, uint16_t delay,
 //uint32_t hrs_calibrate();
 void hrs_run_test( uint8_t power_lvl, uint16_t delay, uint16_t samples, bool keep_the_lights_on);
 void hrs_run_test2(hrs_parameters_t parameters);
-uint8_t * get_hrs_buffer();
+uint8_t * hrs_get_buffer();
