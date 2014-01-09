@@ -327,14 +327,12 @@ _imu_set_low_pass_filter(uint8_t hz)
     _register_write(MPU_REG_ACC_CFG2, accel_config2);
 }
 
+uint8_t _cached_sample_rate;
 
 uint8_t
 imu_get_sample_rate()
 {
-	uint8_t sample_rate_divider;
-	_register_read(MPU_REG_SAMPLE_RATE_DIVIDER, &sample_rate_divider);
-
-	return 1000/(1+sample_rate_divider);
+	return _cached_sample_rate;
 }
 
 void
@@ -345,10 +343,14 @@ imu_set_sample_rate(uint8_t hz)
 	// far more effective than reading their documentation.
 
 	uint8_t sample_rate_divider = (1000/hz) - 1;
-
     _register_write(MPU_REG_SAMPLE_RATE_DIVIDER, sample_rate_divider);
 
 	_imu_set_low_pass_filter(hz >> 1);
+
+	// We cache the sample rate here, otherwise we have to perform a
+	// division when imu_get_sample_rate() is called.
+	_cached_sample_rate = hz;
+}
 }
 
 static void _wake_on_motion_setup() __attribute__((unused));
