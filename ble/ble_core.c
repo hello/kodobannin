@@ -175,7 +175,7 @@ ble_gap_sec_params_init(void)
  *          parameters of the device. It also sets the permissions and appearance.
  */
 void
-ble_gap_params_init(void)
+ble_gap_params_init(char* device_name)
 {
 	uint32_t                err_code;
 	ble_gap_conn_params_t   gap_conn_params;
@@ -183,17 +183,7 @@ ble_gap_params_init(void)
 
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
-#define DFU_DEVICE_NAME_SUFFIX " (DFU)"
-
-	char dfu_device_name[BLE_GAP_DEVNAME_MAX_LEN];
-	memcpy(dfu_device_name,
-		   BLE_DEVICE_NAME,
-		   sizeof(BLE_DEVICE_NAME));
-	memcpy(dfu_device_name+sizeof(BLE_DEVICE_NAME)-1,
-		   DFU_DEVICE_NAME_SUFFIX,
-		   sizeof(DFU_DEVICE_NAME_SUFFIX));
-
-	err_code = sd_ble_gap_device_name_set(&sec_mode, (uint8_t*)dfu_device_name, strlen(dfu_device_name));
+	err_code = sd_ble_gap_device_name_set(&sec_mode, (uint8_t*)device_name, strlen(device_name));
 	APP_ERROR_CHECK(err_code);
 
 /*
@@ -222,7 +212,7 @@ ble_init()
 				false);
 
 	ble_bond_manager_init();
-	ble_gap_params_init();
+	ble_gap_params_init(BLE_DEVICE_NAME);
 	services_init();  // Must come before ble_advertising_init()
 	ble_advertising_init();
 	ble_services_init();
