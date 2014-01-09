@@ -139,6 +139,9 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 	// cleared.
 	uint8_t int_status;
 	_register_read(MPU_REG_INT_STS, &int_status);
+	if(int_status & INT_STS_FIFO_OVRFLO) {
+		PRINTS("imu_fifo_read(): FIFO overflowed\r\n");
+	}
 
 	return count;
 }
