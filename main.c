@@ -219,7 +219,7 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
             NVIC_SystemReset();
             break;
 
-        case TEST_SEND_DATA:
+	case TEST_SEND_DATA:
             do_imu = 0;
             DEBUG("Sending HRS data: ", test_size);
 
