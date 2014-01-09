@@ -15,6 +15,7 @@
 #define BUF_SIZE 4
 
 #define IMU_DEFAULT_SAMPLE_RATE 25
+#define IMU_DEFAULT_SENSORS (IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO)
 
 static enum SPI_Channel chan = SPI_Channel_Invalid;
 
@@ -446,7 +447,7 @@ imu_init(enum SPI_Channel channel) {
 	}
 	_register_write(MPU_REG_ACC_CFG2, fifo_size_bits);
 
-	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
+	imu_set_sensors(IMU_DEFAULT_SENSORS);
 
 	// Reset FIFO, disable i2c, and clear regs
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
