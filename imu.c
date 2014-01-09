@@ -207,6 +207,8 @@ _continuous()
 
 		PRINTS("\r\n");
 
+		watchdog_pet();
+
 		nrf_delay_ms(1000);
 
 		watchdog_pet();
