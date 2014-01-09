@@ -128,7 +128,7 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
-CFLAGS := -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
+CFLAGS := -fshort-enums -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 LDFLAGS := -L$(LIB) -lgcc --gc-sections
 
 ifneq ($(BLE_DEVICE_NAME),)
