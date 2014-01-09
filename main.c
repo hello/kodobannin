@@ -25,9 +25,12 @@
 
 #include "git_description.h"
 #include "hello_dfu.h"
+#include "imu_storage.h"
 
 static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
+
+static app_timer_id_t _imu_timer;
 
 void
 test_3v3() {
@@ -266,6 +269,32 @@ services_init() {
 					  sizeof(GIT_DESCRIPTION));
 }
 
+static void
+_imu_process(void* context)
+{
+	uint8_t imu_data[IMU_FIFO_CAPACITY];
+	uint16_t fifo_size = imu_fifo_read(IMU_FIFO_CAPACITY, imu_data);
+
+    watchdog_pet();
+
+	enum imu_sensor_set sensors = imu_get_sensors();
+
+	struct imu_data_header data_header = {
+		.timestamp = 0,
+		.gyro_xyz = sensors & IMU_SENSORS_GYRO,
+		.accel_xyz = sensors & IMU_SENSORS_ACCEL,
+		.bytes = fifo_size,
+		.hz = imu_get_sample_rate(),
+	};
+
+	// Write data_header to persistent storage here
+
+	DEBUG("IMU fifo size: ", fifo_size);
+	DEBUG("IMU data header: ", data_header);
+
+	watchdog_pet();
+}
+
 void
 _start()
 {
@@ -317,6 +346,11 @@ _start()
 
     //adc_test();
 
+	APP_TIMER_INIT(APP_TIMER_PRESCALER,
+				   APP_TIMER_MAX_TIMERS,
+				   APP_TIMER_OP_QUEUE_SIZE,
+				   false);
+
     // init ble
 	ble_init();
 
@@ -332,6 +366,16 @@ _start()
 
     imu_init(SPI_Channel_0);
 	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
+
+	err = app_timer_create(&_imu_timer, APP_TIMER_MODE_REPEATED, _imu_process);
+    APP_ERROR_CHECK(err);
+
+    err = app_timer_start(_imu_timer,
+                          imu_timer_ticks_from_sample_rate(imu_get_sample_rate()),
+                          NULL);
+    APP_ERROR_CHECK(err);
+
+	// [todo]: timer stops when bluetooth connection happens
 
     // loop on BLE events FOREVER
     while(1) {
