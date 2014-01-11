@@ -26,11 +26,14 @@ memcpy(void *s1, const void *s2, size_t n)
 int
 memcmp(const void *s1, const void *s2, size_t n)
 {
+	const char* a = s1;
+	const char* b = s2;
+
 	if (n == 0)
 		return 0;
 
 	while (n-- >0)
-		if (s1++ != s2++)
+		if(*a++ != *b++)
 			return 1;
 
 	return 0;
