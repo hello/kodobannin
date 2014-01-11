@@ -1,3 +1,5 @@
+// vi:sw=4:ts=4
+
 #include <app_error.h>
 #include <app_timer.h>
 #include <stdlib.h>
