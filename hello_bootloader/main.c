@@ -101,6 +101,7 @@ _start()
 {
 	uint32_t err_code;
     volatile uint8_t* proposed_fw_sha1 = (uint8_t*)BOOTLOADER_SETTINGS_ADDRESS;
+
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
@@ -134,6 +135,21 @@ _start()
 #endif
 
 	const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
+
+	if(!firmware_verified) {
+		PRINTS("Firmware doesn't match expected SHA-1: ");
+		PRINT_HEX(proposed_fw_sha1, 20);
+		PRINTS("\r\n");
+	}
+
+    if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
+        PRINTS("Application crashed... ");
+	}
+
+    if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
+        PRINTS("Forcefully booting into DFU mode.\r\n");
+	}
+
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
 	    PRINTS("Bootloader: in DFU mode...\r\n");
 		err_code = bootloader_dfu_start();
