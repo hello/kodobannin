@@ -10,16 +10,16 @@
 
 static enum SPI_Channel chan = SPI_Channel_Invalid;
 static uint8_t buf[BUF_SIZE];
+static SPI_Context _ctx;
 
 static inline bool
 mpu_reg_read(MPU_Register_t register_address, uint8_t* const out_value)
 {
-	uint8_t buf[2];
-	buf[0] = SPI_Read(register_address);
+	uint8_t buf = SPI_Read(register_address);
 
-	bool success = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	bool success = spi_xfer(&_ctx, 1, &buf, 1, &buf);
 	if(success) {
-		*out_value = buf[1];
+		*out_value = buf;
 	}
 
 	return success;
@@ -28,9 +28,9 @@ mpu_reg_read(MPU_Register_t register_address, uint8_t* const out_value)
 static inline bool
 mpu_reg_write(MPU_Register_t register_address, uint32_t value)
 {
-	uint8_t buf[2] = { SPI_Write(register_address), value };
+	uint8_t buf[2] = { SPI_Write(register_address), (uint8_t)value };
 
-	return spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	return spi_xfer(&_ctx, 2, buf, 0, NULL);
 }
 
 static void
@@ -51,13 +51,13 @@ imu_get_fifo_count() {
 	APP_ERROR_CHECK(chan == SPI_Channel_Invalid);
 
 	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_HI);
-	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	err = spi_xfer(&_ctx, 1, buf, 1, buf);
 	APP_ERROR_CHECK(!err);
 
-	count = buf[1] << 8;
+	count = buf[0] << 8;
 
 	buf[0] = SPI_Read(MPU_REG_FIFO_CNT_LO);
-	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	err = spi_xfer(&_ctx, 2, buf, 2, buf);
 	APP_ERROR_CHECK(!err);
 
 	count |= buf[1];
@@ -122,6 +122,7 @@ uint16_t
 imu_fifo_read(uint16_t count, uint8_t *buf) {
 	uint16_t avail;
 
+	uint8_t data = SPI_Read(MPU_REG_FIFO);
 	avail = imu_get_fifo_count();
 
 	if (count > avail)
@@ -129,8 +130,8 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 
 	if (count == 0)
 		return 0;
-	
-	return spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
+
+	return spi_xfer(&_ctx, 1, &data, count, buf);
 }
 
 void
@@ -170,14 +171,14 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,
 uint32_t
 imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS) {
 	uint32_t err;
-	
+
 	chan = channel;
 
 	// init SPI hardware block
-	err = spi_init(channel, mode, miso, mosi, sclk, nCS);
+	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_ctx);
 	if (err != 0)
 		return err;
-	
+
 	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
 	// page 43
 
@@ -225,7 +226,7 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
     /*
     // MPU6500 shares 4kB of memory between the DMP and the FIFO. Since the
     // first 3kB are needed by the DMP, we'll use the last 1kB for the FIFO.
-    
+
     data[0] = BIT_FIFO_SIZE_1024 | 0x8;
     if (i2c_write(st.hw->addr, st.reg->accel_cfg2, 1, data))
         return -1;
@@ -291,7 +292,7 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
 	buf[1] = USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST;
 	err = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
 	imu_uart_debug(err, buf, 2);
-	PRINTC('\n');	
+	PRINTC('\n');
 
 	// Init interrupts
 	PRINTS("Int Init\n");
