@@ -134,9 +134,10 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 
 	count = spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
 
-	// Note: You _must_ read the register 58 (Interrupt Status)
-	// after reading from the FIFO, otherwise the FIFO will not be
-	// cleared.
+	// Note: If you have the INT_CFG_CLR_ON_STS set in the
+	// MPU_REG_INT_CFG register (which we do by default), you _must_
+	// read register 58 (Interrupt Status, MPU_REG_INT_STS) after
+	// reading from the FIFO to clear it; thus the code here.
 	uint8_t int_status;
 	_register_read(MPU_REG_INT_STS, &int_status);
 	if(int_status & INT_STS_FIFO_OVRFLO) {
