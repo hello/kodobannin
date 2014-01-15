@@ -291,6 +291,17 @@ services_init() {
     APP_ERROR_CHECK(err_code);
 }
 
+#define STRIDE 32
+void
+print_page(uint8_t *ptr, uint32_t len)
+{
+	uint32_t i = 0;
+	for (i = 0; i < len; i+=STRIDE) {
+		serial_print_hex(&ptr[i], STRIDE);
+		PRINTS("\r\n");
+	}
+}
+
 void
 _start()
 {
@@ -308,6 +319,14 @@ _start()
     //pwm_test();
 
 #if 1
+    uint8_t page_data[512];
+	memset(page_data, 0, 512);
+    memset(page_data, 0xEE, 256);
+	page_data[0] = 0xFD;
+	page_data[256] = 0xFB;
+	page_data[511] = 0xBF;
+
+    PRINTS("\r\n********************\r\n\r\n");
     //flash test code
     nrf_gpio_cfg_output(GPS_nCS);
     nrf_gpio_pin_set(GPS_nCS);
@@ -316,24 +335,49 @@ _start()
     APP_ERROR_CHECK(err_code);
     PRINTS("SPI NOR configured\r\n");
 
-    PRINTS("SPI NOR Data\r\n");
+    PRINTS("SPI NOR Data Read: 0x");
     err_code = spinor_read(0, 20, sample);
+    PRINT_HEX(&err_code, 4);
+    PRINTS("\r\n");
     APP_ERROR_CHECK(err_code <= 0);
     PRINT_HEX(sample, 20);
     PRINTS("\r\n");
 
-    memset(sample, 0xAA, 20);
-    PRINTS("SPI NOR AA Write\r\n");
-    err_code = spinor_write(0, 16, sample);
+    PRINTS("SPI NOR Block Erase: 0x");
+    err_code = spinor_block_erase(0);
+    PRINT_HEX(&err_code, 4);
+    PRINTS("\r\n");
+    APP_ERROR_CHECK(err_code <= 0);
+
+    PRINTS("SPI NOR Data Read: 0x");
+    err_code = spinor_read(0, 20, sample);
+    PRINT_HEX(&err_code, 4);
+    PRINTS("\r\n");
+    APP_ERROR_CHECK(err_code <= 0);
+    PRINT_HEX(sample, 20);
+    PRINTS("\r\n");
+
+    PRINTS("SPI NOR Page Write: 0x");
+    err_code = spinor_write(512, 512, page_data);
     PRINT_HEX(&err_code, 4);
     PRINTS("\r\n");
 
     spinor_wait_completion();
 
-    PRINTS("SPI NOR Data\r\n");
-    err_code = spinor_read(0, 20, sample);
+    PRINTS("SPI NOR Data Read: 0x");
+    err_code = spinor_read(0, 512, page_data);
+    PRINT_HEX(&err_code, 4);
+    PRINTS("\r\n");
     APP_ERROR_CHECK(err_code <= 0);
-    PRINT_HEX(sample, 20);
+    print_page(page_data, 512);
+    PRINTS("\r\n");
+
+    PRINTS("SPI NOR Data Read: 0x");
+    err_code = spinor_read(512, 512, page_data);
+    PRINT_HEX(&err_code, 4);
+    PRINTS("\r\n");
+    APP_ERROR_CHECK(err_code <= 0);
+    print_page(page_data, 512);
     PRINTS("\r\n");
 
     while(1) {
