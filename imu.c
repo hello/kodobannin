@@ -443,6 +443,14 @@ static void _low_power_setup()
     _register_write(MPU_REG_INT_EN, INT_EN_WOM);
 }
 
+bool imu_did_wake_on_motion()
+{
+	uint8_t interrupt_status;
+	_register_read(58, &interrupt_status);
+
+	return (interrupt_status & (1UL << 6)) ? true : false;
+}
+
 void
 imu_init(enum SPI_Channel channel) {
 	chan = channel;
