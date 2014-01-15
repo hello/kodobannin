@@ -383,21 +383,45 @@ imu_timer_ticks_from_sample_rate(uint8_t hz)
 	return ticks;
 }
 
-static void _wake_on_motion_setup() __attribute__((unused));
-static void _wake_on_motion_setup()
+static void
+_wake_on_motion_using_spec(uint16_t microgravities, enum imu_wake_on_motion_hz wom_hz)
 {
-	// This code isn't used at all (thus the unused attribute in the
-	// function declaration); it's just here for safe-keeping.
+	uint8_t user_control;
+	_register_read(MPU_REG_USER_CTL, &user_control);
+    _register_write(MPU_REG_USER_CTL, user_control & ~USR_CTL_FIFO_EN);
+
+    _register_write(MPU_REG_PWR_MGMT_1, 0);
 
     // Figure 8 (page 29) of MPU-6500 v2.0.pdf.
 
     _register_write(MPU_REG_PWR_MGMT_2, PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
     _imu_set_low_pass_filter(184);
-    _register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO|INT_EN_WOM);
+    _register_write(MPU_REG_INT_EN, INT_EN_WOM);
     _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
-    _register_write(MPU_REG_WOM_THR, 20);
-    _register_write(MPU_REG_ACCEL_ODR, 5);
+    _register_write(MPU_REG_WOM_THR, microgravities >> 2);
+    _register_write(MPU_REG_ACCEL_ODR, (uint8_t)wom_hz);
     _register_write(MPU_REG_PWR_MGMT_1, 1UL << 5);
+}
+
+static void
+_wake_on_motion_using_sample_code(uint16_t microgravities, enum imu_wake_on_motion_hz wom_hz)
+{
+    _register_write(MPU_REG_USER_CTL, 0);
+    _register_write(MPU_REG_PWR_MGMT_1, 0);
+    _register_write(MPU_REG_PWR_MGMT_2, PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
+    _register_write(MPU_REG_WOM_THR, microgravities >> 2);
+    _register_write(MPU_REG_ACCEL_ODR, (uint8_t)wom_hz);
+    _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
+    _register_write(MPU_REG_PWR_MGMT_1, 1UL << 5);
+    _register_write(MPU_REG_INT_EN, INT_EN_WOM);
+
+}
+
+void imu_wake_on_motion(uint16_t microgravities, enum imu_wake_on_motion_hz wom_hz)
+{
+	_register_write(35, 0);
+
+	_wake_on_motion_using_spec(microgravities, wom_hz);
 }
 
 static void _low_power_setup() __attribute__((unused));
