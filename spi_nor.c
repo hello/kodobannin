@@ -1,11 +1,13 @@
+// vi:sw=4:ts=4
+
 #include <spi.h>
 #include <spi_nor.h>
 #include <stdlib.h>
 #include <util.h>
 #include <app_error.h>
+#include <string.h>
 
-static enum SPI_Channel _chan = SPI_Channel_Invalid;
-static uint32_t _nCS;
+static SPI_Context _ctx;
 
 static NOR_Chip_Config _nor_configs[] = {
 	NOR_CHIP(NOR_Mfg_Macronix, NOR_Chip_MX25U128, NOR_CAPACITY_16M, NOR_BLOCK_SIZE_4K, NOR_PAGE_SIZE_256), // Macronix MX25U128
@@ -20,12 +22,10 @@ _read_status(uint8_t *status) {
 	uint8_t data;
 	int32_t ret;
 
-	data = SPI_Read(CMD_RDSR);
+	data = CMD_RDSR;
 
-    ret = spi_xfer2(_chan, _nCS, 1, &data, 1, &data);
-    
-    *status = data;
-    
+    ret = spi_xfer(&_ctx, 1, &data, 1, status);
+
     return ret == 1;
 }
 
@@ -34,12 +34,12 @@ _read_id(uint8_t *mfg_id, uint8_t *chip_id) {
 	uint8_t data[4];
 	int32_t ret;
 
-	data[0] = SPI_Read(CMD_REMS);
+	data[0] = CMD_REMS;
 	data[1] = 0xFF;
 	data[2] = 0xFF;
 	data[3] = 0;
 
-	ret = spi_xfer2(_chan, _nCS, 4, data, 2, data);    
+	ret = spi_xfer(&_ctx, 4, data, 2, data);
 
     *mfg_id  = data[0];
     *chip_id = data[1];
@@ -47,20 +47,39 @@ _read_id(uint8_t *mfg_id, uint8_t *chip_id) {
     return ret == 2;
 }
 
+static inline uint8_t
+_RDSR_wait() {
+	uint8_t data;
+	uint32_t count = 0;
+
+	do {
+		if (!_read_status(&data)) {
+			return -2;
+		}
+	} while ((data & NOR_RDSR_WIP) && ++count < 0xFFFF);
+
+	DEBUG("RDSR: ", data);
+	DEBUG("Count: ", count);
+
+	return data;
+}
+
 static int32_t
 _write_enable() {
-	uint8_t data = SPI_Write(CMD_WREN);
+	uint8_t data = CMD_WREN;
+	uint8_t rdsr;
 
-	if (spi_xfer2(_chan, _nCS, 1, &data, 0, NULL) != 0) {
+	rdsr = _RDSR_wait();
+
+	if (spi_xfer(&_ctx, 1, &data, 0, NULL) != 1) {
 		return -1;
 	}
 
-	if (!_read_status(&data)) {
-		return -2;
-	}
+	rdsr = _RDSR_wait();
+
 
 	// ensure the chip acknoledges the write enable
-	if (!(data & NOR_RDSR_WEL)) {
+	if (!(rdsr & NOR_RDSR_WEL)) {
 		return -3;
 	}
 
@@ -86,10 +105,7 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 	uint8_t mfg_id;
 	uint8_t chip_id;
 
-	_nCS = nCS;
-	_chan = chan;
-
-	err = spi_init(chan, mode, miso, mosi, sclk, nCS);
+	err = spi_init(chan, mode, miso, mosi, sclk, nCS, &_ctx);
 	if (err != 0) {
 		PRINTS("Could not configure SPI bus for NOR\r\n");
 		return err;
@@ -115,28 +131,30 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 	uint8_t temp = (uint8_t)(_nor_config->capacity / 1024 / 1024);
 	PRINT_HEX(&temp, 1);
 	PRINTS("MiB\r\n");
-		
+
 	return 0;
 }
 
 int32_t
-spinor_read(uint32_t address, uint16_t len, uint8_t *buffer) {
+spinor_read(uint32_t address, uint32_t len, uint8_t *buffer) {
 	uint8_t data[4];
 
-	data[0] = SPI_Read(CMD_READ);
+	data[0] = (CMD_READ);
 	data[1] = address & 0xFF;
 	data[2] = (address >> 8) & 0xFF;
 	data[3] = (address >> 16) & 0xFF;
 
-	return spi_xfer2(_chan, _nCS, 4, data, len, buffer); 
+	return spi_xfer(&_ctx, 4, data, len, buffer);
 }
 
 int32_t
-spinor_write(uint32_t address, uint16_t len, uint8_t *buffer) {
+spinor_write_page(uint32_t address, uint32_t len, uint8_t *buffer) {
 	uint8_t data[4];
 	int32_t err;
-	uint16_t page_size;
-	uint16_t written;
+
+	// disallow writes for more than page_size bytes
+	if (len > _nor_config->page_size)
+		return -1;
 
 	err = _write_enable();
 	if (err != 0)
@@ -144,35 +162,56 @@ spinor_write(uint32_t address, uint16_t len, uint8_t *buffer) {
 
 	if (address & 0xFF000000) {
 		PRINTS("Address for write is too large");
-		return -1;
+		return -2;
 	}
 
-	page_size = _nor_config->page_size;
-	written = 0;
+	data[0] = (CMD_PP);
+	data[1] = (address >> 16) & 0xFF;
+	data[2] = (address >>  8) & 0xFF;
+	data[3] = address & 0xFF;
+
+	DEBUG("Writing n bytes: 0x", len);
+	PRINT_HEX(buffer, len);
+	PRINTS("\r\n");
+
+	err = spi_command(&_ctx, 4, data, len, buffer, 0, NULL);
+	DEBUG("Wrote ", err);
+
+	if (err < 0)
+		return err;
+
+	return len;
+}
+
+int32_t
+spinor_write(uint32_t address, uint32_t len, uint8_t *buffer)
+{
+	int32_t ret;
+	uint32_t to_write;
+	uint32_t written = 0;
 
 	while (written < len) {
-		uint16_t to_write;
-		uint32_t addr;
-
-		// calculate address for this write		
-		addr = address + written;
-
-		data[0] = SPI_Write(CMD_PP);
-		data[1] = (addr >> 16) & 0xFF;
-		data[2] = (addr >>  8) & 0xFF;
-		data[4] = addr & 0xFF;
-
-		// cap write amount to page size
 		to_write = len - written;
 
-		if (to_write > page_size)
-			to_write = page_size;
-		
-		err = spi_xfer2(_chan, _nCS, 4, data, to_write, &buffer[written]);
-		if (err < 0)
-			return err;
+		// cap write size at NOR page size
+		if (to_write > _nor_config->page_size)
+			to_write = _nor_config->page_size;
 
-		written += err;
+		// cap write size to account for where address starts in the page
+		if (address & 0xFF) {
+			uint32_t spare = _nor_config->page_size - (address & 0xFF);
+			if (to_write > spare)
+				to_write = spare;
+		}
+
+		ret = spinor_write_page(address, to_write, buffer);
+
+		if (ret < 0)
+			return ret;
+
+		address += ret;
+		buffer += ret;
+		written += ret;
 	}
 
 	return written;
@@ -187,11 +226,11 @@ spinor_chip_erase() {
 	if (err != 0)
 		return err;
 
-	data = SPI_Write(CMD_CE);
+	data = CMD_CE;
 
-	err = spi_xfer2(_chan, _nCS, 1, &data, 0, NULL);
+	err = spi_xfer(&_ctx, 1, &data, 0, NULL);
 
-	return err;
+	return err < 0 ? err : 0;
 }
 
 int32_t
@@ -208,13 +247,13 @@ spinor_block_erase(uint16_t block) {
 	if (err != 0)
 		return err;
 
-	data[0] = SPI_Write(CMD_SE);
-	data[1] = 0;
-	data[2] = (block >> 8) & 0xFF;
-	data[3] = block & 0xFF;
+	data[0] = CMD_SE;
+	data[1] = (block >> 8) & 0xFF;
+	data[2] = (block & 0xFF);
+	data[3] = 0;
 
-	err = spi_xfer2(_chan, _nCS, 4, data, 0, NULL);
-	
+	err = spi_xfer(&_ctx, 4, data, 0, NULL);
+
 	return err;
 }
 
@@ -222,11 +261,12 @@ void
 spinor_wait_completion() {
 	bool ret;
 	uint8_t status;
-
+	uint32_t count = 0;
 	do {
 		ret = _read_status(&status);
 		APP_ERROR_CHECK(ret != 1);
-
+		++count;
 		// might want a sleep here
 	} while (status & NOR_RDSR_WIP);
+	DEBUG("Completion spun: 0x", count);
 }
