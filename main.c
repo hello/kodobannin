@@ -32,6 +32,8 @@ static uint16_t test_size;
 
 static app_timer_id_t _imu_timer;
 
+static app_gpiote_user_id_t _imu_gpiote_user;
+
 void
 test_3v3() {
     nrf_gpio_cfg_output(GPIO_3v3_Enable);
@@ -295,6 +297,16 @@ _imu_process(void* context)
 	watchdog_pet();
 }
 
+static void
+_imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
+{
+	if(!imu_did_wake_on_motion()) {
+		PRINTS("IMU interrupt received, but no motion detected.\r\n");
+	}
+
+	PRINTS("Motion detected.\r\n");
+}
+
 void
 _start()
 {
@@ -366,16 +378,24 @@ _start()
 
     imu_init(SPI_Channel_0);
 	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
+	imu_wake_on_motion(100, IMU_WOM_HZ_15_63);
 
-	err = app_timer_create(&_imu_timer, APP_TIMER_MODE_REPEATED, _imu_process);
+	err = app_timer_create(&_imu_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_process);
     APP_ERROR_CHECK(err);
 
-    err = app_timer_start(_imu_timer,
-                          imu_timer_ticks_from_sample_rate(imu_get_sample_rate()),
-                          NULL);
-    APP_ERROR_CHECK(err);
+	nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
 
-	// [todo]: timer stops when bluetooth connection happens
+	NRF_GPIOTE->INTENSET = GPIOTE_INTENSET_IN0_Msk;
+
+	(void) sd_nvic_EnableIRQ(GPIOTE_IRQn);
+
+	APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+
+	err = app_gpiote_user_register(&_imu_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process);
+	APP_ERROR_CHECK(err);
+
+	err = app_gpiote_user_enable(_imu_gpiote_user);
+	APP_ERROR_CHECK(err);
 
     // loop on BLE events FOREVER
     while(1) {
