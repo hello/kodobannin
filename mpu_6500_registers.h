@@ -57,7 +57,7 @@ enum MPU_Reg_Bits {
 	INT_CFG_LATCH_OUT     = (1UL << 5),
 	INT_CFG_PULSE_OUT     = (0UL << 5),
 	INT_CFG_CLR_ANY_READ  = (1UL << 4),
-	INT_CFG_CLR_ON_STS    = (1UL << 4),
+	INT_CFG_CLR_ON_STS    = (0UL << 4),
 	INT_CFG_FSYNC_ACT_LO  = (1UL << 3),
 	INT_CFG_FSYNC_ACT_HI  = (0UL << 3),
 	INT_CFG_INT_ON_FSYNC  = (1UL << 2),
