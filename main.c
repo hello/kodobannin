@@ -274,8 +274,25 @@ services_init() {
 static void
 _imu_process(void* context)
 {
-	uint8_t imu_data[IMU_FIFO_CAPACITY];
-	uint16_t fifo_size = imu_fifo_read(IMU_FIFO_CAPACITY, imu_data);
+	uint16_t fifo_size = imu_fifo_bytes_available();
+
+	uint8_t imu_data[fifo_size];
+	fifo_size = imu_fifo_read(fifo_size, imu_data);
+
+#define PRINT_FIFO_DATA
+
+#ifdef PRINT_FIFO_DATA
+	unsigned i;
+	for(i = 0; i < fifo_size; i += sizeof(int16_t)) {
+		int16_t* p = (int16_t*)(imu_data+i);
+		PRINT_HEX(p, sizeof(int16_t));
+		if(i % 12 == 0) {
+			PRINTS("\r\n");
+		}
+	}
+
+	PRINTS("\r\n");
+#endif
 
     watchdog_pet();
 
