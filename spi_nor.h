@@ -50,6 +50,15 @@ enum NOR_RDSR_Bits {
 	NOR_RDSR_SRWD = (1U << 7)
 };
 
+enum NOR_SCUR_Bits {
+	NOR_SCUR_OTP_Factory_Lock = (1U << 0),
+	NOR_SCUR_OTP_User_Lock    = (1U << 1),
+	NOR_SCUR_Prog_Suspend     = (1U << 2),
+	NOR_SCUR_Erage_Suspend    = (1U << 3).
+	NOR_SCUR_Prog_Fail        = (1U << 5),
+	NOR_SCUR_Erase_Fail       = (1U << 6)
+};
+
 // Chip oriented constants and structures
 #define NOR_CAPACITY_16M     (16 * 1024 * 1024)
 #define NOR_CAPACITY_32M     (32 * 1024 * 1024)
@@ -79,6 +88,9 @@ typedef struct {
 } NOR_Chip_Config;
 
 int32_t spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t mosi, uint32_t sclk, uint32_t nCS);
+int32_t spinor_enter_secure_mode();
+int32_t spinor_exit_secure_mode();
+int32_t spinor_in_secure_mode();
 int32_t spinor_read(uint32_t address, uint32_t len, uint8_t *buffer);
 int32_t spinor_write(uint32_t address, uint32_t len, uint8_t *buffer);
 int32_t spinor_write_page(uint32_t page_address, uint32_t len, uint8_t *buffer);

@@ -17,6 +17,9 @@ static NOR_Chip_Config _nor_configs[] = {
 static const uint32_t _nor_config_count = sizeof(_nor_configs)/sizeof(NOR_Chip_Config);
 static NOR_Chip_Config *_nor_config;
 
+
+static bool _in_secure_mode = false;
+
 static bool
 _read_status(uint8_t *status) {
 	uint8_t data;
@@ -27,6 +30,18 @@ _read_status(uint8_t *status) {
     ret = spi_xfer(&_ctx, 1, &data, 1, status);
 
     return ret == 1;
+}
+
+static bool
+_read_scur(uint8_t *status) {
+	uint8_t data;
+	int32_t ret;
+
+	data = CMD_RDSCUR;
+
+	ret = spi_xfer(&_ctx, 1, &data, 1, status);
+
+	return ret == 1;
 }
 
 static bool
@@ -133,6 +148,37 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 	PRINTS("MiB\r\n");
 
 	return 0;
+}
+
+int32_t
+spinor_enter_secure_mode() {
+	uint8_t data[4] = {CMD_ENSO,0,0,0};
+	int32_t ret;
+
+	ret = spi_xfer(&_ctx, 4, data, 0, NULL);
+
+	if (ret >0)
+		_in_secure_mode = true;
+
+	return ret;
+}
+
+int32_t
+spinor_exit_secure_mode() {
+	uint8_t data[4] = {CMD_EXSO,0,0,0};
+	int32_t ret;
+
+	ret = spi_xfer(&_ctx, 4, data, 0, NULL);
+
+	if (ret >0)
+		_in_secure_mode = false;
+
+	return ret;
+}
+
+int32_t
+spinor_in_secure_mode() {
+	return _in_secure_mode;
 }
 
 int32_t
