@@ -54,7 +54,7 @@ enum NOR_SCUR_Bits {
 	NOR_SCUR_OTP_Factory_Lock = (1U << 0),
 	NOR_SCUR_OTP_User_Lock    = (1U << 1),
 	NOR_SCUR_Prog_Suspend     = (1U << 2),
-	NOR_SCUR_Erage_Suspend    = (1U << 3).
+	NOR_SCUR_Erage_Suspend    = (1U << 3),
 	NOR_SCUR_Prog_Fail        = (1U << 5),
 	NOR_SCUR_Erase_Fail       = (1U << 6)
 };
