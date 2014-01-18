@@ -99,7 +99,7 @@ _find_nor_config(uint8_t mfg_id, uint8_t chip_id) {
 	return NULL;
 }
 
-uint32_t
+int32_t
 spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t mosi, uint32_t sclk, uint32_t nCS) {
 	uint32_t err;
 	uint8_t mfg_id;
