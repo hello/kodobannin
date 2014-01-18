@@ -24,6 +24,7 @@
 #include <hrs.h>
 #include <watchdog.h>
 
+#include "git_description.h"
 #include "hello_dfu.h"
 
 static uint16_t test_size;
@@ -65,36 +66,36 @@ static uint8_t _state;
     err_code = init_spi(SPI_Channel_1, SPI_Mode1, MISO, MOSI, SCLK, GPS_nCS);
     APP_ERROR_CHECK(err_code);
 */
-void
-mode_write_handler(ble_gatts_evt_write_t *event) {
+static void
+_mode_write_handler(ble_gatts_evt_write_t *event) {
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
 
-    DEBUG("mode_write_handler: 0x", state);
+    DEBUG("_mode_write_handler: 0x", state);
 
     switch (state) {
         case Demo_Config_Standby:
-            PRINTS("Enter into sleep mode");
+            PRINTS("Enter into sleep mode\r\n");
             // TODO: cancel timers and quiesce hardware
             //       schedule maintenance wakeup with RTC
             break;
 
-        case Demo_Config_Calibrating:
-            PRINTS("Start HRS Calibration here");
+	case Demo_Config_Calibrating:
+            PRINTS("Start HRS Calibration here\r\n");
             _state = Demo_Config_Calibrating;
             // TODO: notify HRS system here
             break;
 
         case Demo_Config_Enter_DFU:
-            PRINTS("Rebooting into DFU");
+            PRINTS("Rebooting into DFU\r\n");
             // set the trap bit for the bootloader and kick the system
             sd_power_gpregret_set(1);
             NVIC_SystemReset();
             break;
 
         case Demo_Config_ID_Band:
-            PRINTS("ID'ing Band with Vibe");
+            PRINTS("ID'ing Band with Vibe\r\n");
             nrf_gpio_cfg_output(GPIO_3v3_Enable);
             nrf_gpio_pin_set(GPIO_3v3_Enable);
             nrf_gpio_cfg_output(GPIO_VIBE_PWM);
@@ -120,16 +121,17 @@ mode_write_handler(ble_gatts_evt_write_t *event) {
     };
 }
 
-void hrs_send_data(const uint8_t *data, const uint16_t len) {
+static void
+_hrs_send_data(const uint8_t *data, const uint16_t len) {
     uint32_t err;
 
     err = ble_hello_demo_data_send_blocking(data, len);
     APP_ERROR_CHECK(err);
 }
 
-void
-data_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("data_write_handler called\n");
+static void
+_data_write_handler(ble_gatts_evt_write_t *event) {
+    PRINTS("_data_write_handler called\r\n");
 }
 
 #define TEST_START_HRS  0x33
@@ -143,9 +145,9 @@ data_write_handler(ble_gatts_evt_write_t *event) {
 
 static volatile uint8_t do_imu = 0;
 
-void
-cmd_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("cmd_write_handler called\r\n");
+static void
+_cmd_write_handler(ble_gatts_evt_write_t *event) {
+    PRINTS("_cmd_write_handler called\r\n");
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
@@ -194,7 +196,7 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             DEBUG("Starting HRS cal: ", test_size);
 
             hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 1);
-           // hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &hrs_send_data);
+           // hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &_hrs_send_data);
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
@@ -202,10 +204,10 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 
         case TEST_START_IMU:
                 //steal the HRS buffer
-                //buf = get_hrs_buffer();
+                //buf = hrs_get_buffer();
                 do_imu = 1;
                 /*imu_reset_fifo();
-                err = imu_fifo_read(480, buf);
+				  err = imu_fifo_read(480, buf);
                 ble_hello_demo_data_send_blocking(buf, err);
                 */break;
 
@@ -218,11 +220,11 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
             NVIC_SystemReset();
             break;
 
-        case TEST_SEND_DATA:
+	case TEST_SEND_DATA:
             do_imu = 0;
             DEBUG("Sending HRS data: ", test_size);
 
-            err = ble_hello_demo_data_send_blocking(get_hrs_buffer(), test_size);
+            err = ble_hello_demo_data_send_blocking(hrs_get_buffer(), test_size);
             // APP_ERROR_CHECK(err);
 
             // update device state
@@ -248,47 +250,21 @@ cmd_write_handler(ble_gatts_evt_write_t *event) {
 }
 
 void
-start_sampling_on_connect(void) {
-    //TODO: this is the wrong place for this, we must detect when
-    //      someone subscribes to the notification instead
-    /*
-    uint32_t err_code;
-    err_code = app_timer_start(imu_sampler, 250, NULL);
-    APP_ERROR_CHECK(err_code);
-    */
-}
-
-void
-stop_sampling_on_disconnect(void) {
-    uint32_t err;
-    uint16_t len = 1;
-    PRINTS("\r\n*******Stop*******\r\n");
-    do_imu = 0;
-
-    _state = TEST_STATE_IDLE;
-    err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
-    APP_ERROR_CHECK(err);
-
-    //uint32_t err_code;
-    //err_code = app_timer_stop(imu_sampler);
-    //APP_ERROR_CHECK(err_code);
-}
-
-void
 services_init() {
-    uint32_t err_code;
-
     // add hello demo service
     ble_hello_demo_init_t demo_init = {
-        .data_write_handler = &data_write_handler,
-        .mode_write_handler = &mode_write_handler,
-        .cmd_write_handler = &cmd_write_handler,
-        .conn_handler    = &start_sampling_on_connect,
-        .disconn_handler = &stop_sampling_on_disconnect,
+        .conn_handler    = NULL,
+        .disconn_handler = NULL,
     };
 
-    err_code = ble_hello_demo_init(&demo_init);
-    APP_ERROR_CHECK(err_code);
+    ble_hello_demo_init(&demo_init);
+
+	ble_char_notify_add(BLE_UUID_DATA_CHAR);
+	ble_char_write_add(BLE_UUID_CONF_CHAR, _mode_write_handler, 4);
+	ble_char_write_add(BLE_UUID_CMD_CHAR, _cmd_write_handler, 10);
+	ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
+					  (uint8_t* const)GIT_DESCRIPTION,
+					  sizeof(GIT_DESCRIPTION));
 }
 
 #define STRIDE 32
@@ -305,11 +281,11 @@ print_page(uint8_t *ptr, uint32_t len)
 void
 _start()
 {
-	uint32_t err_code;
+	uint32_t err;
 	watchdog_init(10, 1);
-    uint8_t sample[20];
+    uint8_t sample[12];
 
-    memset(sample, 0, 20);
+    memset(sample, 0, sizeof(sample)/sizeof(sample[0]));
 
     //_state = Demo_Config_Standby;
     _state = TEST_STATE_IDLE;
@@ -408,8 +384,8 @@ _start()
         }
         //read = imu_fifo_read(6, sample);
         //if (read > 0) {
-            PRINT_HEX(diff, read);
-            PRINTS("\r\n");
+		PRINT_HEX(diff, read);
+		PRINTS("\r\n");
         //}
         nrf_delay_ms(5);
     }
@@ -427,6 +403,10 @@ _start()
     err_code = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err_code);
 
+    //imu_selftest(SPI_Channel_0);
+
+	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
+
     // loop on BLE events FOREVER
     while(1) {
     	watchdog_pet();
@@ -438,8 +418,8 @@ _start()
             ble_hello_demo_data_send_blocking(sample, 12);
         } else {
             // Switch to a low power state until an event is available for the application
-            err_code = sd_app_event_wait();
-            APP_ERROR_CHECK(err_code);
+            err = sd_app_event_wait();
+            APP_ERROR_CHECK(err);
         }
     }
 

@@ -637,8 +637,6 @@ static void services_init(void)
 }
 
 
-extern void ble_gap_params_init(void);
-
 uint32_t dfu_transport_update_start()
 {
     uint32_t err_code;
@@ -652,7 +650,18 @@ uint32_t dfu_transport_update_start()
 						   ble_evt_dispatch,
 						   true);
 
-    ble_gap_params_init();
+#define DFU_DEVICE_NAME_SUFFIX " (DFU)"
+
+	const unsigned base_device_name_length = sizeof(BLE_DEVICE_NAME)-1;
+	char device_name[BLE_GAP_DEVNAME_MAX_LEN];
+    memcpy(device_name,
+           BLE_DEVICE_NAME,
+           base_device_name_length);
+	memcpy(device_name+base_device_name_length,
+		   DFU_DEVICE_NAME_SUFFIX,
+		   sizeof(DFU_DEVICE_NAME_SUFFIX));
+
+    ble_gap_params_init(device_name);
     services_init();
     advertising_init();
     ble_conn_params_init(NULL);

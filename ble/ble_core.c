@@ -17,8 +17,10 @@
 #include <ble_flash.h>
 #include <ble_conn_params.h>
 
+#include "ble_core.h"
+#include "util.h"
+
 extern void ble_bond_manager_init(void);
-extern void ble_gap_params_init(void);
 extern void ble_services_init(void);
 
 extern void services_init();
@@ -173,7 +175,7 @@ ble_gap_sec_params_init(void)
  *          parameters of the device. It also sets the permissions and appearance.
  */
 void
-ble_gap_params_init(void)
+ble_gap_params_init(char* device_name)
 {
 	uint32_t                err_code;
 	ble_gap_conn_params_t   gap_conn_params;
@@ -181,7 +183,7 @@ ble_gap_params_init(void)
 
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
-	err_code = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+	err_code = sd_ble_gap_device_name_set(&sec_mode, (uint8_t*)device_name, strlen(device_name));
 	APP_ERROR_CHECK(err_code);
 
 /*
@@ -210,7 +212,7 @@ ble_init()
 				false);
 
 	ble_bond_manager_init();
-	ble_gap_params_init();
+	ble_gap_params_init(BLE_DEVICE_NAME);
 	services_init();  // Must come before ble_advertising_init()
 	ble_advertising_init();
 	ble_services_init();

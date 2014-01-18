@@ -13,6 +13,7 @@
 #define BLE_UUID_DATA_CHAR      0xDA1A
 #define BLE_UUID_CONF_CHAR      0xC0FF
 #define BLE_UUID_CMD_CHAR       0xBEEF
+#define BLE_UUID_GIT_DESCRIPTION_CHAR 0x617D
 
 typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
 typedef void (*ble_hello_demo_connect_handler)(void);
@@ -49,10 +50,14 @@ typedef struct
  *
  * @return      NRF_SUCCESS on successful initialization of service.
  */
-uint32_t ble_hello_demo_init(const ble_hello_demo_init_t * p_init);
+void ble_hello_demo_init(const ble_hello_demo_init_t * p_init);
 
 void ble_hello_demo_on_ble_evt(ble_evt_t *event);
 uint16_t ble_hello_demo_data_send(const uint8_t * data, const uint16_t data_len);
 uint32_t ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len);
 
 uint16_t ble_hello_demo_get_handle();
+
+void ble_char_notify_add(uint16_t uuid);
+void ble_char_write_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size);
+void ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size);

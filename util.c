@@ -1,10 +1,14 @@
+// vi:sw=4:ts=4
+
 #include <app_error.h>
+#include <app_timer.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <simple_uart.h>
 
 #include "device_params.h"
 #include "spi.h"
+#include "util.h"
 
 void *
 memcpy(void *s1, const void *s2, size_t n)
@@ -24,11 +28,14 @@ memcpy(void *s1, const void *s2, size_t n)
 int
 memcmp(const void *s1, const void *s2, size_t n)
 {
+	const char* a = s1;
+	const char* b = s2;
+
 	if (n == 0)
 		return 0;
 
 	while (n-- >0)
-		if (s1++ != s2++)
+		if(*a++ != *b++)
 			return 1;
 
 	return 0;
@@ -77,3 +84,14 @@ binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
 	}
 }
 #endif
+
+void
+debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks)
+{
+	uint32_t diff_ticks;
+
+	uint32_t err = app_timer_cnt_diff_compute(stop_ticks, start_ticks, &diff_ticks);
+	APP_ERROR_CHECK(err);
+
+	DEBUG(message, diff_ticks);
+}
