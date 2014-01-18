@@ -307,52 +307,52 @@ _start()
     nrf_gpio_cfg_output(GPS_nCS);
     nrf_gpio_pin_set(GPS_nCS);
 
-    err_code = spinor_init(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
-    APP_ERROR_CHECK(err_code);
+    err = spinor_init(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
+    APP_ERROR_CHECK(err);
     PRINTS("SPI NOR configured\r\n");
 
     PRINTS("SPI NOR Data Read: 0x");
-    err_code = spinor_read(0, 20, sample);
-    PRINT_HEX(&err_code, 4);
+    err = spinor_read(0, 20, sample);
+    PRINT_HEX(&err, 4);
     PRINTS("\r\n");
-    APP_ERROR_CHECK(err_code <= 0);
+    APP_ERROR_CHECK(err <= 0);
     PRINT_HEX(sample, 20);
     PRINTS("\r\n");
 
     PRINTS("SPI NOR Block Erase: 0x");
-    err_code = spinor_block_erase(0);
-    PRINT_HEX(&err_code, 4);
+    err = spinor_block_erase(0);
+    PRINT_HEX(&err, 4);
     PRINTS("\r\n");
-    APP_ERROR_CHECK(err_code <= 0);
+    APP_ERROR_CHECK(err <= 0);
 
     PRINTS("SPI NOR Data Read: 0x");
-    err_code = spinor_read(0, 20, sample);
-    PRINT_HEX(&err_code, 4);
+    err = spinor_read(0, 20, sample);
+    PRINT_HEX(&err, 4);
     PRINTS("\r\n");
-    APP_ERROR_CHECK(err_code <= 0);
+    APP_ERROR_CHECK(err <= 0);
     PRINT_HEX(sample, 20);
     PRINTS("\r\n");
 
     PRINTS("SPI NOR Page Write: 0x");
-    err_code = spinor_write(512, 512, page_data);
-    PRINT_HEX(&err_code, 4);
+    err = spinor_write(512, 512, page_data);
+    PRINT_HEX(&err, 4);
     PRINTS("\r\n");
 
     spinor_wait_completion();
 
     PRINTS("SPI NOR Data Read: 0x");
-    err_code = spinor_read(0, 512, page_data);
-    PRINT_HEX(&err_code, 4);
+    err = spinor_read(0, 512, page_data);
+    PRINT_HEX(&err, 4);
     PRINTS("\r\n");
-    APP_ERROR_CHECK(err_code <= 0);
+    APP_ERROR_CHECK(err <= 0);
     print_page(page_data, 512);
     PRINTS("\r\n");
 
     PRINTS("SPI NOR Data Read: 0x");
-    err_code = spinor_read(512, 512, page_data);
-    PRINT_HEX(&err_code, 4);
+    err = spinor_read(512, 512, page_data);
+    PRINT_HEX(&err, 4);
     PRINTS("\r\n");
-    APP_ERROR_CHECK(err_code <= 0);
+    APP_ERROR_CHECK(err <= 0);
     print_page(page_data, 512);
     PRINTS("\r\n");
 
@@ -400,8 +400,8 @@ _start()
 	ble_advertising_start();
 
     // init imu SPI channel and interface
-    err_code = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err_code);
+    err = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err);
 
     //imu_selftest(SPI_Channel_0);
 
