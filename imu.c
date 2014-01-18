@@ -18,29 +18,28 @@
 #define IMU_DEFAULT_SAMPLE_RATE 25
 #define IMU_DEFAULT_SENSORS (IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO)
 
-static enum SPI_Channel chan = SPI_Channel_Invalid;
+static SPI_Context _ctx;
 
 static enum imu_sensor_set _sensors;
 
 static inline void
 _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 {
-	uint8_t buf[2];
-	buf[0] = SPI_Read(register_address);
+	uint8_t buf[2] = { SPI_Read(register_address), 0};
+	int32_t ret;
 
-	bool success = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
-	APP_ASSERT(success);
-
-	*out_value = buf[1];
+	ret  = spi_xfer(&_ctx, 2, buf, 1, out_value);
+	APP_ASSERT(ret == 1);
 }
 
 static inline void
 _register_write(MPU_Register_t register_address, uint8_t value)
 {
 	uint8_t buf[2] = { SPI_Write(register_address), value };
+	int32_t ret;
 
-	bool success = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
-	APP_ASSERT(success);
+	ret = spi_xfer(&_ctx, 2, buf, 0, NULL);
+	APP_ASSERT(ret == 1);
 }
 
 uint16_t
@@ -123,6 +122,7 @@ imu_get_sensors()
 uint16_t
 imu_fifo_read(uint16_t count, uint8_t *buf) {
 	uint16_t avail;
+	uint8_t data[1] = {SPI_Read(MPU_REG_FIFO)};
 
 	avail = imu_fifo_bytes_available();
 
@@ -132,7 +132,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 	if (count == 0)
 		return 0;
 
-	count = spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
+	count = spi_xfer(&_ctx, 1, data, count, buf);
 
 	// Note: You _must_ read the register 58 (Interrupt Status)
 	// after reading from the FIFO, otherwise the FIFO will not be
@@ -418,9 +418,15 @@ static void _low_power_setup()
     _register_write(MPU_REG_INT_EN, INT_EN_WOM);
 }
 
-void
-imu_init(enum SPI_Channel channel) {
-	chan = channel;
+int32_t
+imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS) {
+ 	int32_t err;
+
+	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_ctx);
+	if (err != 0) {
+		PRINTS("Could not configure SPI bus for IMU\r\n"); 
+		return err;
+	}
 
 	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
 	// page 43
@@ -487,4 +493,6 @@ imu_init(enum SPI_Channel channel) {
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
 
 	imu_set_sample_rate(IMU_DEFAULT_SAMPLE_RATE);
+
+	return err;
 }

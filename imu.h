@@ -10,7 +10,7 @@ enum imu_sensor_set {
     IMU_SENSORS_GYRO = 2,
 };
 
-uint32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS);
+int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS);
 
 uint16_t imu_accel_reg_read(uint8_t *buf);
 uint16_t imu_read_regs(uint8_t *buf);
