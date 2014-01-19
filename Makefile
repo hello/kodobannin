@@ -182,7 +182,7 @@ reset:
 
 # git description
 
-GIT_DESCRIPTION = $(shell git describe --long --dirty --tags)
+GIT_DESCRIPTION = $(shell git describe --all --long --dirty)
 GIT_DESCRIPTION_C_CONTENTS = const char* const GIT_DESCRIPTION = "$(GIT_DESCRIPTION)";
 ifneq ($(GIT_DESCRIPTION_C_CONTENTS), $(shell cat $(BUILD_DIR)/git_description.c 2> /dev/null))
 .PHONY: git_description.c
