@@ -1,6 +1,6 @@
 // vi:sw=4:ts=4
 
-#include <spi.h>
+#include <drivers/spi.h>
 #include <stdint.h>
 #include <nrf51.h>
 #include <nrf_gpio.h>

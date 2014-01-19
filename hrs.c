@@ -5,12 +5,12 @@
 #include <nrf.h>
 #include <nrf_delay.h>
 #include <nrf_gpio.h>
-#include <pwm.h>
+#include <drivers/pwm.h>
 #include <stdint.h>
 #include <string.h>
 #include <util.h>
 #include <nrf_soc.h>
-#include <watchdog.h>
+#include <drivers/watchdog.h>
 
 typedef void(*hrs_adc_callback)(uint8_t);
 

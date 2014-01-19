@@ -24,15 +24,13 @@ NRFREV = NRF51822_QFAA_CA
 SRCS = \
 	error_handler.c \
 	sha1.c \
-	spi.c \
 	util.c \
-	watchdog.c \
-	norflash.c \
 	$(BUILD_DIR)/git_description.c \
+	$(wildcard drivers/*.c) \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
-	./gcc_startup_nrf51.s \
+	startup/gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
@@ -52,9 +50,7 @@ APP_SRCS = \
 	$(SRCS) \
 	hrs.c \
 	imu.c \
-	pwm.c \
 	main.c \
-	spi_nor.c \
 	norflash.c \
 	$(NULL)
 
@@ -133,7 +129,7 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -fshort-enums -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
-LDFLAGS := -L$(LIB) -lgcc --gc-sections
+LDFLAGS := -L$(LIB) -lgcc --gc-sections -Lstartup
 
 ifneq ($(BLE_DEVICE_NAME),)
 CFLAGS += -DBLE_DEVICE_NAME="\"$(BLE_DEVICE_NAME)\""
@@ -261,9 +257,9 @@ $(BUILD_DIR)/%.o: %.s
 	$(info [AS] $(notdir $<))
 	@$(AS) $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.elf: %.ld | $(dir $@)
+$(BUILD_DIR)/%.elf: startup/%.ld | $(dir $@)
 	$(info [LD] $@)
-	@$(LD) -o $@ $(filter %.o, $^) -T$< $(LDFLAGS)
+	@$(LD) $(LDFLAGS) -o $@ $(filter %.o, $^) -T$< $(LDFLAGS)
 
 %.bin: %.elf
 	$(info [BIN] $@)

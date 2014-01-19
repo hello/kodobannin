@@ -15,14 +15,14 @@
 #include <ble_stack_handler.h>
 #include <simple_uart.h>
 #include <string.h>
-#include <spi.h>
-#include <spi_nor.h>
+#include <drivers/spi.h>
+#include <drivers/spi_nor.h>
 #include <util.h>
 #include <imu.h>
 #include <ble_hello_demo.h>
-#include <pwm.h>
+#include <drivers/pwm.h>
 #include <hrs.h>
-#include <watchdog.h>
+#include <drivers/watchdog.h>
 
 #include "git_description.h"
 #include "hello_dfu.h"

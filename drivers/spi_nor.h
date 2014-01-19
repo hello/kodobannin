@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spi.h>
+#include <drivers/spi.h>
 
 enum SPI_NOR_Commands {
 	CMD_NOP     = 0x00,

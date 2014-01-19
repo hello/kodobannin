@@ -7,7 +7,6 @@
 #include <simple_uart.h>
 
 #include "device_params.h"
-#include "spi.h"
 #include "util.h"
 
 void *

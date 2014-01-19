@@ -1,7 +1,7 @@
 // vi:sw=4:ts=4
 
-#include <spi.h>
-#include <spi_nor.h>
+#include <drivers/spi.h>
+#include <drivers/spi_nor.h>
 #include <stdlib.h>
 #include <util.h>
 #include <app_error.h>

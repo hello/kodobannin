@@ -1,7 +1,7 @@
 // vi:sw=4:ts=4
 
 #include <app_timer.h>
-#include <spi.h>
+#include <drivers/spi.h>
 #include <simple_uart.h>
 #include <util.h>
 #include <device_params.h>
@@ -11,7 +11,7 @@
 
 #include "imu.h"
 #include "mpu_6500_registers.h"
-#include "watchdog.h"
+#include <drivers/watchdog.h>
 
 #define BUF_SIZE 4
 
