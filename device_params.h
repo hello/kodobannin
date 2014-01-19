@@ -1,22 +1,15 @@
+// vi:sw=4:ts=4
+
 #pragma once
+
 #include <nrf51.h>
 #include <nrf51_bitfields.h>
 
 /*
  * Board GPIO defines
  */
-
-// For EVT-2
-#define GPIO_3v3_Enable    13
-#define GPIO_HRS_PWM_G1   31
-#define GPIO_HRS_PWM_G2     25
-#define GPIO_VIBE_PWM       0
-
-#define GPIO_1   8
-#define GPIO_2   5
-#define GPIO_3   3
-#define GPIO_4   1
-#define GPIO_5  30
+#define GPIO_3v3_Enable   13
+#define GPIO_VIBE_PWM      0
 
 #define IMU_SPI_MOSI       14
 #define IMU_SPI_MISO       3 // was 22 in EVT2
@@ -24,18 +17,57 @@
 #define IMU_SPI_nCS        17
 #define IMU_INT             2
 
-typedef enum {
-	SERIAL_TX_PIN = 1,
-	SERIAL_RX_PIN = 8,
-	SERIAL_CTS_PIN = 0,
-	SERIAL_RTS_PIN = 0,
-} serial_pin_t;
-
 #define MOSI         7
 #define MISO        11
 #define SCLK        15
 #define GPS_nCS     12
 #define FLASH_nCS   16
+
+#if 0
+// For EVT-3
+#define GPIO_HRS_PWM_G1   21
+#define GPIO_HRS_PWM_G2   23
+
+#define IMU_SPI_MOSI      14
+#define IMU_SPI_MISO       3
+#define IMU_SPI_SCLK      19
+#define IMU_SPI_nCS       17
+#define IMU_INT            2
+
+#define GPS_ON_OFF         7
+
+#define RTC_SDA           28
+#define RTC_SCL           24
+#define RTC_INT           29
+
+#define HRS_SENSE_FILT     1
+#define HRS_SENSE_RAW     26
+
+#define HRS_RAW_ADC       ADC_CONFIG_PSEL_AnalogInput0
+#define HRS_FILT_ADC      ADC_CONFIG_PSEL_AnalogInput2
+#define HRS_ADC HRS_FILT_ADC
+
+#define SERIAL_TX_PIN     20
+#define SERIAL_RX_PIN      5
+#define SERIAL_CTS_PIN     0
+#define SERIAL_RTS_PIN     0
+#else
+
+// For EVT-2
+#define GPIO_HRS_PWM_G1   31
+#define GPIO_HRS_PWM_G2   25
+
+#define GPIO_1   8
+#define GPIO_2   5
+#define GPIO_3   3
+#define GPIO_4   1
+#define GPIO_5  30
+
+#define SERIAL_TX_PIN   1
+#define SERIAL_RX_PIN   8
+#define SERIAL_CTS_PIN  0
+#define SERIAL_RTS_PIN  0
+
 #define GPS_ON_OFF   9
 
 #define RTC_SDA     23
@@ -47,12 +79,7 @@ typedef enum {
 
 #define nBATT_CHG   21
 
-// For PCA-1000 v2
-/*
-#define ASSERT_LED_PIN_NO      21
-#define CONNECTED_LED_PIN_NO   22
-#define ADVERTISING_LED_PIN_NO 23
-*/
+#endif
 
 /*
  * Timer config
