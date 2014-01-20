@@ -97,3 +97,5 @@ int32_t spinor_write_page(uint32_t page_address, uint32_t len, uint8_t *buffer);
 int32_t spinor_chip_erase();
 int32_t spinor_block_erase(uint16_t block);
 void    spinor_wait_completion();
+NOR_Chip_Config *spinor_get_chip_config();
+

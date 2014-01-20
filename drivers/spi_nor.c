@@ -15,7 +15,7 @@ static NOR_Chip_Config _nor_configs[] = {
 };
 
 static const uint32_t _nor_config_count = sizeof(_nor_configs)/sizeof(NOR_Chip_Config);
-static NOR_Chip_Config *_nor_config;
+static NOR_Chip_Config *_nor_config = NULL;
 
 
 static bool _in_secure_mode = false;
@@ -55,7 +55,7 @@ _read_id(uint8_t *mfg_id, uint8_t *chip_id) {
 	data[3] = 0;
 
 	ret = spi_xfer(&_ctx, 4, data, 2, data);
-
+	DEBUG("IDS: ", *data);
     *mfg_id  = data[0];
     *chip_id = data[1];
 
@@ -73,7 +73,7 @@ _RDSR_wait() {
 		}
 	} while ((data & NOR_RDSR_WIP) && ++count < 0xFFFF);
 
-	DEBUG("RDSR: ", data);
+	//DEBUG("RDSR: ", data);
 	DEBUG("Count: ", count);
 
 	return data;
@@ -134,6 +134,8 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 	_nor_config = _find_nor_config(mfg_id, chip_id);
 	if (!_nor_config) {
 		PRINTS("Could not find NOR chip config\r\n");
+		DEBUG("MFG: ", mfg_id);
+		DEBUG("CHIP: ", chip_id);
 		return -4;
 	}
 
@@ -315,4 +317,9 @@ spinor_wait_completion() {
 		// might want a sleep here
 	} while (status & NOR_RDSR_WIP);
 	DEBUG("Completion spun: 0x", count);
+}
+
+NOR_Chip_Config *
+spinor_get_chip_config() {
+	return _nor_config;
 }
