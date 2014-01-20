@@ -32,6 +32,7 @@ static uint16_t test_size;
 
 void
 test_3v3() {
+	PRINTS("BLINKING LEDS AND VIBE\r\n");
     nrf_gpio_cfg_output(GPIO_3v3_Enable);
     nrf_gpio_pin_set(GPIO_3v3_Enable);
 
@@ -43,11 +44,14 @@ test_3v3() {
         nrf_gpio_pin_clear(GPIO_HRS_PWM_G2);
         nrf_gpio_pin_set  (GPIO_HRS_PWM_G1);
         nrf_gpio_pin_set  (GPIO_VIBE_PWM);
+		watchdog_pet();
         nrf_delay_ms(100);
         nrf_gpio_pin_clear(GPIO_VIBE_PWM);
+		watchdog_pet();
         nrf_delay_ms(390);
         nrf_gpio_pin_clear(GPIO_HRS_PWM_G1);
         nrf_gpio_pin_set  (GPIO_HRS_PWM_G2);
+		watchdog_pet();
         nrf_delay_ms(500);
     }
 }
@@ -292,9 +296,47 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
-    //pwm_test();
+	PRINTS("Hello Band EVT3 Factory Init Mode\r\n");
+	PRINTS("=================================\r\n\r\n");
+#if 0
+	uint8_t hwid = (NRF_FICR->CONFIGID & FICR_CONFIGID_HWID_Msk) >> FICR_CONFIGID_HWID_Pos;
+	DEBUG("nRF51822 HW ID:        0x", hwid);
+	
+	PRINTS("nRF51822 Device ID:   0x");
+	PRINT_HEX((uint8_t *)NRF_FICR->DEVICEID, 8);
+	PRINTS("\r\n");
 
-#if 1
+	PRINTS("nRF51822 Device Addr: 0x");
+	PRINT_HEX((uint8_t*)NRF_FICR->DEVICEADDR, 8);
+	PRINTS("\r\n");
+
+	PRINTS("SPI NOR Init: ");
+	err = spinor_init(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
+	if (err != 0) {
+		DEBUG("FAIL :", err);
+		goto init_fail;
+	}
+	PRINTS("PASS\r\n");
+
+	NOR_Chip_Config *conf = spinor_get_chip_config();
+
+	if (!conf) {
+		PRINTS("ERROR: could not get SPINOR chip config\r\n");
+		goto init_fail;
+	}
+	DEBUG("SPI NOR Vendor: 0x", conf->vendor_id);
+	DEBUG("SPI NOR Chip:   0x", conf->chip_id);
+	DEBUG("SPI NOR Size:   0x", conf->capacity);
+//	DEBUG("SPI NOR Serial: 0x", );
+
+init_fail:
+	while(1) {
+		__WFI();
+	}
+#endif
+    //pwm_test();
+	//test_3v3();
+#if 0
     uint8_t page_data[512];
 	memset(page_data, 0, 512);
     memset(page_data, 0xEE, 256);
@@ -361,9 +403,9 @@ _start()
     }
 #endif
     // IMU standalone test code
-#if 0
-    err_code = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err_code);
+#if 1
+    err = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+    APP_ERROR_CHECK(err);
 
     // for do_imu code
     int16_t *values = (int16_t *)sample;
@@ -400,13 +442,14 @@ _start()
 	ble_advertising_start();
 
     // init imu SPI channel and interface
+#if 0
     err = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err);
 
     //imu_selftest(SPI_Channel_0);
 
 	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
-
+#endif
     // loop on BLE events FOREVER
     while(1) {
     	watchdog_pet();
@@ -414,8 +457,8 @@ _start()
         if (do_imu) {
             // sample IMU and queue up to send over BLE
             //imu_accel_reg_read(sample);
-            imu_read_regs(sample);
-            ble_hello_demo_data_send_blocking(sample, 12);
+            //imu_read_regs(sample);
+            //ble_hello_demo_data_send_blocking(sample, 12);
         } else {
             // Switch to a low power state until an event is available for the application
             err = sd_app_event_wait();
