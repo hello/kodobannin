@@ -11,19 +11,20 @@
 #define GPIO_3v3_Enable   13
 #define GPIO_VIBE_PWM      0
 
+/*
 #define IMU_SPI_MOSI       14
 #define IMU_SPI_MISO       3 // was 22 in EVT2
 #define IMU_SPI_SCLK       19
 #define IMU_SPI_nCS        17
 #define IMU_INT             2
-
-#define MOSI         7
+*/
+#define MOSI         8
 #define MISO        11
 #define SCLK        15
 #define GPS_nCS     12
 #define FLASH_nCS   16
 
-#if 0
+#if 1
 // For EVT-3
 #define GPIO_HRS_PWM_G1   21
 #define GPIO_HRS_PWM_G2   23
@@ -51,6 +52,7 @@
 #define SERIAL_RX_PIN      5
 #define SERIAL_CTS_PIN     0
 #define SERIAL_RTS_PIN     0
+
 #else
 
 // For EVT-2
