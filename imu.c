@@ -29,7 +29,8 @@ _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 	int32_t ret;
 
 	ret  = spi_xfer(&_ctx, 2, buf, 1, out_value);
-	APP_ASSERT(ret == 1);
+	DEBUG("RREAD: ", *out_value);
+	APP_ERROR_CHECK_BOOL(ret == 1);
 }
 
 static inline void
@@ -39,7 +40,7 @@ _register_write(MPU_Register_t register_address, uint8_t value)
 	int32_t ret;
 
 	ret = spi_xfer(&_ctx, 2, buf, 0, NULL);
-	APP_ASSERT(ret == 1);
+	APP_ERROR_CHECK_BOOL(ret == 2);
 }
 
 uint16_t
