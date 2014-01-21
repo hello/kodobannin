@@ -28,8 +28,7 @@ _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 	uint8_t buf[2] = { SPI_Read(register_address), 0};
 	int32_t ret;
 
-	ret  = spi_xfer(&_ctx, 2, buf, 1, out_value);
-	DEBUG("RREAD: ", *out_value);
+	ret  = spi_xfer(&_ctx, 1, buf, 1, out_value);
 	APP_ERROR_CHECK_BOOL(ret == 1);
 }
 
@@ -433,12 +432,12 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
 	// page 43
 
 	// Reset chip
-	PRINTS("Chip reset\r\n");
+	//PRINTS("Chip reset\r\n");
 	_register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
 
 	nrf_delay_ms(100);
 
-	PRINTS("Chip wakeup\r\n");
+	//PRINTS("Chip wakeup\r\n");
 	_register_write(MPU_REG_PWR_MGMT_1, 0);
 
 	// Check for valid Chip ID
