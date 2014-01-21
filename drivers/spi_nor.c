@@ -157,7 +157,7 @@ spinor_enter_secure_mode() {
 	uint8_t data[4] = {CMD_ENSO,0,0,0};
 	int32_t ret;
 
-	ret = spi_xfer(&_ctx, 4, data, 0, NULL);
+	ret = spi_xfer(&_ctx, 1, data, 0, NULL);
 
 	if (ret >0)
 		_in_secure_mode = true;
@@ -170,7 +170,7 @@ spinor_exit_secure_mode() {
 	uint8_t data[4] = {CMD_EXSO,0,0,0};
 	int32_t ret;
 
-	ret = spi_xfer(&_ctx, 4, data, 0, NULL);
+	ret = spi_xfer(&_ctx, 1, data, 0, NULL);
 
 	if (ret >0)
 		_in_secure_mode = false;
