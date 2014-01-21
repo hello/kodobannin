@@ -55,7 +55,7 @@ _read_id(uint8_t *mfg_id, uint8_t *chip_id) {
 	data[3] = 0;
 
 	ret = spi_xfer(&_ctx, 4, data, 2, data);
-	DEBUG("IDS: ", *data);
+//	DEBUG("IDS: ", *data);
     *mfg_id  = data[0];
     *chip_id = data[1];
 
@@ -134,11 +134,11 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 	_nor_config = _find_nor_config(mfg_id, chip_id);
 	if (!_nor_config) {
 		PRINTS("Could not find NOR chip config\r\n");
-		DEBUG("MFG: ", mfg_id);
-		DEBUG("CHIP: ", chip_id);
+		//DEBUG("MFG: ", mfg_id);
+		//DEBUG("CHIP: ", chip_id);
 		return -4;
 	}
-
+/*
 	PRINTS("NOR MFG/CHIP ID: ");
 	PRINT_HEX(&_nor_config->vendor_id, 1);
 	PRINTS("/ ");
@@ -148,7 +148,7 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 	uint8_t temp = (uint8_t)(_nor_config->capacity / 1024 / 1024);
 	PRINT_HEX(&temp, 1);
 	PRINTS("MiB\r\n");
-
+*/
 	return 0;
 }
 
