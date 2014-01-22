@@ -34,6 +34,13 @@
 #define RTC_SCL           24
 #define RTC_INT           29
 
+#define GAUGE_SDA         30
+#define GAUGE_SCL         25
+#define GAUGE_INT         31
+
+#define STATUS0            4
+#define STATUS1            6
+
 #define HRS_SENSE_FILT     1
 #define HRS_SENSE_RAW     26
 
@@ -45,6 +52,8 @@
 #define SERIAL_RX_PIN      5
 #define SERIAL_CTS_PIN     0
 #define SERIAL_RTS_PIN     0
+
+#define nBATT_CHG   22
 
 #else
 
