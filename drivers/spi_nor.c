@@ -74,7 +74,7 @@ _RDSR_wait() {
 	} while ((data & NOR_RDSR_WIP) && ++count < 0xFFFF);
 
 	//DEBUG("RDSR: ", data);
-	DEBUG("Count: ", count);
+	//DEBUG("Count: ", count);
 
 	return data;
 }
@@ -122,18 +122,18 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 
 	err = spi_init(chan, mode, miso, mosi, sclk, nCS, &_ctx);
 	if (err != 0) {
-		PRINTS("Could not configure SPI bus for NOR\r\n");
+		//PRINTS("Could not configure SPI bus for NOR\r\n");
 		return err;
 	}
 
 	if (!_read_id(&mfg_id, &chip_id)) {
-		PRINTS("Could not query NOR identity\r\n");
+		//PRINTS("Could not query NOR identity\r\n");
 		return -3;
 	}
 
 	_nor_config = _find_nor_config(mfg_id, chip_id);
 	if (!_nor_config) {
-		PRINTS("Could not find NOR chip config\r\n");
+		//PRINTS("Could not find NOR chip config\r\n");
 		//DEBUG("MFG: ", mfg_id);
 		//DEBUG("CHIP: ", chip_id);
 		return -4;
@@ -218,12 +218,12 @@ spinor_write_page(uint32_t address, uint32_t len, uint8_t *buffer) {
 	data[2] = (address >>  8) & 0xFF;
 	data[3] = address & 0xFF;
 
-	DEBUG("Writing n bytes: 0x", len);
-	PRINT_HEX(buffer, len);
-	PRINTS("\r\n");
+	//DEBUG("Writing n bytes: 0x", len);
+	//PRINT_HEX(buffer, len);
+	//PRINTS("\r\n");
 
 	err = spi_command(&_ctx, 4, data, len, buffer, 0, NULL);
-	DEBUG("Wrote ", err);
+	//DEBUG("Wrote ", err);
 
 	if (err < 0)
 		return err;
