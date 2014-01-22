@@ -283,24 +283,40 @@ print_page(uint8_t *ptr, uint32_t len)
 }
 
 void
-_start()
-{
-	uint32_t err;
-	watchdog_init(10, 1);
-    uint8_t sample[12];
+spinor_dump_otp() {
+	uint32_t i;
+	uint8_t nor_serial[32];
 
-    memset(sample, 0, sizeof(sample)/sizeof(sample[0]));
+	spinor_enter_secure_mode();
+	for (i = 0; i < 128; i++) {
+		spinor_read(i*32, 32, nor_serial);
+		serial_print_hex(nor_serial, 32);
+		PRINTS("\r\n");
+	}
+	spinor_exit_secure_mode();
+}
 
-    //_state = Demo_Config_Standby;
-    _state = TEST_STATE_IDLE;
+void
+get_random_bytes(uint8_t *buf, uint32_t len) {
+	uint32_t i;
 
-    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
+	NRF_RNG->CONFIG = 1; //better quality random numbers
+	for (i = 0; i < len; i++) {
+		NRF_RNG->EVENTS_VALRDY = 0;
+		NRF_RNG->TASKS_START = 1;
+		while(NRF_RNG->EVENTS_VALRDY==0) {}
+		buf[i] = (uint8_t)NRF_RNG->VALUE;
+	}
+}
+
+bool factory_test() {
+	int32_t err;
+	uint32_t i;
 
 	PRINTS("Hello Band EVT3 Factory Init Mode\r\n");
 	PRINTS("=================================\r\n\r\n");
-#if 0
 	uint8_t hwid = (NRF_FICR->CONFIGID & FICR_CONFIGID_HWID_Msk) >> FICR_CONFIGID_HWID_Pos;
-	DEBUG("nRF51822 HW ID:        0x", hwid);
+	DEBUG("nRF51822 HW ID:       0x", hwid);
 	
 	PRINTS("nRF51822 Device ID:   0x");
 	PRINT_HEX((uint8_t *)NRF_FICR->DEVICEID, 8);
@@ -310,11 +326,13 @@ _start()
 	PRINT_HEX((uint8_t*)NRF_FICR->DEVICEADDR, 8);
 	PRINTS("\r\n");
 
-	PRINTS("SPI NOR Init: ");
+	PRINTS("\r\n");
+
+	PRINTS("SPI NOR Init:   ");
 	err = spinor_init(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
 	if (err != 0) {
 		DEBUG("FAIL :", err);
-		goto init_fail;
+		goto skip_nor;
 	}
 	PRINTS("PASS\r\n");
 
@@ -322,18 +340,115 @@ _start()
 
 	if (!conf) {
 		PRINTS("ERROR: could not get SPINOR chip config\r\n");
-		goto init_fail;
+		goto skip_nor;
 	}
 	DEBUG("SPI NOR Vendor: 0x", conf->vendor_id);
 	DEBUG("SPI NOR Chip:   0x", conf->chip_id);
-	DEBUG("SPI NOR Size:   0x", conf->capacity);
-//	DEBUG("SPI NOR Serial: 0x", );
+	uint32_t size_mb = conf->capacity / 1024 / 1024;
+	DEBUG("SPI NOR Size:   0x", size_mb);
+	uint8_t nor_serial[32];
+/*
+	memset(nor_serial, 0xAA, 16);
+
+	err = spinor_write(0, 16, nor_serial);
+
+    PRINTS("SPI NOR Data Read: 0x");
+    err = spinor_read(0, 20, nor_serial);
+    PRINT_HEX(&err, 4);
+    PRINTS("\r\n");
+    APP_ERROR_CHECK(err <= 0);
+    PRINT_HEX(nor_serial, 20);
+    PRINTS("\r\n");
+*/
+	PRINTS("SPI NOR Serial: ");
+	err = spinor_enter_secure_mode();
+	if (err != 1) {
+		DEBUG("FAIL1: ", err);
+		goto init_fail;
+	}
+	err = spinor_read(0, 16, nor_serial);
+	if (err != 16) {
+		DEBUG("FAIL2: ", err);
+		goto init_fail;
+	}
+	bool serial_set = true;
+	for (i = 0; i < 16; i++) {
+		if (nor_serial[i] == 0xFF) {
+			serial_set = false;
+			break;
+		}
+	}
+	if (serial_set) {
+		PRINT_HEX(nor_serial, 16);
+		PRINTS("\r\n");
+	} else {
+		PRINTS("absent.\r\n");
+		PRINTS("Generating SPI NOR serial: ");
+		get_random_bytes(nor_serial, 16);
+		PRINT_HEX(nor_serial, 16);
+		PRINTS("\r\n");
+
+		PRINTS("Writing SPI NOR serial: ");
+		err = spinor_write(0, 16, nor_serial);
+		if (err != 16) {
+			DEBUG("FAIL3: ", err);
+			goto init_fail;
+		}
+		memset(nor_serial, 0, 16);
+		err = spinor_read(0, 16, nor_serial);
+		if (err != 16) {
+			DEBUG("FAIL4: ", err);
+			goto init_fail;
+		}
+		err = spinor_exit_secure_mode();
+		if (err != 1) {
+			DEBUG("FAIL5: ", err);
+			goto init_fail;
+		}
+	}
+
+	//spinor_dump_otp();
+/*
+	PRINTS("SPI NOR Serial: ");
+	err =  spinor_get_serial(nor_serial);
+	if (err < 0) {
+		PRINTS("FAIL\r\n");
+		goto init_fail;
+	}
+	PRINT_HEX(nor_serial, 24);
+	PRINTS("\r\n");
+*/
+	PRINTS("\r\n");
+
+skip_nor:
+	PRINTS("IMU Init: ");
+	err = imu_init(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+	if (err != 0) {
+		DEBUG("FAIL :", err);
+		goto init_fail;
+	}
+	PRINTS("PASS\r\n");
+	return true;
 
 init_fail:
-	while(1) {
-		__WFI();
-	}
-#endif
+	return false;
+}
+
+void
+_start()
+{
+	uint32_t err;
+	watchdog_init(10, 1);
+    uint8_t sample[12];
+	uint32_t i;
+
+    memset(sample, 0, sizeof(sample)/sizeof(sample[0]));
+
+    //_state = Demo_Config_Standby;
+    _state = TEST_STATE_IDLE;
+
+    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
+
     //pwm_test();
 	//test_3v3();
 #if 0
@@ -414,7 +529,7 @@ init_fail:
     uint32_t read, sent;
 
     imu_read_regs((uint8_t *)old_values);
-    int i;
+
     while(1) {
         //read = imu_accel_reg_read(sample);
         read = imu_read_regs((uint8_t *)sample);
