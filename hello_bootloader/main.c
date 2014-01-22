@@ -17,6 +17,7 @@
 #include "hello_dfu.h"
 #include "util.h"
 #include "ecc_benchmark.h"
+#include <git_description.h>
 
 #define APP_GPIOTE_MAX_USERS            2
 
@@ -111,7 +112,9 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
-    PRINTS("Bootloader is alive.\r\n");
+    PRINTS("\r\nBootloader v");
+	PRINTS(GIT_DESCRIPTION);
+	PRINTS(" is alive\r\n");
 
 #ifdef DEBUG
     PRINTS("Device name: ");
