@@ -102,7 +102,7 @@
 
 //#define BLE_DEVICE_NAME       "Band (DFU mode)"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT2b"
+#define BLE_MODEL_NUM         "EVT3"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
