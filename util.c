@@ -64,7 +64,7 @@ strlen(const char *a)
 }
 
 #ifdef DEBUG_SERIAL
-static const uint8_t hex[] = "0123456789ABCDEF";
+const uint8_t hex[] = "0123456789ABCDEF";
 
 void
 serial_print_hex(uint8_t *ptr, uint32_t len) {

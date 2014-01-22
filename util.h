@@ -2,6 +2,8 @@
 
 #pragma once
 
+const uint8_t hex[16];
+
 #define APP_ASSERT(condition) APP_ERROR_CHECK(!(condition))
 
 #ifdef DEBUG_SERIAL //=====================================
