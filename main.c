@@ -406,10 +406,6 @@ _start()
 
 	nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
 
-	NRF_GPIOTE->INTENSET = GPIOTE_INTENSET_IN0_Msk;
-
-	(void) sd_nvic_EnableIRQ(GPIOTE_IRQn);
-
 	APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
 
 	err = app_gpiote_user_register(&_imu_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process);
