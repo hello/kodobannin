@@ -482,7 +482,7 @@ imu_init(enum SPI_Channel channel) {
 	nrf_delay_ms(100);
 
 	// Init interrupts
-	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
+	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ANY_READ | INT_CFG_BYPASS_EN);
 
 	// Config interrupts
 	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
