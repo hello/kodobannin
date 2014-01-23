@@ -37,6 +37,8 @@ uint16_t imu_fifo_bytes_available();
 uint16_t imu_fifo_read(uint16_t count, uint8_t *buf);
 void imu_fifo_clear();
 
+void imu_wakeup();
+
 void imu_wake_on_motion(uint16_t microgravities, enum imu_wake_on_motion_hz wom_hz);
 bool imu_did_wake_on_motion();
 

@@ -389,6 +389,17 @@ imu_timer_ticks_from_sample_rate(uint8_t hz)
 	return ticks;
 }
 
+void
+imu_wakeup()
+{
+	uint8_t power_management_1;
+	_register_read(MPU_REG_PWR_MGMT_1, &power_management_1);
+	_register_write(MPU_REG_PWR_MGMT_1, power_management_1 & ~PWR_MGMT_1_CYCLE);
+
+	imu_set_sample_rate(_cached_sample_rate);
+	_reset_sensors();
+}
+
 static void
 _wake_on_motion_using_spec(uint16_t microgravities, enum imu_wake_on_motion_hz wom_hz)
 {
