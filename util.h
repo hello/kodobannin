@@ -2,6 +2,11 @@
 
 #pragma once
 
+#undef PACKED
+#undef UNUSED
+#define PACKED __attribute__((packed))
+#define UNUSED __attribute__((unused))
+
 #define APP_ASSERT(condition) APP_ERROR_CHECK(!(condition))
 
 #ifdef DEBUG_SERIAL //=====================================
