@@ -421,6 +421,8 @@ _wake_on_motion_using_spec(uint16_t microgravities, enum imu_wake_on_motion_hz w
 }
 
 static void
+_wake_on_motion_using_sample_code(uint16_t microgravities, enum imu_wake_on_motion_hz wom_hz) UNUSED;
+static void
 _wake_on_motion_using_sample_code(uint16_t microgravities, enum imu_wake_on_motion_hz wom_hz)
 {
     _register_write(MPU_REG_USER_CTL, 0);
