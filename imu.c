@@ -400,7 +400,7 @@ _wake_on_motion_using_spec(uint16_t microgravities, enum imu_wake_on_motion_hz w
     _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
     _register_write(MPU_REG_WOM_THR, microgravities >> 2);
     _register_write(MPU_REG_ACCEL_ODR, (uint8_t)wom_hz);
-    _register_write(MPU_REG_PWR_MGMT_1, 1UL << 5);
+    _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE|PWR_MGMT_1_PD_PTAT);
 }
 
 static void
@@ -412,7 +412,7 @@ _wake_on_motion_using_sample_code(uint16_t microgravities, enum imu_wake_on_moti
     _register_write(MPU_REG_WOM_THR, microgravities >> 2);
     _register_write(MPU_REG_ACCEL_ODR, (uint8_t)wom_hz);
     _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
-    _register_write(MPU_REG_PWR_MGMT_1, 1UL << 5);
+    _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE);
     _register_write(MPU_REG_INT_EN, INT_EN_WOM);
 
 }
