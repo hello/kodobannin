@@ -322,6 +322,10 @@ _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to
 	}
 
 	PRINTS("Motion detected.\r\n");
+
+	imu_wakeup();
+
+	app_timer_start(_imu_timer, 16384, NULL);
 }
 
 void
