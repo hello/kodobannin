@@ -399,7 +399,7 @@ _start()
 
     imu_init(SPI_Channel_0);
 	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
-	imu_wake_on_motion(100, IMU_WOM_HZ_15_63);
+	imu_wake_on_motion(40, IMU_WOM_HZ_15_63);
 
 	err = app_timer_create(&_imu_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_process);
     APP_ERROR_CHECK(err);
