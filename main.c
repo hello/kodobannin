@@ -312,6 +312,7 @@ get_random_bytes(uint8_t *buf, uint32_t len) {
 bool factory_test() {
 	int32_t err;
 	uint32_t i;
+	bool passed = true;
 
 	PRINTS("Hello Band EVT3 Factory Init Mode\r\n");
 	PRINTS("=================================\r\n\r\n");
@@ -332,6 +333,7 @@ bool factory_test() {
 	err = spinor_init(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
 	if (err != 0) {
 		DEBUG("FAIL :", err);
+		passed = false;
 		goto skip_nor;
 	}
 	PRINTS("PASS\r\n");
@@ -339,7 +341,8 @@ bool factory_test() {
 	NOR_Chip_Config *conf = spinor_get_chip_config();
 
 	if (!conf) {
-		PRINTS("ERROR: could not get SPINOR chip config\r\n");
+		PRINTS("FAIL: could not get SPINOR chip config\r\n");
+		passed = false;
 		goto skip_nor;
 	}
 	DEBUG("SPI NOR Vendor: 0x", conf->vendor_id);
@@ -428,7 +431,7 @@ skip_nor:
 		goto init_fail;
 	}
 	PRINTS("PASS\r\n");
-	return true;
+	return passed;
 
 init_fail:
 	return false;
@@ -440,7 +443,7 @@ _start()
 	uint32_t err;
 	watchdog_init(10, 1);
     uint8_t sample[12];
-	uint32_t i;
+	//uint32_t i;
 
     memset(sample, 0, sizeof(sample)/sizeof(sample[0]));
 
@@ -449,6 +452,13 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
+	if (factory_test()) {
+		PRINTS("\r\nFactory Test PASSED.\r\n\r\n");
+	} else {
+		PRINTS("***************************\r\n");
+		PRINTS("    FACTORY TEST FAILED\r\n");
+		PRINTS("***************************\r\n");
+	}
     //pwm_test();
 	//test_3v3();
 #if 0
@@ -518,7 +528,7 @@ _start()
     }
 #endif
     // IMU standalone test code
-#if 1
+#if 0
     err = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
     APP_ERROR_CHECK(err);
 
