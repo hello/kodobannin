@@ -34,7 +34,7 @@ static app_timer_id_t _imu_timer;
 
 static app_gpiote_user_id_t _imu_gpiote_user;
 
-#define IMU_COLLECTION_INTERVAL 2621 // in timer ticks, so 80ms (0.08*32768)
+#define IMU_COLLECTION_INTERVAL 6553 // in timer ticks, so 200ms (0.2*32768)
 
 void
 test_3v3() {
