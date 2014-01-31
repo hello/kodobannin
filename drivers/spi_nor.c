@@ -323,3 +323,26 @@ NOR_Chip_Config *
 spinor_get_chip_config() {
 	return _nor_config;
 }
+
+int32_t
+spinor_get_serial(uint8_t *serial) {
+	int32_t ret = 0;
+
+	ret = spinor_enter_secure_mode();
+	if (ret < 0)
+		return ret;
+
+	ret = spinor_read(0, 24, serial);
+	if (ret < 0) {
+		int32_t ret2 = spinor_exit_secure_mode();
+		if (ret2 < 0) {
+			PRINTS("Could not exit secure spinor mode. Panic\r\n");
+			APP_ERROR_CHECK_BOOL(0);
+		}
+		return ret;
+	}
+
+	ret = spinor_exit_secure_mode();
+	return ret;
+}
+
