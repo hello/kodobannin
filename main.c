@@ -34,6 +34,8 @@ static app_timer_id_t _imu_timer;
 
 static app_gpiote_user_id_t _imu_gpiote_user;
 
+#define IMU_COLLECTION_INTERVAL 2621 // in timer ticks, so 80ms (0.08*32768)
+
 void
 test_3v3() {
     nrf_gpio_cfg_output(GPIO_3v3_Enable);
@@ -200,7 +202,7 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
             DEBUG("Starting HRS cal: ", test_size);
 
             hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 1);
-           // hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &_hrs_send_data);
+			// hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &_hrs_send_data);
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
@@ -271,9 +273,27 @@ services_init() {
 					  sizeof(GIT_DESCRIPTION));
 }
 
+static uint32_t _imu_last_motion_time;
+
 static void
 _imu_process(void* context)
 {
+    imu_wom_disable();
+
+	uint32_t err;
+
+	uint32_t current_time;
+	(void) app_timer_cnt_get(&current_time);
+
+	uint32_t ticks_since_last_motion;
+	(void) app_timer_cnt_diff_compute(current_time, _imu_last_motion_time, &ticks_since_last_motion);
+
+	if(ticks_since_last_motion < IMU_COLLECTION_INTERVAL) {
+        err = app_timer_start(_imu_timer, IMU_COLLECTION_INTERVAL, NULL);
+		APP_ERROR_CHECK(err);
+		return;
+	}
+
     struct imu_settings settings;
     imu_get_settings(&settings);
 
@@ -299,16 +319,22 @@ _imu_process(void* context)
 	}
 
 	while(fifo_left > 0) {
-		// We don't read more than ~1K from the FIFO at the time,
-		// otherwise the buffer we allocate on the stack may overflow
-		// the stack.
+		// For MAX_FIFO_READ_SIZE, we want to use a number that (1)
+		// will not overflow the stack (keep it under ~2k), and is (2)
+		// evenly divisible by 12, which is the number of bytes per
+		// sample if we're sampling from both gyroscope and the
+		// accelerometer.
 
-#define MAX_FIFO_READ 1020 // Evenly divisible by 12
-		unsigned read_size = MIN(fifo_left, MAX_FIFO_READ);
+#define MAX_FIFO_READ_SIZE 1920 // Evenly divisible by 48
+		unsigned read_size = MIN(fifo_left, MAX_FIFO_READ_SIZE);
 		read_size -= fifo_left % sample_size;
 
 	    uint8_t imu_data[read_size];
         uint16_t bytes_read = imu_fifo_read(read_size, imu_data);
+
+		DEBUG("Reading bytes from FIFO: ", read_size);
+		DEBUG("Actually read from FIFO: ", bytes_read);
+
 		fifo_left -= bytes_read;
 
 	    watchdog_pet();
@@ -331,18 +357,30 @@ _imu_process(void* context)
 	}
 #endif
 
-	watchdog_pet();
-
     imu_deactivate();
+
+	PRINTS("Deactivating IMU.\r\n");
 }
 
 static void
 _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
+	uint32_t err;
+
+	(void) app_timer_cnt_get(&_imu_last_motion_time);
+
 	PRINTS("Motion detected.\r\n");
 
 	imu_activate();
-    app_timer_start(_imu_timer, 32768, NULL);
+
+	// The _imu_timer below may already be running, but the nRF
+	// documentation for app_timer_start() specifically says "When
+	// calling this method on a timer which is already running, the
+	// second start operation will be ignored." So we're OK here.
+    err = app_timer_start(_imu_timer, IMU_COLLECTION_INTERVAL, NULL);
+    APP_ERROR_CHECK(err);
+
+    imu_clear_interrupt_status();
 }
 
 void

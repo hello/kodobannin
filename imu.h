@@ -55,6 +55,8 @@ bool imu_is_active();
 void imu_activate();
 /// Deactivate the IMU by putting it into sleep mode.
 void imu_deactivate();
+void imu_clear_interrupt_status();
+void imu_wom_disable();
 
 uint32_t imu_timer_ticks_from_sample_rate(uint8_t hz);
 

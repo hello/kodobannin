@@ -155,8 +155,7 @@ void _reset_sensors()
     _register_write(MPU_REG_FIFO_EN, fifo_register);
 }
 
-static
-void _clear_interrupt_status_register()
+void imu_clear_interrupt_status()
 {
     // Oddly, you clear the interrupt status register by _reading_ it,
     // not writing to it. Read that again for impact.
@@ -204,7 +203,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 
 	count = spi_read_multi(_chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
 
-	_clear_interrupt_status_register();
+	imu_clear_interrupt_status();
 
 	return count;
 }
@@ -472,6 +471,10 @@ imu_timer_ticks_from_sample_rate(uint8_t hz)
 void
 imu_activate()
 {
+	if(_settings.active) {
+		return;
+	}
+
 	// We _must_ wake up the chip from low-power mode if we want it to
 	// write to the FIFO. It looks like the chip will never write to
 	// the FIFO in low-power mode, even if you set all the register
@@ -508,8 +511,20 @@ void imu_wom_set_threshold(uint16_t microgravities)
 	_reset_wom_threshold();
 }
 
+void imu_wom_disable()
+{
+    uint8_t interrupt_enable;
+    _register_read(MPU_REG_INT_EN, &interrupt_enable);
+
+	_register_write(MPU_REG_INT_EN, interrupt_enable & ~INT_EN_WOM);
+}
+
 void imu_deactivate()
 {
+	if(!_settings.active) {
+		return;
+	}
+
     _register_write(MPU_REG_INT_EN, 0);
 
 	_register_write(MPU_REG_FIFO_EN, 0);
@@ -524,7 +539,6 @@ void imu_deactivate()
 
     _register_write(MPU_REG_PWR_MGMT_2, PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
     _imu_set_low_pass_filter(IMU_HZ_250);
-    _register_write(MPU_REG_INT_EN, INT_EN_WOM);
     _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
     _reset_wom_threshold();
     _register_write(MPU_REG_ACCEL_ODR, (uint8_t)_settings.inactive_sample_rate);
@@ -549,7 +563,9 @@ void imu_deactivate()
         unsigned delay = imu_get_sampling_interval(_settings.inactive_sample_rate) + (12 - (unsigned)_settings.inactive_sample_rate);
         nrf_delay_ms(delay);
 
-        _clear_interrupt_status_register();
+        imu_clear_interrupt_status();
+
+        _register_write(MPU_REG_INT_EN, INT_EN_WOM);
 	}
 
     _settings.active = false;
