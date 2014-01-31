@@ -458,7 +458,9 @@ imu_timer_ticks_from_sample_rate(uint8_t hz)
 
 	uint32_t ticks_to_fill_fifo = (ticks_per_sample * samples_to_fill_fifo) >> 1;
 
-	const uint32_t ticks_headroom = 100000; // ~0.3s in timer ticks, rounded up to nearest 8. This leaves this long before the FIFO buffer overflows.
+	// ~0.3s in timer ticks, rounded up to nearest 8. This leaves this
+	// long before the FIFO buffer overflows.
+	const uint32_t ticks_headroom = 100000;
 
 	uint32_t ticks = ticks_to_fill_fifo - ticks_headroom;
 
@@ -488,7 +490,11 @@ imu_activate()
 
 	_settings.active = true;
 
-    nrf_delay_ms(20); // The accelerometer takes 20ms to start up from sleep mode, according to page 10 of the MPU-6500 Production Specification. See Table 2 (Accelerometer Specifications), "ACCELEROMETER STARTUP TIME, From Sleep Mode".
+	// The accelerometer takes 20ms to start up from sleep mode,
+	// according to page 10 of the MPU-6500 Production
+	// Specification. See Table 2 (Accelerometer Specifications),
+	// "ACCELEROMETER STARTUP TIME, From Sleep Mode".
+    nrf_delay_ms(20);
 
 }
 
