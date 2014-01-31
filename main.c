@@ -354,8 +354,8 @@ _imu_process(void* context)
 		PRINTS("\r\n");
 
 		// Write imu_data to persistent storage here
-	}
 #endif
+    }
 
     imu_deactivate();
 
