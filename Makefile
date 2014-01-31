@@ -1,3 +1,6 @@
+# since we append a byte of MAC Address to the name now...
+BLE_DEVICE_NAME := Band
+
 # default parallel
 MAKEFLAGS = -j$(shell sysctl -n hw.ncpu)
 
