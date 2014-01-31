@@ -278,8 +278,6 @@ static uint32_t _imu_last_motion_time;
 static void
 _imu_process(void* context)
 {
-    imu_wom_disable();
-
 	uint32_t err;
 
 	uint32_t current_time;
@@ -293,6 +291,8 @@ _imu_process(void* context)
 		APP_ERROR_CHECK(err);
 		return;
 	}
+
+    imu_wom_disable();
 
     struct imu_settings settings;
     imu_get_settings(&settings);
