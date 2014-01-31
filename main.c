@@ -118,7 +118,7 @@ _mode_write_handler(ble_gatts_evt_write_t *event) {
             APP_ERROR_CHECK(err);
             break;
 
-        default:
+	default:
             DEBUG("Unhandled state transition to 0x", state);
             err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
             APP_ERROR_CHECK(err);
@@ -215,7 +215,7 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
                 ble_hello_demo_data_send_blocking(buf, err);
                 */break;
 
-        case TEST_ENTER_DFU:
+	case TEST_ENTER_DFU:
             do_imu = 0;
             PRINTS("Rebooting into DFU");
             // set the trap bit for the bootloader and kick the system
@@ -274,58 +274,75 @@ services_init() {
 static void
 _imu_process(void* context)
 {
-	uint16_t fifo_size = imu_fifo_bytes_available();
+    struct imu_settings settings;
+    imu_get_settings(&settings);
 
-	uint8_t imu_data[fifo_size];
-	fifo_size = imu_fifo_read(fifo_size, imu_data);
+	uint16_t fifo_left = imu_fifo_bytes_available();
+
+    struct imu_data_header data_header = {
+        .timestamp = 0,
+        .gyro_xyz = settings.active_sensors & IMU_SENSORS_GYRO,
+        .accel_xyz = settings.active_sensors & IMU_SENSORS_ACCEL,
+        .bytes = fifo_left,
+        .hz = settings.active_sample_rate,
+    };
+
+    // Write data_header to persistent storage here
+    DEBUG("IMU data header: ", data_header);
+
+	unsigned sample_size = 0;
+	if(data_header.gyro_xyz) {
+		sample_size += 6;
+	}
+	if(data_header.accel_xyz) {
+		sample_size += 6;
+	}
+
+	while(fifo_left > 0) {
+		// We don't read more than ~1K from the FIFO at the time,
+		// otherwise the buffer we allocate on the stack may overflow
+		// the stack.
+
+#define MAX_FIFO_READ 1020 // Evenly divisible by 12
+		unsigned read_size = MIN(fifo_left, MAX_FIFO_READ);
+		read_size -= fifo_left % sample_size;
+
+	    uint8_t imu_data[read_size];
+        uint16_t bytes_read = imu_fifo_read(read_size, imu_data);
+		fifo_left -= bytes_read;
+
+	    watchdog_pet();
 
 #define PRINT_FIFO_DATA
 
 #ifdef PRINT_FIFO_DATA
-	unsigned i;
-	for(i = 0; i < fifo_size; i += sizeof(int16_t)) {
-		int16_t* p = (int16_t*)(imu_data+i);
-		PRINT_HEX(p, sizeof(int16_t));
-		if(i % 12 == 0) {
-			PRINTS("\r\n");
+		unsigned i;
+		for(i = 0; i < bytes_read; i += sizeof(int16_t)) {
+            if(i % 12 == 0 && i != 0) {
+                PRINTS("\r\n");
+            }
+			int16_t* p = (int16_t*)(imu_data+i);
+			PRINT_HEX(p, sizeof(int16_t));
 		}
-	}
 
-	PRINTS("\r\n");
+		PRINTS("\r\n");
+
+		// Write imu_data to persistent storage here
+	}
 #endif
 
-    watchdog_pet();
-
-	enum imu_sensor_set sensors = imu_get_sensors();
-
-	struct imu_data_header data_header = {
-		.timestamp = 0,
-		.gyro_xyz = sensors & IMU_SENSORS_GYRO,
-		.accel_xyz = sensors & IMU_SENSORS_ACCEL,
-		.bytes = fifo_size,
-		.hz = imu_get_sample_rate(),
-	};
-
-	// Write data_header to persistent storage here
-
-	DEBUG("IMU fifo size: ", fifo_size);
-	DEBUG("IMU data header: ", data_header);
-
 	watchdog_pet();
+
+    imu_deactivate();
 }
 
 static void
 _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-	if(!imu_did_wake_on_motion()) {
-		PRINTS("IMU interrupt received, but no motion detected.\r\n");
-	}
-
 	PRINTS("Motion detected.\r\n");
 
-	imu_wakeup();
-
-	app_timer_start(_imu_timer, 16384, NULL);
+	imu_activate();
+    app_timer_start(_imu_timer, 32768, NULL);
 }
 
 void
@@ -398,8 +415,6 @@ _start()
     //imu_selftest(SPI_Channel_0);
 
     imu_init(SPI_Channel_0);
-	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
-	imu_wake_on_motion(40, IMU_WOM_HZ_15_63);
 
 	err = app_timer_create(&_imu_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_process);
     APP_ERROR_CHECK(err);

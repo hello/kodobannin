@@ -80,6 +80,7 @@ enum MPU_Reg_Bits {
 	CONFIG_LPF_1kHz_10bw    = 5,
 	CONFIG_LPF_1kHz_5bw     = 6,
 	CONFIG_LPF_8kHz_3600bw  = 7,
+	CONFIG_LPF_B_MASK       = 0x7,
 
 	GYRO_CFG_X_TEST         = (1UL << 7),
 	GYRO_CFG_Y_TEST         = (1UL << 6),
@@ -114,6 +115,7 @@ enum MPU_Reg_Bits {
 	ACCEL_CFG2_LPF_1kHz_10bw    = 5,
 	ACCEL_CFG2_LPF_1kHz_5bw     = 6,
 	ACCEL_CFG2_LPF_1kHz_460bw_2 = 7,
+	ACCEL_CFG2_LPF_B_MASK       = 0x7,
 	ACCEL_CFG2_FIFO_SIZE_512    = (0UL << 7) | (0UL << 6),
 	ACCEL_CFG2_FIFO_SIZE_1024   = (0UL << 7) | (1UL << 6),
 	ACCEL_CFG2_FIFO_SIZE_2048   = (1UL << 7) | (0UL << 6),

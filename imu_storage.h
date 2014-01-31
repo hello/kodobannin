@@ -7,5 +7,5 @@ struct imu_data_header {
 	bool gyro_xyz:1; //< If true, data has gyro XYZ values.
 	bool accel_xyz:1; //< If true, data has accelerometer XYZ values.
 	uint16_t bytes:14; //< Should this be samples instead?; limit is 16384
-	uint8_t hz; //< Sample rate. 25 Hz = 25 samples per second = 150 bytes per second for accel/gyro only values = 300 bytes per second for combined accel+gyro values.
-} __attribute__((packed));
+	enum imu_hz hz; //< Sample rate.
+} PACKED;
