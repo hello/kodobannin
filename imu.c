@@ -15,10 +15,10 @@
 
 #define BUF_SIZE 4
 
+static enum SPI_Channel _chan = SPI_Channel_Invalid;
 #define IMU_DEFAULT_SAMPLE_RATE 25
 #define IMU_DEFAULT_SENSORS (IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO)
 
-static enum SPI_Channel chan = SPI_Channel_Invalid;
 
 static enum imu_sensor_set _sensors = IMU_DEFAULT_SENSORS;
 
@@ -28,7 +28,7 @@ _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 	uint8_t buf[2];
 	buf[0] = SPI_Read(register_address);
 
-	bool success = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	bool success = spi_xfer(_chan, IMU_SPI_nCS, 2, buf, buf);
 	APP_ASSERT(success);
 
 	*out_value = buf[1];
@@ -39,7 +39,7 @@ _register_write(MPU_Register_t register_address, uint8_t value)
 {
 	uint8_t buf[2] = { SPI_Write(register_address), value };
 
-	bool success = spi_xfer(chan, IMU_SPI_nCS, 2, buf, buf);
+	bool success = spi_xfer(_chan, IMU_SPI_nCS, 2, buf, buf);
 	APP_ASSERT(success);
 }
 
@@ -138,7 +138,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 	if (count == 0)
 		return 0;
 
-	count = spi_read_multi(chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
+	count = spi_read_multi(_chan, IMU_SPI_nCS, SPI_Read(MPU_REG_FIFO), count, buf);
 
 	// Note: If you have the INT_CFG_CLR_ON_STS set in the
 	// MPU_REG_INT_CFG register (which we do by default), you _must_
@@ -464,6 +464,7 @@ static void _low_power_setup()
 
 bool imu_did_wake_on_motion()
 {
+	_chan = channel;
 	uint8_t interrupt_status;
 	_register_read(58, &interrupt_status);
 
@@ -472,7 +473,6 @@ bool imu_did_wake_on_motion()
 
 void
 imu_init(enum SPI_Channel channel) {
-	chan = channel;
 
 	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
 	// page 43
