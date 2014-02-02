@@ -54,7 +54,6 @@ APP_SRCS = \
 	hrs.c \
 	imu.c \
 	main.c \
-	norflash.c \
 	$(NULL)
 
 BOOTLOADER_SRCS = \
