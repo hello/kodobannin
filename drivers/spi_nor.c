@@ -188,9 +188,9 @@ spinor_read(uint32_t address, uint32_t len, uint8_t *buffer) {
 	uint8_t data[4];
 
 	data[0] = (CMD_READ);
-	data[1] = address & 0xFF;
+	data[1] = (address >> 16) & 0xFF;
 	data[2] = (address >> 8) & 0xFF;
-	data[3] = (address >> 16) & 0xFF;
+	data[3] = address & 0xFF;
 
 	return spi_xfer(&_ctx, 4, data, len, buffer);
 }
