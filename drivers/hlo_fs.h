@@ -77,7 +77,7 @@ int32_t hlo_fs_init();
  *
  * @param num_partitions - number of HLO_FS_Partition_Info elements to process
  * @param partitions - array of HLO_FS_Partition_Info elements to instantiate
- *                     NOTE: block_count element for iHLO_FS_Partition_Config
+ *                     NOTE: block_count element for HLO_FS_Partition_Bitmap
  *                           will be auto-calculated based on flash size and
  *                           HLO_FS_Partition_Data will be auto-calculated to
  *                           fill the flash size after other partitions have
