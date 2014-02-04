@@ -133,9 +133,9 @@ spinor_init(enum SPI_Channel chan, enum SPI_Mode mode, uint32_t miso, uint32_t m
 
 	_nor_config = _find_nor_config(mfg_id, chip_id);
 	if (!_nor_config) {
-		//PRINTS("Could not find NOR chip config\r\n");
-		//DEBUG("MFG: ", mfg_id);
-		//DEBUG("CHIP: ", chip_id);
+		PRINTS("Could not find NOR chip config\r\n");
+		DEBUG("MFG: ", mfg_id);
+		DEBUG("CHIP: ", chip_id);
 		return -4;
 	}
 /*
@@ -302,7 +302,7 @@ spinor_block_erase(uint16_t block) {
 
 	err = spi_xfer(&_ctx, 4, data, 0, NULL);
 
-	return err;
+	return err < 0 ? err : 0;
 }
 
 void
