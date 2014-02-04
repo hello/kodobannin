@@ -156,11 +156,9 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 }
 
 int32_t
-hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info *pinfo) {
+hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info **pinfo) {
 	uint32_t i;
-	int32_t ret;
-	bool found = false;
-	HLO_FS_Partition_Info record;
+	//bool found = false;
 
 	if (!pinfo) {
 		return HLO_FS_Invalid_Parameter;
@@ -170,21 +168,27 @@ hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info *pi
 		return HLO_FS_Not_Initialized;
 	}
 
+	*pinfo = NULL;
 	// linear search because we don't have many of these and I'm lazy
 	for (i=0; i < _layout.num_partitions; i++) {
+/*
 		ret = spinor_read(0, sizeof(HLO_FS_Partition_Info), (uint8_t *)&record);
 		if (ret < 0)
 			return HLO_FS_Media_Error;
-		if (record.id == id) {
-			found = true;
+*/
+		if (_partitions[i].id == id) {
+			*pinfo = &_partitions[i];
 			break;
 		}
 	}
 
+/*
 	if (found) {
-		memcpy(pinfo, &record, sizeof(record));
+		//memcpy(pinfo, &_partitions[i], sizeof(HLO_FS_Partition_Info));
 		return 1;
 	}
 
+	pinfo = NULL;
+*/
 	return 0;
 }
