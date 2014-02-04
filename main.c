@@ -483,6 +483,10 @@ _start()
 		ret = hlo_fs_init();
 		DEBUG("Init ret: 0x", ret);
 	}
+
+	PRINTS("Calling append\r\n");
+	ret = hlo_fs_append(HLO_FS_Partition_Data, 0, sample);
+	DEBUG("data write ret 0x", ret);
 //pwm_test();
 	//test_3v3();
 #if 0
