@@ -23,7 +23,7 @@
 #include <drivers/pwm.h>
 #include <hrs.h>
 #include <drivers/watchdog.h>
-
+#include <drivers/hlo_fs.h>
 #include "git_description.h"
 #include "hello_dfu.h"
 
@@ -441,8 +441,10 @@ void
 _start()
 {
 	uint32_t err;
-	watchdog_init(10, 1);
+	int32_t ret;
+	//watchdog_init(10, 1);
     uint8_t sample[12];
+	HLO_FS_Partition_Info parts[2];
 	//uint32_t i;
 
     memset(sample, 0, sizeof(sample)/sizeof(sample[0]));
@@ -459,7 +461,29 @@ _start()
 		PRINTS("    FACTORY TEST FAILED\r\n");
 		PRINTS("***************************\r\n");
 	}
-    //pwm_test();
+
+	uint8_t page_data[32];
+
+    PRINTS("SPI NOR Data Read: 0x");
+    err = spinor_read(0, 32, page_data);
+    PRINT_HEX(&err, 4);
+    PRINTS("\r\n");
+    APP_ERROR_CHECK(err <= 0);
+    print_page(page_data, 32);
+    PRINTS("\r\n");
+
+	ret = hlo_fs_init();
+	DEBUG("Init ret: 0x", ret);
+	if (ret == HLO_FS_Not_Initialized) {
+		parts[0].id = HLO_FS_Partition_Crashlog;
+		parts[0].block_offset = -1;
+		parts[0].block_count = 5; // 16k
+		ret = hlo_fs_format(1, parts, 1);
+		DEBUG("Format ret: 0x", ret);
+		ret = hlo_fs_init();
+		DEBUG("Init ret: 0x", ret);
+	}
+//pwm_test();
 	//test_3v3();
 #if 0
     uint8_t page_data[512];
