@@ -192,3 +192,87 @@ hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info **p
 */
 	return 0;
 }
+
+static int32_t
+_bitmap_get_partition_range(enum HLO_FS_Partition_ID id, uint32_t *start_addr, uint32_t *end_addr) {
+	HLO_FS_Partition_Info *pinfo;
+	int32_t ret;
+	uint32_t start;
+	uint32_t end;
+	uint32_t bitmap_base;
+
+	if (!start_addr || !end_addr) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	// get start and end blocks for partition in question
+	ret = hlo_fs_get_partition_info(id, &pinfo);
+	if (ret < 0 || !pinfo) {
+		return HLO_FS_Not_Found;
+	}
+
+	// these are block addresses
+	start = pinfo->block_offset;
+	end = start + pinfo->block_count;
+
+	// get start and end blocks for bitmap storage to account for them
+	ret = hlo_fs_get_partition_info(HLO_FS_Partition_Bitmap, &pinfo);
+	if (ret < 0 || !pinfo) {
+		return HLO_FS_Not_Found;
+	}
+
+	// block_size * block_offset for bitmap base address
+	bitmap_base = 4096 * pinfo->block_offset;
+
+	// we don't count the layout block or the bitmap block starting offset
+	// this is block based arithmetic
+	start -= (pinfo->block_offset + pinfo->block_count);
+	end   -= (pinfo->block_offset + pinfo->block_count);
+
+	DEBUG("start block is 0x", start);
+	DEBUG("end block is   0x", end);
+
+	start *= 4096/256;
+	end   *= 4096/256;
+
+	DEBUG("start addr is 0x", start);
+	DEBUG("end addr is   0x", end);
+
+	// divive start by 4 to get the byte offset into the bitmap
+	// this is valid for partitions since they always start and
+	// end on block boundaries (4k)
+	start >>= 3;
+	end   >>= 3;
+
+	DEBUG("start page addr is 0x", start);
+	DEBUG("end page addr is   0x", end);
+
+	start += bitmap_base;
+	end   += bitmap_base;
+
+	DEBUG("start bitmap addr is 0x", start);
+	DEBUG("end bitmap addr is   0x", end);
+
+	*start_addr = start;
+	*end_addr = end;
+
+	return 0;
+}
+
+int32_t
+hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
+	int32_t ret;
+	uint32_t bitmap_start;
+	uint32_t bitmap_end;
+
+	ret = _bitmap_get_partition_range(id, &bitmap_start, &bitmap_end);
+	if (ret < 0) {
+		return ret;
+	}
+
+	return 0;
+}
