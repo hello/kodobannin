@@ -32,6 +32,7 @@ enum HLO_FS_Return_Value {
 	HLO_FS_Not_Initialized   = -2,
 	HLO_FS_Media_Error       = -3,
 	HLO_FS_Already_Valid     = -4,
+	HLO_FS_Not_Found         = -5,
 };
 
 // Storage oriented constants and structures
