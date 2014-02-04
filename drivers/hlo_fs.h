@@ -100,3 +100,6 @@ int32_t hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions
  **/
 int32_t hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info **pinfo);
 
+int32_t hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data);
+
+
