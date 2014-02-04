@@ -64,7 +64,8 @@ typedef enum {
 	HLO_FS_Page_Used  = 0x2,
 	HLO_FS_Page_Bad   = 0x1,
 	HLO_FS_Page_Dirty = 0x0,
-} HLU_FS_Page_State;
+} HLO_FS_Page_State;
+
 
 /**
  * hlo_fs_init - attempt to read hlo_fs layout from flash
