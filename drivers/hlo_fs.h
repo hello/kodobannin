@@ -33,26 +33,26 @@ enum HLO_FS_Return_Value {
 	HLO_FS_Media_Error       = -3,
 	HLO_FS_Already_Valid     = -4,
 };
-	
+
 // Storage oriented constants and structures
 enum HLO_FS_Partition_ID {
 	HLO_FS_Partition_Config = 0,
-	HLO_FS_Partition_Bitmap,
-	HLO_FS_Partition_Data,
-	HLO_FS_Partition_Recovery,
-	HLO_FS_Partition_Update,
-	HLO_FS_Partition_Crashlog,
+	HLO_FS_Partition_Bitmap = 1,
+	HLO_FS_Partition_Data   = 2,
+	HLO_FS_Partition_Recovery = 3,
+	HLO_FS_Partition_Update   = 4,
+	HLO_FS_Partition_Crashlog = 5,
 	HLO_FS_Partition_Max
 };
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
 	enum HLO_FS_Partition_ID id;
 	uint16_t              block_offset;
 	uint16_t              block_count;
 } HLO_FS_Partition_Info;
 
-const uint8_t HLO_FS_Layout_v1_Magic[4] = "HFv1";
-typedef struct {
+static const uint8_t HLO_FS_Layout_v1_Magic[4] = "HFv1";
+typedef struct __attribute__((__packed__)) {
 	uint8_t             magic[4];
 	uint8_t             num_partitions;
 	HLO_FS_Partition_Info  partitions[];
