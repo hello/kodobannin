@@ -273,6 +273,7 @@ services_init() {
 					  sizeof(GIT_DESCRIPTION));
 }
 
+static uint32_t _imu_start_motion_time;
 static uint32_t _imu_last_motion_time;
 
 static void
@@ -286,7 +287,18 @@ _imu_process(void* context)
 	uint32_t ticks_since_last_motion;
 	(void) app_timer_cnt_diff_compute(current_time, _imu_last_motion_time, &ticks_since_last_motion);
 
-	if(ticks_since_last_motion < IMU_COLLECTION_INTERVAL) {
+	uint32_t ticks_since_motion_start;
+	(void) app_timer_cnt_diff_compute(current_time, _imu_start_motion_time, &ticks_since_motion_start);
+
+    struct imu_settings settings;
+    imu_get_settings(&settings);
+
+	// DEBUG("Ticks since last motion: ", ticks_since_last_motion);
+    // DEBUG("Ticks since motion start: ", ticks_since_motion_start);
+	// DEBUG("FIFO watermark ticks: ", settings.ticks_to_fifo_watermark);
+
+	if(ticks_since_last_motion < IMU_COLLECTION_INTERVAL
+	   && ticks_since_motion_start < settings.ticks_to_fifo_watermark) {
         err = app_timer_start(_imu_timer, IMU_COLLECTION_INTERVAL, NULL);
 		APP_ERROR_CHECK(err);
 		return;
@@ -294,10 +306,16 @@ _imu_process(void* context)
 
     imu_wom_disable();
 
-    struct imu_settings settings;
-    imu_get_settings(&settings);
+    unsigned sample_size = 0;
+    if(settings.active_sensors & IMU_SENSORS_ACCEL) {
+        sample_size += 6;
+    }
+    if(settings.active_sensors & IMU_SENSORS_GYRO) {
+        sample_size += 6;
+    }
 
 	uint16_t fifo_left = imu_fifo_bytes_available();
+	fifo_left -= fifo_left % sample_size;
 
     struct imu_data_header data_header = {
         .timestamp = 0,
@@ -309,14 +327,6 @@ _imu_process(void* context)
 
     // Write data_header to persistent storage here
     DEBUG("IMU data header: ", data_header);
-
-	unsigned sample_size = 0;
-	if(data_header.gyro_xyz) {
-		sample_size += 6;
-	}
-	if(data_header.accel_xyz) {
-		sample_size += 6;
-	}
 
 	while(fifo_left > 0) {
 		// For MAX_FIFO_READ_SIZE, we want to use a number that (1)
@@ -332,19 +342,20 @@ _imu_process(void* context)
 	    uint8_t imu_data[read_size];
         uint16_t bytes_read = imu_fifo_read(read_size, imu_data);
 
-		DEBUG("Reading bytes from FIFO: ", read_size);
-		DEBUG("Actually read from FIFO: ", bytes_read);
+		DEBUG("Bytes read from FIFO: ", bytes_read);
 
 		fifo_left -= bytes_read;
 
 	    watchdog_pet();
 
-#define PRINT_FIFO_DATA
+        // Write imu_data to persistent storage here
+
+#undef PRINT_FIFO_DATA
 
 #ifdef PRINT_FIFO_DATA
 		unsigned i;
 		for(i = 0; i < bytes_read; i += sizeof(int16_t)) {
-            if(i % 12 == 0 && i != 0) {
+            if(i % sample_size == 0 && i != 0) {
                 PRINTS("\r\n");
             }
 			int16_t* p = (int16_t*)(imu_data+i);
@@ -353,9 +364,10 @@ _imu_process(void* context)
 
 		PRINTS("\r\n");
 
-		// Write imu_data to persistent storage here
 #endif
     }
+
+    _imu_start_motion_time = 0;
 
     imu_deactivate();
 
@@ -367,7 +379,10 @@ _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to
 {
 	uint32_t err;
 
-	(void) app_timer_cnt_get(&_imu_last_motion_time);
+	if(!_imu_start_motion_time) {
+        (void) app_timer_cnt_get(&_imu_start_motion_time);
+	}
+    (void) app_timer_cnt_get(&_imu_last_motion_time);
 
 	PRINTS("Motion detected.\r\n");
 

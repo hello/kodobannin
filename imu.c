@@ -21,7 +21,9 @@ static struct imu_settings _settings = {
 	.wom_threshold = 35,
 	.inactive_sample_rate = IMU_HZ_15_63,
     .active_sample_rate = IMU_HZ_31_25,
-	.active_sensors = IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO,
+	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
+	.ticks_to_fill_fifo = 0,
+	.ticks_to_fifo_watermark = 0,
 	.active = true,
 };
 
@@ -413,17 +415,52 @@ _imu_set_low_pass_filter(enum imu_hz hz)
 }
 
 static void
+_reset_ticks_to_fill_fifo()
+{
+    uint32_t samples_to_fill_fifo;
+    switch(_settings.active_sensors) {
+	case IMU_SENSORS_DISABLED:
+		_settings.ticks_to_fill_fifo = 0;
+		_settings.ticks_to_fifo_watermark = 0;
+		return;
+    case IMU_SENSORS_ACCEL:
+    case IMU_SENSORS_GYRO:
+        samples_to_fill_fifo = 682; // floor(4096/6.0)
+        break;
+    case IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO:
+        samples_to_fill_fifo = 341; // floor(4096/12.0)
+        break;
+    }
+
+    unsigned ms = imu_get_sampling_interval(_settings.active_sample_rate);
+    uint32_t ticks_per_sample = 32 /* floor(32768/1024.0) */ * ms;
+
+    _settings.ticks_to_fill_fifo = ticks_per_sample * samples_to_fill_fifo;
+
+    // ~0.1s in timer ticks, rounded up to nearest 8. This leaves this
+    // long before the FIFO buffer overflows.
+    _settings.ticks_to_fifo_watermark = _settings.ticks_to_fill_fifo - 3000;
+}
+
+static void
 _reset_active_sample_rate()
 {
 	// The logic here is largely copied from mpu_set_sample_rate() in
 	// inv_mpu.c. Using their source code to get things working seems
 	// far more effective than reading their documentation.
 
+	uint8_t divider;
+    _register_read(MPU_REG_SAMPLE_RATE_DIVIDER, &divider);
+
 	uint8_t interval = imu_get_sampling_interval(_settings.active_sample_rate);
+	if(divider == interval-1) {
+		return;
+	}
 
     _register_write(MPU_REG_SAMPLE_RATE_DIVIDER, interval-1);
 
 	_imu_set_low_pass_filter(_settings.active_sample_rate);
+	_reset_ticks_to_fill_fifo();
 }
 
 void
@@ -438,36 +475,6 @@ imu_set_sample_rate(enum imu_hz hz)
     _reset_active_sample_rate();
 
 	DEBUG("IMU: sample rate changed to enum imu_hz ", hz);
-}
-
-uint32_t
-imu_timer_ticks_from_sample_rate(uint8_t hz)
-{
-	// [TODO]: Redo this to leave out ticks_headroom
-
-    uint32_t bytes_per_sample = 0;
-
-    if(_settings.active_sensors & IMU_SENSORS_ACCEL)
-        bytes_per_sample += sizeof(int16_t)*3;
-
-    if(_settings.active_sensors & IMU_SENSORS_GYRO)
-        bytes_per_sample += sizeof(int16_t)*3;
-
-	uint32_t samples_to_fill_fifo = IMU_FIFO_CAPACITY/bytes_per_sample;
-    uint32_t ticks_per_sample = APP_TIMER_CLOCK_FREQ/hz;
-
-	uint32_t ticks_to_fill_fifo = (ticks_per_sample * samples_to_fill_fifo) >> 1;
-
-	// ~0.3s in timer ticks, rounded up to nearest 8. This leaves this
-	// long before the FIFO buffer overflows.
-	const uint32_t ticks_headroom = 100000;
-
-	uint32_t ticks = ticks_to_fill_fifo - ticks_headroom;
-
-	DEBUG("IMU timer ticks: sample rate = ", hz);
-	DEBUG("IMU timer ticks: ticks = ", ticks);
-
-	return ticks;
 }
 
 void
@@ -494,8 +501,7 @@ imu_activate()
 	// according to page 10 of the MPU-6500 Production
 	// Specification. See Table 2 (Accelerometer Specifications),
 	// "ACCELEROMETER STARTUP TIME, From Sleep Mode".
-    nrf_delay_ms(20);
-
+    // nrf_delay_ms(30);
 }
 
 bool

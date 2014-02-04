@@ -28,6 +28,8 @@ struct imu_settings {
     enum imu_hz inactive_sample_rate;
     enum imu_sensor_set active_sensors;
 	enum imu_hz active_sample_rate;
+    unsigned ticks_to_fill_fifo;
+	unsigned ticks_to_fifo_watermark;
 	bool active;
 };
 
@@ -57,7 +59,5 @@ void imu_activate();
 void imu_deactivate();
 void imu_clear_interrupt_status();
 void imu_wom_disable();
-
-uint32_t imu_timer_ticks_from_sample_rate(uint8_t hz);
 
 #define IMU_FIFO_CAPACITY 4096 // Must be 512, 1024, 2048 or 4096
