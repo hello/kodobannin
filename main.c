@@ -318,7 +318,7 @@ bool factory_test() {
 	PRINTS("=================================\r\n\r\n");
 	uint8_t hwid = (NRF_FICR->CONFIGID & FICR_CONFIGID_HWID_Msk) >> FICR_CONFIGID_HWID_Pos;
 	DEBUG("nRF51822 HW ID:       0x", hwid);
-	
+
 	PRINTS("nRF51822 Device ID:   0x");
 	PRINT_HEX((uint8_t *)NRF_FICR->DEVICEID, 8);
 	PRINTS("\r\n");
@@ -403,12 +403,12 @@ bool factory_test() {
 			DEBUG("FAIL4: ", err);
 			goto init_fail;
 		}
-		err = spinor_exit_secure_mode();
 		if (err != 1) {
 			DEBUG("FAIL5: ", err);
 			goto init_fail;
 		}
 	}
+	err = spinor_exit_secure_mode();
 
 	//spinor_dump_otp();
 /*
