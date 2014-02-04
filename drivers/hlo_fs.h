@@ -66,6 +66,7 @@ typedef enum {
 	HLO_FS_Page_Dirty = 0x0,
 } HLO_FS_Page_State;
 
+static const uint8_t HLO_FS_Page_State_Bits = 2;
 
 /**
  * hlo_fs_init - attempt to read hlo_fs layout from flash
