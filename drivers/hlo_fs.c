@@ -36,8 +36,6 @@ hlo_fs_init() {
 
 	// read partition information
 	memset(_partitions, 0xAA, sizeof(HLO_FS_Partition_Info) * HLO_FS_Partition_Max);
-	uint32_t temp = sizeof(HLO_FS_Layout_v1);
-	DEBUG("reading from: ", temp);
 	to_read = sizeof(HLO_FS_Partition_Info) * _layout.num_partitions;
 	ret = spinor_read(sizeof(HLO_FS_Layout_v1), to_read, (uint8_t *)_partitions);
 	if (ret != to_read) {
