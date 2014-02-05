@@ -144,7 +144,7 @@ endif
 
 ALL_SRCS = $(SRCS) $(APP_SRCS) $(BOOTLOADER_SRCS)
 ALL_OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(ALL_SRCS)))
-ALL_DEPS = $(ALL_OBJS:.o=.d)
+ALL_DEPS = $(addprefix $(BUILD_DIR)/, $(ALL_OBJS:.o=.d))
 
 # all target (must be first rule): build app + bootloader
 
