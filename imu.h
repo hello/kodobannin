@@ -2,26 +2,7 @@
 
 #pragma once
 
-enum imu_sensor_set {
-    IMU_SENSORS_DISABLED = 0,
-    IMU_SENSORS_ACCEL = 1,
-    IMU_SENSORS_GYRO = 2,
-};
-
-enum imu_hz {
-	IMU_HZ_0_25 = 0,
-	IMU_HZ_0_49 = 1,
-    IMU_HZ_0_98 = 2,
-    IMU_HZ_1_95 = 3,
-    IMU_HZ_3_91 = 4,
-    IMU_HZ_7_81 = 5,
-    IMU_HZ_15_63 = 6,
-    IMU_HZ_31_25 = 7,
-    IMU_HZ_62_50 = 8,
-    IMU_HZ_125 = 9,
-    IMU_HZ_250 = 10,
-    IMU_HZ_500 = 11,
-};
+#include "imu_data.h"
 
 struct imu_settings {
 	uint16_t wom_threshold; // in microgravities

@@ -25,7 +25,7 @@
 
 #include "git_description.h"
 #include "hello_dfu.h"
-#include "imu_storage.h"
+#include "imu_data.h"
 
 static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
@@ -306,23 +306,27 @@ _imu_process(void* context)
 
     imu_wom_disable();
 
-    unsigned sample_size = 0;
-    if(settings.active_sensors & IMU_SENSORS_ACCEL) {
-        sample_size += 6;
-    }
-    if(settings.active_sensors & IMU_SENSORS_GYRO) {
-        sample_size += 6;
-    }
+    unsigned sample_size;
+	switch(settings.active_sensors) {
+	case IMU_SENSORS_ACCEL:
+		sample_size = 6;
+		break;
+	case IMU_SENSORS_ACCEL_GYRO:
+		sample_size = 12;
+		break;
+	}
 
 	uint16_t fifo_left = imu_fifo_bytes_available();
 	fifo_left -= fifo_left % sample_size;
 
-    struct imu_data_header data_header = {
+    struct imu_data_header_v0 data_header = {
+		.version = 0,
         .timestamp = 0,
-        .gyro_xyz = settings.active_sensors & IMU_SENSORS_GYRO,
-        .accel_xyz = settings.active_sensors & IMU_SENSORS_ACCEL,
-        .bytes = fifo_left,
+		.sensors = settings.active_sensors,
+		.accel_range = IMU_ACCEL_RANGE_2G,
+		.gyro_range = IMU_GYRO_RANGE_500_DPS,
         .hz = settings.active_sample_rate,
+        .bytes = fifo_left,
     };
 
     // Write data_header to persistent storage here

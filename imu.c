@@ -138,19 +138,16 @@ void _reset_sensors()
     _register_read(MPU_REG_FIFO_EN, &fifo_register);
 	_register_read(MPU_REG_PWR_MGMT_2, &power_management_2_register);
 
-    fifo_register &= ~(FIFO_EN_QUEUE_ACCEL|FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z);
-    power_management_2_register |= PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS|PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS;
-
-
-    if(_settings.active_sensors & IMU_SENSORS_ACCEL) {
+	switch(_settings.active_sensors) {
+	case IMU_SENSORS_ACCEL:
         fifo_register |= FIFO_EN_QUEUE_ACCEL;
-		power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS);
-    }
-
-    if(_settings.active_sensors & IMU_SENSORS_GYRO) {
-        fifo_register |= FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z;
-		power_management_2_register &= ~(PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
-    }
+        power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS);
+		break;
+	case IMU_SENSORS_ACCEL_GYRO:
+        fifo_register |= FIFO_EN_QUEUE_ACCEL|FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z;
+        power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS|PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
+		break;
+	}
 
     _register_write(MPU_REG_PWR_MGMT_2, power_management_2_register);
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN|USR_CTL_FIFO_RST);
@@ -419,15 +416,10 @@ _reset_ticks_to_fill_fifo()
 {
     uint32_t samples_to_fill_fifo;
     switch(_settings.active_sensors) {
-	case IMU_SENSORS_DISABLED:
-		_settings.ticks_to_fill_fifo = 0;
-		_settings.ticks_to_fifo_watermark = 0;
-		return;
     case IMU_SENSORS_ACCEL:
-    case IMU_SENSORS_GYRO:
         samples_to_fill_fifo = 682; // floor(4096/6.0)
         break;
-    case IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO:
+    case IMU_SENSORS_ACCEL_GYRO:
         samples_to_fill_fifo = 341; // floor(4096/12.0)
         break;
     }
