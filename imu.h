@@ -14,6 +14,9 @@ struct imu_settings {
 	bool active;
 };
 
+/* See README_IMU.md for an introduction to the IMU, and vocabulary
+   that you may need to understand the rest of this. */
+
 /// Initializes the IMU.
 /** This immediately sets the IMU into sleep (deactivated) mode, with some default values specified in the _settings variable in imu.c. You will get an interrupt low trigger on IMU_INT when the IMU detects motion.  */
 void imu_init(enum SPI_Channel channel);
