@@ -1,7 +1,7 @@
 IMU
 ===
 
-IMU stands for Inertial Motion (née Movement) Unit. Basically: an
+IMU stands for Inertial Motion (née Movement (ED: not Measurement?)) Unit. Basically: an
 accelerometer, and optionally a gyroscope. IMU is the abstract term,
 describing an accelerometer (or anything that detects movement) in
 general. The actual chip is an Invensense MPU-6500.
