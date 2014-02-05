@@ -39,7 +39,7 @@ bool imu_is_active();
 
 /// Activate the IMU by waking it up from sleep mode.
 void imu_activate();
-/// Deactivate the IMU by putting it into sleep mode.
+/// Deactivate the IMU by putting it into sleep mode. This also clears the the IMU interrupt.
 void imu_deactivate();
 void imu_clear_interrupt_status();
 void imu_wom_disable();
