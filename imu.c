@@ -634,7 +634,7 @@ imu_init(enum SPI_Channel channel) {
 	_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
 
 	// Init Gyro
-	_register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_2k_DPS << GYRO_CFG_RATE_OFFET));
+	_register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_SCALE_2k_DPS << GYRO_CFG_SCALE_OFFSET));
 
 	// Init FIFO
 	uint8_t fifo_size_bits;
