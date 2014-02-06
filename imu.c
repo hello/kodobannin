@@ -22,6 +22,8 @@ static struct imu_settings _settings = {
 	.inactive_sample_rate = IMU_HZ_15_63,
     .active_sample_rate = IMU_HZ_31_25,
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
+    .accel_range = IMU_ACCEL_RANGE_2G,
+	.gyro_range = IMU_GYRO_RANGE_2000_DPS,
 	.ticks_to_fill_fifo = 0,
 	.ticks_to_fifo_watermark = 0,
 	.active = true,
@@ -132,6 +134,7 @@ imu_read_regs(uint8_t *buf) {
 	return 12;
 }
 
+static
 void _reset_sensors()
 {
     uint8_t fifo_register, power_management_2_register;
@@ -152,6 +155,32 @@ void _reset_sensors()
     _register_write(MPU_REG_PWR_MGMT_2, power_management_2_register);
 	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN|USR_CTL_FIFO_RST);
     _register_write(MPU_REG_FIFO_EN, fifo_register);
+}
+
+static void
+_reset_accel_range()
+{
+	_register_write(MPU_REG_ACC_CFG, _settings.accel_range << ACCEL_CFG_SCALE_OFFSET);
+}
+
+void
+imu_set_accel_range(enum imu_accel_range range)
+{
+	_settings.accel_range = range;
+           _reset_accel_range();
+}
+
+static void
+_reset_gyro_range()
+{
+	_register_write(MPU_REG_GYRO_CFG, _settings.gyro_range << GYRO_CFG_SCALE_OFFSET);
+}
+
+void
+imu_set_gyro_range(enum imu_gyro_range range)
+{
+	_settings.gyro_range = range;
+	_reset_gyro_range();
 }
 
 void imu_clear_interrupt_status()
@@ -630,11 +659,8 @@ imu_init(enum SPI_Channel channel) {
 	// Config interrupts
 	// _register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
 
-	// Init accel
-	_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
-
-	// Init Gyro
-	_register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_SCALE_2k_DPS << GYRO_CFG_SCALE_OFFSET));
+	_reset_accel_range();
+	_reset_gyro_range();
 
 	// Init FIFO
 	uint8_t fifo_size_bits;

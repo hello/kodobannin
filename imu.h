@@ -9,6 +9,8 @@ struct imu_settings {
     enum imu_hz inactive_sample_rate;
     enum imu_sensor_set active_sensors;
 	enum imu_hz active_sample_rate;
+	enum imu_accel_range accel_range;
+    enum imu_gyro_range gyro_range;
     unsigned ticks_to_fill_fifo;
 	unsigned ticks_to_fifo_watermark;
 	bool active;
@@ -24,6 +26,9 @@ void imu_init(enum SPI_Channel channel);
 uint16_t imu_accel_reg_read(uint8_t *buf);
 uint16_t imu_read_regs(uint8_t *buf);
 void imu_set_sample_rate(uint8_t hz);
+
+void imu_set_accel_range(enum imu_accel_range range);
+void imu_set_gyro_range(enum imu_gyro_range range);
 
 /// Given the enum imu_hz passed to it, returns the sampling interval (a.k.a. sampling period or sampling time, in milliseconds).
 unsigned imu_get_sampling_interval(enum imu_hz);
