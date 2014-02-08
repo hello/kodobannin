@@ -28,6 +28,7 @@ SRCS = \
 	error_handler.c \
 	sha1.c \
 	util.c \
+	printf.c \
 	$(BUILD_DIR)/git_description.c \
 	$(wildcard drivers/*.c) \
 	$(wildcard ble/*.c) \
