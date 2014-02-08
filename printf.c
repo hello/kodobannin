@@ -7,7 +7,6 @@
 #include "util.h"
 //#include <simple_uart.h>
 
-
 #ifndef __printflike
 /* 
  * Compiler-dependent macros to declare that functions take printf-like 
@@ -86,7 +85,27 @@ out:
 static inline uint32_t
 _intify(char *dest, size_t index, size_t len, va_list args)
 {
-	return 0;
+	uint32_t val;
+	uint32_t val_p;
+	uint8_t rem;
+	uint32_t used = 0;
+
+	val = (uint32_t) va_arg(args, uint32_t);
+
+	do {
+		val_p = val/10;
+
+		rem = val - (val_p*10);
+
+		if (!_char_out(dest, index, len, hex[rem]))
+			goto out;
+		++used;
+
+		val = val_p;
+	} while (val != 0);
+
+out:
+	return used;
 }
 
 static uint32_t
