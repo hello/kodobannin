@@ -57,19 +57,27 @@ _hexify(char *dest, size_t index, size_t len, va_list args)
 	char tmp;
 	uint32_t i = 0;
 	uint32_t used = 0;
+	uint8_t non_zero = 0;
 
 	val = (uint32_t) va_arg(args, uint32_t);
 	
 	for (i=0; i < 4; i++) {
 		uint8_t out = (val >> 8*(3-i)) & 0xFF;
 		tmp = hex[0xF & (out >> 4)];
-		if (!_char_out(dest, index, len, tmp))
-			goto out;
-		++used;
+		if (tmp!=hex[0] || (tmp == hex[0] && non_zero)) {
+			non_zero = 1;
+
+			if (!_char_out(dest, index, len, tmp))
+				goto out;
+			++used;
+		}
 		tmp = hex[0xF & out];
-		if (!_char_out(dest, index, len, tmp))
-			goto out;
-		++used;
+		if (tmp!=hex[0] || (tmp == hex[0] && non_zero)) {
+			non_zero = 1;
+			if (!_char_out(dest, index, len, tmp))
+				goto out;
+			++used;
+		}
 	}
 out:
 	return used;
