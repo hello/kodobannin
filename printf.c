@@ -38,7 +38,7 @@ _char_out(char *dest, size_t index, size_t len, char out)
 {
 	if (dest) {
 		if (index < len) {
-			dest[index++] = out;
+			dest[index] = out;
 		} else {
 			return 0;
 		}
@@ -66,16 +66,20 @@ _hexify(char *dest, size_t index, size_t len, va_list args)
 		if (tmp!=hex[0] || (tmp == hex[0] && non_zero)) {
 			non_zero = 1;
 
-			if (!_char_out(dest, index, len, tmp))
+			if (!_char_out(dest, index, len, tmp)) {
 				goto out;
+			}
 			++used;
+			++index;
 		}
 		tmp = hex[0xF & out];
 		if (tmp!=hex[0] || (tmp == hex[0] && non_zero)) {
 			non_zero = 1;
-			if (!_char_out(dest, index, len, tmp))
+			if (!_char_out(dest, index, len, tmp)) {
 				goto out;
+			}
 			++used;
+			++index;
 		}
 	}
 out:
@@ -100,6 +104,7 @@ _intify(char *dest, size_t index, size_t len, va_list args)
 		if (!_char_out(dest, index, len, hex[rem]))
 			goto out;
 		++used;
+		++index;
 
 		val = val_p;
 	} while (val != 0);
@@ -127,8 +132,8 @@ _vsnprintf(char *dest, size_t len, const char *fmt, va_list args)
 					case 'D':
 						used = _intify(dest, index, len, args);
 						if (!used)
-							return index;
-						index += used-1;
+							goto out;
+						index += used;
 						++fmt;
 						break;
 
@@ -136,29 +141,47 @@ _vsnprintf(char *dest, size_t len, const char *fmt, va_list args)
 					case 'X':
 						used = _hexify(dest, index, len, args);
 						if (!used)
-							return index;
-						index += used-1;
+							goto out;
+						index += used;
 						++fmt;
 						break;
 
+					case 's':
+					case 'S':
+					{
+						uint8_t *arg = (uint8_t *)va_arg(args, uint8_t *);
+					
+						while (*arg && (!dest || (index < len))) {
+							if (!_char_out(dest, index, len, *arg++))
+								goto out;
+							++index;
+						}
+						++fmt;
+						break;
+					}
+
 					default:
 						if (!_char_out(dest, index, len, '%'))
-							return index;
+							goto out;
 
 				};
 				break;
 
 			case '\0':
-				return index;
+				goto out;
 				break;
 
 			default:
 				if(!_char_out(dest, index, len, tok))
-					return index;
+					goto out;
+				index++;
 		};
+	} while (*fmt && (!dest || index < len));
 
-		index++;
-	} while (*fmt && (!len || index < len));
+out:
+	if (dest) {
+		dest[index-1] = '\0';
+	}
 
 	return index;
 }
