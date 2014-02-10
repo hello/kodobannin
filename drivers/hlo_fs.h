@@ -68,6 +68,21 @@ typedef enum {
 
 static const uint8_t HLO_FS_Page_State_Bits = 2;
 
+struct HLO_FS_Bitmap_Record {
+    enum HLO_FS_Partition_ID id;
+
+    // calculated absolute start and end addresses
+    // (fall within bitmap partition)
+    uint32_t bitmap_start_addr;
+    uint32_t bitmap_end_addr;
+
+    // for caching linear scan results
+    uint32_t bitmap_read_ptr;
+	uint8_t  bitmap_read_element;
+    uint32_t bitmap_write_ptr;
+	uint8_t  bitmap_write_element;
+};
+
 /**
  * hlo_fs_init - attempt to read hlo_fs layout from flash
  *
