@@ -82,7 +82,6 @@ binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
 		*(out++) = hex[0xF&*ptr++];
 	}
 }
-#endif
 
 void
 debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks)
@@ -94,3 +93,15 @@ debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop
 
 	DEBUG(message, diff_ticks);
 }
+#else
+void
+serial_print_hex(uint8_t *ptr, uint32_t len)
+{
+}
+
+void
+debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks)
+{
+}
+#endif
+

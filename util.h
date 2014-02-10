@@ -11,14 +11,14 @@ const uint8_t hex[16];
 #define PRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
 #define PRINTS(a) simple_uart_putstring((const uint8_t *)a)
 #define PRINTC(a) simple_uart_put(a)
-void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);
 #else //---------------------------------------------------
 #define PRINT_HEX(a,b) {}
 #define PRINTS(a) {}
 #define PRINTC(a) {}
 #define simple_uart_config(a,b,c,d,e) {}
-#define debug_print_ticks(message, start_ticks, stop_ticks) {}
 #endif //===================================================
+
+void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);
 
 #define DEBUG(a,b) {PRINTS(a); PRINT_HEX(&b, sizeof(b)); PRINTC('\r'); PRINTC('\n');}
 
