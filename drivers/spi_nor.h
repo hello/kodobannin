@@ -1,4 +1,6 @@
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
 
 #ifndef TEST_HARNESS
 #include <drivers/spi.h>
