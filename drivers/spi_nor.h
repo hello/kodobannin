@@ -1,6 +1,8 @@
 #pragma once
 
+#ifndef TEST_HARNESS
 #include <drivers/spi.h>
+#endif
 
 enum SPI_NOR_Commands {
 	CMD_NOP     = 0x00,
