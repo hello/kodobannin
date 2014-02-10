@@ -46,6 +46,7 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
+	nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
 
 APP_SRCS = \
 	$(SRCS) \
