@@ -89,7 +89,7 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
-    PRINTS("Bootloader is alive.\r\n");
+    PRINTS("Bootloader is alive.\r\n");
 
 #ifdef DEBUG
     PRINTS("Device name: ");
