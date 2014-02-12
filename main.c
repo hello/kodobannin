@@ -694,36 +694,6 @@ _start()
         __WFE();
     }
 #endif
-    // IMU standalone test code
-#if 0
-    err = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err);
-
-    // for do_imu code
-    int16_t *values = (int16_t *)sample;
-    int16_t old_values[6];
-    uint16_t diff[6];
-    uint32_t read, sent;
-
-    imu_read_regs((uint8_t *)old_values);
-
-    while(1) {
-        //read = imu_accel_reg_read(sample);
-        read = imu_read_regs((uint8_t *)sample);
-
-        // let's play around with calc'ing diffs
-        for (i=0; i < 6; i++) {
-            diff[i] = old_values[i] - values[i];
-            old_values[i] = values[i];
-        }
-        //read = imu_fifo_read(6, sample);
-        //if (read > 0) {
-		PRINT_HEX(diff, read);
-		PRINTS("\r\n");
-        //}
-        nrf_delay_ms(5);
-    }
-#endif
 
     //adc_test();
 
@@ -739,14 +709,6 @@ _start()
 	ble_advertising_start();
 
     // init imu SPI channel and interface
-#if 0
-    err = imu_init(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-    APP_ERROR_CHECK(err);
-
-    //imu_selftest(SPI_Channel_0);
-
-	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
-#endif
 
     imu_init(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
 
