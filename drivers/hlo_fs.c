@@ -429,10 +429,8 @@ _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	int32_t ret;
-	uint32_t bitmap_start;
-	uint32_t bitmap_end;
 
-	ret = _bitmap_get_partition_range(id, &bitmap_start, &bitmap_end);
+	ret = _bitmap_find_next_available_page(id);
 	if (ret < 0) {
 		return ret;
 	}
