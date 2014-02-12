@@ -346,19 +346,24 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 		if (ret != sizeof(record)) {
 			return ret;
 		}
+		// if the first slot in the block isn't used then we don't have a Case 1 or 2
 		pos = _bitmap_get_used_pos(record);
 		if (pos != 0)
 			goto Case_3;
 
-		// check back from the last address for free space
+		// Case 2 check. Search back from the last address for free space
 		addr = _bitmap_records[id].bitmap_end_addr;
 		do {
 			ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
 			if (ret != sizeof(record)) {
 				return ret;
 			}
-			pos = _bitmap_get_used_pos(record);
-		} while (pos != -1 && (addr -= 4));
+
+			// check our used and free bits
+			pos2 = _bitmap_get_used_pos(record);
+			free_pos =  _bitmap_get_free_pos(record);
+			printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos2);
+		} while (pos2 != -1 && free_pos == -1 && (addr -= 4) &&  (addr > _bitmap_records[id].bitmap_start_addr));
 
 		//XXX: FIND THE WRITE POINTER TOO!
 
