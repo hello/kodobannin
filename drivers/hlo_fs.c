@@ -156,7 +156,13 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 		return HLO_FS_Media_Error;
 	}
 
-	// erase blocks for partition
+	// erase blocks for bitmap
+	for (i = parts[0].block_offset; i < (parts[0].block_offset + parts[0].block_count); i++) {
+		ret = spinor_block_erase(1);
+		if (ret < 0) {
+			return ret;
+		}
+	}
 	return 0;
 }
 
