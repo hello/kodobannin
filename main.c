@@ -266,6 +266,14 @@ services_init() {
 					  sizeof(GIT_DESCRIPTION));
 }
 
+static void _hard_fault() UNUSED;
+static void
+_hard_fault()
+{
+	int* p = (int*)0x5;
+	*p = 0x69;
+}
+
 void
 _start()
 {
