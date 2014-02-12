@@ -93,6 +93,8 @@ _start()
 
     PRINTS("Bootloader is alive.\r\n");
 
+	crash_log_save();
+
 #ifdef DEBUG
     PRINTS("Device name: ");
     PRINTS(BLE_DEVICE_NAME);
