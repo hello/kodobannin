@@ -285,8 +285,25 @@ _bitmap_get_used_pos(uint32_t haystack) {
 		return -1;
 
 	for (i=0; i<16; i++) {
-		if (Page_Used_Check(haystack, i))
+		if (Page_Used_Check(haystack, i)) {
 			return i;
+		}
+	}
+
+	return -1;
+}
+
+static int8_t
+_bitmap_get_free_pos(uint32_t haystack) {
+	uint32_t i;
+
+	if (haystack == ALL_USED_PAGES)
+		return -1;
+
+	for (i=0; i<16; i++) {
+		if (Page_Free_Check(haystack, i)) {
+			return i;
+		}
 	}
 
 	return -1;
