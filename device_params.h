@@ -110,7 +110,7 @@
  * BLE Bond Parameters
  */
 #define FLASH_PAGE_BOND     253 // FLASH_PAGE_SYS_ATTR+2
-#define FLASH_PAGE_SYS_ATTR 251 // 3xEC00 (__user_data__)/BLE_FLASH_PAGE_SIZE (1024)
+#define FLASH_PAGE_SYS_ATTR 251 // 3xEC00: BLE_BONDMNGR_SYS_ATTR/BLE_FLASH_PAGE_SIZE (1024)
 
 /*
  * BLE Connection Parameters
