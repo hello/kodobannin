@@ -74,11 +74,13 @@ _verify_fw_sha1(uint8_t *valid_hash)
 
 bool dfu_success = false;
 
+extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
+
 void
 _start()
 {
 	uint32_t err_code;
-    volatile uint8_t* proposed_fw_sha1 = (uint8_t*)BOOTLOADER_SETTINGS_ADDRESS;
+    volatile uint8_t* proposed_fw_sha1 = __app_sha1_start__;
 
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
