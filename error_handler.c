@@ -154,6 +154,5 @@ void HardFault_Handler()
 					// " mov lr, r2 \n"
 
 					" b band_hardfault_handler \n"
-					" bkpt #0          \n"
 					);
 }
