@@ -26,9 +26,16 @@
 #include <drivers/hlo_fs.h>
 #include "git_description.h"
 #include "hello_dfu.h"
+#include "imu_data.h"
 
 static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
+
+static app_timer_id_t _imu_timer;
+
+static app_gpiote_user_id_t _imu_gpiote_user;
+
+#define IMU_COLLECTION_INTERVAL 6553 // in timer ticks, so 200ms (0.2*32768)
 
 void
 test_3v3() {
@@ -118,7 +125,7 @@ _mode_write_handler(ble_gatts_evt_write_t *event) {
             APP_ERROR_CHECK(err);
             break;
 
-        default:
+	default:
             DEBUG("Unhandled state transition to 0x", state);
             err = sd_ble_gatts_value_set(event->handle, 0, &len, &_state);
             APP_ERROR_CHECK(err);
@@ -200,7 +207,7 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
             DEBUG("Starting HRS cal: ", test_size);
 
             hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 1);
-           // hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &_hrs_send_data);
+			// hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &_hrs_send_data);
             _state = TEST_HRS_DONE;
             err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
@@ -215,7 +222,7 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
                 ble_hello_demo_data_send_blocking(buf, err);
                 */break;
 
-        case TEST_ENTER_DFU:
+	case TEST_ENTER_DFU:
             do_imu = 0;
             PRINTS("Rebooting into DFU");
             // set the trap bit for the bootloader and kick the system
@@ -309,7 +316,7 @@ get_random_bytes(uint8_t *buf, uint32_t len) {
 	}
 }
 
-bool factory_test() {
+bool factory_test(bool test_imu) {
 	int32_t err;
 	uint32_t i;
 	bool passed = true;
@@ -423,18 +430,150 @@ bool factory_test() {
 */
 	PRINTS("\r\n");
 
-skip_nor:
-	PRINTS("IMU Init: ");
-	err = imu_init(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
-	if (err != 0) {
-		DEBUG("FAIL :", err);
-		goto init_fail;
+ skip_nor:
+	if(test_imu) {
+        PRINTS("IMU Init: ");
+        err = imu_init(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+        if (err != 0) {
+            DEBUG("FAIL :", err);
+            goto init_fail;
+        }
+        PRINTS("PASS\r\n");
 	}
-	PRINTS("PASS\r\n");
+
 	return passed;
 
 init_fail:
 	return false;
+}
+
+static uint32_t _imu_start_motion_time;
+static uint32_t _imu_last_motion_time;
+
+static void
+_imu_process(void* context)
+{
+	uint32_t err;
+
+	uint32_t current_time;
+	(void) app_timer_cnt_get(&current_time);
+
+	uint32_t ticks_since_last_motion;
+	(void) app_timer_cnt_diff_compute(current_time, _imu_last_motion_time, &ticks_since_last_motion);
+
+	uint32_t ticks_since_motion_start;
+	(void) app_timer_cnt_diff_compute(current_time, _imu_start_motion_time, &ticks_since_motion_start);
+
+    struct imu_settings settings;
+    imu_get_settings(&settings);
+
+	// DEBUG("Ticks since last motion: ", ticks_since_last_motion);
+    // DEBUG("Ticks since motion start: ", ticks_since_motion_start);
+	// DEBUG("FIFO watermark ticks: ", settings.ticks_to_fifo_watermark);
+
+	if(ticks_since_last_motion < IMU_COLLECTION_INTERVAL
+	   && ticks_since_motion_start < settings.ticks_to_fifo_watermark) {
+        err = app_timer_start(_imu_timer, IMU_COLLECTION_INTERVAL, NULL);
+		APP_ERROR_CHECK(err);
+		return;
+	}
+
+    imu_wom_disable();
+
+    unsigned sample_size;
+	switch(settings.active_sensors) {
+	case IMU_SENSORS_ACCEL:
+		sample_size = 6;
+		break;
+	case IMU_SENSORS_ACCEL_GYRO:
+		sample_size = 12;
+		break;
+	}
+
+	uint16_t fifo_left = imu_fifo_bytes_available();
+	fifo_left -= fifo_left % sample_size;
+
+    struct imu_data_header_v0 data_header = {
+		.version = 0,
+        .timestamp = 0,
+		.sensors = settings.active_sensors,
+		.accel_range = IMU_ACCEL_RANGE_2G,
+		.gyro_range = IMU_GYRO_RANGE_500_DPS,
+        .hz = settings.active_sample_rate,
+        .bytes = fifo_left,
+    };
+
+    // Write data_header to persistent storage here
+    DEBUG("IMU data header: ", data_header);
+
+	while(fifo_left > 0) {
+		// For MAX_FIFO_READ_SIZE, we want to use a number that (1)
+		// will not overflow the stack (keep it under ~2k), and is (2)
+		// evenly divisible by 12, which is the number of bytes per
+		// sample if we're sampling from both gyroscope and the
+		// accelerometer.
+
+#define MAX_FIFO_READ_SIZE 1920 // Evenly divisible by 48
+		unsigned read_size = MIN(fifo_left, MAX_FIFO_READ_SIZE);
+		read_size -= fifo_left % sample_size;
+
+	    uint8_t imu_data[read_size];
+        uint16_t bytes_read = imu_fifo_read(read_size, imu_data);
+
+		DEBUG("Bytes read from FIFO: ", bytes_read);
+
+		fifo_left -= bytes_read;
+
+	    watchdog_pet();
+
+        // Write imu_data to persistent storage here
+
+#undef PRINT_FIFO_DATA
+
+#ifdef PRINT_FIFO_DATA
+		unsigned i;
+		for(i = 0; i < bytes_read; i += sizeof(int16_t)) {
+            if(i % sample_size == 0 && i != 0) {
+                PRINTS("\r\n");
+            }
+			int16_t* p = (int16_t*)(imu_data+i);
+			PRINT_HEX(p, sizeof(int16_t));
+		}
+
+		PRINTS("\r\n");
+
+#endif
+    }
+
+    _imu_start_motion_time = 0;
+
+    imu_deactivate();
+
+	PRINTS("Deactivating IMU.\r\n");
+}
+
+static void
+_imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
+{
+	uint32_t err;
+
+	if(!_imu_start_motion_time) {
+        (void) app_timer_cnt_get(&_imu_start_motion_time);
+	}
+    (void) app_timer_cnt_get(&_imu_last_motion_time);
+
+	PRINTS("Motion detected.\r\n");
+
+	imu_activate();
+
+	// The _imu_timer below may already be running, but the nRF
+	// documentation for app_timer_start() specifically says "When
+	// calling this method on a timer which is already running, the
+	// second start operation will be ignored." So we're OK here.
+    err = app_timer_start(_imu_timer, IMU_COLLECTION_INTERVAL, NULL);
+    APP_ERROR_CHECK(err);
+
+    imu_clear_interrupt_status();
 }
 
 void
@@ -454,7 +593,7 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
-	if (factory_test()) {
+	if (factory_test(false)) {
 		PRINTS("\r\nFactory Test PASSED.\r\n\r\n");
 	} else {
 		PRINTS("***************************\r\n");
@@ -588,6 +727,11 @@ _start()
 
     //adc_test();
 
+	APP_TIMER_INIT(APP_TIMER_PRESCALER,
+				   APP_TIMER_MAX_TIMERS,
+				   APP_TIMER_OP_QUEUE_SIZE,
+				   false);
+
     // init ble
 	ble_init();
 
@@ -603,6 +747,22 @@ _start()
 
 	imu_set_sensors(IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO);
 #endif
+
+    imu_init(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS);
+
+	err = app_timer_create(&_imu_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_process);
+    APP_ERROR_CHECK(err);
+
+	nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
+
+	APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+
+	err = app_gpiote_user_register(&_imu_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process);
+	APP_ERROR_CHECK(err);
+
+	err = app_gpiote_user_enable(_imu_gpiote_user);
+	APP_ERROR_CHECK(err);
+
     // loop on BLE events FOREVER
     while(1) {
     	watchdog_pet();

@@ -4,6 +4,11 @@
 
 const uint8_t hex[16];
 
+#undef PACKED
+#undef UNUSED
+#define PACKED __attribute__((packed))
+#define UNUSED __attribute__((unused))
+
 #define APP_ASSERT(condition) APP_ERROR_CHECK(!(condition))
 
 #ifdef DEBUG_SERIAL //=====================================
@@ -72,3 +77,15 @@ static inline uint32_t __attribute__((const)) bswap32(uint32_t x)
 
 	return x;
 }
+
+#undef MIN
+#define MIN(a,b)                                \
+    ({ __typeof__ (a) _a = (a);                 \
+        __typeof__ (b) _b = (b);                \
+        _a < _b ? _a : _b; })
+
+#undef MAX
+#define MAX(a,b)                                \
+    ({ __typeof__ (a) _a = (a);                 \
+        __typeof__ (b) _b = (b);                \
+        _a > _b ? _a : _b; })

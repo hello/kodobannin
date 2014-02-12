@@ -15,12 +15,19 @@
 
 #define BUF_SIZE 4
 
-#define IMU_DEFAULT_SAMPLE_RATE 25
-#define IMU_DEFAULT_SENSORS (IMU_SENSORS_ACCEL|IMU_SENSORS_GYRO)
-
 static SPI_Context _ctx;
 
-static enum imu_sensor_set _sensors;
+static struct imu_settings _settings = {
+	.wom_threshold = 35,
+	.inactive_sample_rate = IMU_HZ_15_63,
+    .active_sample_rate = IMU_HZ_31_25,
+	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
+    .accel_range = IMU_ACCEL_RANGE_2G,
+	.gyro_range = IMU_GYRO_RANGE_2000_DPS,
+	.ticks_to_fill_fifo = 0,
+	.ticks_to_fifo_watermark = 0,
+	.active = true,
+};
 
 static inline void
 _register_read(MPU_Register_t register_address, uint8_t* const out_value)
@@ -40,6 +47,49 @@ _register_write(MPU_Register_t register_address, uint8_t value)
 
 	ret = spi_xfer(&_ctx, 2, buf, 0, NULL);
 	APP_ERROR_CHECK_BOOL(ret == 2);
+}
+
+unsigned
+imu_get_sampling_interval(enum imu_hz hz)
+{
+    // The following line is a fast way to convert an enum imu_hz sample rate
+    // to the number of milliseconds that sample rate uses between
+    // samples.
+	//
+    // If you look at the imu_hz enum values, they range from [0..11],
+    // representing sample rates of [0.25Hz, 0.49Hz.. 500Hz], doubling
+    // with each step. If we table out the enum value vs the cycle
+    // time in milliseconds, working backwards because that's easier,
+    // we get:
+	//
+	// enum  sample rate (hz)  milliseconds
+	// ----  ----------------  ------------
+    // 11    500               2
+    // 10    250               4
+    // 9     125               8
+    // 8     62.50             16
+    // 7     31.25             32
+    // 6     15.63             64
+    // 5     7.81              128
+	// 4     3.91              256
+	// 3     1.95              512
+	// 2     0.98              1024
+	// 1     0.49              2048
+	// 0     0.25              4096
+	//
+	// ... so, hey, look, that looks a lot like a predicatable
+	// pattern. It turns out that each enum step doubles the
+	// time. Working backwards from table and starting at the
+	// bottom-right, we see an enum of 0 is 4096 milliseconds; moving
+	// up to the next line of 2048 milliseconds is an enum of 1; 1024
+	// milliseconds is an enum of 2; etc. So, the generic formnula is
+	// 4096 >> enum. Simple.
+	//
+	// (We could use an array for this too, but it seems more prudent
+	// to spend a couple of extra cycles instead of precious RAM
+	// space.)
+
+	return (unsigned)4096U >> (unsigned)hz;
 }
 
 uint16_t
@@ -83,40 +133,87 @@ imu_read_regs(uint8_t *buf) {
 	return 12;
 }
 
-void imu_set_sensors(enum imu_sensor_set sensors)
+static
+void _reset_sensors()
 {
-    if(sensors == _sensors) {
-        return;
-    }
-
     uint8_t fifo_register, power_management_2_register;
     _register_read(MPU_REG_FIFO_EN, &fifo_register);
 	_register_read(MPU_REG_PWR_MGMT_2, &power_management_2_register);
 
-    fifo_register &= ~(FIFO_EN_QUEUE_ACCEL|FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z);
-    power_management_2_register |= PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS|PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS;
-
-
-    if(sensors & IMU_SENSORS_ACCEL) {
+	switch(_settings.active_sensors) {
+	case IMU_SENSORS_ACCEL:
         fifo_register |= FIFO_EN_QUEUE_ACCEL;
-		power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS);
-    }
+        power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS);
+		break;
+	case IMU_SENSORS_ACCEL_GYRO:
+        fifo_register |= FIFO_EN_QUEUE_ACCEL|FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z;
+        power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS|PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
+		break;
+	}
 
-    if(sensors & IMU_SENSORS_GYRO) {
-        fifo_register |= FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z;
-		power_management_2_register &= ~(PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
-    }
-
+    _register_write(MPU_REG_PWR_MGMT_2, power_management_2_register);
+	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN|USR_CTL_FIFO_RST);
     _register_write(MPU_REG_FIFO_EN, fifo_register);
-	_register_write(MPU_REG_PWR_MGMT_2, power_management_2_register);
-
-    _sensors = sensors;
 }
 
-enum imu_sensor_set
-imu_get_sensors()
+static void
+_reset_accel_range()
 {
-    return _sensors;
+	_register_write(MPU_REG_ACC_CFG, _settings.accel_range << ACCEL_CFG_SCALE_OFFSET);
+}
+
+void
+imu_set_accel_range(enum imu_accel_range range)
+{
+	_settings.accel_range = range;
+           _reset_accel_range();
+}
+
+static void
+_reset_gyro_range()
+{
+	_register_write(MPU_REG_GYRO_CFG, _settings.gyro_range << GYRO_CFG_SCALE_OFFSET);
+}
+
+void
+imu_set_gyro_range(enum imu_gyro_range range)
+{
+	_settings.gyro_range = range;
+	_reset_gyro_range();
+}
+
+void imu_clear_interrupt_status()
+{
+    // Oddly, you clear the interrupt status register by _reading_ it,
+    // not writing to it. Read that again for impact.
+    //
+    // If you have INT_CFG_CLR_ON_STS set in the MPU_REG_INT_CFG
+    // register (which we do), then you must read MPU_REG_INT_STS to
+    // clear the interrupt status. If INT_CFG_CLR_ANY_READ is active,
+    // then the interrupt status is cleared by reading _any_ register,
+    // which is even more whacko.
+
+    uint8_t int_status;
+    _register_read(MPU_REG_INT_STS, &int_status);
+}
+
+void imu_set_sensors(enum imu_sensor_set sensors)
+{
+    if(_settings.active_sensors == sensors) {
+        return;
+    }
+
+    _settings.active_sensors = sensors;
+
+    _reset_sensors();
+
+	DEBUG("IMU: sensors set to ", sensors);
+}
+
+void
+imu_get_settings(struct imu_settings *settings)
+{
+	*settings = _settings;
 }
 
 uint16_t
@@ -134,14 +231,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 
 	count = spi_xfer(&_ctx, 1, data, count, buf);
 
-	// Note: You _must_ read the register 58 (Interrupt Status)
-	// after reading from the FIFO, otherwise the FIFO will not be
-	// cleared.
-	uint8_t int_status;
-	_register_read(MPU_REG_INT_STS, &int_status);
-	if(int_status & INT_STS_FIFO_OVRFLO) {
-		PRINTS("imu_fifo_read(): FIFO overflowed\r\n");
-	}
+	imu_clear_interrupt_status();
 
 	return count;
 }
@@ -149,6 +239,8 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 void
 imu_fifo_clear()
 {
+	// [TODO]: This will overflow the stack!
+
 	uint8_t null_buffer[IMU_FIFO_CAPACITY];
 
 	imu_fifo_read(IMU_FIFO_CAPACITY, null_buffer);
@@ -288,115 +380,229 @@ static void _self_test()
 }
 
 static void
-_imu_set_low_pass_filter(uint8_t hz)
+_imu_set_low_pass_filter(enum imu_hz hz)
 {
+	// [TODO]: register constants here should be enums
 	uint8_t gyro_config;
 	_register_read(MPU_REG_GYRO_CFG, &gyro_config);
-	gyro_config &= ~(1UL << 0 | 1UL << 1);
+	gyro_config &= (~GYRO_CFG_FCHOICE_B_MASK) | GYRO_CFG_FCHOICE_11;
 	_register_write(MPU_REG_GYRO_CFG, gyro_config);
 
 	uint8_t config_register;
 	_register_read(MPU_REG_CONFIG, &config_register);
-	config_register &= ~(1UL << 0 | 1UL << 1 | 1UL << 2);
+	config_register &= ~CONFIG_LPF_B_MASK;
 
 	uint8_t accel_config2;
 	_register_read(MPU_REG_ACC_CFG2, &accel_config2);
-	accel_config2 &= ~(1UL << 0 | 1UL << 1 | 1UL << 2);
+	accel_config2 &= ~ACCEL_CFG2_LPF_B_MASK;
 
-	if(hz >= 460) {
-		accel_config2 |= ACCEL_CFG2_LPF_1kHz_460bw;
-	} else if(hz >= 250) {
-		config_register |= CONFIG_LPF_8kHz_250bw;
-    } else if(hz >= 184) {
-        config_register |= CONFIG_LPF_1kHz_184bw;
-        accel_config2 |= ACCEL_CFG2_LPF_1kHz_184bw;
-    } else if(hz >= 92) {
-        config_register |= CONFIG_LPF_1kHz_92bw;
-        accel_config2 |= ACCEL_CFG2_LPF_1kHz_92bw;
-    } else if(hz >= 41) {
-        config_register |= CONFIG_LPF_1kHz_41bw;
-        accel_config2 |= ACCEL_CFG2_LPF_1kHz_41bw;
-    } else if(hz >= 20) {
-        config_register |= CONFIG_LPF_1kHz_20bw;
-        accel_config2 |= ACCEL_CFG2_LPF_1kHz_20bw;
-    } else if(hz >= 10) {
-        config_register |= CONFIG_LPF_1kHz_10bw;
-        accel_config2 |= ACCEL_CFG2_LPF_1kHz_10bw;
-    } else if(hz >= 5) {
+	switch(hz) {
+	case IMU_HZ_0_25:
+    case IMU_HZ_0_49:
+    case IMU_HZ_0_98:
+    case IMU_HZ_1_95:
+    case IMU_HZ_3_91:
+    case IMU_HZ_7_81:
         config_register |= CONFIG_LPF_1kHz_5bw;
         accel_config2 |= ACCEL_CFG2_LPF_1kHz_5bw;
-    }
+		break;
+    case IMU_HZ_15_63:
+        config_register |= CONFIG_LPF_1kHz_10bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_10bw;
+        break;
+    case IMU_HZ_31_25:
+        config_register |= CONFIG_LPF_1kHz_20bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_20bw;
+        break;
+    case IMU_HZ_62_50:
+        config_register |= CONFIG_LPF_1kHz_41bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_41bw;
+        break;
+    case IMU_HZ_125:
+        config_register |= CONFIG_LPF_1kHz_92bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_92bw;
+        break;
+	case IMU_HZ_250:
+        config_register |= CONFIG_LPF_1kHz_184bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_184bw;
+        break;
+    case IMU_HZ_500:
+        config_register |= CONFIG_LPF_1kHz_184bw;
+        accel_config2 |= ACCEL_CFG2_LPF_1kHz_460bw;
+		break;
+	default:
+		DEBUG("_imu_set_low_pass_filter has impossible hz: ", hz);
+		APP_ASSERT(0);
+		break;
+	}
 
     _register_write(MPU_REG_CONFIG, config_register);
     _register_write(MPU_REG_ACC_CFG2, accel_config2);
 }
 
-uint8_t _cached_sample_rate;
-
-uint8_t
-imu_get_sample_rate()
+static void
+_reset_ticks_to_fill_fifo()
 {
-	return _cached_sample_rate;
+    uint32_t samples_to_fill_fifo;
+    switch(_settings.active_sensors) {
+    case IMU_SENSORS_ACCEL:
+        samples_to_fill_fifo = 682; // floor(4096/6.0)
+        break;
+    case IMU_SENSORS_ACCEL_GYRO:
+        samples_to_fill_fifo = 341; // floor(4096/12.0)
+        break;
+    }
+
+    unsigned ms = imu_get_sampling_interval(_settings.active_sample_rate);
+    uint32_t ticks_per_sample = 32 /* floor(32768/1024.0) */ * ms;
+
+    _settings.ticks_to_fill_fifo = ticks_per_sample * samples_to_fill_fifo;
+
+    // ~0.1s in timer ticks, rounded up to nearest 8. This leaves this
+    // long before the FIFO buffer overflows.
+    _settings.ticks_to_fifo_watermark = _settings.ticks_to_fill_fifo - 3000;
 }
 
-void
-imu_set_sample_rate(uint8_t hz)
+static void
+_reset_active_sample_rate()
 {
 	// The logic here is largely copied from mpu_set_sample_rate() in
 	// inv_mpu.c. Using their source code to get things working seems
 	// far more effective than reading their documentation.
 
-	uint8_t sample_rate_divider = (1000/hz) - 1;
-    _register_write(MPU_REG_SAMPLE_RATE_DIVIDER, sample_rate_divider);
+	uint8_t divider;
+    _register_read(MPU_REG_SAMPLE_RATE_DIVIDER, &divider);
 
-	_imu_set_low_pass_filter(hz >> 1);
+	uint8_t interval = imu_get_sampling_interval(_settings.active_sample_rate);
+	if(divider == interval-1) {
+		return;
+	}
 
-	// We cache the sample rate here, otherwise we have to perform a
-	// division when imu_get_sample_rate() is called.
-	_cached_sample_rate = hz;
+    _register_write(MPU_REG_SAMPLE_RATE_DIVIDER, interval-1);
+
+	_imu_set_low_pass_filter(_settings.active_sample_rate);
+	_reset_ticks_to_fill_fifo();
 }
 
-uint32_t
-imu_timer_ticks_from_sample_rate(uint8_t hz)
+void
+imu_set_sample_rate(enum imu_hz hz)
 {
-    uint32_t bytes_per_sample = 0;
+	if(_settings.active_sample_rate == hz) {
+		return;
+	}
 
-    if(_sensors & IMU_SENSORS_ACCEL)
-        bytes_per_sample += sizeof(int16_t)*3;
+    _settings.active_sample_rate = hz;
 
-    if(_sensors & IMU_SENSORS_GYRO)
-        bytes_per_sample += sizeof(int16_t)*3;
+    _reset_active_sample_rate();
 
-	uint32_t samples_to_fill_fifo = IMU_FIFO_CAPACITY/bytes_per_sample;
-    uint32_t ticks_per_sample = APP_TIMER_CLOCK_FREQ/hz;
-
-	uint32_t ticks_to_fill_fifo = (ticks_per_sample * samples_to_fill_fifo) >> 1;
-
-	const uint32_t ticks_headroom = 100000; // ~0.3s in timer ticks, rounded up to nearest 8. This leaves this long before the FIFO buffer overflows.
-
-	uint32_t ticks = ticks_to_fill_fifo - ticks_headroom;
-
-	DEBUG("IMU timer ticks: sample rate = ", hz);
-	DEBUG("IMU timer ticks: ticks = ", ticks);
-
-	return ticks;
+	DEBUG("IMU: sample rate changed to enum imu_hz ", hz);
 }
 
-static void _wake_on_motion_setup() __attribute__((unused));
-static void _wake_on_motion_setup()
+void
+imu_activate()
 {
-	// This code isn't used at all (thus the unused attribute in the
-	// function declaration); it's just here for safe-keeping.
+	if(_settings.active) {
+		return;
+	}
+
+	// We _must_ wake up the chip from low-power mode if we want it to
+	// write to the FIFO. It looks like the chip will never write to
+	// the FIFO in low-power mode, even if you set all the register
+	// bits asking it to do so.
+	uint8_t power_management_1;
+	_register_read(MPU_REG_PWR_MGMT_1, &power_management_1);
+	_register_write(MPU_REG_PWR_MGMT_1, power_management_1 & ~PWR_MGMT_1_CYCLE);
+
+    _reset_sensors();
+	_reset_active_sample_rate();
+
+	_settings.active = true;
+
+	// The accelerometer takes 20ms to start up from sleep mode,
+	// according to page 10 of the MPU-6500 Production
+	// Specification. See Table 2 (Accelerometer Specifications),
+	// "ACCELEROMETER STARTUP TIME, From Sleep Mode".
+    // nrf_delay_ms(30);
+}
+
+bool
+imu_is_active()
+{
+	return _settings.active;
+}
+
+static inline void
+_reset_wom_threshold()
+{
+    _register_write(MPU_REG_WOM_THR, _settings.wom_threshold >> 2);
+}
+
+void imu_wom_set_threshold(uint16_t microgravities)
+{
+	_settings.wom_threshold = microgravities;
+
+	_reset_wom_threshold();
+}
+
+void imu_wom_disable()
+{
+    uint8_t interrupt_enable;
+    _register_read(MPU_REG_INT_EN, &interrupt_enable);
+
+	_register_write(MPU_REG_INT_EN, interrupt_enable & ~INT_EN_WOM);
+}
+
+void imu_deactivate()
+{
+	if(!_settings.active) {
+		return;
+	}
+
+    _register_write(MPU_REG_INT_EN, 0);
+
+	_register_write(MPU_REG_FIFO_EN, 0);
+
+    uint8_t user_control;
+    _register_read(MPU_REG_USER_CTL, &user_control);
+    _register_write(MPU_REG_USER_CTL, user_control & ~USR_CTL_FIFO_EN);
+
+    _register_write(MPU_REG_PWR_MGMT_1, 0);
 
     // Figure 8 (page 29) of MPU-6500 v2.0.pdf.
 
     _register_write(MPU_REG_PWR_MGMT_2, PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
-    _imu_set_low_pass_filter(184);
-    _register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO|INT_EN_WOM);
+    _imu_set_low_pass_filter(IMU_HZ_250);
     _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
-    _register_write(MPU_REG_WOM_THR, 20);
-    _register_write(MPU_REG_ACCEL_ODR, 5);
-    _register_write(MPU_REG_PWR_MGMT_1, 1UL << 5);
+    _reset_wom_threshold();
+    _register_write(MPU_REG_ACCEL_ODR, (uint8_t)_settings.inactive_sample_rate);
+
+	{
+        // We have to delay a certain amount of time _after_ setting
+        // the CYCLE bit on but _before_ clearing the interrupt status
+        // register. If we don't delay, WOM_INT (the wake-on-motion
+        // interrupt) gets triggered immediately, even if no motion
+        // has occurred. The amount of delay that's required appears
+        // to depend on the sample rate chosen in the low-power
+        // accelerometer mode: we delay for just over one sampling
+        // interval's worth of milliseconds. "Just over" means we add
+        // another millisecond or 10 to the sampling interval time, to
+        // account for the hardware being stupid. (If we use delay for
+        // exactly one sampling interval, the MPU-6500 still decides
+        // to retrigger the wake-on-motion interrupt all the
+        // time. Sigh.)
+
+        _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE|PWR_MGMT_1_PD_PTAT);
+
+        unsigned delay = imu_get_sampling_interval(_settings.inactive_sample_rate) + (12 - (unsigned)_settings.inactive_sample_rate);
+        nrf_delay_ms(delay);
+
+        imu_clear_interrupt_status();
+
+        _register_write(MPU_REG_INT_EN, INT_EN_WOM);
+	}
+
+    _settings.active = false;
+
 }
 
 static void _low_power_setup() __attribute__((unused));
@@ -419,12 +625,13 @@ static void _low_power_setup()
 }
 
 int32_t
-imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS) {
+imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
+{
  	int32_t err;
 
 	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_ctx);
 	if (err != 0) {
-		PRINTS("Could not configure SPI bus for IMU\r\n"); 
+		PRINTS("Could not configure SPI bus for IMU\r\n");
 		return err;
 	}
 
@@ -432,12 +639,11 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
 	// page 43
 
 	// Reset chip
-	//PRINTS("Chip reset\r\n");
+	PRINTS("IMU reset\r\n");
 	_register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
 
 	nrf_delay_ms(100);
 
-	//PRINTS("Chip wakeup\r\n");
 	_register_write(MPU_REG_PWR_MGMT_1, 0);
 
 	// Check for valid Chip ID
@@ -455,16 +661,13 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
 	nrf_delay_ms(100);
 
 	// Init interrupts
-	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_HI | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
+	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
 
 	// Config interrupts
-	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
+	// _register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
 
-	// Init accel
-	_register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
-
-	// Init Gyro
-	_register_write(MPU_REG_GYRO_CFG, (GYRO_CFG_RATE_2k_DPS << GYRO_CFG_RATE_OFFET));
+	_reset_accel_range();
+	_reset_gyro_range();
 
 	// Init FIFO
 	uint8_t fifo_size_bits;
@@ -487,12 +690,17 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
 	}
 	_register_write(MPU_REG_ACC_CFG2, fifo_size_bits);
 
-	imu_set_sensors(IMU_DEFAULT_SENSORS);
+    // Reset FIFO, disable i2c, and clear regs
+    _register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
 
-	// Reset FIFO, disable i2c, and clear regs
-	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
+	// Set up wake-on-motion stuff
 
-	imu_set_sample_rate(IMU_DEFAULT_SAMPLE_RATE);
+    _reset_sensors();
+    _reset_active_sample_rate();
+
+	imu_deactivate();
+
+	PRINTS("IMU: initialization done.\r\n");
 
 	return err;
 }
