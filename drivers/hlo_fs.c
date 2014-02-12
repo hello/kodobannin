@@ -274,8 +274,8 @@ _bitmap_get_partition_range(enum HLO_FS_Partition_ID id, uint32_t *start_addr, u
 #define ALL_UNUSED_PAGES 0xFFFFFFFF
 #define ALL_DIRTY_PAGES  0
 #define ALL_USED_PAGES   0xAAAAAAAA
-#define Page_Free_Check(A, B) ((A >> (32-B*2)) && HLO_FS_Page_Free)
-#define Page_Used_Check(A, B) ((A >> (32-B*2)) && HLO_FS_Page_Used)
+#define Page_Free_Check(A, B) ((((A >> (30-(B*2)))&0x3) ^ HLO_FS_Page_Free) == 0)
+#define Page_Used_Check(A, B) ((((A >> (30-(B*2)))&0x3) ^ HLO_FS_Page_Used) == 0)
 
 static int8_t
 _bitmap_get_used_pos(uint32_t haystack) {
