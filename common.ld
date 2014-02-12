@@ -60,7 +60,29 @@ SECTIONS
 
         __user_data :
         {
-        	__user_data__ = .;
+        	__user_data_start__ = .; /* 0x3ec00 */
+
+		__ble_bondmngr_sys_attr_start__ = .; /* 0x3ec00 */
+		. += 0x200; /* 512B */
+		__ble_bondmngr_sys_attr_end__ = .;
+
+		__ble_bondmngr_bond_info_start__ = .; /* 0x3ee00 */
+		. += 0x100; /* 256B */
+		__ble_bondmngr_bond_info_end__ = .;
+
+		__unused_start__ = .; /* 0x3ef00 */
+		. += 0x900;
+		. = ALIGN(256);
+		__unused_end__ = .;
+
+		__app_sha1_start__ = .; /* 0x3f800 */
+		. += 0x14; /* 20B */
+		. = ALIGN(256);
+		__app_sha1_end__ = .;
+
+		__user_data_end__ = .; /* 0x40000 */
+
+		/* [TODO]: Figure out whether we want to keep ble_bondmngr_*. */
         } > USER_DATA
 
 	.ARM.extab :
