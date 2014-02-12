@@ -49,6 +49,7 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
+	nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
 
 APP_SRCS = \
 	$(SRCS) \
@@ -262,7 +263,7 @@ $(BUILD_DIR)/%.o: %.s
 	$(info [AS] $(notdir $<))
 	@$(AS) $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.elf: startup/%.ld | $(dir $@)
+$(BUILD_DIR)/%.elf: startup/%.ld startup/common.ld startup/memory.ld | $(dir $@)
 	$(info [LD] $@)
 	@$(LD) $(LDFLAGS) -o $@ $(filter %.o, $^) -T$< $(LDFLAGS)
 

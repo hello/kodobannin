@@ -28,6 +28,8 @@
 #include "hello_dfu.h"
 #include "imu_data.h"
 
+#include "util.h"
+
 static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
 
@@ -574,6 +576,14 @@ _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to
     APP_ERROR_CHECK(err);
 
     imu_clear_interrupt_status();
+}
+
+static void _hard_fault() UNUSED;
+static void
+_hard_fault()
+{
+	int* p = (int*)0x5;
+	*p = 0x69;
 }
 
 void
