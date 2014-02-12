@@ -258,7 +258,7 @@ $(BUILD_DIR)/%.o: %.s
 	$(info [AS] $(notdir $<))
 	@$(AS) $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.elf: %.ld | $(dir $@)
+$(BUILD_DIR)/%.elf: %.ld common.ld memory.ld | $(dir $@)
 	$(info [LD] $@)
 	@$(LD) -o $@ $(filter %.o, $^) -T$< $(LDFLAGS)
 
