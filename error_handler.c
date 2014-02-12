@@ -22,9 +22,8 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 	(void)line_num;
 	(void)filename;
 
-	// let the bootloader know that we crashed and trap in DFU mode
+	// let the bootloader know that we crashed
 	NRF_POWER->GPREGRET |= GPREGRET_APP_CRASHED_MASK;
-	NRF_POWER->GPREGRET |= GPREGRET_FORCE_DFU_ON_BOOT_MASK;
 
 	// look at the chip's hardware ID to make a guess of which type of device we're
 	// running on so that we can blink an LED to alert the user to the crash
