@@ -2,7 +2,7 @@
 
 #pragma once
 
-const uint8_t hex[16];
+extern const uint8_t hex[16];
 
 #undef PACKED
 #undef UNUSED
