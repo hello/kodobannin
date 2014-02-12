@@ -314,7 +314,8 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 	int32_t ret;
 	uint32_t addr;
 	uint32_t record;
-	int8_t pos;
+	int8_t pos, pos2;
+	int8_t free_pos;
 	bool done = false;
 
 	if (_bitmap_records[id].id == 0xFF) {
@@ -393,7 +394,7 @@ Case_3:
 			pos = _bitmap_get_used_pos(record);
 		} while(pos == -1 && (addr += 4) && addr <= _bitmap_records[id].bitmap_end_addr);
 
-		if (addr == _bitmap_records[id].bitmap_end_addr && pos == -1) {
+		if (addr >= _bitmap_records[id].bitmap_end_addr && pos == -1) {
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			DEBUG("Case 4, ptr is 0x", _bitmap_records[id].bitmap_read_ptr);
 			DEBUG("        pos is ", pos);
