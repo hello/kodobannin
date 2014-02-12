@@ -123,7 +123,7 @@ _start()
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
-        PRINTS("Application crashed... ");
+        PRINTS("Application crashed :(\r\n");
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
@@ -148,7 +148,7 @@ _start()
 
 		NVIC_SystemReset();
     } else {
-	    PRINTS("Bootloader kicking to app\r\n");
+	    PRINTS("Bootloader kicking to app...\r\n");
 		interrupts_disable();
 
 		err_code = sd_softdevice_forward_to_application();
