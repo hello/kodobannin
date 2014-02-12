@@ -87,7 +87,9 @@ OPTFLAGS=-Os -g -DECC_ASM=1
 endif
 
 # compiler warnings
-WARNFLAGS=-Wall
+# see <http://gcc.gnu.org/gcc-4.4/changes.html> for info on -Wno-packed-bitfield-compat
+WARNFLAGS=-Wall -Wno-packed-bitfield-compat
+
 #-Wstrict-prototypes -Wmissing-prototypes
 #-std=c99
 #    -Wno-missing-braces -Wno-missing-field-initializers -Wformat=2 \
