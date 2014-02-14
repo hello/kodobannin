@@ -11,7 +11,7 @@ BIN = $(KODOBANNIN_GCC_ROOT)/bin
 JLINK_BIN = $(KODOBANNIN_JLINK_ROOT)
 
 # enable debug mode?
-DEBUG = 1
+DEBUG := 1
 
 # build directory
 BUILD_DIR = build

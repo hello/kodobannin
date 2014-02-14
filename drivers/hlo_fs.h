@@ -83,6 +83,15 @@ struct HLO_FS_Bitmap_Record {
 	uint8_t  bitmap_write_element;
 };
 
+struct HLO_FS_Page_Range {
+	uint32_t start_page;
+	uint32_t end_page;
+};
+
+/**
+ * General FileSystem calls
+ **/
+
 /**
  * hlo_fs_init - attempt to read hlo_fs layout from flash
  *
@@ -91,7 +100,7 @@ struct HLO_FS_Bitmap_Record {
 int32_t hlo_fs_init();
 
 /**
- * hlo_fs_format - (re)format the hlo_fs flash filesystem
+ * hlo_fs_format - (re)format and partition the hlo_fs flash filesystem
  *
  * @param num_partitions - number of HLO_FS_Partition_Info elements to process
  * @param partitions - array of HLO_FS_Partition_Info elements to instantiate
@@ -100,10 +109,16 @@ int32_t hlo_fs_init();
  *                           HLO_FS_Partition_Data will be auto-calculated to
  *                           fill the flash size after other partitions have
  *                           been created.
- *
+ * @param force_format - set this flag to force a re-format even if the device
+ *                       currently contains a valid configuration block
+ * 
  * @returns <0 on error, 0 on success
  **/
 int32_t hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool force_format);
+
+/**
+ * Partition-oriented calls
+ **/
 
 /**
  * hlo_fs_get_partition_info - get the offset and size of a specific partition
@@ -115,6 +130,72 @@ int32_t hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions
  **/
 int32_t hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info **pinfo);
 
+/**
+ * hlo_fs_page_count - count the number of pages allocated to a partition
+ *
+ * @param id - ID of the partition to check the capacity of
+ *
+ * @returns <0 on error, otherwise capacity in number of pages
+ **/
+int32_t hlo_fs_page_count(enum HLO_FS_Partition_ID id);
+
+/**
+ * hlo_fs_free_page_count - count the number of whole free pages in a partition
+ *
+ * @parm id - partition ID to count free pages in
+ *
+ * @returns <0 on error, otherwise the number of free pages
+ **/
+int32_t hlo_fs_free_page_count(enum HLO_FS_Partition_ID id);
+
+/**
+ * hlo_fs_reclaim - erase 'dirty' pages and mark them as free
+ *
+ * @param id - ID of the partition to scan for dirty pages to erase
+ *
+ * NOTE: this is ideally called when on the charger as it is a higher
+ *       power level activity
+ *
+ * @returns <0 on error, otherwise the number of pages reclaimed
+ **/
+int32_t hlo_fs_reclaim(enum HLO_FS_Partition_ID id);
+
+/**
+ * Data-oriented calls
+ **/
+
+/**
+ * hlo_fs_append - write n bytes to the end of the partition-based circular buffer
+ *
+ * @param id - ID of the partition to operate on
+ * @param len - number of bytes to write to the circular buffer
+ * @param data - pointer to a buffer that contains bytes to be written
+ *
+ * @returns <0 on error, otherwise the number of bytes written
+ **/
 int32_t hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data);
 
+/**
+ * hlo_fs_read - read n bytes from the beginning of the partition-based circular buffer
+ *
+ * @param id - ID of the partition to operate on
+ * @param len - a page-size multiple of data to be read
+ * @param data - pointer to a buffer to receive data
+ * @param range - pointer to a HLO_FS_Page_Range structure to hold the range of pages
+ *                involved in this operation. Commonly passed to hlo_fs_mark_dirty.
+ *
+ * @returns <0 on error, otherwise the number of bytes read
+ **/ 
+int32_t hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, struct HLO_FS_Page_Range *range);
+
+/**
+ * hlo_fs_mark_dirty - mark a page range as dirty
+ *
+ * @param id - ID of the partition to work on
+ * @param range - pointer to a HLO_FS_Page_Range struct covering the page range to
+ *                mark as being dirty. Commonly the output of a hlo_fs_read call.
+ *
+ * @returns <0 on error, otherwise the number of pages marked as dirty
+ **/
+int32_t hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, struct HLO_FS_Page_Range *range);
 
