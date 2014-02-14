@@ -100,7 +100,7 @@ struct HLO_FS_Page_Range {
 int32_t hlo_fs_init();
 
 /**
- * hlo_fs_format - (re)format the hlo_fs flash filesystem
+ * hlo_fs_format - (re)format and partition the hlo_fs flash filesystem
  *
  * @param num_partitions - number of HLO_FS_Partition_Info elements to process
  * @param partitions - array of HLO_FS_Partition_Info elements to instantiate
@@ -109,7 +109,9 @@ int32_t hlo_fs_init();
  *                           HLO_FS_Partition_Data will be auto-calculated to
  *                           fill the flash size after other partitions have
  *                           been created.
- *
+ * @param force_format - set this flag to force a re-format even if the device
+ *                       currently contains a valid configuration block
+ * 
  * @returns <0 on error, 0 on success
  **/
 int32_t hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool force_format);
@@ -129,22 +131,22 @@ int32_t hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions
 int32_t hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info **pinfo);
 
 /**
- * hlo_fs_count_pages - count the number of pages allocated to a partition
+ * hlo_fs_page_count - count the number of pages allocated to a partition
  *
  * @param id - ID of the partition to check the capacity of
  *
  * @returns <0 on error, otherwise capacity in number of pages
  **/
-int32_t hlo_fs_count_pages(enum HLO_FS_Partition_ID id);
+int32_t hlo_fs_page_count(enum HLO_FS_Partition_ID id);
 
 /**
- * hlo_fs_count_free_pages - count the number of whole free pages in a partition
+ * hlo_fs_free_page_count - count the number of whole free pages in a partition
  *
  * @parm id - partition ID to count free pages in
  *
  * @returns <0 on error, otherwise the number of free pages
  **/
-int32_t hlo_fs_count_free_pages(enum HLO_FS_Partition_ID id);
+int32_t hlo_fs_free_page_count(enum HLO_FS_Partition_ID id);
 
 /**
  * hlo_fs_reclaim - erase 'dirty' pages and mark them as free
