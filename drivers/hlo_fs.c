@@ -156,7 +156,13 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 		return HLO_FS_Media_Error;
 	}
 
-	// erase blocks for partition
+	// erase blocks for bitmap
+	for (i = parts[0].block_offset; i < (parts[0].block_offset + parts[0].block_count); i++) {
+		ret = spinor_block_erase(1);
+		if (ret < 0) {
+			return ret;
+		}
+	}
 	return 0;
 }
 
@@ -268,8 +274,8 @@ _bitmap_get_partition_range(enum HLO_FS_Partition_ID id, uint32_t *start_addr, u
 #define ALL_UNUSED_PAGES 0xFFFFFFFF
 #define ALL_DIRTY_PAGES  0
 #define ALL_USED_PAGES   0xAAAAAAAA
-#define Page_Free_Check(A, B) ((A >> (32-B*2)) && HLO_FS_Page_Free)
-#define Page_Used_Check(A, B) ((A >> (32-B*2)) && HLO_FS_Page_Used)
+#define Page_Free_Check(A, B) ((((A >> (30-(B*2)))&0x3) ^ HLO_FS_Page_Free) == 0)
+#define Page_Used_Check(A, B) ((((A >> (30-(B*2)))&0x3) ^ HLO_FS_Page_Used) == 0)
 
 static int8_t
 _bitmap_get_used_pos(uint32_t haystack) {
@@ -279,8 +285,25 @@ _bitmap_get_used_pos(uint32_t haystack) {
 		return -1;
 
 	for (i=0; i<16; i++) {
-		if (Page_Used_Check(haystack, i))
+		if (Page_Used_Check(haystack, i)) {
 			return i;
+		}
+	}
+
+	return -1;
+}
+
+static int8_t
+_bitmap_get_free_pos(uint32_t haystack) {
+	uint32_t i;
+
+	if (haystack == ALL_USED_PAGES)
+		return -1;
+
+	for (i=0; i<16; i++) {
+		if (Page_Free_Check(haystack, i)) {
+			return i;
+		}
 	}
 
 	return -1;
@@ -291,7 +314,8 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 	int32_t ret;
 	uint32_t addr;
 	uint32_t record;
-	int8_t pos;
+	int8_t pos, pos2;
+	int8_t free_pos;
 	bool done = false;
 
 	if (_bitmap_records[id].id == 0xFF) {
@@ -323,19 +347,24 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 		if (ret != sizeof(record)) {
 			return ret;
 		}
+		// if the first slot in the block isn't used then we don't have a Case 1 or 2
 		pos = _bitmap_get_used_pos(record);
 		if (pos != 0)
 			goto Case_3;
 
-		// check back from the last address for free space
+		// Case 2 check. Search back from the last address for free space
 		addr = _bitmap_records[id].bitmap_end_addr;
 		do {
 			ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
 			if (ret != sizeof(record)) {
 				return ret;
 			}
-			pos = _bitmap_get_used_pos(record);
-		} while (pos != -1 && (addr -= 4));
+
+			// check our used and free bits
+			pos2 = _bitmap_get_used_pos(record);
+			free_pos =  _bitmap_get_free_pos(record);
+			printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos2);
+		} while (pos2 != -1 && free_pos == -1 && (addr -= 4) &&  (addr > _bitmap_records[id].bitmap_start_addr));
 
 		//XXX: FIND THE WRITE POINTER TOO!
 
@@ -365,7 +394,7 @@ Case_3:
 			pos = _bitmap_get_used_pos(record);
 		} while(pos == -1 && (addr += 4) && addr <= _bitmap_records[id].bitmap_end_addr);
 
-		if (addr == _bitmap_records[id].bitmap_end_addr && pos == -1) {
+		if (addr >= _bitmap_records[id].bitmap_end_addr && pos == -1) {
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			DEBUG("Case 4, ptr is 0x", _bitmap_records[id].bitmap_read_ptr);
 			DEBUG("        pos is ", pos);
@@ -400,10 +429,8 @@ _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	int32_t ret;
-	uint32_t bitmap_start;
-	uint32_t bitmap_end;
 
-	ret = _bitmap_get_partition_range(id, &bitmap_start, &bitmap_end);
+	ret = _bitmap_find_next_available_page(id);
 	if (ret < 0) {
 		return ret;
 	}

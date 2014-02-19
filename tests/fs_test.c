@@ -79,7 +79,7 @@ main(int argc, const char *argv[]) {
 	HLO_FS_Partition_Info parts[2];
 
 	for (i=1; i < argc; i++) {
-		printf("Testing file '%s'\n", argv[i]);
+		printf("\nTesting file '%s'\n", argv[i]);
 		ret = fstest_init(argv[i]);
 		if (ret != 0)
 			printf("\tfailed\n");
@@ -90,11 +90,13 @@ main(int argc, const char *argv[]) {
     	    parts[0].block_offset = -1;
        		parts[0].block_count = 5; // 16k
  			ret = hlo_fs_format(1, parts, 1);
-			printf("Format ret: 0x%X\n", ret);
+			printf("\tfs_format ret 0x%X\n", ret);
         	ret = hlo_fs_init();
-        	printf("Init ret: 0x%X\n", ret);
-    }
+        	printf("\tfs_init ret 0x%X\n", ret);
 
+    	}
+		ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 0, NULL);
+		printf("\tfind page ret 0x%X\n", ret);
 	}
 
 	if (data_file)
