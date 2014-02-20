@@ -26,7 +26,7 @@
 #include <drivers/hlo_fs.h>
 #include "git_description.h"
 #include "hello_dfu.h"
-#include "imu_data.h"
+#include "sensor_data.h"
 
 #include "util.h"
 
@@ -495,18 +495,43 @@ _imu_process(void* context)
 	uint16_t fifo_left = imu_fifo_bytes_available();
 	fifo_left -= fifo_left % sample_size;
 
-    struct imu_data_header_v0 data_header = {
-		.version = 0,
-        .timestamp = 0,
-		.sensors = settings.active_sensors,
-		.accel_range = IMU_ACCEL_RANGE_2G,
-		.gyro_range = IMU_GYRO_RANGE_500_DPS,
-        .hz = settings.active_sample_rate,
-        .bytes = fifo_left,
-    };
+	// [TODO]: Figure out IMU profile here; need to add profile
+	// support to imu.c
+
+    uint8_t vlq_octets;
+	uint8_t vlq_data[2];
+
+	// [TODO]: Abstract this out into a vlq_encode() function.
+    {
+        if(fifo_left < 128) {
+            vlq_octets = 1;
+			vlq_data[0] = fifo_left;
+        } else if(fifo_left <= 4096) {
+            vlq_octets = 2;
+			// [TODO]: Document this.
+			vlq_data[0] = (fifo_left >> 7) | 0x80;
+			vlq_data[1] = (fifo_left & 0xFF) >> 7;
+        } else {
+            // Should never happen, since the IMU FIFO capacity is 4096
+            // bytes.
+            APP_ASSERT(0);
+		}
+
+	}
+
+	struct sensor_data_header* header = alloca(sizeof(struct sensor_data_header) + vlq_octets);
+	*header = (struct sensor_data_header) {
+		.type = SENSOR_DATA_IMU_PROFILE_0,
+		.sequence_number = 0,
+		.timestamp = 0,
+		.duration = 0,
+	};
+	memcpy(header->size, vlq_data, vlq_octets);
+
+	// [TODO]: Increment sequence number above.
 
     // Write data_header to persistent storage here
-    DEBUG("IMU data header: ", data_header);
+    DEBUG("IMU sensor data header: ", header);
 
 	while(fifo_left > 0) {
 		// For MAX_FIFO_READ_SIZE, we want to use a number that (1)
