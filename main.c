@@ -524,9 +524,9 @@ _imu_process(void* context)
 		.type = SENSOR_DATA_IMU_PROFILE_0,
 		.sequence_number = 0,
 		.timestamp = 0,
-		.duration = 0,
-	};
-	memcpy(header->size, vlq_data, vlq_octets);
+        .duration = 0,
+    };
+    memcpy(header->size, vlq_data, vlq_octets);
 
 	// [TODO]: Increment sequence number above.
 

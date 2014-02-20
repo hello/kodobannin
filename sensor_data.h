@@ -117,18 +117,18 @@ struct sensor_data_header {
 		There's some example code for how to do right now in the
 		_imu_process() function in main.c. That functionality should
 		definitely be moved out to a separate function,
-		e.g. vlq_encode().
+        e.g. vlq_encode().
 
-		Note that we may not wish to use a variable-length array here
-		(technically a "C99 flexible array member") if it makes the
-		implementation cumbersome. I elected to put it in this struct
-		for now to make it clear that the size needs to be part of the
-		sensor data header... implementation-wise, we can leave this
-		out of the struct and perhaps use a separate array outside of
-		the struct for the VLQ. */
-	uint8_t size[];
+        Note that we may not wish to use a variable-length array here
+        (technically a "C99 flexible array member") if it makes the
+        implementation cumbersome. I elected to put it in this struct
+        for now to make it clear that the size needs to be part of the
+        sensor data header... implementation-wise, we can leave this
+        out of the struct and perhaps use a separate array outside of
+        the struct for the VLQ. */
+    uint8_t size[];
 
-	// The data payload should immediately follow.
+    // The data payload should immediately follow.
 } PACKED;
 
 
@@ -136,7 +136,7 @@ struct sensor_data_header {
 // HRS data
 
 struct hrs_data {
-	uint8_t peaks;
+    uint8_t peaks;
 } PACKED;
 
 /* [TODO]s:
