@@ -610,7 +610,7 @@ _start()
 		PRINTS("    FACTORY TEST FAILED\r\n");
 		PRINTS("***************************\r\n");
 	}
-
+/*
 	uint8_t page_data[32];
 
     PRINTS("SPI NOR Data Read: 0x");
@@ -636,7 +636,8 @@ _start()
 	PRINTS("Calling append\r\n");
 	ret = hlo_fs_append(HLO_FS_Partition_Data, 0, sample);
 	DEBUG("data write ret 0x", ret);
-//pwm_test();
+*/
+	//pwm_test();
 	//test_3v3();
 #if 0
     uint8_t page_data[512];
@@ -738,17 +739,17 @@ _start()
     // loop on BLE events FOREVER
     while(1) {
     	watchdog_pet();
-
+/*
         if (do_imu) {
             // sample IMU and queue up to send over BLE
             //imu_accel_reg_read(sample);
             //imu_read_regs(sample);
             //ble_hello_demo_data_send_blocking(sample, 12);
         } else {
-            // Switch to a low power state until an event is available for the application
+*/          // Switch to a low power state until an event is available for the application
             err = sd_app_event_wait();
             APP_ERROR_CHECK(err);
-        }
+//        }
     }
 
 	NVIC_SystemReset();
