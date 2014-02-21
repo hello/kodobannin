@@ -498,37 +498,14 @@ _imu_process(void* context)
 	// [TODO]: Figure out IMU profile here; need to add profile
 	// support to imu.c
 
-    uint8_t vlq_octets;
-	uint8_t vlq_data[2];
-
-	// [TODO]: Abstract this out into a vlq_encode() function.
-    {
-        if(fifo_left < 128) {
-            vlq_octets = 1;
-			vlq_data[0] = fifo_left;
-        } else if(fifo_left <= 4096) {
-            vlq_octets = 2;
-			// [TODO]: Document this.
-			vlq_data[0] = (fifo_left >> 7) | 0x80;
-			vlq_data[1] = (fifo_left & 0xFF) >> 7;
-        } else {
-            // Should never happen, since the IMU FIFO capacity is 4096
-            // bytes.
-            APP_ASSERT(0);
-		}
-
-	}
-
-	struct sensor_data_header* header = alloca(sizeof(struct sensor_data_header) + vlq_octets);
-	*header = (struct sensor_data_header) {
+	struct sensor_data_header header = {
+		.signature = 0x55AA,
+		.checksum = 0,
+		.size = fifo_left,
 		.type = SENSOR_DATA_IMU_PROFILE_0,
-		.sequence_number = 0,
 		.timestamp = 0,
         .duration = 0,
     };
-    memcpy(header->size, vlq_data, vlq_octets);
-
-	// [TODO]: Increment sequence number above.
 
     // Write data_header to persistent storage here
     DEBUG("IMU sensor data header: ", header);
