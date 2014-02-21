@@ -506,6 +506,7 @@ _imu_process(void* context)
 		.timestamp = 0,
         .duration = 0,
     };
+	header.checksum = memsum(&header, sizeof(header));
 
     // Write data_header to persistent storage here
     DEBUG("IMU sensor data header: ", header);

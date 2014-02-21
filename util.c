@@ -52,6 +52,19 @@ memset(void *b, int c, size_t len)
 	return orig;
 }
 
+uint8_t
+memsum(void *start, unsigned len)
+{
+	uint8_t *p = start;
+	uint8_t i = 0;
+
+	while(len-- > 0) {
+		i += *p++;
+	}
+
+	return i;
+}
+
 size_t
 strlen(const char *a)
 {
@@ -104,4 +117,3 @@ debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop
 {
 }
 #endif
-
