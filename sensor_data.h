@@ -125,7 +125,7 @@ struct sensor_data_header {
     uint8_t duration;
 
     // The data payload should immediately follow.
-} PACKED;
+} __attribute__((packed));
 /**< The current size of this struct is 10 bytes. */
 
 
@@ -133,4 +133,4 @@ struct sensor_data_header {
 
 struct hrs_data {
     uint8_t peaks;
-} PACKED;
+} __attribute__((packed));
