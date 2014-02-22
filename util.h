@@ -34,7 +34,7 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 void serial_print_hex(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
 
-/// Sums all the bytes from the start pointer for len bytes modulo 256, and returns the result.
+/// Sums all the bytes from the start pointer for len bytes modulo 256, and returns 256 minus the result.
 uint8_t memsum(void *start, unsigned len);
 
 union int16_bits {

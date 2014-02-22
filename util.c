@@ -62,7 +62,7 @@ memsum(void *start, unsigned len)
 		i += *p++;
 	}
 
-	return i;
+	return ~i;
 }
 
 size_t

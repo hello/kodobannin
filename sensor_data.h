@@ -77,8 +77,9 @@ struct sensor_data_header {
     /// Data checksum.
     /** To calculate the checksum: fill out all the other fields in
         this struct, and set the value of this field to 0. Then, sum
-        all bytes in this struct modulo 256, and write the result
-        here. See memsum() in util.c for an implementation. */
+        all bytes in this struct modulo 256, calculate 256 minus that
+        sum, and write the result here. See memsum() in util.c for an
+        implementation. */
     uint8_t checksum;
 
     /// The size of the data payload only (i.e. excluding this header).
