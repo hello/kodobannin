@@ -181,11 +181,7 @@ NMI_Handler:
     .size   NMI_Handler, . - NMI_Handler
 
 
-    .weak   HardFault_Handler
-    .type   HardFault_Handler, %function
-HardFault_Handler:
-    B       .
-    .size   HardFault_Handler, . - HardFault_Handler
+    .extern HardFault_Handler
 
 
     .weak   SVC_Handler

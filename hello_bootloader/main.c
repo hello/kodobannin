@@ -14,9 +14,14 @@
 #include <ble_flash.h>
 #include <ble_stack_handler.h>
 #include <string.h>
+
+#include <nrf_nvmc.h>
+
+#include "error_handler.h"
 #include "hello_dfu.h"
 #include "util.h"
 #include "ecc_benchmark.h"
+#include <git_description.h>
 
 #define APP_GPIOTE_MAX_USERS            2
 
@@ -69,38 +74,15 @@ _verify_fw_sha1(uint8_t *valid_hash)
     return comp == 0;
 }
 
-static void
-_flash_page_erase(uint32_t * p_page)
-{
-    // Turn on flash erase enable and wait until the NVMC is ready.
-    NRF_NVMC->CONFIG = (NVMC_CONFIG_WEN_Een << NVMC_CONFIG_WEN_Pos);
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy)
-    {
-        // Do nothing.
-    }
-
-    // Erase page.
-    NRF_NVMC->ERASEPAGE = (uint32_t)p_page;
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy)
-    {
-        // Do nothing.
-    }
-
-    // Turn off flash erase enable and wait until the NVMC is ready.
-    NRF_NVMC->CONFIG = (NVMC_CONFIG_WEN_Ren << NVMC_CONFIG_WEN_Pos);
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy)
-    {
-        // Do nothing
-    }
-}
-
 bool dfu_success = false;
+
+extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
 
 void
 _start()
 {
 	uint32_t err_code;
-    volatile uint8_t* proposed_fw_sha1 = (uint8_t*)BOOTLOADER_SETTINGS_ADDRESS;
+    volatile uint8_t* proposed_fw_sha1 = __app_sha1_start__;
 
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
@@ -111,7 +93,11 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
-    PRINTS("Bootloader is alive.\r\n");
+    PRINTS("\r\nBootloader v");
+	PRINTS(GIT_DESCRIPTION);
+	PRINTS(" is alive\r\n");
+
+	crash_log_save();
 
 #ifdef DEBUG
     PRINTS("Device name: ");
@@ -143,7 +129,7 @@ _start()
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
-        PRINTS("Application crashed... ");
+        PRINTS("Application crashed :(\r\n");
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
@@ -162,13 +148,13 @@ _start()
 			ble_flash_on_radio_active_evt(false);
 
 			_sha1_fw_area(new_fw_sha1);
-			_flash_page_erase((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS);
-			ble_flash_block_write((uint32_t*)BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
+			nrf_nvmc_page_erase(BOOTLOADER_SETTINGS_ADDRESS);
+			nrf_nvmc_write_words(BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
 		}
 
 		NVIC_SystemReset();
     } else {
-	    PRINTS("Bootloader kicking to app\r\n");
+	    PRINTS("Bootloader kicking to app...\r\n");
 		interrupts_disable();
 
 		err_code = sd_softdevice_forward_to_application();

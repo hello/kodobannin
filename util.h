@@ -2,6 +2,13 @@
 
 #pragma once
 
+extern const uint8_t hex[16];
+
+#undef PACKED
+#undef UNUSED
+#define PACKED __attribute__((packed))
+#define UNUSED __attribute__((unused))
+
 #define APP_ASSERT(condition) APP_ERROR_CHECK(!(condition))
 
 #ifdef DEBUG_SERIAL //=====================================
@@ -9,14 +16,14 @@
 #define PRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
 #define PRINTS(a) simple_uart_putstring((const uint8_t *)a)
 #define PRINTC(a) simple_uart_put(a)
-void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);
 #else //---------------------------------------------------
 #define PRINT_HEX(a,b) {}
 #define PRINTS(a) {}
 #define PRINTC(a) {}
 #define simple_uart_config(a,b,c,d,e) {}
-#define debug_print_ticks(message, start_ticks, stop_ticks) {}
 #endif //===================================================
+
+void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);
 
 #define DEBUG(a,b) {PRINTS(a); PRINT_HEX(&b, sizeof(b)); PRINTC('\r'); PRINTC('\n');}
 
@@ -26,6 +33,9 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
+
+/// Sums all the bytes from the start pointer for len bytes modulo 256, and returns the result.
+uint8_t memsum(void *start, unsigned len);
 
 union int16_bits {
 	int16_t value;
@@ -70,3 +80,15 @@ static inline uint32_t __attribute__((const)) bswap32(uint32_t x)
 
 	return x;
 }
+
+#undef MIN
+#define MIN(a,b)                                \
+    ({ __typeof__ (a) _a = (a);                 \
+        __typeof__ (b) _b = (b);                \
+        _a < _b ? _a : _b; })
+
+#undef MAX
+#define MAX(a,b)                                \
+    ({ __typeof__ (a) _a = (a);                 \
+        __typeof__ (b) _b = (b);                \
+        _a > _b ? _a : _b; })

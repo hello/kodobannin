@@ -206,13 +206,25 @@ ble_init()
 {
 	uint32_t err_code;
 
+	// append something to device name
+    char device_name[strlen(BLE_DEVICE_NAME)+4];
+
+    memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+
+	uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
+	//DEBUG("ID is ", id);
+	device_name[strlen(BLE_DEVICE_NAME)] = '-';
+	device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
+	device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
+	device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+
 	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
 				BLE_L2CAP_MTU_DEF,
 				ble_event_dispatch,
 				false);
 
 	ble_bond_manager_init();
-	ble_gap_params_init(BLE_DEVICE_NAME);
+	ble_gap_params_init(device_name);
 	services_init();  // Must come before ble_advertising_init()
 	ble_advertising_init();
 	ble_services_init();

@@ -7,7 +7,6 @@
 #include <simple_uart.h>
 
 #include "device_params.h"
-#include "spi.h"
 #include "util.h"
 
 void *
@@ -53,6 +52,19 @@ memset(void *b, int c, size_t len)
 	return orig;
 }
 
+uint8_t
+memsum(void *start, unsigned len)
+{
+	uint8_t *p = start;
+	uint8_t i = 0;
+
+	while(len-- > 0) {
+		i += *p++;
+	}
+
+	return i;
+}
+
 size_t
 strlen(const char *a)
 {
@@ -65,11 +77,10 @@ strlen(const char *a)
 }
 
 #ifdef DEBUG_SERIAL
-static const uint8_t hex[] = "0123456789ABCDEF";
+const uint8_t hex[] = "0123456789ABCDEF";
 
 void
 serial_print_hex(uint8_t *ptr, uint32_t len) {
-
 	while(len-- >0) {
 		simple_uart_put(hex[0xF&(*ptr>>4)]);
 		simple_uart_put(hex[0xF&*ptr++]);
@@ -84,7 +95,6 @@ binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
 		*(out++) = hex[0xF&*ptr++];
 	}
 }
-#endif
 
 void
 debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks)
@@ -96,3 +106,14 @@ debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop
 
 	DEBUG(message, diff_ticks);
 }
+#else
+void
+serial_print_hex(uint8_t *ptr, uint32_t len)
+{
+}
+
+void
+debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks)
+{
+}
+#endif

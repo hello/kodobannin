@@ -5,5 +5,5 @@ Pod::Spec.new do |s|
   s.author       = { 'André Pang' => 'andre@sayhello.com', 'John Kelley' => 'john@sayhello.com', 'Christopher Bowns' => 'cbowns@sayhello.com' }
   s.source       = { :git => 'https://github.com/hello/kodobannin.git', :tag => :head }
   s.source_files = 'peak_detect.*'
-  s.public_header_files = 'peak_detect.h'
+  s.public_header_files = ['peak_detect.h', 'sensor_data.h']
 end

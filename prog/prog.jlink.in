@@ -7,8 +7,8 @@ sleep 100
 r
 w4 4001e504 1
 speed 1000
-loadbin $PWD/uicr_36000.bin 0x10001000
+loadbin $PWD/startup/uicr_14000.bin 0x10001000
 loadbin $BUILD_DIR/softdevice_main.bin 0x0
-loadbin $BUILD_DIR/bootloader.bin 0x36000
+loadbin $BUILD_DIR/app.bin 0x14000
 r
 q

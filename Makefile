@@ -1,3 +1,6 @@
+# since we append a byte of MAC Address to the name now...
+BLE_DEVICE_NAME := Band
+
 # default parallel
 MAKEFLAGS = -j$(shell sysctl -n hw.ncpu)
 
@@ -8,7 +11,7 @@ BIN = $(KODOBANNIN_GCC_ROOT)/bin
 JLINK_BIN = $(KODOBANNIN_JLINK_ROOT)
 
 # enable debug mode?
-DEBUG = 1
+DEBUG := 1
 
 # build directory
 BUILD_DIR = build
@@ -24,14 +27,14 @@ NRFREV = NRF51822_QFAA_CA
 SRCS = \
 	error_handler.c \
 	sha1.c \
-	spi.c \
 	util.c \
-	watchdog.c \
+	printf.c \
 	$(BUILD_DIR)/git_description.c \
+	$(wildcard drivers/*.c) \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
-	./gcc_startup_nrf51.s \
+	startup/gcc_startup_nrf51.s \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
@@ -46,13 +49,14 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
+	nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
 
 APP_SRCS = \
 	$(SRCS) \
 	hrs.c \
 	imu.c \
-	pwm.c \
 	main.c \
+	$(NULL)
 
 BOOTLOADER_SRCS = \
 	$(SRCS) \
@@ -84,7 +88,9 @@ OPTFLAGS=-Os -g -DECC_ASM=1
 endif
 
 # compiler warnings
-WARNFLAGS=-Wall
+# see <http://gcc.gnu.org/gcc-4.4/changes.html> for info on -Wno-packed-bitfield-compat
+WARNFLAGS=-Wall -Wno-packed-bitfield-compat
+
 #-Wstrict-prototypes -Wmissing-prototypes
 #-std=c99
 #    -Wno-missing-braces -Wno-missing-field-initializers -Wformat=2 \
@@ -129,7 +135,7 @@ JGDBServer=$(JLINK_BIN)/JLinkGDBServer.command
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -fshort-enums -fdata-sections -ffunction-sections -MMD $(ARCHFLAGS) $(addprefix -I,$(INCS)) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
-LDFLAGS := -L$(LIB) -lgcc --gc-sections
+LDFLAGS := -L$(LIB) -lgcc --gc-sections -Lstartup
 
 ifneq ($(BLE_DEVICE_NAME),)
 CFLAGS += -DBLE_DEVICE_NAME="\"$(BLE_DEVICE_NAME)\""
@@ -142,7 +148,7 @@ endif
 
 ALL_SRCS = $(SRCS) $(APP_SRCS) $(BOOTLOADER_SRCS)
 ALL_OBJS = $(patsubst %.c, %.o, $(patsubst %.s, %.o, $(ALL_SRCS)))
-ALL_DEPS = $(ALL_OBJS:.o=.d)
+ALL_DEPS = $(addprefix $(BUILD_DIR)/, $(ALL_OBJS:.o=.d))
 
 # all target (must be first rule): build app + bootloader
 
@@ -159,7 +165,7 @@ $(BUILD_DIR):
 
 # jlink invocation
 
-$(BUILD_DIR)/%.jlink: %.jlink.in
+$(BUILD_DIR)/%.jlink: prog/%.jlink.in
 	$(info [JLINK_SCRIPT] $@)
 	sed -e 's,$$PWD,$(PWD),g' -e 's,$$BUILD_DIR,$(abspath $(BUILD_DIR)),g' < $< > $@
 
@@ -182,7 +188,7 @@ reset:
 
 # git description
 
-GIT_DESCRIPTION = $(shell git describe --long --dirty --tags)
+GIT_DESCRIPTION = $(shell git describe --all --long --dirty)
 GIT_DESCRIPTION_C_CONTENTS = const char* const GIT_DESCRIPTION = "$(GIT_DESCRIPTION)";
 ifneq ($(GIT_DESCRIPTION_C_CONTENTS), $(shell cat $(BUILD_DIR)/git_description.c 2> /dev/null))
 .PHONY: git_description.c
@@ -257,9 +263,9 @@ $(BUILD_DIR)/%.o: %.s
 	$(info [AS] $(notdir $<))
 	@$(AS) $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.elf: %.ld | $(dir $@)
+$(BUILD_DIR)/%.elf: startup/%.ld startup/common.ld startup/memory.ld | $(dir $@)
 	$(info [LD] $@)
-	@$(LD) -o $@ $(filter %.o, $^) -T$< $(LDFLAGS)
+	@$(LD) $(LDFLAGS) -o $@ $(filter %.o, $^) -T$< $(LDFLAGS)
 
 %.bin: %.elf
 	$(info [BIN] $@)
