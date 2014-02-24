@@ -347,7 +347,7 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 	int8_t free_pos;
 	bool done = false;
 
-	if (_bitmap_records[id].id == 0xFF) {
+	if ((_bitmap_records[id].id & 0xFF) == 0xFF) { //need this since enum is 4-byte on host for test framework
 		ret = _bitmap_get_partition_range(id, &_bitmap_records[id].bitmap_start_addr, &_bitmap_records[id].bitmap_end_addr);
 		if (ret < 0)
 			return ret;
