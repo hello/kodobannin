@@ -400,8 +400,9 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 		//XXX: FIND THE WRITE POINTER TOO!
 
 		// if there is no data at the end of the partition, then settle on case 1
-		if (pos == -1 && addr == _bitmap_records[id].bitmap_end_addr) {
-			DEBUG("Case 1, ptr is 0x", _bitmap_records[id].bitmap_start_addr);
+		if (pos2 == -1 && addr >= _bitmap_records[id].bitmap_end_addr) {
+			printf("Case 1, Rptr is 0x%X\n", _bitmap_records[id].bitmap_start_addr);
+			printf("         pos is 0x%X\n", pos);
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_read_element = 0;
 			goto Case_Done;
