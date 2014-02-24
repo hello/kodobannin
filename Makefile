@@ -87,7 +87,7 @@ OPTFLAGS=-Os -g -DECC_ASM=1
 endif
 
 # compiler warnings
-WARNFLAGS=-Wall
+WARNFLAGS=-Wall -Wno-format
 #-Wstrict-prototypes -Wmissing-prototypes
 #-std=c99
 #    -Wno-missing-braces -Wno-missing-field-initializers -Wformat=2 \
