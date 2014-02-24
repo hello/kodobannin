@@ -193,15 +193,48 @@ hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info **p
 		}
 	}
 
-/*
-	if (found) {
-		//memcpy(pinfo, &_partitions[i], sizeof(HLO_FS_Partition_Info));
-		return 1;
+	return HLO_FS_Not_Found;
+}
+
+int32_t
+hlo_fs_page_count(enum HLO_FS_Partition_ID id) {
+	HLO_FS_Partition_Info *info;
+	int32_t ret;
+
+	ret = hlo_fs_get_partition_info(id, &info);
+	if (ret < 0) {
+		return ret;
 	}
 
-	pinfo = NULL;
-*/
-	return 0;
+	NOR_Chip_Config *nor_cfg = spinor_get_chip_config();
+	
+	return info->block_count * nor_cfg->pages_per_block;
+}
+
+int32_t
+hlo_fs_free_page_count(enum HLO_FS_Partition_ID id) {
+	int32_t count = 0;
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	} 
+
+	// do a straightfoward scan of the entire bitmap
+	// this can be improved later
+	
+	return count;	
+}
+
+int32_t
+hlo_fs_reclaim(enum HLO_FS_Partition_ID id) {
+	int32_t count = 0;
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	
+	return count;
 }
 
 static int32_t
@@ -416,7 +449,7 @@ static int32_t
 _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 	int32_t ret;
 
-	//ensure we have loaded a partition record
+	// ensure we have loaded a partition record
 	ret = _bitmap_load_partition_record(id);
 	if (ret < 0)
 		return ret;
@@ -430,10 +463,65 @@ int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	int32_t ret;
 
+	if (!data) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	if (len == 0) {
+		return 0;
+	}
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	// make sure we have enough room for the data
+
+	// find a spot for the data
 	ret = _bitmap_find_next_available_page(id);
 	if (ret < 0) {
 		return ret;
 	}
 
+	// write the data;
+
 	return 0;
+}
+
+int32_t
+hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, struct HLO_FS_Page_Range *range) {
+	int32_t count = 0;
+
+	if (!data || !range) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	// validate range
+
+	// read pages in range into output buffer
+
+	return count;
+}
+
+int32_t
+hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, struct HLO_FS_Page_Range *range) {
+	int32_t count = 0;
+
+	if (!range) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	// validate range
+
+	// update bitmap with 'dirty' status for each page
+
+	return count;
 }
