@@ -113,7 +113,6 @@ _intify(char *dest, size_t index, size_t len, va_list args)
 		rem = _char_out(dest, index++, len, buf[--used]);
 	} while (rem && used >0 && ++output);
 
-out:
 	return output;
 }
 
