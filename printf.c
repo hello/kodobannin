@@ -93,6 +93,8 @@ _intify(char *dest, size_t index, size_t len, va_list args)
 	uint32_t val_p;
 	uint8_t rem;
 	uint32_t used = 0;
+	uint32_t output = 0;
+	uint8_t buf[11]; // INT32_MAX needs 10 digits
 
 	val = (uint32_t) va_arg(args, uint32_t);
 
@@ -100,17 +102,19 @@ _intify(char *dest, size_t index, size_t len, va_list args)
 		val_p = val/10;
 
 		rem = val - (val_p*10);
-
-		if (!_char_out(dest, index, len, hex[rem]))
-			goto out;
-		++used;
-		++index;
+				
+		buf[used++] = hex[rem];
 
 		val = val_p;
 	} while (val != 0);
 
+	// print buffer backwards
+	do {
+		rem = _char_out(dest, index++, len, buf[--used]);
+	} while (rem && used >0 && ++output);
+
 out:
-	return used;
+	return output;
 }
 
 static uint32_t
