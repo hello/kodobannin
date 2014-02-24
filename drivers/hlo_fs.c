@@ -410,7 +410,7 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 			printf("Case 2, Rptr is 0x%X\n", addr);
 			printf("         pos is 0x%X\n", pos2);
 			_bitmap_records[id].bitmap_read_ptr = addr;
-			_bitmap_records[id].bitmap_read_element = pos;
+			_bitmap_records[id].bitmap_read_element = pos2;
 			goto Case_Done;
 		}
 
