@@ -15,10 +15,10 @@
 #include <ble.h>
 
 uint8_t hello_type;
-static uint16_t                 service_handle;
-static uint16_t                 conn_handle;
-static ble_hello_demo_connect_handler  conn_handler;
-static ble_hello_demo_connect_handler  disconn_handler;
+static uint16_t                 _service_handle;
+static uint16_t                 _conn_handle;
+static ble_hello_demo_connect_handler  _conn_handler;
+static ble_hello_demo_connect_handler  _disconn_handler;
 
 typedef uint32_t (*notify_data_send_cb)(const uint8_t *data, const uint16_t len);
 static notify_data_send_cb data_cb = NULL;
@@ -84,18 +84,18 @@ ble_hello_demo_on_ble_evt(ble_evt_t *event)
     switch (event->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
-            conn_handle = event->evt.gap_evt.conn_handle;
+            _conn_handle = event->evt.gap_evt.conn_handle;
 			DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
 
-            conn_handler();
+            _conn_handler();
             break;
 
         case BLE_GAP_EVT_DISCONNECTED:
 			DEBUG("Disconnect from MAC: ", event->evt.gap_evt.params.disconnected.peer_addr.addr);
 			DEBUG("Disconnect reason: ", event->evt.gap_evt.params.disconnected.reason);
 
-            conn_handle = BLE_CONN_HANDLE_INVALID;
-            disconn_handler();
+            _conn_handle = BLE_CONN_HANDLE_INVALID;
+            _disconn_handler();
             break;
 
         case BLE_GATTS_EVT_WRITE:
@@ -130,7 +130,7 @@ ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
     data_cb = NULL;
 
     //todo: return verbose errors instead of 0
-    if (conn_handle == BLE_CONN_HANDLE_INVALID)
+    if (_conn_handle == BLE_CONN_HANDLE_INVALID)
         return 0;
 
     hvx_len = len;
@@ -156,7 +156,7 @@ ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
         hvx_params.p_data = ptr;
 
         // send notification with data
-        err = sd_ble_gatts_hvx(conn_handle, &hvx_params);
+        err = sd_ble_gatts_hvx(_conn_handle, &hvx_params);
         if (err == NRF_SUCCESS) {
             hvx_len -= pkt_len;
             ptr += pkt_len;
@@ -185,7 +185,7 @@ ble_hello_demo_data_send(const uint8_t *data, const uint16_t len) {
     ble_gatts_hvx_params_t hvx_params;
 
     //todo: return verbose errors instead of 0
-    if (conn_handle == BLE_CONN_HANDLE_INVALID)
+    if (_conn_handle == BLE_CONN_HANDLE_INVALID)
         return 0;
 
     hvx_len = len;
@@ -198,7 +198,7 @@ ble_hello_demo_data_send(const uint8_t *data, const uint16_t len) {
     hvx_params.p_len    = &hvx_len;
     hvx_params.p_data   = (uint8_t *)data;
 
-    err_code = sd_ble_gatts_hvx(conn_handle, &hvx_params);
+    err_code = sd_ble_gatts_hvx(_conn_handle, &hvx_params);
     if (err_code == NRF_SUCCESS)
         return hvx_len;
     else {
@@ -243,7 +243,7 @@ _char_add(const uint16_t uuid,
     attr_char_value.p_value = (uint8_t* const)p_value;
 
 	ble_gatts_char_handles_t handles;
-    uint32_t err_code = sd_ble_gatts_characteristic_add(service_handle,
+    uint32_t err_code = sd_ble_gatts_characteristic_add(_service_handle,
 														&char_md,
 														&attr_char_value,
 														&handles);
@@ -300,16 +300,16 @@ void ble_hello_demo_init(const ble_hello_demo_init_t *init)
     memset(zeroes, 0xAC, sizeof(zeroes));
 
     // Init defaults
-    conn_handle = BLE_CONN_HANDLE_INVALID;
-    conn_handler       = &default_conn_handler;
-    disconn_handler    = &default_conn_handler;
+    _conn_handle = BLE_CONN_HANDLE_INVALID;
+    _conn_handler       = &default_conn_handler;
+    _disconn_handler    = &default_conn_handler;
 
     // Assign write handlers
     if (init->conn_handler)
-        conn_handler = init->conn_handler;
+        _conn_handler = init->conn_handler;
 
     if (init->disconn_handler)
-        disconn_handler = init->disconn_handler;
+        _disconn_handler = init->disconn_handler;
 
     // Add Hello's Base UUID
     err_code = sd_ble_uuid_vs_add(&hello_uuid, &hello_type);
@@ -319,6 +319,6 @@ void ble_hello_demo_init(const ble_hello_demo_init_t *init)
     ble_uuid.type = hello_type;
     ble_uuid.uuid = BLE_UUID_HELLO_DEMO_SVC;
 
-    err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &service_handle);
+    err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &_service_handle);
 	APP_ERROR_CHECK(err_code);
 }
