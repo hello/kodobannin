@@ -126,7 +126,29 @@ struct sensor_data_header {
 
     // The data payload should immediately follow.
 } __attribute__((packed));
-/**< The current size of this struct is 10 bytes. */
+/**< The current size of this struct is 10 bytes.
+
+   The size and type bitfields are worth explaning more. Here is the exact
+   bit layout for the 16-bit value that holds both of them:
+
+          0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+        +-------------------------------------------------+
+   0x00 | z7 z6 z5 z4 z3 z2 z1 z0 t3 t2 t1 t0 zB zA z9 z8 |
+        +-------------------------------------------------+
+
+        zA ... z0: Size field, most significant byte (zA) to least
+        significant byte (z0).
+
+        t3 ... t0: Type field, most significant byte (t3) to least
+        significant byte (t0).
+
+        To get the size and type fields on a _little-endian_ machine,
+        you can do this:
+
+        uint16_t sizetype = ...; // get size & type as little-endian
+        uint8_t type = sizetype >> 12;
+        uint16_t size = sizetype & 0xFFF;
+ */
 
 
 // HRS data

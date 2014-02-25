@@ -562,7 +562,7 @@ _imu_process(void* context)
 
         // Write imu_data to persistent storage here
 
-#undef PRINT_FIFO_DATA
+#define PRINT_FIFO_DATA
 
 #ifdef PRINT_FIFO_DATA
 		unsigned i;
