@@ -532,8 +532,8 @@ _imu_process(void* context)
 		.checksum = 0,
 		.size = fifo_left,
 		.type = SENSOR_DATA_IMU_PROFILE_0,
-		.timestamp = 0,
-        .duration = 0,
+		.timestamp = 123456789,
+        .duration = 50,
     };
 	header.checksum = memsum(&header, sizeof(header));
 
