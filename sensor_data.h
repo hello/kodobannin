@@ -136,7 +136,7 @@ struct sensor_data_header {
    0x00 | z7 z6 z5 z4 z3 z2 z1 z0 t3 t2 t1 t0 zB zA z9 z8 |
         +-------------------------------------------------+
 
-        zA ... z0: Size field, most significant byte (zA) to least
+        zA ... z0: Size field, most significant byte (zB) to least
         significant byte (z0).
 
         t3 ... t0: Type field, most significant byte (t3) to least
