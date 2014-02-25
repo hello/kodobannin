@@ -80,12 +80,12 @@ static uint8_t _state;
     APP_ERROR_CHECK(err_code);
 */
 static void
-_mode_write_handler(ble_gatts_evt_write_t *event) {
+_demo_mode_write_handler(ble_gatts_evt_write_t *event) {
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
 
-    DEBUG("_mode_write_handler: 0x", state);
+    DEBUG("_demo_mode_write_handler: 0x", state);
 
     switch (state) {
         case Demo_Config_Standby:
@@ -159,8 +159,8 @@ _data_write_handler(ble_gatts_evt_write_t *event) {
 static volatile uint8_t do_imu = 0;
 
 static void
-_cmd_write_handler(ble_gatts_evt_write_t *event) {
-    PRINTS("_cmd_write_handler called\r\n");
+_demo_cmd_write_handler(ble_gatts_evt_write_t *event) {
+    PRINTS("_demo_cmd_write_handler called\r\n");
     uint8_t  state = event->data[0];
     uint16_t len = 1;
     uint32_t err;
