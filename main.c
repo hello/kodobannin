@@ -273,8 +273,8 @@ services_init() {
     ble_hello_demo_init(&demo_init);
 
 	ble_char_notify_add(BLE_UUID_DATA_CHAR);
-	ble_char_write_add(BLE_UUID_CONF_CHAR, _mode_write_handler, 4);
-	ble_char_write_add(BLE_UUID_CMD_CHAR, _cmd_write_handler, 10);
+	ble_char_write_request_add(BLE_UUID_CONF_CHAR, _demo_mode_write_handler, 4);
+	ble_char_write_request_add(BLE_UUID_CMD_CHAR, _demo_cmd_write_handler, 10);
 	ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
 					  (uint8_t* const)GIT_DESCRIPTION,
 					  sizeof(GIT_DESCRIPTION));

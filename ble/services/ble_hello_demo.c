@@ -269,7 +269,19 @@ ble_char_notify_add(uint16_t uuid)
 }
 
 void
-ble_char_write_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size)
+ble_char_indicate_add(uint16_t uuid)
+{
+    uint8_t ignored[BLE_GAP_DEVNAME_MAX_WR_LEN];
+
+    ble_gatt_char_props_t indicate_props;
+    memset(&indicate_props, 0, sizeof(indicate_props));
+    indicate_props.indicate = 1;
+
+    _char_add(uuid, &indicate_props, ignored, sizeof(ignored), NULL);
+}
+
+void
+ble_char_write_request_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size)
 {
 	uint8_t ignored[max_buffer_size];
 
@@ -278,6 +290,18 @@ ble_char_write_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, ui
 	write_props.write = 1;
 
 	_char_add(uuid, &write_props, ignored, sizeof(ignored), write_handler);
+}
+
+void
+ble_char_write_command_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size)
+{
+    uint8_t ignored[max_buffer_size];
+
+    ble_gatt_char_props_t write_props;
+    memset(&write_props, 0, sizeof(write_props));
+    write_props.write_wo_resp = 1;
+
+    _char_add(uuid, &write_props, ignored, sizeof(ignored), write_handler);
 }
 
 void
