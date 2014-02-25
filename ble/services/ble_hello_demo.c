@@ -243,7 +243,7 @@ _char_add(const uint16_t uuid,
     attr_char_value.p_value = (uint8_t* const)p_value;
 
 	ble_gatts_char_handles_t handles;
-    uint32_t err_code = sd_ble_gatts_characteristic_add(_service_handle,
+    uint32_t err_code = sd_ble_gatts_characteristic_add(BLE_GATT_HANDLE_INVALID,
 														&char_md,
 														&attr_char_value,
 														&handles);
