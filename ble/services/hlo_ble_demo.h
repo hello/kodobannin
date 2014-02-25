@@ -1,3 +1,5 @@
+// vi:noet:sw=4 ts=4
+
 /* Copyright (c) 2013 Hello Inc. All Rights Reserved. */
 
 #pragma once
@@ -6,23 +8,13 @@
 #include <ble_srv_common.h>
 #include <ble.h>
 
-#define BLE_UUID_HELLO_BASE {0x23, 0xD1, 0xBC, 0xEA, 0x5F, \
-    0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00}
+#include "hlo_ble.h"
 
 #define BLE_UUID_HELLO_DEMO_SVC 0x1337
 #define BLE_UUID_DATA_CHAR      0xDA1A
 #define BLE_UUID_CONF_CHAR      0xC0FF
 #define BLE_UUID_CMD_CHAR       0xBEEF
 #define BLE_UUID_GIT_DESCRIPTION_CHAR 0x617D
-
-#define BLE_UUID_HELLO_ALPHA0_SVC 0xBA5E
-#define BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL_CONFIRMED 0xDEED
-#define BLE_UUID_HELLO_ALPHA0_FROM_BAND_CONFIRMED 0xD00D
-#define BLE_UUID_HELLO_ALPHA0_FROM_BAND 0xFEED
-#define BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL 0xF00D
-
-typedef void (*hlo_ble_demo_write_handler)(ble_gatts_evt_write_t *);
-typedef void (*hlo_ble_demo_connect_handler)(void);
 
 typedef enum {
 	Demo_Config_Standby = 0,
@@ -32,21 +24,21 @@ typedef enum {
 	Demo_Config_ID_Band,
 } Demo_Config;
 
-/**@brief Hello Demo init structure. This contains all possible characteristics 
+/**@brief Hello Demo init structure. This contains all possible characteristics
  *        needed for initialization of the service.
  */
 typedef struct
 {
-    hlo_ble_demo_write_handler   data_write_handler;
-	hlo_ble_demo_write_handler   mode_write_handler;
-	hlo_ble_demo_write_handler   cmd_write_handler;
-	hlo_ble_demo_connect_handler conn_handler;
-	hlo_ble_demo_connect_handler disconn_handler;
+    hlo_ble_write_handler   data_write_handler;
+	hlo_ble_write_handler   mode_write_handler;
+	hlo_ble_write_handler   cmd_write_handler;
+	hlo_ble_connect_handler conn_handler;
+	hlo_ble_connect_handler disconn_handler;
 } hlo_ble_demo_init_t;
 
 /**@brief Function for initializing the Hello Demo Service.
  *
- * @details This call allows the application to initialize the Hello Demo service. 
+ * @details This call allows the application to initialize the Hello Demo service.
  *          It adds the service and characteristics to the database, using the initial
  *          values supplied through the p_init parameter. Characteristics which are not
  *          to be added, shall be set to NULL in p_init.
@@ -56,8 +48,6 @@ typedef struct
  *
  * @return      NRF_SUCCESS on successful initialization of service.
  */
-void hlo_ble_init();
-
 void hlo_ble_demo_init(const hlo_ble_demo_init_t * p_init);
 
 void hlo_ble_demo_on_ble_evt(ble_evt_t *event);
@@ -66,10 +56,5 @@ uint32_t hlo_ble_demo_data_send_blocking(const uint8_t *data, const uint16_t len
 
 uint16_t hlo_ble_demo_get_handle();
 
-void hlo_ble_alpha0_init();
 
-void ble_char_notify_add(uint16_t uuid);
-void ble_char_indicate_add(uint16_t uuid);
-void ble_char_write_request_add(uint16_t uuid, hlo_ble_demo_write_handler write_handler, uint16_t max_buffer_size);
-void ble_char_write_command_add(uint16_t uuid, hlo_ble_demo_write_handler write_handler, uint16_t max_buffer_size);
-void ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size);
+void hlo_ble_alpha0_init();

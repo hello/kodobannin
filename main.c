@@ -24,6 +24,7 @@
 #include <drivers/watchdog.h>
 #include <drivers/hlo_fs.h>
 
+#include "hlo_ble_alpha0.h"
 #include "hlo_ble_demo.h"
 #include "git_description.h"
 #include "hello_dfu.h"
