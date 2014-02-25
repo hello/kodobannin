@@ -89,8 +89,7 @@ endif
 
 # compiler warnings
 # see <http://gcc.gnu.org/gcc-4.4/changes.html> for info on -Wno-packed-bitfield-compat
-WARNFLAGS=-Wall -Wno-packed-bitfield-compat
-
+WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format
 #-Wstrict-prototypes -Wmissing-prototypes
 #-std=c99
 #    -Wno-missing-braces -Wno-missing-field-initializers -Wformat=2 \

@@ -36,7 +36,7 @@ hlo_fs_init() {
 	// clear bitmap records
 	memset(_bitmap_records, 0xFF, sizeof(_bitmap_records));
 
-	DEBUG("Number of flash partitions:", _layout.num_partitions);
+	printf("Number of flash partitions: %d\n", _layout.num_partitions);
 
 	// read partition information
 	memset(_partitions, 0xAA, sizeof(HLO_FS_Partition_Info) * HLO_FS_Partition_Max);
@@ -44,15 +44,15 @@ hlo_fs_init() {
 	ret = spinor_read(sizeof(HLO_FS_Layout_v1), to_read, (uint8_t *)_partitions);
 	if (ret != to_read) {
 		memset(_layout.magic, 0, sizeof(_layout.magic));
-		DEBUG("Error reading partition record: ", ret);
+		printf("Error reading partition record: %d\n", ret);
 		return HLO_FS_Media_Error;
 	}
 
 	for (i=0; i < _layout.num_partitions; i++) {
-		DEBUG("Partition ", i);
-		DEBUG("    id     ", _partitions[i].id);
-		DEBUG("    offset ", _partitions[i].block_offset);
-		DEBUG("    count  ", _partitions[i].block_count);
+		printf("Partition #%d\n", i);
+		printf("    id     0x%X\n", _partitions[i].id);
+		printf("    offset 0x%X\n", _partitions[i].block_offset);
+		printf("    count  0x%X\n", _partitions[i].block_count);
 	}
 	return 0;
 }
@@ -78,14 +78,14 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 
 	// make sure we're not in secure spinor access mode
 	if (spinor_in_secure_mode()) {
-		PRINTS("WARNING: still in SPINOR secure mode");
+		printf("WARNING: still in SPINOR secure mode\n");
 		spinor_exit_secure_mode();
 	}
 
 	// Clear flash page 0 for new layout
 	ret = spinor_block_erase(0);
 	if (ret != 0) {
-		DEBUG("Error erasing block 0 for layout: ", ret);
+		printf("Error erasing block 0 for layout: 0x%X\n", ret);
 		return HLO_FS_Media_Error;
 	}
 
@@ -111,10 +111,10 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 	// iterate through partitions, fixing up their offsets in order we were called
 	for (i=0; i < num_partitions; i++) {
 		if (partitions[i].id != HLO_FS_Partition_Data && partitions[i].id != HLO_FS_Partition_Bitmap) {
-			DEBUG("Creating partition from index ", i);
-			DEBUG("    id     ", partitions[i].id);
-			DEBUG("    offset ", partitions[i].block_offset);
-			DEBUG("    count  ", partitions[i].block_count);
+			printf("Creating partition from index %d\n", i);
+			printf("    id     0x%X\n", partitions[i].id);
+			printf("    offset 0x%X\n", partitions[i].block_offset);
+			printf("    count  0x%X\n", partitions[i].block_count);
 			parts[valid_partitions].id = partitions[i].id;
 			parts[valid_partitions].block_offset = blocks_used;
 			parts[valid_partitions].block_count  = partitions[i].block_count;
@@ -123,7 +123,7 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 			++valid_partitions;
 		}
 	}
-	DEBUG("total blocks (non-data): 0x", blocks_used);
+	printf("total blocks (non-data): 0x%X\n", blocks_used);
 
 	parts[valid_partitions].id = HLO_FS_Partition_Data;
 	parts[valid_partitions].block_offset = blocks_used;
@@ -131,14 +131,14 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 
 	++valid_partitions; // to account for data partition
 
-	DEBUG("Called with n partitions: 0x", num_partitions);
-	DEBUG("Configured n partitions: 0x", valid_partitions);
+	printf("Called with %d partitions\n", num_partitions);
+	printf("Configured %d partitions\n", valid_partitions);
 
 	for (i=0; i <= valid_partitions; i++) {
-		DEBUG("Partition ", i);
-		DEBUG("    id     ", parts[i].id);
-		DEBUG("    offset ", parts[i].block_offset);
-		DEBUG("    count  ", parts[i].block_count);
+		printf("Partition %d\n", i);
+		printf("    id     0x%X\n", partitions[i].id);
+		printf("    offset 0x%X\n", partitions[i].block_offset);
+		printf("    count  0x%X\n", partitions[i].block_count);
 	}
 
 	// write out Layout
@@ -147,12 +147,12 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 
 	ret = spinor_write(0, sizeof(HLO_FS_Layout_v1), (uint8_t *)&_layout);
 	if (ret != sizeof(HLO_FS_Layout_v1)) {
-		DEBUG("Layout write returned 0x", ret);
+		printf("Layout write returned 0x%X\n", ret);
 		return HLO_FS_Media_Error;
 	}
 	ret = spinor_write(sizeof(HLO_FS_Layout_v1), sizeof(HLO_FS_Partition_Info)*valid_partitions, (uint8_t *)parts);
 	if (ret != sizeof(HLO_FS_Partition_Info)*valid_partitions) {
-		DEBUG("Partitions write returned 0x", ret);
+		printf("Partitions write returned 0x%X\n", ret);
 		return HLO_FS_Media_Error;
 	}
 
@@ -169,7 +169,6 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 int32_t
 hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info **pinfo) {
 	uint32_t i;
-	//bool found = false;
 
 	if (!pinfo) {
 		return HLO_FS_Invalid_Parameter;
@@ -179,29 +178,59 @@ hlo_fs_get_partition_info(enum HLO_FS_Partition_ID id, HLO_FS_Partition_Info **p
 		return HLO_FS_Not_Initialized;
 	}
 
+	// invalidate the output parameter's current value
 	*pinfo = NULL;
+
 	// linear search because we don't have many of these and I'm lazy
 	for (i=0; i < _layout.num_partitions; i++) {
-/*
-		ret = spinor_read(0, sizeof(HLO_FS_Partition_Info), (uint8_t *)&record);
-		if (ret < 0)
-			return HLO_FS_Media_Error;
-*/
 		if (_partitions[i].id == id) {
 			*pinfo = &_partitions[i];
-			break;
+			return 0;
 		}
 	}
 
-/*
-	if (found) {
-		//memcpy(pinfo, &_partitions[i], sizeof(HLO_FS_Partition_Info));
-		return 1;
+	return HLO_FS_Not_Found;
+}
+
+int32_t
+hlo_fs_page_count(enum HLO_FS_Partition_ID id) {
+	HLO_FS_Partition_Info *info;
+	int32_t ret;
+
+	ret = hlo_fs_get_partition_info(id, &info);
+	if (ret < 0) {
+		return ret;
 	}
 
-	pinfo = NULL;
-*/
-	return 0;
+	NOR_Chip_Config *nor_cfg = spinor_get_chip_config();
+	
+	return info->block_count * nor_cfg->pages_per_block;
+}
+
+int32_t
+hlo_fs_free_page_count(enum HLO_FS_Partition_ID id) {
+	int32_t count = 0;
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	} 
+
+	// do a straightfoward scan of the entire bitmap
+	// this can be improved later
+	
+	return count;	
+}
+
+int32_t
+hlo_fs_reclaim(enum HLO_FS_Partition_ID id) {
+	int32_t count = 0;
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	
+	return count;
 }
 
 static int32_t
@@ -318,13 +347,15 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 	int8_t free_pos;
 	bool done = false;
 
-	if (_bitmap_records[id].id == 0xFF) {
+	if ((_bitmap_records[id].id & 0xFF) == 0xFF) { //need this since enum is 4-byte on host for test framework
 		ret = _bitmap_get_partition_range(id, &_bitmap_records[id].bitmap_start_addr, &_bitmap_records[id].bitmap_end_addr);
 		if (ret < 0)
 			return ret;
 
 		_bitmap_records[id].id = id;
 
+		printf("Start addr is 0x%X\n", _bitmap_records[id].bitmap_start_addr);
+		printf("End addr is   0x%X\n", _bitmap_records[id].bitmap_end_addr);
 		// we need to detect the following scenarios:
 		//   +-------------------------------------+
 		// 1 |xxxxxxxxxxxxxxxxxxxFFFFFFFFFFFFFFFFFF|
@@ -342,7 +373,7 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 		// Note: there should never be multiple, discontinuous data segments in a partition
 
 		// Case 1 and 2 - Check the start address for data
-		PRINTS("Checking case 1/2...\r\n");
+		printf("Checking case 1/2...\r\n");
 		ret = spinor_read(_bitmap_records[id].bitmap_start_addr, sizeof(record), (uint8_t *)&record);
 		if (ret != sizeof(record)) {
 			return ret;
@@ -369,22 +400,23 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 		//XXX: FIND THE WRITE POINTER TOO!
 
 		// if there is no data at the end of the partition, then settle on case 1
-		if (pos == -1 && addr == _bitmap_records[id].bitmap_end_addr) {
-			DEBUG("Case 1, ptr is 0x", _bitmap_records[id].bitmap_start_addr);
+		if (pos2 == -1 && addr >= _bitmap_records[id].bitmap_end_addr) {
+			printf("Case 1, Rptr is 0x%X\n", _bitmap_records[id].bitmap_start_addr);
+			printf("         pos is 0x%X\n", pos);
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_read_element = 0;
 			goto Case_Done;
 		} else {
-			DEBUG("Case 2, ptr is 0x", addr);
-			DEBUG("         pos is 0x", pos);
+			printf("Case 2, Rptr is 0x%X\n", addr);
+			printf("         pos is 0x%X\n", pos2);
 			_bitmap_records[id].bitmap_read_ptr = addr;
-			_bitmap_records[id].bitmap_read_element = pos;
+			_bitmap_records[id].bitmap_read_element = pos2;
 			goto Case_Done;
 		}
 
 Case_3:
 		// Case 3 / 4
-		PRINTS("Checking case 3/4...\r\n");
+		printf("Checking case 3/4...\r\n");
 		addr = _bitmap_records[id].bitmap_start_addr;
 		do {
 			ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
@@ -392,21 +424,35 @@ Case_3:
 				return ret;
 			}
 			pos = _bitmap_get_used_pos(record);
+			printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos);
 		} while(pos == -1 && (addr += 4) && addr <= _bitmap_records[id].bitmap_end_addr);
 
 		if (addr >= _bitmap_records[id].bitmap_end_addr && pos == -1) {
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
-			DEBUG("Case 4, ptr is 0x", _bitmap_records[id].bitmap_read_ptr);
-			DEBUG("        pos is ", pos);
+			_bitmap_records[id].bitmap_write_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_read_element = 0;
+			_bitmap_records[id].bitmap_write_element = 0;
+			printf("Case 4, ptr is 0x%X\n", _bitmap_records[id].bitmap_read_ptr);
+			printf("        pos is %d", pos);
 		} else {
-			DEBUG("Case 3, ptr is 0x", addr);
-			DEBUG("        pos is 0x", pos);
+			printf("Case 3, ptr is 0x%X\n", addr);
+			printf("        pos is %d\n", pos);
 			_bitmap_records[id].bitmap_read_ptr = addr;
 			_bitmap_records[id].bitmap_read_element = pos;
 		}
 Case_Done:
-		if (1);
+		if (1) {
+		}
+		printf("Parition 0x%X:\n", id);
+		printf("\tBitmap start: 0x%x\n", _bitmap_records[id].bitmap_start_addr);
+		printf("\tBitmap end:   0x%x\n", _bitmap_records[id].bitmap_end_addr);
+		printf("\tRead pointer: 0x%x\n", _bitmap_records[id].bitmap_read_ptr);
+		printf("\tRead element: 0x%x\n", _bitmap_records[id].bitmap_read_element);
+		printf("\twrite pointer:0x%x\n", _bitmap_records[id].bitmap_write_ptr);
+		printf("\tWrite element:0x%x\n", _bitmap_records[id].bitmap_write_element);
+		
+	} else {
+		printf("Record already cached for partition 0x%02X (0x%02X)\n", id, _bitmap_records[id].id);
 	}
 
 	return 0;
@@ -416,7 +462,7 @@ static int32_t
 _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 	int32_t ret;
 
-	//ensure we have loaded a partition record
+	// ensure we have loaded a partition record
 	ret = _bitmap_load_partition_record(id);
 	if (ret < 0)
 		return ret;
@@ -430,10 +476,65 @@ int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	int32_t ret;
 
+	if (!data) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	if (len == 0) {
+		return 0;
+	}
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	// make sure we have enough room for the data
+
+	// find a spot for the data
 	ret = _bitmap_find_next_available_page(id);
 	if (ret < 0) {
 		return ret;
 	}
 
+	// write the data;
+
 	return 0;
+}
+
+int32_t
+hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, struct HLO_FS_Page_Range *range) {
+	int32_t count = 0;
+
+	if (!data || !range) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	// validate range
+
+	// read pages in range into output buffer
+
+	return count;
+}
+
+int32_t
+hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, struct HLO_FS_Page_Range *range) {
+	int32_t count = 0;
+
+	if (!range) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	if (!_check_layout()) {
+		return HLO_FS_Not_Initialized;
+	}
+
+	// validate range
+
+	// update bitmap with 'dirty' status for each page
+
+	return count;
 }
