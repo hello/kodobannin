@@ -65,8 +65,6 @@ _char_add(const uint16_t uuid,
 		.value_handle = handles.value_handle,
 		.handler = write_handler
 	};
-
-    DEBUG("Assigned write handler for UUID", uuid);
 }
 
 void
