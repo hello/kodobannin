@@ -135,6 +135,24 @@ _demo_mode_write_handler(ble_gatts_evt_write_t *event) {
 }
 
 static void
+_alpha0_from_central_confirmed_write_handler(ble_gatts_evt_write_t *event)
+{
+
+}
+
+static void
+_alpha0_from_central_write_handler(ble_gatts_evt_write_t *event)
+{
+
+}
+
+static void
+_alpha0_data_response_write_handler(ble_gatts_evt_write_t *event)
+{
+
+}
+
+static void
 _hrs_send_data(const uint8_t *data, const uint16_t len) {
     uint32_t err;
 
@@ -278,7 +296,16 @@ services_init() {
 	ble_char_write_request_add(BLE_UUID_CMD_CHAR, _demo_cmd_write_handler, 10);
 	ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
 					  (uint8_t* const)GIT_DESCRIPTION,
-					  sizeof(GIT_DESCRIPTION));
+					  strlen(GIT_DESCRIPTION));
+
+    ble_hello_alpha0_init();
+    ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
+                      (uint8_t* const)GIT_DESCRIPTION,
+                      strlen(GIT_DESCRIPTION));
+	ble_char_write_request_add(BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL_CONFIRMED, _alpha0_from_central_confirmed_write_handler, 5);
+    ble_char_indicate_add(BLE_UUID_HELLO_ALPHA0_FROM_BAND_CONFIRMED);
+    ble_char_write_command_add(BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL, _alpha0_from_central_write_handler, 5);
+    ble_char_notify_add(BLE_UUID_HELLO_ALPHA0_FROM_BAND);
 }
 
 #define STRIDE 32

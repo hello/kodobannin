@@ -20,6 +20,8 @@ static uint16_t                 _conn_handle;
 static ble_hello_demo_connect_handler  _conn_handler;
 static ble_hello_demo_connect_handler  _disconn_handler;
 
+static uint16_t _alpha0_service_handle;
+
 typedef uint32_t (*notify_data_send_cb)(const uint8_t *data, const uint16_t len);
 static notify_data_send_cb data_cb = NULL;
 static uint8_t *data_cb_data;
@@ -348,4 +350,15 @@ void ble_hello_demo_init(const ble_hello_demo_init_t *init)
 
     err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &_service_handle);
 	APP_ERROR_CHECK(err_code);
+}
+
+void ble_hello_alpha0_init()
+{
+    ble_uuid_t ble_uuid = {
+        .type = hello_type,
+        .uuid = BLE_UUID_HELLO_ALPHA0_SVC,
+    };
+
+    uint32_t err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &_alpha0_service_handle);
+    APP_ERROR_CHECK(err_code);
 }

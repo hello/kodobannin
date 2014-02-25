@@ -15,6 +15,12 @@
 #define BLE_UUID_CMD_CHAR       0xBEEF
 #define BLE_UUID_GIT_DESCRIPTION_CHAR 0x617D
 
+#define BLE_UUID_HELLO_ALPHA0_SVC 0xBA5E
+#define BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL_CONFIRMED 0xDEED
+#define BLE_UUID_HELLO_ALPHA0_FROM_BAND_CONFIRMED 0xD00D
+#define BLE_UUID_HELLO_ALPHA0_FROM_BAND 0xFEED
+#define BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL 0xF00D
+
 typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
 typedef void (*ble_hello_demo_connect_handler)(void);
 
@@ -59,6 +65,8 @@ uint16_t ble_hello_demo_data_send(const uint8_t * data, const uint16_t data_len)
 uint32_t ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len);
 
 uint16_t ble_hello_demo_get_handle();
+
+void ble_hello_alpha0_init();
 
 void ble_char_notify_add(uint16_t uuid);
 void ble_char_indicate_add(uint16_t uuid);
