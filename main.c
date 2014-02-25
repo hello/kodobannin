@@ -148,12 +148,6 @@ _alpha0_from_central_write_handler(ble_gatts_evt_write_t *event)
 }
 
 static void
-_alpha0_data_response_write_handler(ble_gatts_evt_write_t *event)
-{
-
-}
-
-static void
 _hrs_send_data(const uint8_t *data, const uint16_t len) {
     uint32_t err;
 
