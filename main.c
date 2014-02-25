@@ -19,15 +19,15 @@
 #include <drivers/spi_nor.h>
 #include <util.h>
 #include <imu.h>
-#include <ble_hello_demo.h>
 #include <drivers/pwm.h>
 #include <hrs.h>
 #include <drivers/watchdog.h>
 #include <drivers/hlo_fs.h>
+
+#include "hlo_ble_demo.h"
 #include "git_description.h"
 #include "hello_dfu.h"
 #include "sensor_data.h"
-
 #include "util.h"
 
 static uint16_t test_size;
@@ -156,7 +156,7 @@ static void
 _hrs_send_data(const uint8_t *data, const uint16_t len) {
     uint32_t err;
 
-    err = ble_hello_demo_data_send_blocking(data, len);
+    err = hlo_ble_demo_data_send_blocking(data, len);
     APP_ERROR_CHECK(err);
 }
 
@@ -196,7 +196,7 @@ _demo_cmd_write_handler(ble_gatts_evt_write_t *event) {
 
             hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 0);
             _state = TEST_HRS_DONE;
-            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            err = sd_ble_gatts_value_set(hlo_ble_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
             break;
 
@@ -216,7 +216,7 @@ _demo_cmd_write_handler(ble_gatts_evt_write_t *event) {
 	    };
 	    hrs_run_test2(hrs_parameters);
             _state = TEST_HRS_DONE;
-            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            err = sd_ble_gatts_value_set(hlo_ble_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
             break;
 
@@ -229,7 +229,7 @@ _demo_cmd_write_handler(ble_gatts_evt_write_t *event) {
             hrs_run_test( event->data[1], *(uint16_t *)&event->data[2], *(uint16_t *)&event->data[4], 1);
 			// hrs_calibrate( event->data[1], event->data[2], *(uint16_t *)&event->data[3], *(uint16_t *)&event->data[5], &_hrs_send_data);
             _state = TEST_HRS_DONE;
-            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            err = sd_ble_gatts_value_set(hlo_ble_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
             break;
 
@@ -239,7 +239,7 @@ _demo_cmd_write_handler(ble_gatts_evt_write_t *event) {
                 do_imu = 1;
                 /*imu_reset_fifo();
 				  err = imu_fifo_read(480, buf);
-                ble_hello_demo_data_send_blocking(buf, err);
+                hlo_ble_demo_data_send_blocking(buf, err);
                 */break;
 
 	case TEST_ENTER_DFU:
@@ -255,13 +255,13 @@ _demo_cmd_write_handler(ble_gatts_evt_write_t *event) {
             do_imu = 0;
             DEBUG("Sending HRS data: ", test_size);
 
-            err = ble_hello_demo_data_send_blocking(hrs_get_buffer(), test_size);
+            err = hlo_ble_demo_data_send_blocking(hrs_get_buffer(), test_size);
             // APP_ERROR_CHECK(err);
 
             // update device state
             if (err == NRF_SUCCESS) {
                 _state = TEST_STATE_IDLE;
-                err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+                err = sd_ble_gatts_value_set(hlo_ble_demo_get_handle(), 0, &len, &_state);
                 APP_ERROR_CHECK(err);
             }
             break;
@@ -271,7 +271,7 @@ _demo_cmd_write_handler(ble_gatts_evt_write_t *event) {
             if (_state == TEST_START_IMU) {
                 _state = TEST_STATE_IDLE;
             }
-            err = sd_ble_gatts_value_set(ble_hello_demo_get_handle(), 0, &len, &_state);
+            err = sd_ble_gatts_value_set(hlo_ble_demo_get_handle(), 0, &len, &_state);
             APP_ERROR_CHECK(err);
             break;
 
@@ -282,14 +282,14 @@ _demo_cmd_write_handler(ble_gatts_evt_write_t *event) {
 
 void
 services_init() {
-	ble_hello_init();
+	hlo_ble_init();
 
-    ble_hello_demo_init_t demo_init = {
+    hlo_ble_demo_init_t demo_init = {
         .conn_handler    = NULL,
         .disconn_handler = NULL,
     };
 
-    ble_hello_demo_init(&demo_init);
+    hlo_ble_demo_init(&demo_init);
 
 	ble_char_notify_add(BLE_UUID_DATA_CHAR);
 	ble_char_write_request_add(BLE_UUID_CONF_CHAR, _demo_mode_write_handler, 4);
@@ -298,7 +298,7 @@ services_init() {
 					  (uint8_t* const)GIT_DESCRIPTION,
 					  strlen(GIT_DESCRIPTION));
 
-    ble_hello_alpha0_init();
+    hlo_ble_alpha0_init();
     ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
                       (uint8_t* const)GIT_DESCRIPTION,
                       strlen(GIT_DESCRIPTION));
@@ -775,7 +775,7 @@ _start()
             // sample IMU and queue up to send over BLE
             //imu_accel_reg_read(sample);
             //imu_read_regs(sample);
-            //ble_hello_demo_data_send_blocking(sample, 12);
+            //hlo_ble_demo_data_send_blocking(sample, 12);
         } else {
 */          // Switch to a low power state until an event is available for the application
             err = sd_app_event_wait();

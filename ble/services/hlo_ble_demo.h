@@ -21,8 +21,8 @@
 #define BLE_UUID_HELLO_ALPHA0_FROM_BAND 0xFEED
 #define BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL 0xF00D
 
-typedef void (*ble_hello_demo_write_handler)(ble_gatts_evt_write_t *);
-typedef void (*ble_hello_demo_connect_handler)(void);
+typedef void (*hlo_ble_demo_write_handler)(ble_gatts_evt_write_t *);
+typedef void (*hlo_ble_demo_connect_handler)(void);
 
 typedef enum {
 	Demo_Config_Standby = 0,
@@ -37,12 +37,12 @@ typedef enum {
  */
 typedef struct
 {
-    ble_hello_demo_write_handler   data_write_handler;
-	ble_hello_demo_write_handler   mode_write_handler;
-	ble_hello_demo_write_handler   cmd_write_handler;
-	ble_hello_demo_connect_handler conn_handler;
-	ble_hello_demo_connect_handler disconn_handler;
-} ble_hello_demo_init_t;
+    hlo_ble_demo_write_handler   data_write_handler;
+	hlo_ble_demo_write_handler   mode_write_handler;
+	hlo_ble_demo_write_handler   cmd_write_handler;
+	hlo_ble_demo_connect_handler conn_handler;
+	hlo_ble_demo_connect_handler disconn_handler;
+} hlo_ble_demo_init_t;
 
 /**@brief Function for initializing the Hello Demo Service.
  *
@@ -56,20 +56,20 @@ typedef struct
  *
  * @return      NRF_SUCCESS on successful initialization of service.
  */
-void ble_hello_init();
+void hlo_ble_init();
 
-void ble_hello_demo_init(const ble_hello_demo_init_t * p_init);
+void hlo_ble_demo_init(const hlo_ble_demo_init_t * p_init);
 
-void ble_hello_demo_on_ble_evt(ble_evt_t *event);
-uint16_t ble_hello_demo_data_send(const uint8_t * data, const uint16_t data_len);
-uint32_t ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len);
+void hlo_ble_demo_on_ble_evt(ble_evt_t *event);
+uint16_t hlo_ble_demo_data_send(const uint8_t * data, const uint16_t data_len);
+uint32_t hlo_ble_demo_data_send_blocking(const uint8_t *data, const uint16_t len);
 
-uint16_t ble_hello_demo_get_handle();
+uint16_t hlo_ble_demo_get_handle();
 
-void ble_hello_alpha0_init();
+void hlo_ble_alpha0_init();
 
 void ble_char_notify_add(uint16_t uuid);
 void ble_char_indicate_add(uint16_t uuid);
-void ble_char_write_request_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size);
-void ble_char_write_command_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size);
+void ble_char_write_request_add(uint16_t uuid, hlo_ble_demo_write_handler write_handler, uint16_t max_buffer_size);
+void ble_char_write_command_add(uint16_t uuid, hlo_ble_demo_write_handler write_handler, uint16_t max_buffer_size);
 void ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size);

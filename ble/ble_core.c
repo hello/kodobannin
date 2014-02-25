@@ -1,7 +1,7 @@
 // vi:sw=4:ts=4
 
 #include <ble_advdata.h>
-#include "ble_hello_demo.h"
+#include "hlo_ble_demo.h"
 #include <ble_gap.h>
 #include <ble_hci.h>
 #include <ble_l2cap.h>

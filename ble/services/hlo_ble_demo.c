@@ -2,7 +2,7 @@
 
 /* Copyright (c) 2013 Hello Inc. All Rights Reserved. */
 
-#include "ble_hello_demo.h"
+#include "hlo_ble_demo.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,8 +17,8 @@
 uint8_t hello_type;
 static uint16_t                 _service_handle;
 static uint16_t                 _conn_handle;
-static ble_hello_demo_connect_handler  _conn_handler;
-static ble_hello_demo_connect_handler  _disconn_handler;
+static hlo_ble_demo_connect_handler  _conn_handler;
+static hlo_ble_demo_connect_handler  _disconn_handler;
 
 static uint16_t _alpha0_service_handle;
 
@@ -60,7 +60,7 @@ uint16_t _value_handle(const uint16_t uuid) {
 	APP_ASSERT(0);
 }
 
-uint16_t ble_hello_demo_get_handle() {
+uint16_t hlo_ble_demo_get_handle() {
 	return _value_handle(BLE_UUID_CMD_CHAR);
 }
 
@@ -81,7 +81,7 @@ dispatch_write(ble_evt_t *event) {
 }
 
 void
-ble_hello_demo_on_ble_evt(ble_evt_t *event)
+hlo_ble_demo_on_ble_evt(ble_evt_t *event)
 {
     switch (event->header.evt_id)
     {
@@ -122,7 +122,7 @@ ble_hello_demo_on_ble_evt(ble_evt_t *event)
 }
 
 uint32_t
-ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
+hlo_ble_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
     uint32_t err;
     int32_t hvx_len;
     uint16_t pkt_len;
@@ -168,7 +168,7 @@ ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
             // so we cant wait here because we're blocking the softdevice from actually sending
             // right now, we return an in progress indicator, and request that we be called back
             // with our in-progress data ptr and bytes
-            data_cb = &ble_hello_demo_data_send_blocking;
+            data_cb = &hlo_ble_demo_data_send_blocking;
             data_cb_data = ptr;
             data_cb_len = hvx_len;
             return -1;
@@ -181,7 +181,7 @@ ble_hello_demo_data_send_blocking(const uint8_t *data, const uint16_t len) {
 }
 
 uint16_t
-ble_hello_demo_data_send(const uint8_t *data, const uint16_t len) {
+hlo_ble_demo_data_send(const uint8_t *data, const uint16_t len) {
     uint32_t err_code;
     uint16_t hvx_len;
     ble_gatts_hvx_params_t hvx_params;
@@ -283,7 +283,7 @@ ble_char_indicate_add(uint16_t uuid)
 }
 
 void
-ble_char_write_request_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size)
+ble_char_write_request_add(uint16_t uuid, hlo_ble_demo_write_handler write_handler, uint16_t max_buffer_size)
 {
 	uint8_t ignored[max_buffer_size];
 
@@ -295,7 +295,7 @@ ble_char_write_request_add(uint16_t uuid, ble_hello_demo_write_handler write_han
 }
 
 void
-ble_char_write_command_add(uint16_t uuid, ble_hello_demo_write_handler write_handler, uint16_t max_buffer_size)
+ble_char_write_command_add(uint16_t uuid, hlo_ble_demo_write_handler write_handler, uint16_t max_buffer_size)
 {
     uint8_t ignored[max_buffer_size];
 
@@ -316,7 +316,7 @@ ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)
 	_char_add(uuid, &read_props, value, value_size, NULL);
 }
 
-void ble_hello_init()
+void hlo_ble_init()
 {
 	const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
 
@@ -324,7 +324,7 @@ void ble_hello_init()
 	APP_ERROR_CHECK(err_code);
 }
 
-void ble_hello_demo_init(const ble_hello_demo_init_t *init)
+void hlo_ble_demo_init(const hlo_ble_demo_init_t *init)
 {
     uint32_t   err_code;
     ble_uuid_t ble_uuid;
@@ -352,7 +352,7 @@ void ble_hello_demo_init(const ble_hello_demo_init_t *init)
 	APP_ERROR_CHECK(err_code);
 }
 
-void ble_hello_alpha0_init()
+void hlo_ble_alpha0_init()
 {
     ble_uuid_t ble_uuid = {
         .type = hello_type,
