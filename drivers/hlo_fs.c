@@ -1,4 +1,4 @@
-// vi:sw=4:ts=4
+// vi:noet:sw=4 ts=4
 
 #include <drivers/spi_nor.h>
 #include <drivers/hlo_fs.h>

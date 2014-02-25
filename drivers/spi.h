@@ -1,4 +1,4 @@
-// vi:sw=4:ts=4
+// vi:noet:sw=4 ts=4
 
 #pragma once
 #include <stdio.h>
