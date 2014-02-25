@@ -43,7 +43,7 @@ struct uuid_handler {
 	char_write_handler_t handler;
 };
 
-#define MAX_CHARACTERISTICS 5
+#define MAX_CHARACTERISTICS 9
 static struct uuid_handler _uuid_handlers[MAX_CHARACTERISTICS];
 static struct uuid_handler* _p_uuid_handler = _uuid_handlers;
 
