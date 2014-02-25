@@ -70,7 +70,7 @@ _char_add(const uint16_t uuid,
 }
 
 void
-ble_char_notify_add(uint16_t uuid)
+hlo_ble_char_notify_add(uint16_t uuid)
 {
 	uint8_t ignored[BLE_GAP_DEVNAME_MAX_WR_LEN];
 
@@ -82,7 +82,7 @@ ble_char_notify_add(uint16_t uuid)
 }
 
 void
-ble_char_indicate_add(uint16_t uuid)
+hlo_ble_char_indicate_add(uint16_t uuid)
 {
 	uint8_t ignored[BLE_GAP_DEVNAME_MAX_WR_LEN];
 
@@ -94,7 +94,7 @@ ble_char_indicate_add(uint16_t uuid)
 }
 
 void
-ble_char_write_request_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size)
+hlo_ble_char_write_request_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size)
 {
 	uint8_t ignored[max_buffer_size];
 
@@ -106,7 +106,7 @@ ble_char_write_request_add(uint16_t uuid, hlo_ble_write_handler write_handler, u
 }
 
 void
-ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size)
+hlo_ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size)
 {
 	uint8_t ignored[max_buffer_size];
 
@@ -118,7 +118,7 @@ ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handler, u
 }
 
 void
-ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)
+hlo_ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)
 {
 	ble_gatt_char_props_t read_props;
 	memset(&read_props, 0, sizeof(read_props));

@@ -18,11 +18,11 @@ extern uint8_t hello_type;
 
 void hlo_ble_init();
 
-void ble_char_notify_add(uint16_t uuid);
-void ble_char_indicate_add(uint16_t uuid);
-void ble_char_write_request_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size);
-void ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size);
-void ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size);
+void hlo_ble_char_notify_add(uint16_t uuid);
+void hlo_ble_char_indicate_add(uint16_t uuid);
+void hlo_ble_char_write_request_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size);
+void hlo_ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size);
+void hlo_ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size);
 
 uint16_t hlo_ble_get_value_handle(const uint16_t uuid);
 
