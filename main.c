@@ -264,7 +264,8 @@ _cmd_write_handler(ble_gatts_evt_write_t *event) {
 
 void
 services_init() {
-    // add hello demo service
+	ble_hello_init();
+
     ble_hello_demo_init_t demo_init = {
         .conn_handler    = NULL,
         .disconn_handler = NULL,

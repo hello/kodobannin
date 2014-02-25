@@ -50,6 +50,8 @@ typedef struct
  *
  * @return      NRF_SUCCESS on successful initialization of service.
  */
+void ble_hello_init();
+
 void ble_hello_demo_init(const ble_hello_demo_init_t * p_init);
 
 void ble_hello_demo_on_ble_evt(ble_evt_t *event);

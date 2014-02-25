@@ -314,11 +314,18 @@ ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)
 	_char_add(uuid, &read_props, value, value_size, NULL);
 }
 
+void ble_hello_init()
+{
+	const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
+
+	uint32_t err_code = sd_ble_uuid_vs_add(&hello_uuid, &hello_type);
+	APP_ERROR_CHECK(err_code);
+}
+
 void ble_hello_demo_init(const ble_hello_demo_init_t *init)
 {
     uint32_t   err_code;
     ble_uuid_t ble_uuid;
-    const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
     uint8_t zeroes[20];
 
     memset(zeroes, 0xAC, sizeof(zeroes));
@@ -334,10 +341,6 @@ void ble_hello_demo_init(const ble_hello_demo_init_t *init)
 
     if (init->disconn_handler)
         _disconn_handler = init->disconn_handler;
-
-    // Add Hello's Base UUID
-    err_code = sd_ble_uuid_vs_add(&hello_uuid, &hello_type);
-	APP_ERROR_CHECK(err_code);
 
     // Add service
     ble_uuid.type = hello_type;
