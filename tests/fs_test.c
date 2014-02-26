@@ -1,6 +1,6 @@
 // vi:sw=4:ts=4
 
-//clang ../drivers/hlo_fs.c -I.. -DTEST_HARNESS -c && clang fs_test.c -I.. -DTEST_HARNESS hlo_fs.o
+//clang ../drivers/hlo_fs.c -I. -I.. -DTEST_HARNESS -DDEBUG_SERIAL -c && clang fs_test.c -I.. -DTEST_HARNESS hlo_fs.o
 
 #include <stdio.h>
 #include <stdint.h>
