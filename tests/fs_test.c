@@ -77,6 +77,7 @@ main(int argc, const char *argv[]) {
 	int i;
 	int32_t ret;
 	HLO_FS_Partition_Info parts[2];
+	uint8_t buffer[256];
 
 	for (i=1; i < argc; i++) {
 		printf("\nTesting file '%s'\n", argv[i]);
@@ -88,14 +89,14 @@ main(int argc, const char *argv[]) {
 		if (ret == HLO_FS_Not_Initialized) {
 	        parts[0].id = HLO_FS_Partition_Crashlog;
     	    parts[0].block_offset = -1;
-       		parts[0].block_count = 5; // 16k
+       		parts[0].block_count = 5; // 20k
  			ret = hlo_fs_format(1, parts, 1);
 			printf("\tfs_format ret 0x%X\n", ret);
         	ret = hlo_fs_init();
         	printf("\tfs_init ret 0x%X\n", ret);
 
     	}
-		ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 0, NULL);
+		ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 10, buffer);
 		printf("\tfind page ret 0x%X\n", ret);
 	}
 
