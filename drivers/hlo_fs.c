@@ -47,14 +47,14 @@ hlo_fs_init() {
 		printf("Error reading partition record: %d\n", ret);
 		return HLO_FS_Media_Error;
 	}
-
+/*
 	for (i=0; i < _layout.num_partitions; i++) {
 		printf("Partition #%d\n", i);
 		printf("    id     0x%X\n", _partitions[i].id);
 		printf("    offset 0x%X\n", _partitions[i].block_offset);
 		printf("    count  0x%X\n", _partitions[i].block_count);
 	}
-	return 0;
+*/	return 0;
 }
 
 int32_t
