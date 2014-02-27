@@ -228,6 +228,8 @@ hlo_fs_reclaim(enum HLO_FS_Partition_ID id) {
 		return HLO_FS_Not_Initialized;
 	}
 
+	// TODO: implement reclaimation
+
 	return count;
 }
 
@@ -504,6 +506,9 @@ Case_Done:
 	return 0;
 }
 
+static int32_t
+/*
+// does this make sense to exist?
 static int32_t
 _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 	int32_t ret;
