@@ -507,6 +507,23 @@ Case_Done:
 }
 
 static int32_t
+_bitmap_get_partition_record(enum HLO_FS_Partition_ID id, struct HLO_FS_Bitmap_Record **record) {
+	int32_t ret;
+
+	if (!record || !*record) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	ret = _bitmap_load_partition_record(id);
+	if (ret < 0) {
+		return ret;
+	}
+
+	*record = &_bitmap_records[id];
+
+	return 0;
+}
+
 /*
 // does this make sense to exist?
 static int32_t
@@ -527,6 +544,7 @@ _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	int32_t ret;
+	struct HLO_FS_Bitmap_Record *partition;
 
 	if (!data) {
 		return HLO_FS_Invalid_Parameter;
@@ -542,8 +560,8 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 
 	// make sure we have enough room for the data
 
-	// find a spot for the data
-	ret = _bitmap_find_next_available_page(id);
+	// get the partition information
+	ret = _bitmap_get_partition_record(id, &partition);
 	if (ret < 0) {
 		return ret;
 	}
