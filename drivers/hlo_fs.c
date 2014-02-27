@@ -522,6 +522,7 @@ _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 	// to ensure we operate like a ring buffer
 	return 0;
 }
+*/
 
 int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
