@@ -202,7 +202,7 @@ hlo_fs_page_count(enum HLO_FS_Partition_ID id) {
 	}
 
 	NOR_Chip_Config *nor_cfg = spinor_get_chip_config();
-	
+
 	return info->block_count * nor_cfg->pages_per_block;
 }
 
@@ -212,12 +212,12 @@ hlo_fs_free_page_count(enum HLO_FS_Partition_ID id) {
 
 	if (!_check_layout()) {
 		return HLO_FS_Not_Initialized;
-	} 
+	}
 
 	// do a straightfoward scan of the entire bitmap
 	// this can be improved later
-	
-	return count;	
+
+	return count;
 }
 
 int32_t
@@ -228,7 +228,6 @@ hlo_fs_reclaim(enum HLO_FS_Partition_ID id) {
 		return HLO_FS_Not_Initialized;
 	}
 
-	
 	return count;
 }
 
@@ -448,7 +447,7 @@ Case_Done:
 		printf("\tRead element: 0x%x\n", _bitmap_records[id].bitmap_read_element);
 		printf("\twrite pointer:0x%x\n", _bitmap_records[id].bitmap_write_ptr);
 		printf("\tWrite element:0x%x\n", _bitmap_records[id].bitmap_write_element);
-		
+
 	} else {
 		printf("Record already cached for partition 0x%02X (0x%02X)\n", id, _bitmap_records[id].id);
 	}
