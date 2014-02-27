@@ -33,6 +33,7 @@ enum HLO_FS_Return_Value {
 	HLO_FS_Media_Error       = -3,
 	HLO_FS_Already_Valid     = -4,
 	HLO_FS_Not_Found         = -5,
+	HLO_FS_Not_Enough_Space  = -6,
 };
 
 // Storage oriented constants and structures
@@ -60,6 +61,7 @@ typedef struct __attribute__((__packed__)) {
 } HLO_FS_Layout_v1;
 
 typedef enum {
+	HLO_FS_Page_Max   = 0x4,
 	HLO_FS_Page_Free  = 0x3,
 	HLO_FS_Page_Used  = 0x2,
 	HLO_FS_Page_Bad   = 0x1,
@@ -76,10 +78,14 @@ struct HLO_FS_Bitmap_Record {
     uint32_t bitmap_start_addr;
     uint32_t bitmap_end_addr;
 
+	// space tracking
+	uint32_t page_stats[HLO_FS_Page_Max];
+	uint32_t min_free_bytes;
+
     // for caching linear scan results
     uint32_t bitmap_read_ptr;
-	uint8_t  bitmap_read_element;
     uint32_t bitmap_write_ptr;
+	uint8_t  bitmap_read_element;
 	uint8_t  bitmap_write_element;
 };
 
@@ -111,7 +117,7 @@ int32_t hlo_fs_init();
  *                           been created.
  * @param force_format - set this flag to force a re-format even if the device
  *                       currently contains a valid configuration block
- * 
+ *
  * @returns <0 on error, 0 on success
  **/
 int32_t hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool force_format);

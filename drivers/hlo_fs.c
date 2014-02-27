@@ -305,6 +305,7 @@ _bitmap_get_partition_range(enum HLO_FS_Partition_ID id, uint32_t *start_addr, u
 #define ALL_USED_PAGES   0xAAAAAAAA
 #define Page_Free_Check(A, B) ((((A >> (30-(B*2)))&0x3) ^ HLO_FS_Page_Free) == 0)
 #define Page_Used_Check(A, B) ((((A >> (30-(B*2)))&0x3) ^ HLO_FS_Page_Used) == 0)
+#define Get_Page_State(A,B) ((A >> (30-(B*2)))&0x3)
 
 static int8_t
 _bitmap_get_used_pos(uint32_t haystack) {
@@ -370,6 +371,40 @@ _bitmap_find_next_free(uint32_t start, uint32_t end, uint32_t *out_addr, uint8_t
 	} while (addr <= end);
 
 	return HLO_FS_Not_Found;
+}
+
+static int32_t
+_bitmap_calc_page_usage(enum HLO_FS_Partition_ID id) {
+	int32_t ret;
+	uint32_t addr;
+	uint32_t record;
+	uint32_t i;
+
+	uint32_t *page_stats = _bitmap_records[id].page_stats;
+
+	memset(page_stats, 0, sizeof(_bitmap_records[id].page_stats));
+
+	// iterate through the bitmap and account for page usage
+	for (addr = _bitmap_records[id].bitmap_start_addr; addr <= _bitmap_records[id].bitmap_end_addr; addr += 4) {
+		// load bitmap record
+		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
+		if (ret != sizeof(record)) {
+			return ret;
+		}
+
+		for (i=0; i < (sizeof(record) * 8 / HLO_FS_Page_State_Bits); i++) {
+			++page_stats[Get_Page_State(record, i)];
+		}
+	}
+	_bitmap_records[id].min_free_bytes = 256 * page_stats[HLO_FS_Page_Free];
+	printf("Page states:\n");
+	printf("Dirty: %d\n", page_stats[HLO_FS_Page_Dirty]);
+	printf("Bad:   %d\n", page_stats[HLO_FS_Page_Bad]);
+	printf("Used:  %d\n", page_stats[HLO_FS_Page_Used]);
+	printf("Free:  %d\n", page_stats[HLO_FS_Page_Free]);
+	printf("Min free bytes: %d\n", _bitmap_records[id].min_free_bytes);
+
+	return 0;
 }
 
 static int32_t
@@ -491,6 +526,12 @@ Case_3:
 			}
 		}
 Case_Done:
+		// calculate page usage
+		ret = _bitmap_calc_page_usage(id);
+		if (ret < 0) {
+			return ret;
+		}
+
 		printf("Parition 0x%X (case %d):\n", id, bitmap_case);
 		printf("\tBitmap start: 0x%x\n", _bitmap_records[id].bitmap_start_addr);
 		printf("\tBitmap end:   0x%x\n", _bitmap_records[id].bitmap_end_addr);
@@ -558,12 +599,16 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 		return HLO_FS_Not_Initialized;
 	}
 
-	// make sure we have enough room for the data
-
 	// get the partition information
 	ret = _bitmap_get_partition_record(id, &partition);
 	if (ret < 0) {
 		return ret;
+	}
+
+	// make sure we have enough room for the data
+	if (len > partition->min_free_bytes) {
+		printf("Not enough space to write %d bytes. (%d available)\n", len, partition->min_free_bytes);
+		return HLO_FS_Not_Enough_Space;
 	}
 
 	// write the data;
