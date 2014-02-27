@@ -337,12 +337,47 @@ _bitmap_get_free_pos(uint32_t haystack) {
 }
 
 static int32_t
+_bitmap_find_next_free(uint32_t start, uint32_t end, uint32_t *out_addr, uint8_t *out_pos) {
+	uint32_t record;
+	uint32_t addr;
+	int8_t pos;
+	int32_t ret;
+
+	// invalidate out parameter values
+	*out_addr = -1;
+	*out_pos  = -1;
+
+	addr = start;
+	do {
+		// load bitmap record
+		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
+		if (ret != sizeof(record))
+			return ret;
+
+		//check for free page
+		pos = _bitmap_get_free_pos(record);
+		if (pos != -1) {
+			*out_addr = addr;
+			*out_pos = pos;
+			return 0;
+			break;
+		}
+
+		// advance to the next bitmap record
+		addr += 4;
+	} while (addr <= end);
+
+	return HLO_FS_Not_Found;
+}
+
+static int32_t
 _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 	int32_t ret;
 	uint32_t addr;
 	uint32_t record;
 	int8_t pos, pos2;
 	int8_t free_pos;
+	int32_t bitmap_case = 0;
 
 	if ((_bitmap_records[id].id & 0xFF) == 0xFF) { //need this since enum is 4-byte on host for test framework
 		ret = _bitmap_get_partition_range(id, &_bitmap_records[id].bitmap_start_addr, &_bitmap_records[id].bitmap_end_addr);
@@ -371,12 +406,14 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 
 		// Case 1 and 2 - Check the start address for data
 		printf("Checking case 1/2...\r\n");
-		ret = spinor_read(_bitmap_records[id].bitmap_start_addr, sizeof(record), (uint8_t *)&record);
+		addr = _bitmap_records[id].bitmap_start_addr;
+		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
 		if (ret != sizeof(record)) {
 			return ret;
 		}
 		// if the first slot in the block isn't used then we don't have a Case 1 or 2
 		pos = _bitmap_get_used_pos(record);
+		printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos);
 		if (pos != 0)
 			goto Case_3;
 
@@ -390,26 +427,32 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 
 			// check our used and free bits
 			pos2 = _bitmap_get_used_pos(record);
-			free_pos =  _bitmap_get_free_pos(record);
+			free_pos = _bitmap_get_free_pos(record);
 			printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos2);
 		} while (pos2 != -1 && free_pos == -1 && (addr -= 4) &&  (addr > _bitmap_records[id].bitmap_start_addr));
 
-		//XXX: FIND THE WRITE POINTER TOO!
 
 		// if there is no data at the end of the partition, then settle on case 1
 		if (pos2 == -1 && addr >= _bitmap_records[id].bitmap_end_addr) {
-			printf("Case 1, Rptr is 0x%X\n", _bitmap_records[id].bitmap_start_addr);
-			printf("         pos is 0x%X\n", pos);
+			// CASE 1
+			// =======================================================================================
+			bitmap_case = 1;
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_read_element = 0;
-			goto Case_Done;
+
 		} else {
-			printf("Case 2, Rptr is 0x%X\n", addr);
-			printf("         pos is 0x%X\n", pos2);
+			// CASE 2
+			// =======================================================================================
+			bitmap_case = 2;
 			_bitmap_records[id].bitmap_read_ptr = addr;
 			_bitmap_records[id].bitmap_read_element = pos2;
-			goto Case_Done;
 		}
+
+		// Find write pointer for Case 1 / 2
+		// For Case 1/2 we should search forward from the start for the first 'free' page
+		addr =  _bitmap_records[id].bitmap_start_addr;
+		ret = _bitmap_find_next_free(_bitmap_records[id].bitmap_start_addr, _bitmap_records[id].bitmap_end_addr, &_bitmap_records[id].bitmap_write_ptr, &_bitmap_records[id].bitmap_write_element);
+		goto Case_Done;
 
 Case_3:
 		// Case 3 / 4
@@ -425,22 +468,28 @@ Case_3:
 		} while(pos == -1 && (addr += 4) && addr <= _bitmap_records[id].bitmap_end_addr);
 
 		if (addr >= _bitmap_records[id].bitmap_end_addr && pos == -1) {
+			// CASE 4
+			// =======================================================================================
+			bitmap_case = 4;
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_write_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_read_element = 0;
 			_bitmap_records[id].bitmap_write_element = 0;
-			printf("Case 4, ptr is 0x%X\n", _bitmap_records[id].bitmap_read_ptr);
-			printf("        pos is %d", pos);
 		} else {
-			printf("Case 3, ptr is 0x%X\n", addr);
-			printf("        pos is %d\n", pos);
+			// CASE 3
+			// =======================================================================================
+			bitmap_case = 3;
 			_bitmap_records[id].bitmap_read_ptr = addr;
 			_bitmap_records[id].bitmap_read_element = pos;
+
+			// find write pointer by searching forward from the read_ptr for the first free slot
+			ret = _bitmap_find_next_free(addr, _bitmap_records[id].bitmap_end_addr, &_bitmap_records[id].bitmap_write_ptr, &_bitmap_records[id].bitmap_write_element);
+			if (ret < 0) {
+				return ret;
+			}
 		}
 Case_Done:
-		if (1) {
-		}
-		printf("Parition 0x%X:\n", id);
+		printf("Parition 0x%X (case %d):\n", id, bitmap_case);
 		printf("\tBitmap start: 0x%x\n", _bitmap_records[id].bitmap_start_addr);
 		printf("\tBitmap end:   0x%x\n", _bitmap_records[id].bitmap_end_addr);
 		printf("\tRead pointer: 0x%x\n", _bitmap_records[id].bitmap_read_ptr);
