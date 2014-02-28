@@ -368,7 +368,7 @@ _bitmap_find_next_free(uint32_t start, uint32_t end, uint32_t *out_addr, uint8_t
 
 		// advance to the next bitmap record
 		addr += 4;
-	} while (addr <= end);
+	} while (addr < end);
 
 	return HLO_FS_Not_Found;
 }
@@ -385,7 +385,7 @@ _bitmap_calc_page_usage(enum HLO_FS_Partition_ID id) {
 	memset(page_stats, 0, sizeof(_bitmap_records[id].page_stats));
 
 	// iterate through the bitmap and account for page usage
-	for (addr = _bitmap_records[id].bitmap_start_addr; addr <= _bitmap_records[id].bitmap_end_addr; addr += 4) {
+	for (addr = _bitmap_records[id].bitmap_start_addr; addr < _bitmap_records[id].bitmap_end_addr; addr += 4) {
 		// load bitmap record
 		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
 		if (ret != sizeof(record)) {
@@ -455,7 +455,7 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 			goto Case_3;
 
 		// Case 2 check. Search back from the last address for free space
-		addr = _bitmap_records[id].bitmap_end_addr;
+		addr = _bitmap_records[id].bitmap_end_addr - 4;
 		do {
 			ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
 			if (ret != sizeof(record)) {
@@ -470,13 +470,13 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 
 
 		// if there is no data at the end of the partition, then settle on case 1
-		if (pos2 == -1 && addr >= _bitmap_records[id].bitmap_end_addr) {
+		printf("Case 1 check: pos2 = %d, addr = 0x%x, end = 0x%x\n", pos2, addr, _bitmap_records[id].bitmap_end_addr);
+		if (pos2 == -1 && addr >= (_bitmap_records[id].bitmap_end_addr - 4)) {
 			// CASE 1
 			// =======================================================================================
 			bitmap_case = 1;
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_read_element = 0;
-
 		} else {
 			// CASE 2
 			// =======================================================================================
@@ -502,7 +502,7 @@ Case_3:
 			}
 			pos = _bitmap_get_used_pos(record);
 			printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos);
-		} while(pos == -1 && (addr += 4) && addr <= _bitmap_records[id].bitmap_end_addr);
+		} while(pos == -1 && (addr += 4) && addr < _bitmap_records[id].bitmap_end_addr);
 
 		if (addr >= _bitmap_records[id].bitmap_end_addr && pos == -1) {
 			// CASE 4
