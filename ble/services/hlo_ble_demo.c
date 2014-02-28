@@ -14,6 +14,8 @@
 #include <util.h>
 #include <ble.h>
 
+#include "git_description.h"
+
 static uint16_t                 _service_handle;
 static uint16_t                 _conn_handle;
 static hlo_ble_connect_handler  _conn_handler;
@@ -190,6 +192,13 @@ void hlo_ble_demo_init(const hlo_ble_demo_init_t *init)
 
     err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &_service_handle);
 	APP_ERROR_CHECK(err_code);
+
+    hlo_ble_char_notify_add(BLE_UUID_DATA_CHAR);
+    hlo_ble_char_write_request_add(BLE_UUID_CONF_CHAR, init->mode_write_handler, 4);
+    hlo_ble_char_write_request_add(BLE_UUID_CMD_CHAR, init->cmd_write_handler, 10);
+    hlo_ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
+                          (uint8_t* const)GIT_DESCRIPTION,
+                          strlen(GIT_DESCRIPTION));
 }
 
 uint16_t hlo_ble_demo_get_handle() {

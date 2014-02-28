@@ -136,18 +136,6 @@ _demo_mode_write_handler(ble_gatts_evt_write_t *event) {
 }
 
 static void
-_alpha0_from_central_confirmed_write_handler(ble_gatts_evt_write_t *event)
-{
-
-}
-
-static void
-_alpha0_from_central_write_handler(ble_gatts_evt_write_t *event)
-{
-
-}
-
-static void
 _hrs_send_data(const uint8_t *data, const uint16_t len) {
     uint32_t err;
 
@@ -282,25 +270,13 @@ services_init() {
     hlo_ble_demo_init_t demo_init = {
         .conn_handler    = NULL,
         .disconn_handler = NULL,
+        .mode_write_handler = _demo_mode_write_handler,
+        .cmd_write_handler = _demo_cmd_write_handler,
     };
 
     hlo_ble_demo_init(&demo_init);
 
-	hlo_ble_char_notify_add(BLE_UUID_DATA_CHAR);
-	hlo_ble_char_write_request_add(BLE_UUID_CONF_CHAR, _demo_mode_write_handler, 4);
-	hlo_ble_char_write_request_add(BLE_UUID_CMD_CHAR, _demo_cmd_write_handler, 10);
-	hlo_ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
-					  (uint8_t* const)GIT_DESCRIPTION,
-					  strlen(GIT_DESCRIPTION));
-
     hlo_ble_alpha0_init();
-    hlo_ble_char_read_add(BLE_UUID_GIT_DESCRIPTION_CHAR,
-                      (uint8_t* const)GIT_DESCRIPTION,
-                      strlen(GIT_DESCRIPTION));
-	hlo_ble_char_write_request_add(BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL_CONFIRMED, _alpha0_from_central_confirmed_write_handler, 5);
-    hlo_ble_char_indicate_add(BLE_UUID_HELLO_ALPHA0_FROM_BAND_CONFIRMED);
-    hlo_ble_char_write_command_add(BLE_UUID_HELLO_ALPHA0_FROM_CENTRAL, _alpha0_from_central_write_handler, 5);
-    hlo_ble_char_notify_add(BLE_UUID_HELLO_ALPHA0_FROM_BAND);
 }
 
 #define STRIDE 32
