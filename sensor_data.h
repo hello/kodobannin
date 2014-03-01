@@ -142,12 +142,21 @@ struct sensor_data_header {
         t3 ... t0: Type field, most significant byte (t3) to least
         significant byte (t0).
 
-        To get the size and type fields on a _little-endian_ machine,
-        you can do this:
+   To deserialize the size and type fields on a _little-endian_
+   machine, you can do this:
 
-        uint16_t sizetype = ...; // get size & type as little-endian
-        uint8_t type = sizetype >> 12;
-        uint16_t size = sizetype & 0xFFF;
+       uint16_t sizetype = ...; // get size & type as little-endian
+       uint8_t type = sizetype >> 12;
+       uint16_t size = sizetype & 0xFFF;
+
+   To serialize the size and type fields in Java, do this:
+
+       int size = 2620; // or whatever
+       int type = 9; // or whatever; typically 0, but 9 is a nice test value.
+       int value = (type << 12) | size
+       // now serialize the value variable as little-endian.
+
+   Adjust as necessary for non-Java languages :P.
  */
 
 
