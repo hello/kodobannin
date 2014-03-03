@@ -2,6 +2,7 @@
 
 #include <drivers/spi.h>
 #include <drivers/spi_nor.h>
+#include <drivers/watchdog.h>
 #include <stdlib.h>
 #include <util.h>
 #include <app_error.h>
@@ -314,7 +315,7 @@ spinor_wait_completion() {
 		ret = _read_status(&status);
 		APP_ERROR_CHECK(ret != 1);
 		++count;
-		// might want a sleep here
+		watchdog_pet();
 	} while (status & NOR_RDSR_WIP);
 	DEBUG("Completion spun: 0x", count);
 }
