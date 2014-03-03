@@ -81,12 +81,15 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 		spinor_exit_secure_mode();
 	}
 
-	// Clear flash page 0 for new layout
-	ret = spinor_block_erase(0);
+	// Clear flash for new layout
+	ret = spinor_chip_erase();
 	if (ret != 0) {
-		printf("Error erasing block 0 for layout: 0x%X\n", ret);
+		printf("Error erasing chip: 0x%X\n", ret);
 		return HLO_FS_Media_Error;
 	}
+
+	// wait for erase to complete
+	spinor_wait_completion();
 
 	// calculate number of blocks needed for bitmap partition
 	NOR_Chip_Config *nor_cfg = spinor_get_chip_config();
@@ -155,13 +158,6 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 		return HLO_FS_Media_Error;
 	}
 
-	// erase blocks for bitmap
-	for (i = parts[0].block_offset; i < (parts[0].block_offset + parts[0].block_count); i++) {
-		ret = spinor_block_erase(1);
-		if (ret < 0) {
-			return ret;
-		}
-	}
 	return 0;
 }
 
