@@ -61,6 +61,28 @@ spinor_block_erase(uint16_t block) {
 }
 
 int32_t
+spinor_chip_erase() {
+	int i;
+	uint8_t data[BLOCK_SIZE];
+	int32_t ret;
+
+	memset(data, 0xFF, BLOCK_SIZE);
+
+	for(i=0; i < _nor_cfg.total_blocks; i++) {
+		ret = spinor_write(i * BLOCK_SIZE, BLOCK_SIZE, data);
+		if (ret != BLOCK_SIZE) {
+			printf("%s: short write of %d bytes for block %d of %d\n", __FUNCTION__, ret, i, _nor_cfg.total_blocks);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+void
+spinor_wait_completion() {
+}
+
+int32_t
 fstest_init(const char *filename) {
 	if (data_file) {
 		fclose(data_file);
@@ -96,6 +118,7 @@ main(int argc, const char *argv[]) {
         	printf("\tfs_init ret 0x%X\n", ret);
 
     	}
+		memset(buffer, 0x55, 256);
 		ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 10, buffer);
 		printf("\tfind page ret 0x%X\n", ret);
 	}
