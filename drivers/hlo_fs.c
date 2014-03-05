@@ -347,6 +347,8 @@ _bitmap_find_next_free(uint32_t start, uint32_t end, uint32_t *out_addr, uint8_t
 	*out_addr = -1;
 	*out_pos  = -1;
 
+	// TODO: reserve one free page so that we can recover RPos and WPos on reboot
+
 	addr = start;
 	do {
 		// load bitmap record
@@ -703,6 +705,16 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 		}
 
 		//TODO advance the bitmap metadata structure
+		ret = _bitmap_find_next_free(bitmap->bitmap_write_ptr, bitmap->bitmap_end_addr, &bitmap->bitmap_write_ptr, &bitmap->bitmap_write_element);
+		if (ret == HLO_FS_Not_Found) {
+			// search from the beginning in case of wrap-around
+			ret =  _bitmap_find_next_free(bitmap->bitmap_start_addr, bitmap->bitmap_end_addr, &bitmap->bitmap_write_ptr, &bitmap->bitmap_write_element);
+			if (ret !=0) {
+				printf("failed to find the a free page (%d) - STORAGE IS FULL FOR PARTITION 0x%x\n", ret, id);
+				return ret;
+			}
+		}
+		printf("New write ptr and element are 0x%x and 0x%x\n", bitmap->bitmap_write_ptr, bitmap->bitmap_write_element);
 
 	}
 
