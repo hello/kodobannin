@@ -2,7 +2,6 @@
 
 #include <drivers/spi_nor.h>
 #include <drivers/hlo_fs.h>
-//#include <app_error.h>
 #include <string.h>
 #include <util.h>
 
