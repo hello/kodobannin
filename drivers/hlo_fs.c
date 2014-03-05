@@ -360,9 +360,8 @@ _bitmap_find_next_free(uint32_t start, uint32_t end, uint32_t *out_addr, uint8_t
 		pos = _bitmap_get_free_pos(record);
 		if (pos != -1) {
 			*out_addr = addr;
-			*out_pos = pos;
+			*out_pos  = pos;
 			return 0;
-			break;
 		}
 
 		// advance to the next bitmap record
@@ -676,7 +675,6 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 
 		//TODO check to make sure we're not trying to write to a 'BAD' page
 		//     XXX: this should probably be done in the bitmap advancement code
-
 
 		// write at most a page of data
 		ret = spinor_write_page(write_addr, to_write, &data[bytes_written]);
