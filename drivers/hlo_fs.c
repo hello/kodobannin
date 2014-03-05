@@ -579,6 +579,15 @@ _bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_Stat
 	new_record = Set_Page_State(record, bitmap->bitmap_write_element, state);
 	printf("transitioning state from 0x%X to 0x%X\n", record, new_record);
 
+	// update page statistics structure
+	HLO_FS_Page_State old_state = Get_Page_State(record, bitmap->bitmap_write_element);
+	--bitmap->page_stats[old_state];
+	++bitmap->page_stats[state];
+
+	if (old_state == HLO_FS_Page_Free) {
+		bitmap->min_free_bytes -= 256;
+	}
+
 	ret = spinor_write(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&new_record);
 	if (ret != sizeof(record)) {
 		printf("%s: record write only wrote %d instead of %d\n", __func__, ret, (int)sizeof(record));
@@ -715,6 +724,12 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 			}
 		}
 		printf("New write ptr and element are 0x%x and 0x%x\n", bitmap->bitmap_write_ptr, bitmap->bitmap_write_element);
+		printf("Page states:\n");
+		printf("Dirty: %d\n", bitmap->page_stats[HLO_FS_Page_Dirty]);
+		printf("Bad:   %d\n", bitmap->page_stats[HLO_FS_Page_Bad]);
+		printf("Used:  %d\n", bitmap->page_stats[HLO_FS_Page_Used]);
+		printf("Free:  %d\n", bitmap->page_stats[HLO_FS_Page_Free]);
+		printf("Min free bytes: %d\n", bitmap->min_free_bytes);
 
 	}
 
