@@ -625,9 +625,9 @@ hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, struct HLO
 		return HLO_FS_Not_Initialized;
 	}
 
-	// validate range
+	//TODO validate range
 
-	// read pages in range into output buffer
+	//TODO read pages in range into output buffer
 
 	return count;
 }
@@ -644,9 +644,9 @@ hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, struct HLO_FS_Page_Range *range) 
 		return HLO_FS_Not_Initialized;
 	}
 
-	// validate range
+	//TODO validate range
 
-	// update bitmap with 'dirty' status for each page
+	//TODO update bitmap with 'dirty' status for each page
 
 	return count;
 }
