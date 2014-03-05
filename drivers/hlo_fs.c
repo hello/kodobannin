@@ -572,7 +572,7 @@ _bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_Stat
 
 	ret = spinor_read(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&record);
 	if (ret != sizeof(record)) {
-		printf("%s: read %d instead of %d for record size\n", __func__, ret, sizeof(record));
+		printf("%s: read %d instead of %d for record size\n", __func__, ret, (int)sizeof(record));
 		return HLO_FS_Media_Error;
 	}
 
@@ -581,7 +581,7 @@ _bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_Stat
 
 	ret = spinor_write(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&new_record);
 	if (ret != sizeof(record)) {
-		printf("%s: record write only wrote %d instead of %d\n", __func__, ret, sizeof(record));
+		printf("%s: record write only wrote %d instead of %d\n", __func__, ret, (int)sizeof(record));
 		return HLO_FS_Media_Error;
 	}
 	spinor_wait_completion();
