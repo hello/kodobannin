@@ -562,6 +562,31 @@ _bitmap_get_partition_record(enum HLO_FS_Partition_ID id, struct HLO_FS_Bitmap_R
 	return 0;
 }
 
+static int32_t
+_bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_State state) {
+	uint32_t record;
+	uint32_t new_record;
+	int32_t ret;
+
+	ret = spinor_read(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&record);
+	if (ret != sizeof(record)) {
+		printf("%s: read %d instead of %d for record size\n", __func__, ret, sizeof(record));
+		return HLO_FS_Media_Error;
+	}
+
+	new_record = Set_Page_State(record, bitmap->bitmap_write_element, state);
+	printf("transitioning state from 0x%X to 0x%X\n", record, new_record);
+
+	ret = spinor_write(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&new_record);
+	if (ret != sizeof(record)) {
+		printf("%s: record write only wrote %d instead of %d\n", __func__, ret, sizeof(record));
+		return HLO_FS_Media_Error;
+	}
+	spinor_wait_completion();
+
+	return 0;
+}
+
 /*
 // does this make sense to exist?
 static int32_t
@@ -582,7 +607,11 @@ _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	int32_t ret;
-	struct HLO_FS_Bitmap_Record *partition;
+	struct HLO_FS_Bitmap_Record *bitmap;
+	HLO_FS_Partition_Info *pinfo;
+	uint32_t write_addr;
+	uint32_t bytes_written;
+	uint8_t verify_buffer[256];
 
 	if (!data) {
 		return HLO_FS_Invalid_Parameter;
@@ -597,20 +626,87 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	}
 
 	// get the partition information
-	ret = _bitmap_get_partition_record(id, &partition);
+	ret = hlo_fs_get_partition_info(id, &pinfo);
+	if (ret < 0) {
+		return ret;
+	}
+
+	// get the partition's bitmap information
+	ret = _bitmap_get_partition_record(id, &bitmap);
 	if (ret < 0) {
 		return ret;
 	}
 
 	// make sure we have enough room for the data
-	if (len > partition->min_free_bytes) {
-		printf("Not enough space to write %d bytes. (%d available)\n", len, partition->min_free_bytes);
+	if (len > bitmap->min_free_bytes) {
+		printf("Not enough space to write %d bytes. (%d available)\n", len, bitmap->min_free_bytes);
 		return HLO_FS_Not_Enough_Space;
 	}
 
-	// write the data;
+	// TODO: (long term) re-visit how this is implemented, block-by-block is simplest and safest for now
+	bytes_written = 0;
 
-	return 0;
+	// start of loop
+	while (bytes_written < len) {
+		uint32_t to_write;
+
+		to_write = len - bytes_written;
+		if (to_write > 256) {
+			to_write = 256;
+		}
+
+		// calculate the absolute storage offset based on bitmap information
+		write_addr  = pinfo->block_offset * 4096;
+		printf("write_addr base is 0x%x\n", write_addr);
+		write_addr += 4096 * (bitmap->bitmap_write_ptr - bitmap->bitmap_start_addr);
+		printf("write_addr after bitmap element offset of 0x%x: 0x%x\n", (bitmap->bitmap_write_ptr - bitmap->bitmap_start_addr), write_addr);
+		write_addr += 256 * bitmap->bitmap_write_element;
+		printf("final write_addr 0x%x\n", write_addr);
+
+		//TODO check to make sure we're not trying to write to a 'BAD' page
+		//     XXX: this should probably be done in the bitmap advancement code
+
+
+		// write at most a page of data
+		ret = spinor_write_page(write_addr, to_write, &data[bytes_written]);
+		if (ret < 0) {
+			return ret;
+		}
+		if (ret != to_write) {
+			printf("Write returned %d instead of %d\n", ret, to_write);
+			return HLO_FS_Media_Error;
+		}
+
+		// wait for the write to complete
+		spinor_wait_completion();
+
+		// TODO: should check RDSR value for error condition here
+
+		// verify the write
+		ret = spinor_read(write_addr, to_write, verify_buffer);
+		if (ret != to_write) {
+			printf("Write verification only read %d bytes instead of %d\n", ret, to_write);
+			return HLO_FS_Media_Error;
+		}
+		if (memcmp(&data[bytes_written], verify_buffer, to_write) != 0) {
+			printf("Write verification failed!\n");
+			return HLO_FS_Media_Error;
+		}
+
+		bytes_written += ret;
+
+		// update the bitmap
+		ret = _bitmap_update_write_state(bitmap, HLO_FS_Page_Used);
+		if (ret != 0) {
+			printf("failed to update bitmap write state (%d)\n", ret);
+			return HLO_FS_Media_Error;
+		}
+
+		//TODO advance the bitmap metadata structure
+
+	}
+
+	return ret;
 }
 
 int32_t
