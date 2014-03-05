@@ -7,6 +7,8 @@
 
 //test band spinor serial should be C2 21 11 41 7E 01 2B C5 07 DC 9D 38 C3 53 FC 72
 
+static const uint32_t HLO_FS_Invalid_Addr = 0xFFFFFFFF;
+
 static HLO_FS_Layout_v1 _layout;
 static HLO_FS_Partition_Info _partitions[HLO_FS_Partition_Max];
 static struct HLO_FS_Bitmap_Record _bitmap_records[HLO_FS_Partition_Max];
@@ -613,6 +615,39 @@ _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 }
 */
 
+static uint32_t
+_bitmap_calc_phys_addr(enum HLO_FS_Partition_ID id, uint32_t ptr, uint32_t element) {
+	uint32_t addr;
+	int32_t ret;
+	struct HLO_FS_Bitmap_Record *bitmap;
+	HLO_FS_Partition_Info *pinfo;
+
+	// get the partition's bitmap information
+	ret = _bitmap_get_partition_record(id, &bitmap);
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = hlo_fs_get_partition_info(id, &pinfo);
+	if (ret < 0) {
+		return ret;
+	}
+
+	// make sure our ptr is valid for our partition
+	if (ptr < bitmap->bitmap_start_addr || ptr >= bitmap->bitmap_end_addr) {
+		return HLO_FS_Invalid_Addr;
+	}
+
+	addr  = pinfo->block_offset * 4096;
+	printf("phys addr base is 0x%x\n", addr);
+	addr += 4096 * (ptr - bitmap->bitmap_start_addr);
+	printf("phys addr after bitmap element offset of 0x%x: 0x%x\n", (ptr - bitmap->bitmap_start_addr), addr);
+	addr += 256 * element;
+	printf("final phys addr 0x%x\n", addr);
+
+	return addr;
+}
+
 int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	int32_t ret;
@@ -665,12 +700,10 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 		}
 
 		// calculate the absolute storage offset based on bitmap information
-		write_addr  = pinfo->block_offset * 4096;
-		printf("write_addr base is 0x%x\n", write_addr);
-		write_addr += 4096 * (bitmap->bitmap_write_ptr - bitmap->bitmap_start_addr);
-		printf("write_addr after bitmap element offset of 0x%x: 0x%x\n", (bitmap->bitmap_write_ptr - bitmap->bitmap_start_addr), write_addr);
-		write_addr += 256 * bitmap->bitmap_write_element;
-		printf("final write_addr 0x%x\n", write_addr);
+		write_addr = _bitmap_calc_phys_addr(id, bitmap->bitmap_write_ptr, bitmap->bitmap_write_element);
+		if (write_addr == HLO_FS_Invalid_Addr) {
+			return bytes_written;
+		}
 
 		//TODO check to make sure we're not trying to write to a 'BAD' page
 		//     XXX: this should probably be done in the bitmap advancement code
