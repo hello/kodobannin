@@ -1,6 +1,6 @@
 // vi:sw=4:ts=4
 
-//clang ../drivers/hlo_fs.c -I. -I.. -DTEST_HARNESS -DDEBUG_SERIAL -c && clang fs_test.c -I.. -DTEST_HARNESS hlo_fs.o
+//xcrun clang ../drivers/hlo_fs.c -I. -I.. -DTEST_HARNESS -DDEBUG_SERIAL -c && xcrun clang fs_test.c -I.. -DTEST_HARNESS hlo_fs.o
 
 #include <stdio.h>
 #include <stdint.h>
@@ -49,6 +49,12 @@ int32_t
 spinor_write(uint32_t address, uint32_t len, uint8_t *buffer) {
 	fseek(data_file, address, SEEK_SET);
 	return fwrite(buffer, 1, len, data_file);
+}
+
+int32_t
+spinor_write_page(uint32_t address, uint32_t len, uint8_t *buffer) {
+	// this might not be right, check the SPI command syntax
+	return spinor_write(address, len, buffer);
 }
 
 int32_t
