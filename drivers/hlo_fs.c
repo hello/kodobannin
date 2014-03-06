@@ -83,7 +83,10 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 	}
 
 	// Clear flash for new layout
-	ret = spinor_chip_erase();
+	// TODO: re-enable chip-erase, too slow for testing
+	//ret = spinor_chip_erase();
+	// XXX: erase the first 64k for now
+	ret = spinor_block_erase_64(0);
 	if (ret != 0) {
 		printf("Error erasing chip: 0x%X\n", ret);
 		return HLO_FS_Media_Error;
