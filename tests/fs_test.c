@@ -67,6 +67,23 @@ spinor_block_erase(uint16_t block) {
 }
 
 int32_t
+spinor_block_erase_64(uint16_t block) {
+	int i;
+	int32_t ret;
+	uint8_t data[BLOCK_SIZE];
+
+	memset(data, 0xFF, BLOCK_SIZE);
+
+	for (i = 0; i < 16; i++) {
+		ret = spinor_write(((block * 16) + i) * BLOCK_SIZE, BLOCK_SIZE, data);
+		if (ret != BLOCK_SIZE)
+			return -1;
+	}
+
+	return 0;
+}
+
+int32_t
 spinor_chip_erase() {
 	int i;
 	uint8_t data[BLOCK_SIZE];
