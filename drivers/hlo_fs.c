@@ -337,6 +337,59 @@ _bitmap_get_free_pos(uint32_t haystack) {
 	return -1;
 }
 
+static int8_t
+_bitmap_get_used_pos_offset(uint32_t haystack, uint8_t start_pos) {
+	uint32_t i;
+
+	if (haystack == ALL_UNUSED_PAGES) {
+		return -1;
+	}
+
+	printf("\t\t\tchecking %d->16\n", start_pos+1);
+	for(i=start_pos+1; i<16; i++) {
+		if (Page_Used_Check(haystack, i)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static int32_t
+_bitmap_find_next_used(uint32_t start_ptr, uint8_t start_element, uint32_t end_ptr, uint32_t *out_addr, uint8_t *out_pos) {
+	uint32_t record;
+	uint32_t addr;
+	int8_t pos;
+	int32_t ret;
+
+	// invalidate out parameter values
+	*out_addr = -1;
+	*out_pos  = -1;
+
+	addr = start_ptr;
+	do {
+		// load bitmap record
+		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
+		if (ret != sizeof(record)) {
+			printf("error reading record (%d) for addr 0x%x\n", ret, addr);
+			return HLO_FS_Media_Error;
+		}
+		printf("\t\t\trecord is 0x%x (from 0x%x)\n", record, addr);
+		pos = _bitmap_get_used_pos_offset(record, start_element);
+		if (pos != -1) {
+			printf("\t\tFound next used @ %x,%x\n", addr, pos);
+			*out_addr = addr;
+			*out_pos  = pos;
+			return 0;
+		}
+
+		addr += 4;
+		start_element = 0;
+	} while (addr < end_ptr);
+
+	return HLO_FS_Not_Found;
+}
+
 static int32_t
 _bitmap_find_next_free(uint32_t start, uint32_t end, uint32_t *out_addr, uint8_t *out_pos) {
 	uint32_t record;
