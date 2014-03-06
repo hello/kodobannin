@@ -43,22 +43,11 @@ hlo_ble_demo_on_ble_evt(ble_evt_t *event)
     switch (event->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
-            _conn_handle = event->evt.gap_evt.conn_handle;
-			DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
-
             _conn_handler();
             break;
 
         case BLE_GAP_EVT_DISCONNECTED:
-			DEBUG("Disconnect from MAC: ", event->evt.gap_evt.params.disconnected.peer_addr.addr);
-			DEBUG("Disconnect reason: ", event->evt.gap_evt.params.disconnected.reason);
-
-            _conn_handle = BLE_CONN_HANDLE_INVALID;
             _disconn_handler();
-            break;
-
-        case BLE_GATTS_EVT_WRITE:
-            hlo_ble_dispatch_write(event);
             break;
 
         case BLE_EVT_TX_COMPLETE:

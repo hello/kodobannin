@@ -18,6 +18,8 @@ uint8_t hello_type;
 static struct uuid_handler _uuid_handlers[MAX_CHARACTERISTICS];
 static struct uuid_handler* _p_uuid_handler = _uuid_handlers;
 
+static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
+
 static void
 _char_add(const uint16_t uuid,
 		  ble_gatt_char_props_t* const props,
@@ -146,8 +148,8 @@ hlo_ble_get_value_handle(const uint16_t uuid)
     APP_ASSERT(0);
 }
 
-void
-hlo_ble_dispatch_write(ble_evt_t *event) {
+static void
+_dispatch_write(ble_evt_t *event) {
     ble_gatts_evt_write_t* const write_evt = &event->evt.gatts_evt.params.write;
     const uint16_t handle = write_evt->handle;
 
@@ -160,4 +162,29 @@ hlo_ble_dispatch_write(ble_evt_t *event) {
     }
 
     DEBUG("Couldn't locate write handler for handle: ", handle);
+}
+
+uint16_t hlo_ble_get_connection_handle()
+{
+    return _connection_handle;
+}
+
+void hlo_ble_on_ble_evt(ble_evt_t* event)
+{
+    switch(event->header.evt_id) {
+    case BLE_GAP_EVT_CONNECTED:
+        _connection_handle = event->evt.gap_evt.conn_handle;
+        DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
+        break;
+    case BLE_GAP_EVT_DISCONNECTED:
+        DEBUG("Disconnect from MAC: ", event->evt.gap_evt.params.disconnected.peer_addr.addr);
+        DEBUG("Disconnect reason: ", event->evt.gap_evt.params.disconnected.reason);
+        _connection_handle = BLE_CONN_HANDLE_INVALID;
+        break;
+    case BLE_GATTS_EVT_WRITE:
+        _dispatch_write(event);
+        break;
+    default:
+        break;
+    }
 }
