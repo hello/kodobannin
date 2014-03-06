@@ -100,12 +100,32 @@ fstest_init(const char *filename) {
 	return 0;
 }
 
+
+#define STRIDE 32
+void
+print_page(uint8_t *ptr, uint32_t len)
+{
+    uint32_t i;
+    uint32_t j;
+
+    for (i = 0; i < len; i+=STRIDE) {
+		for (j=0; j < STRIDE; j++) {
+			if (i+j >= len) {
+				break;
+			}
+			printf("%02X ", ptr[i+j]);
+		}
+        printf("\r\n");
+    }
+}
+
 int
 main(int argc, const char *argv[]) {
 	int i;
 	int32_t ret;
 	HLO_FS_Partition_Info parts[2];
 	uint8_t buffer[256];
+	uint8_t read_buffer[576];
 
 	for (i=1; i < argc; i++) {
 		printf("\nTesting file '%s'\n", argv[i]);
@@ -124,9 +144,20 @@ main(int argc, const char *argv[]) {
         	printf("\tfs_init ret 0x%X\n", ret);
 
     	}
-		memset(buffer, 0x55, 256);
-		ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 10, buffer);
-		printf("\tfind page ret 0x%X\n", ret);
+		for(int j = 0; j < 32; j++) {
+			memset(buffer, j, 256);
+			ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 256, buffer);
+			printf("\tappend ret 0x%X\n", ret);
+		}
+		HLO_FS_Page_Range range;
+		do {
+			ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, read_buffer, &range);
+			if (ret > 0) {
+				printf("\tpartition read returned %d bytes:\n", ret);
+				print_page(read_buffer, ret);
+			}
+
+		} while (ret > 0);
 	}
 
 	if (data_file)
