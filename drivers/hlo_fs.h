@@ -89,10 +89,15 @@ struct HLO_FS_Bitmap_Record {
 	uint8_t  bitmap_write_element;
 };
 
-struct HLO_FS_Page_Range {
-	uint32_t start_page;
-	uint32_t end_page;
-};
+static const uint32_t Page_Token = 0xDA1AFEED;
+
+typedef struct {
+	uint32_t token;
+	uint32_t start_ptr;
+	uint32_t start_element;
+	uint32_t end_ptr;
+	uint32_t end_element;
+} HLO_FS_Page_Range;
 
 /**
  * General FileSystem calls
@@ -191,8 +196,8 @@ int32_t hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data);
  *                involved in this operation. Commonly passed to hlo_fs_mark_dirty.
  *
  * @returns <0 on error, otherwise the number of bytes read
- **/ 
-int32_t hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, struct HLO_FS_Page_Range *range);
+ **/
+int32_t hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, HLO_FS_Page_Range *range);
 
 /**
  * hlo_fs_mark_dirty - mark a page range as dirty
@@ -203,5 +208,5 @@ int32_t hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, st
  *
  * @returns <0 on error, otherwise the number of pages marked as dirty
  **/
-int32_t hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, struct HLO_FS_Page_Range *range);
+int32_t hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, HLO_FS_Page_Range *range);
 
