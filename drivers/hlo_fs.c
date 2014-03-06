@@ -2,11 +2,12 @@
 
 #include <drivers/spi_nor.h>
 #include <drivers/hlo_fs.h>
-//#include <app_error.h>
 #include <string.h>
 #include <util.h>
 
 //test band spinor serial should be C2 21 11 41 7E 01 2B C5 07 DC 9D 38 C3 53 FC 72
+
+static const uint32_t HLO_FS_Invalid_Addr = 0xFFFFFFFF;
 
 static HLO_FS_Layout_v1 _layout;
 static HLO_FS_Partition_Info _partitions[HLO_FS_Partition_Max];
@@ -20,7 +21,6 @@ _check_layout() {
 int32_t
 hlo_fs_init() {
 	int32_t ret;
-	uint32_t i;
 	uint32_t to_read;
 
 	// read header
@@ -47,14 +47,14 @@ hlo_fs_init() {
 		printf("Error reading partition record: %d\n", ret);
 		return HLO_FS_Media_Error;
 	}
-
+/*
 	for (i=0; i < _layout.num_partitions; i++) {
 		printf("Partition #%d\n", i);
 		printf("    id     0x%X\n", _partitions[i].id);
 		printf("    offset 0x%X\n", _partitions[i].block_offset);
 		printf("    count  0x%X\n", _partitions[i].block_count);
 	}
-	return 0;
+*/	return 0;
 }
 
 int32_t
@@ -82,12 +82,15 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 		spinor_exit_secure_mode();
 	}
 
-	// Clear flash page 0 for new layout
-	ret = spinor_block_erase(0);
+	// Clear flash for new layout
+	ret = spinor_chip_erase();
 	if (ret != 0) {
-		printf("Error erasing block 0 for layout: 0x%X\n", ret);
+		printf("Error erasing chip: 0x%X\n", ret);
 		return HLO_FS_Media_Error;
 	}
+
+	// wait for erase to complete
+	spinor_wait_completion();
 
 	// calculate number of blocks needed for bitmap partition
 	NOR_Chip_Config *nor_cfg = spinor_get_chip_config();
@@ -156,13 +159,6 @@ hlo_fs_format(uint16_t num_partitions, HLO_FS_Partition_Info *partitions, bool f
 		return HLO_FS_Media_Error;
 	}
 
-	// erase blocks for bitmap
-	for (i = parts[0].block_offset; i < (parts[0].block_offset + parts[0].block_count); i++) {
-		ret = spinor_block_erase(1);
-		if (ret < 0) {
-			return ret;
-		}
-	}
 	return 0;
 }
 
@@ -203,7 +199,7 @@ hlo_fs_page_count(enum HLO_FS_Partition_ID id) {
 	}
 
 	NOR_Chip_Config *nor_cfg = spinor_get_chip_config();
-	
+
 	return info->block_count * nor_cfg->pages_per_block;
 }
 
@@ -213,12 +209,12 @@ hlo_fs_free_page_count(enum HLO_FS_Partition_ID id) {
 
 	if (!_check_layout()) {
 		return HLO_FS_Not_Initialized;
-	} 
+	}
 
 	// do a straightfoward scan of the entire bitmap
 	// this can be improved later
-	
-	return count;	
+
+	return count;
 }
 
 int32_t
@@ -229,7 +225,8 @@ hlo_fs_reclaim(enum HLO_FS_Partition_ID id) {
 		return HLO_FS_Not_Initialized;
 	}
 
-	
+	// TODO: implement reclaimation
+
 	return count;
 }
 
@@ -303,8 +300,10 @@ _bitmap_get_partition_range(enum HLO_FS_Partition_ID id, uint32_t *start_addr, u
 #define ALL_UNUSED_PAGES 0xFFFFFFFF
 #define ALL_DIRTY_PAGES  0
 #define ALL_USED_PAGES   0xAAAAAAAA
-#define Page_Free_Check(A, B) ((((A >> (30-(B*2)))&0x3) ^ HLO_FS_Page_Free) == 0)
-#define Page_Used_Check(A, B) ((((A >> (30-(B*2)))&0x3) ^ HLO_FS_Page_Used) == 0)
+#define Page_Free_Check(A, B) ((((A >> (B*2))&0x3) ^ HLO_FS_Page_Free) == 0)
+#define Page_Used_Check(A, B) ((((A >> (B*2))&0x3) ^ HLO_FS_Page_Used) == 0)
+#define Get_Page_State(A,B) ((A >> (B*2))&0x3)
+#define Set_Page_State(A,B,C) ((A & (0xFFFFFFFF ^ (3 << (B*2)))) | (C << (B*2)))
 
 static int8_t
 _bitmap_get_used_pos(uint32_t haystack) {
@@ -338,6 +337,129 @@ _bitmap_get_free_pos(uint32_t haystack) {
 	return -1;
 }
 
+static int8_t
+_bitmap_get_used_pos_offset(uint32_t haystack, uint8_t start_pos) {
+	uint32_t i;
+
+	if (haystack == ALL_UNUSED_PAGES) {
+		return -1;
+	}
+
+	printf("\t\t\tchecking %d->16\n", start_pos+1);
+	for(i=start_pos+1; i<16; i++) {
+		if (Page_Used_Check(haystack, i)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static int32_t
+_bitmap_find_next_used(uint32_t start_ptr, uint8_t start_element, uint32_t end_ptr, uint32_t *out_addr, uint8_t *out_pos) {
+	uint32_t record;
+	uint32_t addr;
+	int8_t pos;
+	int32_t ret;
+
+	// invalidate out parameter values
+	*out_addr = -1;
+	*out_pos  = -1;
+
+	//XXX this will currently exhaust the partition bitmap, we should stop on the first free block found after us
+	addr = start_ptr;
+	do {
+		// load bitmap record
+		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
+		if (ret != sizeof(record)) {
+			printf("error reading record (%d) for addr 0x%x\n", ret, addr);
+			return HLO_FS_Media_Error;
+		}
+		printf("\t\t\trecord is 0x%x (from 0x%x)\n", record, addr);
+		pos = _bitmap_get_used_pos_offset(record, start_element);
+		if (pos != -1) {
+			printf("\t\tFound next used @ %x,%x\n", addr, pos);
+			*out_addr = addr;
+			*out_pos  = pos;
+			return 0;
+		}
+
+		addr += 4;
+		start_element = 0;
+	} while (addr < end_ptr);
+
+	return HLO_FS_Not_Found;
+}
+
+static int32_t
+_bitmap_find_next_free(uint32_t start, uint32_t end, uint32_t *out_addr, uint8_t *out_pos) {
+	uint32_t record;
+	uint32_t addr;
+	int8_t pos;
+	int32_t ret;
+
+	// invalidate out parameter values
+	*out_addr = -1;
+	*out_pos  = -1;
+
+	// TODO: reserve one free page so that we can recover RPos and WPos on reboot
+
+	addr = start;
+	do {
+		// load bitmap record
+		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
+		if (ret != sizeof(record))
+			return ret;
+
+		//check for free page
+		pos = _bitmap_get_free_pos(record);
+		if (pos != -1) {
+			*out_addr = addr;
+			*out_pos  = pos;
+			return 0;
+		}
+
+		// advance to the next bitmap record
+		addr += 4;
+	} while (addr < end);
+
+	return HLO_FS_Not_Found;
+}
+
+static int32_t
+_bitmap_calc_page_usage(enum HLO_FS_Partition_ID id) {
+	int32_t ret;
+	uint32_t addr;
+	uint32_t record;
+	uint32_t i;
+
+	uint32_t *page_stats = _bitmap_records[id].page_stats;
+
+	memset(page_stats, 0, sizeof(_bitmap_records[id].page_stats));
+
+	// iterate through the bitmap and account for page usage
+	for (addr = _bitmap_records[id].bitmap_start_addr; addr < _bitmap_records[id].bitmap_end_addr; addr += 4) {
+		// load bitmap record
+		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
+		if (ret != sizeof(record)) {
+			return ret;
+		}
+
+		for (i=0; i < (sizeof(record) * 8 / HLO_FS_Page_State_Bits); i++) {
+			++page_stats[Get_Page_State(record, i)];
+		}
+	}
+	_bitmap_records[id].min_free_bytes = 256 * page_stats[HLO_FS_Page_Free];
+	printf("Page states:\n");
+	printf("Dirty: %d\n", page_stats[HLO_FS_Page_Dirty]);
+	printf("Bad:   %d\n", page_stats[HLO_FS_Page_Bad]);
+	printf("Used:  %d\n", page_stats[HLO_FS_Page_Used]);
+	printf("Free:  %d\n", page_stats[HLO_FS_Page_Free]);
+	printf("Min free bytes: %d\n", _bitmap_records[id].min_free_bytes);
+
+	return 0;
+}
+
 static int32_t
 _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 	int32_t ret;
@@ -345,7 +467,7 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 	uint32_t record;
 	int8_t pos, pos2;
 	int8_t free_pos;
-	bool done = false;
+	int32_t bitmap_case = 0;
 
 	if ((_bitmap_records[id].id & 0xFF) == 0xFF) { //need this since enum is 4-byte on host for test framework
 		ret = _bitmap_get_partition_range(id, &_bitmap_records[id].bitmap_start_addr, &_bitmap_records[id].bitmap_end_addr);
@@ -374,17 +496,19 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 
 		// Case 1 and 2 - Check the start address for data
 		printf("Checking case 1/2...\r\n");
-		ret = spinor_read(_bitmap_records[id].bitmap_start_addr, sizeof(record), (uint8_t *)&record);
+		addr = _bitmap_records[id].bitmap_start_addr;
+		ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
 		if (ret != sizeof(record)) {
 			return ret;
 		}
 		// if the first slot in the block isn't used then we don't have a Case 1 or 2
 		pos = _bitmap_get_used_pos(record);
+		printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos);
 		if (pos != 0)
 			goto Case_3;
 
 		// Case 2 check. Search back from the last address for free space
-		addr = _bitmap_records[id].bitmap_end_addr;
+		addr = _bitmap_records[id].bitmap_end_addr - 4;
 		do {
 			ret = spinor_read(addr, sizeof(record), (uint8_t *)&record);
 			if (ret != sizeof(record)) {
@@ -393,26 +517,32 @@ _bitmap_load_partition_record(enum HLO_FS_Partition_ID id) {
 
 			// check our used and free bits
 			pos2 = _bitmap_get_used_pos(record);
-			free_pos =  _bitmap_get_free_pos(record);
+			free_pos = _bitmap_get_free_pos(record);
 			printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos2);
 		} while (pos2 != -1 && free_pos == -1 && (addr -= 4) &&  (addr > _bitmap_records[id].bitmap_start_addr));
 
-		//XXX: FIND THE WRITE POINTER TOO!
 
 		// if there is no data at the end of the partition, then settle on case 1
-		if (pos2 == -1 && addr >= _bitmap_records[id].bitmap_end_addr) {
-			printf("Case 1, Rptr is 0x%X\n", _bitmap_records[id].bitmap_start_addr);
-			printf("         pos is 0x%X\n", pos);
+		printf("Case 1 check: pos2 = %d, addr = 0x%x, end = 0x%x\n", pos2, addr, _bitmap_records[id].bitmap_end_addr);
+		if (pos2 == -1 && addr >= (_bitmap_records[id].bitmap_end_addr - 4)) {
+			// CASE 1
+			// =======================================================================================
+			bitmap_case = 1;
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_read_element = 0;
-			goto Case_Done;
 		} else {
-			printf("Case 2, Rptr is 0x%X\n", addr);
-			printf("         pos is 0x%X\n", pos2);
+			// CASE 2
+			// =======================================================================================
+			bitmap_case = 2;
 			_bitmap_records[id].bitmap_read_ptr = addr;
 			_bitmap_records[id].bitmap_read_element = pos2;
-			goto Case_Done;
 		}
+
+		// Find write pointer for Case 1 / 2
+		// For Case 1/2 we should search forward from the start for the first 'free' page
+		addr =  _bitmap_records[id].bitmap_start_addr;
+		ret = _bitmap_find_next_free(_bitmap_records[id].bitmap_start_addr, _bitmap_records[id].bitmap_end_addr, &_bitmap_records[id].bitmap_write_ptr, &_bitmap_records[id].bitmap_write_element);
+		goto Case_Done;
 
 Case_3:
 		// Case 3 / 4
@@ -425,32 +555,44 @@ Case_3:
 			}
 			pos = _bitmap_get_used_pos(record);
 			printf("\t\tchk(0x%08x) = 0x%08x (pos %d)\n", addr, record, pos);
-		} while(pos == -1 && (addr += 4) && addr <= _bitmap_records[id].bitmap_end_addr);
+		} while(pos == -1 && (addr += 4) && addr < _bitmap_records[id].bitmap_end_addr);
 
 		if (addr >= _bitmap_records[id].bitmap_end_addr && pos == -1) {
+			// CASE 4
+			// =======================================================================================
+			bitmap_case = 4;
 			_bitmap_records[id].bitmap_read_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_write_ptr = _bitmap_records[id].bitmap_start_addr;
 			_bitmap_records[id].bitmap_read_element = 0;
 			_bitmap_records[id].bitmap_write_element = 0;
-			printf("Case 4, ptr is 0x%X\n", _bitmap_records[id].bitmap_read_ptr);
-			printf("        pos is %d", pos);
 		} else {
-			printf("Case 3, ptr is 0x%X\n", addr);
-			printf("        pos is %d\n", pos);
+			// CASE 3
+			// =======================================================================================
+			bitmap_case = 3;
 			_bitmap_records[id].bitmap_read_ptr = addr;
 			_bitmap_records[id].bitmap_read_element = pos;
+
+			// find write pointer by searching forward from the read_ptr for the first free slot
+			ret = _bitmap_find_next_free(addr, _bitmap_records[id].bitmap_end_addr, &_bitmap_records[id].bitmap_write_ptr, &_bitmap_records[id].bitmap_write_element);
+			if (ret < 0) {
+				return ret;
+			}
 		}
 Case_Done:
-		if (1) {
+		// calculate page usage
+		ret = _bitmap_calc_page_usage(id);
+		if (ret < 0) {
+			return ret;
 		}
-		printf("Parition 0x%X:\n", id);
+
+		printf("Parition 0x%X (case %d):\n", id, bitmap_case);
 		printf("\tBitmap start: 0x%x\n", _bitmap_records[id].bitmap_start_addr);
 		printf("\tBitmap end:   0x%x\n", _bitmap_records[id].bitmap_end_addr);
 		printf("\tRead pointer: 0x%x\n", _bitmap_records[id].bitmap_read_ptr);
 		printf("\tRead element: 0x%x\n", _bitmap_records[id].bitmap_read_element);
 		printf("\twrite pointer:0x%x\n", _bitmap_records[id].bitmap_write_ptr);
 		printf("\tWrite element:0x%x\n", _bitmap_records[id].bitmap_write_element);
-		
+
 	} else {
 		printf("Record already cached for partition 0x%02X (0x%02X)\n", id, _bitmap_records[id].id);
 	}
@@ -458,6 +600,60 @@ Case_Done:
 	return 0;
 }
 
+static int32_t
+_bitmap_get_partition_record(enum HLO_FS_Partition_ID id, struct HLO_FS_Bitmap_Record **record) {
+	int32_t ret;
+
+	if (!record || !*record) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	ret = _bitmap_load_partition_record(id);
+	if (ret < 0) {
+		return ret;
+	}
+
+	*record = &_bitmap_records[id];
+
+	return 0;
+}
+
+static int32_t
+_bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_State state) {
+	uint32_t record;
+	uint32_t new_record;
+	int32_t ret;
+
+	ret = spinor_read(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&record);
+	if (ret != sizeof(record)) {
+		printf("%s: read %d instead of %d for record size\n", __func__, ret, (int)sizeof(record));
+		return HLO_FS_Media_Error;
+	}
+
+	new_record = Set_Page_State(record, bitmap->bitmap_write_element, state);
+	printf("transitioning state from 0x%X to 0x%X\n", record, new_record);
+
+	// update page statistics structure
+	HLO_FS_Page_State old_state = Get_Page_State(record, bitmap->bitmap_write_element);
+	--bitmap->page_stats[old_state];
+	++bitmap->page_stats[state];
+
+	if (old_state == HLO_FS_Page_Free) {
+		bitmap->min_free_bytes -= 256;
+	}
+
+	ret = spinor_write(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&new_record);
+	if (ret != sizeof(record)) {
+		printf("%s: record write only wrote %d instead of %d\n", __func__, ret, (int)sizeof(record));
+		return HLO_FS_Media_Error;
+	}
+	spinor_wait_completion();
+
+	return 0;
+}
+
+/*
+// does this make sense to exist?
 static int32_t
 _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 	int32_t ret;
@@ -471,10 +667,49 @@ _bitmap_find_next_available_page(enum HLO_FS_Partition_ID id) {
 	// to ensure we operate like a ring buffer
 	return 0;
 }
+*/
+
+static uint32_t
+_bitmap_calc_phys_addr(enum HLO_FS_Partition_ID id, uint32_t ptr, uint32_t element) {
+	uint32_t addr;
+	int32_t ret;
+	struct HLO_FS_Bitmap_Record *bitmap;
+	HLO_FS_Partition_Info *pinfo;
+
+	// get the partition's bitmap information
+	ret = _bitmap_get_partition_record(id, &bitmap);
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = hlo_fs_get_partition_info(id, &pinfo);
+	if (ret < 0) {
+		return ret;
+	}
+
+	// make sure our ptr is valid for our partition
+	if (ptr < bitmap->bitmap_start_addr || ptr >= bitmap->bitmap_end_addr) {
+		return HLO_FS_Invalid_Addr;
+	}
+
+	addr  = pinfo->block_offset * 4096;
+	printf("phys addr base is 0x%x\n", addr);
+	addr += 4096 * (ptr - bitmap->bitmap_start_addr);
+	printf("phys addr after bitmap element offset of 0x%x: 0x%x\n", (ptr - bitmap->bitmap_start_addr), addr);
+	addr += 256 * element;
+	printf("final phys addr 0x%x\n", addr);
+
+	return addr;
+}
 
 int32_t
 hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	int32_t ret;
+	struct HLO_FS_Bitmap_Record *bitmap;
+	HLO_FS_Partition_Info *pinfo;
+	uint32_t write_addr;
+	uint32_t bytes_written;
+	uint8_t verify_buffer[256];
 
 	if (!data) {
 		return HLO_FS_Invalid_Parameter;
@@ -488,23 +723,115 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 		return HLO_FS_Not_Initialized;
 	}
 
-	// make sure we have enough room for the data
-
-	// find a spot for the data
-	ret = _bitmap_find_next_available_page(id);
+	// get the partition information
+	ret = hlo_fs_get_partition_info(id, &pinfo);
 	if (ret < 0) {
 		return ret;
 	}
 
-	// write the data;
+	// get the partition's bitmap information
+	ret = _bitmap_get_partition_record(id, &bitmap);
+	if (ret < 0) {
+		return ret;
+	}
 
-	return 0;
+	// make sure we have enough room for the data
+	if (len > bitmap->min_free_bytes) {
+		printf("Not enough space to write %d bytes. (%d available)\n", len, bitmap->min_free_bytes);
+		return HLO_FS_Not_Enough_Space;
+	}
+
+	// TODO: (long term) re-visit how this is implemented, block-by-block is simplest and safest for now
+	bytes_written = 0;
+
+	// start of loop
+	while (bytes_written < len) {
+		uint32_t to_write;
+
+		to_write = len - bytes_written;
+		if (to_write > 256) {
+			to_write = 256;
+		}
+
+		// calculate the absolute storage offset based on bitmap information
+		write_addr = _bitmap_calc_phys_addr(id, bitmap->bitmap_write_ptr, bitmap->bitmap_write_element);
+		if (write_addr == HLO_FS_Invalid_Addr) {
+			return bytes_written;
+		}
+
+		//TODO check to make sure we're not trying to write to a 'BAD' page
+		//     XXX: this should probably be done in the bitmap advancement code
+
+		// write at most a page of data
+		ret = spinor_write_page(write_addr, to_write, &data[bytes_written]);
+		if (ret < 0) {
+			return ret;
+		}
+		if (ret != to_write) {
+			printf("Write returned %d instead of %d\n", ret, to_write);
+			return HLO_FS_Media_Error;
+		}
+
+		// wait for the write to complete
+		spinor_wait_completion();
+
+		// TODO: should check RDSR value for error condition here
+
+		// verify the write
+		ret = spinor_read(write_addr, to_write, verify_buffer);
+		if (ret != to_write) {
+			printf("Write verification only read %d bytes instead of %d\n", ret, to_write);
+			return HLO_FS_Media_Error;
+		}
+		if (memcmp(&data[bytes_written], verify_buffer, to_write) != 0) {
+			printf("Write verification failed!\n");
+			return HLO_FS_Media_Error;
+		}
+
+		bytes_written += ret;
+
+		// update the bitmap
+		ret = _bitmap_update_write_state(bitmap, HLO_FS_Page_Used);
+		if (ret != 0) {
+			printf("failed to update bitmap write state (%d)\n", ret);
+			return HLO_FS_Media_Error;
+		}
+
+		//TODO advance the bitmap metadata structure
+		ret = _bitmap_find_next_free(bitmap->bitmap_write_ptr, bitmap->bitmap_end_addr, &bitmap->bitmap_write_ptr, &bitmap->bitmap_write_element);
+		if (ret == HLO_FS_Not_Found) {
+			// search from the beginning in case of wrap-around
+			ret =  _bitmap_find_next_free(bitmap->bitmap_start_addr, bitmap->bitmap_end_addr, &bitmap->bitmap_write_ptr, &bitmap->bitmap_write_element);
+			if (ret !=0) {
+				printf("failed to find the a free page (%d) - STORAGE IS FULL FOR PARTITION 0x%x\n", ret, id);
+				return ret;
+			}
+		}
+		printf("New write ptr and element are 0x%x and 0x%x\n", bitmap->bitmap_write_ptr, bitmap->bitmap_write_element);
+		printf("Page states:\n");
+		printf("Dirty: %d\n", bitmap->page_stats[HLO_FS_Page_Dirty]);
+		printf("Bad:   %d\n", bitmap->page_stats[HLO_FS_Page_Bad]);
+		printf("Used:  %d\n", bitmap->page_stats[HLO_FS_Page_Used]);
+		printf("Free:  %d\n", bitmap->page_stats[HLO_FS_Page_Free]);
+		printf("Min free bytes: %d\n", bitmap->min_free_bytes);
+
+	}
+
+	return bytes_written;
 }
 
 int32_t
-hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, struct HLO_FS_Page_Range *range) {
-	int32_t count = 0;
+hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, HLO_FS_Page_Range *range) {
+	struct HLO_FS_Bitmap_Record *bitmap;
+	int32_t ret;
+	uint32_t read_addr;
+	uint32_t read_ptr;
+	uint8_t  read_element;
+	uint32_t bytes_read = 0;
+	uint8_t  read_offset = 0;
 
+	printf("\n\t\tWe're doing a read!\n");
+	// validate parameters
 	if (!data || !range) {
 		return HLO_FS_Invalid_Parameter;
 	}
@@ -513,15 +840,79 @@ hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, struct HLO
 		return HLO_FS_Not_Initialized;
 	}
 
-	// validate range
+	// load our partition record
+	ret = _bitmap_get_partition_record(id, &bitmap);
+	if (ret != 0) {
+		return HLO_FS_Media_Error;
+	}
+
+	// default to the read pos from the partition record
+	read_ptr = bitmap->bitmap_read_ptr;
+	read_element = bitmap->bitmap_read_element;
+
+	// validate range to support reading additional information
+	// before previously read data has been dirtied
+	if (range->token == Page_Token) {
+		read_ptr = range->end_ptr;
+		read_element = range->end_element;
+		printf("resuming read due to token, starting from %x,%x with pos %x\n", read_ptr, read_element, range->last_byte_pos);
+
+		// only find a new page to read from if all of the bytes were read during the previous read
+		if (range->last_byte_pos == 0xFF) {
+			ret = _bitmap_find_next_used(read_ptr, read_element, bitmap->bitmap_end_addr, &read_ptr, &read_element);
+			if (ret != 0) {
+				printf("\t\tnext readable page not found\n");
+				return HLO_FS_Not_Found;
+			}
+			printf("next read is coming from %x,%x (%d)\n", read_ptr, read_element, ret);
+		} else {
+			read_offset = range->last_byte_pos+1;
+		}
+	} else {
+			range->token = Page_Token;
+			range->start_ptr = read_ptr;
+			range->start_element = read_element;
+	}
 
 	// read pages in range into output buffer
+	while (bytes_read < len) {
+		uint32_t to_read = len - bytes_read;
+		if (to_read > 256) {
+			to_read = 256;
+		}
+		read_addr = _bitmap_calc_phys_addr(id, read_ptr, read_element);
+		if (read_addr == HLO_FS_Invalid_Addr) {
+			break;
+		}
 
-	return count;
+		read_addr += read_offset;
+		ret = spinor_read(read_addr, to_read, &data[bytes_read]);
+		printf("read returned %d for address 0x%x\n", ret, read_addr);
+		if (ret < 0) {
+			printf("read returned %d\n", ret);
+			goto done;
+		}
+		bytes_read += ret;
+
+		if (bytes_read < len) {
+			ret = _bitmap_find_next_used(read_ptr, read_element, bitmap->bitmap_end_addr, &read_ptr, &read_element);
+			if (ret == HLO_FS_Not_Found) {
+				printf("\t\tCouldn't find another page to read\n");
+				goto done;
+			}
+		}
+	}
+
+done:
+	range->end_ptr        = read_ptr;
+	range->end_element    = read_element;
+	range->last_byte_pos  = (read_addr % 256) + bytes_read - 1;
+
+	return bytes_read;
 }
 
 int32_t
-hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, struct HLO_FS_Page_Range *range) {
+hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, HLO_FS_Page_Range *range) {
 	int32_t count = 0;
 
 	if (!range) {
@@ -533,8 +924,11 @@ hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, struct HLO_FS_Page_Range *range) 
 	}
 
 	// validate range
+	if (range->token != Page_Token) {
+		return HLO_FS_Invalid_Parameter;
+	}
 
-	// update bitmap with 'dirty' status for each page
+	//TODO update bitmap with 'dirty' status for each page
 
 	return count;
 }

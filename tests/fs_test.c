@@ -1,6 +1,6 @@
 // vi:noet:sw=4 ts=4
 
-//clang ../drivers/hlo_fs.c -I.. -DTEST_HARNESS -c && clang fs_test.c -I.. -DTEST_HARNESS hlo_fs.o
+//xcrun clang ../drivers/hlo_fs.c -I. -I.. -DTEST_HARNESS -DDEBUG_SERIAL -c && xcrun clang fs_test.c -I.. -DTEST_HARNESS hlo_fs.o
 
 #include <stdio.h>
 #include <stdint.h>
@@ -52,12 +52,40 @@ spinor_write(uint32_t address, uint32_t len, uint8_t *buffer) {
 }
 
 int32_t
+spinor_write_page(uint32_t address, uint32_t len, uint8_t *buffer) {
+	// this might not be right, check the SPI command syntax
+	return spinor_write(address, len, buffer);
+}
+
+int32_t
 spinor_block_erase(uint16_t block) {
 	uint8_t data[BLOCK_SIZE];
 
 	memset(data, 0xFF, BLOCK_SIZE);
 
 	return BLOCK_SIZE == spinor_write(block * BLOCK_SIZE, BLOCK_SIZE, data) ? 0 : -1;
+}
+
+int32_t
+spinor_chip_erase() {
+	int i;
+	uint8_t data[BLOCK_SIZE];
+	int32_t ret;
+
+	memset(data, 0xFF, BLOCK_SIZE);
+
+	for(i=0; i < _nor_cfg.total_blocks; i++) {
+		ret = spinor_write(i * BLOCK_SIZE, BLOCK_SIZE, data);
+		if (ret != BLOCK_SIZE) {
+			printf("%s: short write of %d bytes for block %d of %d\n", __FUNCTION__, ret, i, _nor_cfg.total_blocks);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+void
+spinor_wait_completion() {
 }
 
 int32_t
@@ -77,6 +105,7 @@ main(int argc, const char *argv[]) {
 	int i;
 	int32_t ret;
 	HLO_FS_Partition_Info parts[2];
+	uint8_t buffer[256];
 
 	for (i=1; i < argc; i++) {
 		printf("\nTesting file '%s'\n", argv[i]);
@@ -88,14 +117,15 @@ main(int argc, const char *argv[]) {
 		if (ret == HLO_FS_Not_Initialized) {
 	        parts[0].id = HLO_FS_Partition_Crashlog;
     	    parts[0].block_offset = -1;
-       		parts[0].block_count = 5; // 16k
+       		parts[0].block_count = 5; // 20k
  			ret = hlo_fs_format(1, parts, 1);
 			printf("\tfs_format ret 0x%X\n", ret);
         	ret = hlo_fs_init();
         	printf("\tfs_init ret 0x%X\n", ret);
 
     	}
-		ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 0, NULL);
+		memset(buffer, 0x55, 256);
+		ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 10, buffer);
 		printf("\tfind page ret 0x%X\n", ret);
 	}
 

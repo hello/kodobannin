@@ -4,6 +4,9 @@
 
 #ifndef TEST_HARNESS
 #include <drivers/spi.h>
+#else
+enum SPI_Mode { Mode_Max };
+enum SPI_Channel { Chan_Max };
 #endif
 
 enum SPI_NOR_Commands {

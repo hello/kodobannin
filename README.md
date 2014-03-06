@@ -10,6 +10,11 @@ The primary goals of kodobannin are to be small, secure and efficient. Booting t
 
 For more in-depth design notes, please refer to [the wiki](http://wiki.sayhello.com/software/firmware/bootloader)
 
+Toolchain
+=========
+
+We use the [Launchpad GCC Toolchain](https://launchpad.net/gcc-arm-embedded) Currently, we're on gcc-arm-none-eabi-4_7-2013q3
+
 External libraries
 ==================
 
