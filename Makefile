@@ -67,6 +67,7 @@ BOOTLOADER_SRCS = \
 INCS =  ./ \
 	./ble \
 	./ble/services \
+	./drivers \
 	./micro-ecc \
 	./hello_bootloader \
 	./nRF51_SDK/nrf51822/Include \
