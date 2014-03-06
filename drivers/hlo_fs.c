@@ -627,22 +627,36 @@ _bitmap_get_partition_record(enum HLO_FS_Partition_ID id, struct HLO_FS_Bitmap_R
 }
 
 static int32_t
-_bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_State state) {
+_bitmap_update_page_state(enum HLO_FS_Partition_ID id, uint32_t bitmap_record_addr, uint8_t bitmap_element, HLO_FS_Page_State state) {
+	int32_t ret;
+	struct HLO_FS_Bitmap_Record *bitmap;
 	uint32_t record;
 	uint32_t new_record;
-	int32_t ret;
 
-	ret = spinor_read(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&record);
+	ret = _bitmap_get_partition_record(id, &bitmap);
+	if (ret < 0) {
+		return ret;
+	}
+
+	if (bitmap_record_addr < bitmap->bitmap_start_addr || bitmap_record_addr >= bitmap->bitmap_end_addr) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	if (bitmap_element >= 16) {
+		return HLO_FS_Invalid_Parameter;
+	}
+
+	ret = spinor_read(bitmap_record_addr, sizeof(record), (uint8_t *)&record);
 	if (ret != sizeof(record)) {
 		printf("%s: read %d instead of %d for record size\n", __func__, ret, (int)sizeof(record));
 		return HLO_FS_Media_Error;
 	}
 
-	new_record = Set_Page_State(record, bitmap->bitmap_write_element, state);
+	new_record = Set_Page_State(record, bitmap_element, state);
 	printf("transitioning state from 0x%X to 0x%X\n", record, new_record);
 
 	// update page statistics structure
-	HLO_FS_Page_State old_state = Get_Page_State(record, bitmap->bitmap_write_element);
+	HLO_FS_Page_State old_state = Get_Page_State(record, bitmap_element);
 	--bitmap->page_stats[old_state];
 	++bitmap->page_stats[state];
 
@@ -650,7 +664,7 @@ _bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_Stat
 		bitmap->min_free_bytes -= 256;
 	}
 
-	ret = spinor_write(bitmap->bitmap_write_ptr, sizeof(record), (uint8_t *)&new_record);
+	ret = spinor_write(bitmap_record_addr, sizeof(record), (uint8_t *)&new_record);
 	if (ret != sizeof(record)) {
 		printf("%s: record write only wrote %d instead of %d\n", __func__, ret, (int)sizeof(record));
 		return HLO_FS_Media_Error;
@@ -658,6 +672,11 @@ _bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_Stat
 	spinor_wait_completion();
 
 	return 0;
+}
+
+static int32_t
+_bitmap_update_write_state(struct HLO_FS_Bitmap_Record *bitmap, HLO_FS_Page_State state) {
+	return _bitmap_update_page_state(bitmap->id, bitmap->bitmap_write_ptr, bitmap->bitmap_write_element, state);
 }
 
 /*
