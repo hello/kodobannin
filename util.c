@@ -63,6 +63,11 @@ strlen(const char *a)
 	return count;
 }
 
+inline int puts(const char *str) {
+    simple_uart_putstring((const uint8_t *)str);
+    return 0;
+}
+
 #ifdef DEBUG_SERIAL
 const uint8_t hex[] = "0123456789ABCDEF";
 
