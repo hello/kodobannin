@@ -1,7 +1,7 @@
 // vi:sw=4:ts=4
 
 #pragma once
-#include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <nrf51.h>
