@@ -1,3 +1,5 @@
+// vi:noet:sw=4 ts=4
+
 #include "ble_event.h"
 #include <hlo_ble_demo.h>
 
