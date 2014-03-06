@@ -8,11 +8,11 @@
 //#include <simple_uart.h>
 
 #ifndef __printflike
-/* 
- * Compiler-dependent macros to declare that functions take printf-like 
+/*
+ * Compiler-dependent macros to declare that functions take printf-like
  * or scanf-like arguments.  They are null except for versions of gcc
- * that are known to support the features properly (old versions of gcc-2   
- * didn't permit keeping the keywords out of the application namespace). 
+ * that are known to support the features properly (old versions of gcc-2
+ * didn't permit keeping the keywords out of the application namespace).
  */
 #    define __printflike(fmtarg, firstvararg)       \
             __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
@@ -59,7 +59,7 @@ _hexify(char *dest, size_t index, size_t len, va_list args)
 	uint8_t non_zero = 0;
 
 	val = (uint32_t) va_arg(args, uint32_t);
-	
+
 	for (i=0; i < 4; i++) {
 		uint8_t out = (val >> 8*(3-i)) & 0xFF;
 		tmp = hex[0xF & (out >> 4)];
@@ -102,7 +102,7 @@ _intify(char *dest, size_t index, size_t len, va_list args)
 		val_p = val/10;
 
 		rem = val - (val_p*10);
-				
+
 		buf[used++] = hex[rem];
 
 		val = val_p;
@@ -153,7 +153,7 @@ _vsnprintf(char *dest, size_t len, const char *fmt, va_list args)
 					case 'S':
 					{
 						uint8_t *arg = (uint8_t *)va_arg(args, uint8_t *);
-					
+
 						while (*arg && (!dest || (index < len))) {
 							if (!_char_out(dest, index, len, *arg++))
 								goto out;
@@ -201,7 +201,7 @@ printf(const char *fmt, ...)
 
 	va_end(args);
 
-	return ret;	
+	return ret;
 }
 
 __printflike(3, 4) uint32_t
@@ -216,5 +216,6 @@ _snprintf(char *dest, size_t len, const char *fmt, ...)
 
 	va_end(args);
 
-	return ret;		
+	return ret;
 }
+
