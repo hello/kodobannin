@@ -97,6 +97,7 @@ typedef struct {
 	uint32_t start_element;
 	uint32_t end_ptr;
 	uint32_t end_element;
+	uint32_t last_byte_pos;
 } HLO_FS_Page_Range;
 
 /**

@@ -366,6 +366,7 @@ _bitmap_find_next_used(uint32_t start_ptr, uint8_t start_element, uint32_t end_p
 	*out_addr = -1;
 	*out_pos  = -1;
 
+	//XXX this will currently exhaust the partition bitmap, we should stop on the first free block found after us
 	addr = start_ptr;
 	do {
 		// load bitmap record
@@ -827,6 +828,7 @@ hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, HLO_FS_Pag
 	uint32_t read_ptr;
 	uint8_t  read_element;
 	uint32_t bytes_read = 0;
+	uint8_t  read_offset = 0;
 
 	printf("\n\t\tWe're doing a read!\n");
 	// validate parameters
@@ -851,16 +853,21 @@ hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, HLO_FS_Pag
 	// validate range to support reading additional information
 	// before previously read data has been dirtied
 	if (range->token == Page_Token) {
-		//XXX: this will skip the entire page if we've read even one byte from the page earlier
 		read_ptr = range->end_ptr;
 		read_element = range->end_element;
-		printf("resuming read due to token, starting from %x,%x\n", read_ptr, read_element);
-		ret = _bitmap_find_next_used(read_ptr, read_element, bitmap->bitmap_end_addr, &read_ptr, &read_element);
-		if (ret != 0) {
-			printf("\t\tnext readable page not found\n");
-			return HLO_FS_Not_Found;
+		printf("resuming read due to token, starting from %x,%x with pos %x\n", read_ptr, read_element, range->last_byte_pos);
+
+		// only find a new page to read from if all of the bytes were read during the previous read
+		if (range->last_byte_pos == 0xFF) {
+			ret = _bitmap_find_next_used(read_ptr, read_element, bitmap->bitmap_end_addr, &read_ptr, &read_element);
+			if (ret != 0) {
+				printf("\t\tnext readable page not found\n");
+				return HLO_FS_Not_Found;
+			}
+			printf("next read is coming from %x,%x (%d)\n", read_ptr, read_element, ret);
+		} else {
+			read_offset = range->last_byte_pos+1;
 		}
-		printf("next read is coming from %x,%x (%d)\n", read_ptr, read_element, ret);
 	} else {
 			range->token = Page_Token;
 			range->start_ptr = read_ptr;
@@ -877,13 +884,13 @@ hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, HLO_FS_Pag
 		if (read_addr == HLO_FS_Invalid_Addr) {
 			break;
 		}
+
+		read_addr += read_offset;
 		ret = spinor_read(read_addr, to_read, &data[bytes_read]);
 		printf("read returned %d for address 0x%x\n", ret, read_addr);
 		if (ret < 0) {
 			printf("read returned %d\n", ret);
-			range->end_ptr = read_ptr;
-			range->end_element = read_element;
-			return ret;
+			goto done;
 		}
 		bytes_read += ret;
 
@@ -891,15 +898,16 @@ hlo_fs_read(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data, HLO_FS_Pag
 			ret = _bitmap_find_next_used(read_ptr, read_element, bitmap->bitmap_end_addr, &read_ptr, &read_element);
 			if (ret == HLO_FS_Not_Found) {
 				printf("\t\tCouldn't find another page to read\n");
-				range->end_ptr = read_ptr;
-				range->end_element = read_element;
-				return bytes_read;
+				goto done;
 			}
 		}
 	}
 
-	range->end_ptr = read_ptr;
-	range->end_element = read_element;
+done:
+	range->end_ptr        = read_ptr;
+	range->end_element    = read_element;
+	range->last_byte_pos  = (read_addr % 256) + bytes_read - 1;
+
 	return bytes_read;
 }
 
