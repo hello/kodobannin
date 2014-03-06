@@ -4,8 +4,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <simple_uart.h>
 #include "util.h"
-//#include <simple_uart.h>
 
 #ifndef __printflike
 /*
@@ -191,6 +191,7 @@ out:
 	return index;
 }
 
+#if DEBUG > 0
 __printflike(1, 2) int
 printf(const char *fmt, ...)
 {
@@ -205,6 +206,7 @@ printf(const char *fmt, ...)
 
 	return ret;
 }
+#endif
 
 __printflike(3, 4) uint32_t
 _snprintf(char *dest, size_t len, const char *fmt, ...)
