@@ -341,7 +341,7 @@ _bitmap_get_free_pos(uint32_t haystack) {
 }
 
 static int8_t
-_bitmap_get_used_pos_offset(uint32_t haystack, uint8_t start_pos) {
+_bitmap_get_used_pos_offset(uint32_t haystack, uint8_t start_pos, uint8_t abort_on_non_used) {
 	uint32_t i;
 
 	if (haystack == ALL_UNUSED_PAGES) {
@@ -352,6 +352,10 @@ _bitmap_get_used_pos_offset(uint32_t haystack, uint8_t start_pos) {
 	for(i=start_pos+1; i<16; i++) {
 		if (Page_Used_Check(haystack, i)) {
 			return i;
+		} else {
+			if (abort_on_non_used && Get_Page_State(haystack, i) != HLO_FS_Page_Bad) {
+				return -2;
+			}
 		}
 	}
 
@@ -369,7 +373,6 @@ _bitmap_find_next_used(uint32_t start_ptr, uint8_t start_element, uint32_t end_p
 	*out_addr = -1;
 	*out_pos  = -1;
 
-	//XXX this will currently exhaust the partition bitmap, we should stop on the first free block found after us
 	addr = start_ptr;
 	do {
 		// load bitmap record
@@ -379,12 +382,14 @@ _bitmap_find_next_used(uint32_t start_ptr, uint8_t start_element, uint32_t end_p
 			return HLO_FS_Media_Error;
 		}
 		printf("\t\t\trecord is 0x%x (from 0x%x)\n", record, addr);
-		pos = _bitmap_get_used_pos_offset(record, start_element);
-		if (pos != -1) {
+		pos = _bitmap_get_used_pos_offset(record, start_element, true);
+		if (pos > -1) {
 			printf("\t\tFound next used @ %x,%x\n", addr, pos);
 			*out_addr = addr;
 			*out_pos  = pos;
 			return 0;
+		} else if (pos == -2) {
+			return HLO_FS_Not_Found;
 		}
 
 		addr += 4;
