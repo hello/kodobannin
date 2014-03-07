@@ -286,9 +286,8 @@ _packetize(void* src, uint16_t length)
     }
 
     uint8_t total = packet - _notify_context.packets;
-    DEBUG("_packetize: total packets = ", total);
 
-    return packet - _notify_context.packets;
+    return total;
 }
 
 void
