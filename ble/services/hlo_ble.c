@@ -23,6 +23,8 @@ struct hlo_ble_notify_context {
 
     uint8_t queued; //< number of packets queued to be sent
     uint8_t total; //< total number of packets to send
+
+    hlo_ble_notify_callback callback;
 };
 
 static struct hlo_ble_notify_context _notify_context;
@@ -213,7 +215,13 @@ _dispatch_notify()
             DEBUG("sd_ble_gatts_hvx returned ", err);
         }
     } else if (_notify_context.total && _notify_context.queued == _notify_context.total) {
+        hlo_ble_notify_callback callback = _notify_context.callback;
+
         _notify_context = (struct hlo_ble_notify_context) {};
+
+        if(callback) {
+            callback();
+        }
     }
 
     return false;
@@ -284,12 +292,13 @@ _packetize(void* src, uint16_t length)
 }
 
 void
-hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length)
+hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback)
 {
     _notify_context = (struct hlo_ble_notify_context) {
         .packet_sizes = { 0 },
         .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
         .queued = 0,
+        .callback = callback,
     };
 
     _notify_context.total = _packetize(data, length);

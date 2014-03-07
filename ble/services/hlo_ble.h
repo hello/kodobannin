@@ -62,4 +62,5 @@ uint16_t hlo_ble_get_value_handle(const uint16_t uuid);
 
 void hlo_ble_dispatch_write(ble_evt_t *event);
 
-void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length);
+typedef void (*hlo_ble_notify_callback)();
+void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback);
