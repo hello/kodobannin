@@ -42,6 +42,6 @@ void hlo_ble_alpha0_init()
                           strlen(GIT_DESCRIPTION));
     hlo_ble_char_write_request_add(BLE_UUID_HELLO_ALPHA0_CONTROL_CHAR, _control_write_handler, 5);
     hlo_ble_char_indicate_add(BLE_UUID_HELLO_ALPHA0_CONTROL_RESPONSE_CHAR);
-    hlo_ble_char_write_command_add(BLE_UUID_HELLO_ALPHA0_DATA_CHAR, _data_response_write_handler, 5);
-    hlo_ble_char_notify_add(BLE_UUID_HELLO_ALPHA0_DATA_RESPONSE_CHAR);
+    hlo_ble_char_notify_add(BLE_UUID_HELLO_ALPHA0_DATA_CHAR);
+    hlo_ble_char_write_command_add(BLE_UUID_HELLO_ALPHA0_DATA_RESPONSE_CHAR, _data_response_write_handler, 5);
 }
