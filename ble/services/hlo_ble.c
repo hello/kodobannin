@@ -4,8 +4,30 @@
 #include <string.h>
 
 #include "hlo_ble.h"
+#include "sha1.h"
 #include "util.h"
 
+struct hlo_ble_notify_context {
+    /** This is an array of 15, because:
+
+        1 element = hlo_ble_packet.header.data: carries 17 bytes; 239 bytes left.
+        +
+        13 elements = hlo_ble_packet.body.data: carries 19*13 (247) bytes; 0 bytes left.
+        +
+        1 element = hlo_ble_packet.footer: carries SHA-1 for data.
+    */
+    struct hlo_ble_packet packets[15];
+    uint16_t packet_sizes[15];
+
+    uint16_t characteristic_handle;
+
+    uint8_t queued; //< number of packets queued to be sent
+    uint8_t total; //< total number of packets to send
+};
+
+static struct hlo_ble_notify_context _notify_context;
+
+
 struct uuid_handler {
     uint16_t uuid;
     uint16_t value_handle;
@@ -159,6 +181,133 @@ _dispatch_write(ble_evt_t *event) {
     DEBUG("Couldn't locate write handler for handle: ", handle);
 }
 
+/** Returns true if we queued a packet for BLE notification; returns false if we did not queue a packet (for whatever reason, from no available buffers to other errors). */
+static uint32_t
+_dispatch_notify()
+{
+    if(_notify_context.queued < _notify_context.total) {
+        ble_gatts_hvx_params_t hvx_params = {
+            .handle = _notify_context.characteristic_handle,
+            .type = BLE_GATT_HVX_NOTIFICATION,
+            .offset = 0,
+            .p_len = &_notify_context.packet_sizes[_notify_context.queued],
+            .p_data = _notify_context.packets[_notify_context.queued].bytes,
+        };
+
+#define PRINT_NOTIFY
+
+#ifdef PRINT_NOTIFY
+        PRINT_HEX(_notify_context.packets[_notify_context.queued].bytes, *hvx_params.p_len);
+        PRINTS("\r\n");
+#endif
+
+        uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
+
+        switch(err) {
+        case NRF_SUCCESS:
+            _notify_context.queued++;
+            return true;
+        case BLE_ERROR_NO_TX_BUFFERS:
+            break;
+        default:
+            DEBUG("sd_ble_gatts_hvx returned ", err);
+        }
+    } else if (_notify_context.total && _notify_context.queued == _notify_context.total) {
+        _notify_context = (struct hlo_ble_notify_context) {};
+    }
+
+    return false;
+}
+
+static uint8_t
+_packetize(void* src, uint16_t length)
+{
+    struct hlo_ble_packet* packet = _notify_context.packets;
+
+    uint8_t* p = src;
+
+    uint8_t sequence_number = 0;
+
+    APP_ASSERT(length <= sizeof(packet->header.data) + sizeof(packet->body.data)*253);
+
+    unsigned i = 0;
+
+    // Write out header packet
+
+    {
+        packet->sequence_number = sequence_number++;
+
+        packet->header.size = length;
+
+        unsigned header_data_size = MIN(length, sizeof(packet->header.data));
+        memcpy(packet->header.data, p, header_data_size);
+        p += header_data_size;
+
+        _notify_context.packet_sizes[i++] = header_data_size+sizeof(packet->header.size)+sizeof(packet->sequence_number);
+
+        packet++;
+    }
+
+    // Write out body packets
+
+    uint8_t* end = src+length;
+    while(p < end) {
+        packet->sequence_number = sequence_number++;
+
+        size_t body_data_size = MIN(end-p, sizeof(packet->body.data));
+        memcpy(packet->body.data, p, body_data_size);
+        p += body_data_size;
+
+        _notify_context.packet_sizes[i++] = body_data_size+sizeof(packet->sequence_number);
+
+        packet++;
+    }
+
+    // Write out footer
+
+    {
+        packet->sequence_number = sequence_number++;
+
+        uint8_t src_sha1[20];
+        sha1_calc(src, length, src_sha1);
+        memcpy(packet->footer.sha19, src_sha1, sizeof(packet->footer.sha19));
+
+        _notify_context.packet_sizes[i++] = sizeof(packet->footer)+sizeof(packet->sequence_number);
+
+        packet++;
+    }
+
+    uint8_t total = packet - _notify_context.packets;
+    DEBUG("_packetize: total packets = ", total);
+
+    return packet - _notify_context.packets;
+}
+
+void
+hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length)
+{
+    _notify_context = (struct hlo_ble_notify_context) {
+        .packet_sizes = { 0 },
+        .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
+        .queued = 0,
+    };
+
+    _notify_context.total = _packetize(data, length);
+
+    for(;;) {
+        uint32_t err = _dispatch_notify();
+
+        if(err == NRF_SUCCESS) {
+            continue;
+        } else if(err == BLE_ERROR_NO_TX_BUFFERS) {
+            break;
+        } else {
+            DEBUG("_dispatch_notify returned ", err);
+            break;
+        }
+    }
+}
+
 uint16_t hlo_ble_get_connection_handle()
 {
     return _connection_handle;
@@ -179,6 +328,8 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
     case BLE_GATTS_EVT_WRITE:
         _dispatch_write(event);
         break;
+    case BLE_EVT_TX_COMPLETE:
+        _dispatch_notify();
     default:
         break;
     }
