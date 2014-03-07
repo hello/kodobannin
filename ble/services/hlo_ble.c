@@ -184,7 +184,7 @@ _dispatch_write(ble_evt_t *event) {
 }
 
 /** Returns true if we queued a packet for BLE notification; returns false if we did not queue a packet (for whatever reason, from no available buffers to other errors). */
-static uint32_t
+static bool
 _dispatch_notify()
 {
     if(_notify_context.queued < _notify_context.total) {
@@ -304,14 +304,11 @@ hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo
     _notify_context.total = _packetize(data, length);
 
     for(;;) {
-        uint32_t err = _dispatch_notify();
+        bool queued_packet = _dispatch_notify();
 
-        if(err == NRF_SUCCESS) {
+        if(queued_packet) {
             continue;
-        } else if(err == BLE_ERROR_NO_TX_BUFFERS) {
-            break;
         } else {
-            DEBUG("_dispatch_notify returned ", err);
             break;
         }
     }
