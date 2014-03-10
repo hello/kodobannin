@@ -134,6 +134,13 @@ hlo_ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handle
 	ble_gatt_char_props_t write_props = {};
 	write_props.write_wo_resp = 1;
 
+    // OS X Mavericks (10.9) has a bug where a Write Command
+    // (i.e. write without confirmation) to a characteristic will not
+    // work, unless that characteristic also supports Write Requests
+    // (i.e. write with confirmation). As such, we turn on suport for
+    // Write Requests here too.
+    write_props.write = 1;
+
 	_char_add(uuid, &write_props, ignored, sizeof(ignored), write_handler);
 }
 
