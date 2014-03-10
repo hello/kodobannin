@@ -947,6 +947,10 @@ done:
 int32_t
 hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, HLO_FS_Page_Range *range) {
 	int32_t count = 0;
+	uint32_t i, j;
+	uint8_t elem;
+	uint8_t end_elem;
+	int32_t ret;
 
 	if (!range) {
 		return HLO_FS_Invalid_Parameter;
@@ -961,7 +965,66 @@ hlo_fs_mark_dirty(enum HLO_FS_Partition_ID id, HLO_FS_Page_Range *range) {
 		return HLO_FS_Invalid_Parameter;
 	}
 
-	//TODO update bitmap with 'dirty' status for each page
+	printf("DirtyMarker called with:\n");
+	printf("\tstart ptr:  0x%x\n", range->start_ptr);
+	printf("\tstart elem: 0x%x\n", range->start_element);
+	printf("\tend ptr:    0x%x\n", range->end_ptr);
+	printf("\tend elem:   0x%x\n", range->end_element);
+	printf("\tbytes read: 0x%x\n", range->last_byte_pos);
+	if (range->start_ptr == range->end_ptr &&
+		range->start_element == range->end_element &&
+		range->last_byte_pos != 0xFF) {
+			printf("\texiting early because there is nothign to blank out (last byte 0x%x)\n", range->last_byte_pos);
+			return 0;
+	}
+	// update bitmap with 'dirty' status for each page
+	for (i = range->start_ptr; i <= range->end_ptr; i++) {
+		// set starting element
+		elem = 0;
+		if (i == range->start_ptr) {
+			elem = range->start_element;
+		}
 
+		// set last element
+		end_elem = 16;
+		if (i == range->end_ptr) {
+			end_elem = range->end_element;
+		}
+
+		if (range->last_byte_pos == 0xFF) {
+			if (end_elem == 15) {
+				++range->end_ptr;
+				end_elem = 0;
+			} else {
+				++end_elem;
+			}
+		}
+		//TODO: account for last page not being fully read? or trust the caller?
+		for (j = elem; j < end_elem; j++) {
+			printf("\t\tdirtying addr 0x%x, elem 0x%x\n", i, j);
+			ret = _bitmap_update_page_state(id, i, j, HLO_FS_Page_Dirty);
+			if (ret != 0) {
+				printf("could not update bitmap state (%d)\n", ret);
+				return ret;
+			}
+			++count;
+		}
+	}
+
+	// update read ptr here
+	struct HLO_FS_Bitmap_Record *bitmap;
+	// load our partition record
+	ret = _bitmap_get_partition_record(id, &bitmap);
+	if (ret != 0) {
+		return HLO_FS_Media_Error;
+	}
+	if (end_elem > 15) {
+		bitmap->bitmap_read_ptr = range->end_ptr + 1;
+		bitmap->bitmap_read_element = 0;
+	} else {
+		bitmap->bitmap_read_ptr = range->end_ptr;
+		bitmap->bitmap_read_element = end_elem + ((range->last_byte_pos == 0xff) ? 0 : 1);
+	}
+	printf("new read ptrs are 0x%x and 0x%x\n", bitmap->bitmap_read_ptr, bitmap->bitmap_read_element);
 	return count;
 }
