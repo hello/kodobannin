@@ -191,7 +191,7 @@ out:
 	return index;
 }
 
-#if DEBUG > 0
+#ifdef DEBUG_SERIAL
 __printflike(1, 2) int
 printf(const char *fmt, ...)
 {
