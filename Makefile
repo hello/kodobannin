@@ -167,7 +167,7 @@ $(BUILD_DIR):
 
 $(BUILD_DIR)/%.jlink: prog/%.jlink.in
 	$(info [JLINK_SCRIPT] $@)
-	sed -e 's,$$PWD,$(PWD),g' -e 's,$$BUILD_DIR,$(abspath $(BUILD_DIR)),g' < $< > $@
+	sed -e 's,$$PWD,$(CURDIR),g' -e 's,$$BUILD_DIR,$(abspath $(BUILD_DIR)),g' < $< > $@
 
 JLINK_COMMANDS = \
 	$(info [JPROG] $@.jlink) \
