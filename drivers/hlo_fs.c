@@ -635,14 +635,17 @@ _bitmap_update_page_state(enum HLO_FS_Partition_ID id, uint32_t bitmap_record_ad
 
 	ret = _bitmap_get_partition_record(id, &bitmap);
 	if (ret < 0) {
+		printf("error getting partition record for id 0x%x\n", id);
 		return ret;
 	}
 
 	if (bitmap_record_addr < bitmap->bitmap_start_addr || bitmap_record_addr >= bitmap->bitmap_end_addr) {
+		printf("invalid addr, 0x%x vs 0x%x->0x%x\n", bitmap_record_addr, bitmap->bitmap_start_addr, bitmap->bitmap_end_addr);
 		return HLO_FS_Invalid_Parameter;
 	}
 
 	if (bitmap_element >= 16) {
+		printf("invalid element, %x >= 0x10\n", bitmap_element);
 		return HLO_FS_Invalid_Parameter;
 	}
 
@@ -722,9 +725,9 @@ _bitmap_calc_phys_addr(enum HLO_FS_Partition_ID id, uint32_t ptr, uint32_t eleme
 	addr  = pinfo->block_offset * 4096;
 	printf("phys addr base is 0x%x\n", addr);
 	addr += 4096 * (ptr - bitmap->bitmap_start_addr);
-	printf("phys addr after bitmap element offset of 0x%x: 0x%x\n", (ptr - bitmap->bitmap_start_addr), addr);
+	printf("phys addr after bitmap ptr offset of 0x%x: 0x%x\n", (ptr - bitmap->bitmap_start_addr), addr);
 	addr += 256 * element;
-	printf("final phys addr 0x%x\n", addr);
+	printf("final phys addr after element offset of 0x%x: 0x%x\n", element, addr);
 
 	return addr;
 }
@@ -743,6 +746,7 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 	}
 
 	if (len == 0) {
+		printf("nothing to append!\n");
 		return 0;
 	}
 
@@ -783,6 +787,7 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 		// calculate the absolute storage offset based on bitmap information
 		write_addr = _bitmap_calc_phys_addr(id, bitmap->bitmap_write_ptr, bitmap->bitmap_write_element);
 		if (write_addr == HLO_FS_Invalid_Addr) {
+			printf("could not calculate a valid address from ptr 0x%x and element %x\n", bitmap->bitmap_write_ptr, bitmap->bitmap_write_element);
 			return bytes_written;
 		}
 
@@ -790,6 +795,7 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 		//     XXX: this should probably be done in the bitmap advancement code
 
 		// write at most a page of data
+		printf("writing %d bytes to 0x%x\n", to_write, write_addr);
 		ret = spinor_write_page(write_addr, to_write, &data[bytes_written]);
 		if (ret < 0) {
 			return ret;
@@ -843,7 +849,7 @@ hlo_fs_append(enum HLO_FS_Partition_ID id, uint32_t len, uint8_t *data) {
 		printf("Min free bytes: %d\n", bitmap->min_free_bytes);
 
 	}
-
+	printf("returning\n");
 	return bytes_written;
 }
 
