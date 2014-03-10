@@ -164,9 +164,34 @@ main(int argc, const char *argv[]) {
 		for(int j = 0; j < 32; j++) {
 			memset(buffer, j, 256);
 			ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 256, buffer);
-			printf("\tappend ret 0x%X\n", ret);
+			if (ret < 0) {
+				printf("append failed with 0x%x for iteration %i\n", ret, j);
+				goto end;
+			} else {
+				printf("\tappend ret 0x%X\n", ret);
+			}
 		}
+
 		HLO_FS_Page_Range range;
+		ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, read_buffer, &range);
+		if (ret < 0) {
+			printf("reading returned error 0x%x\n\n", ret);
+			goto end;
+		}
+
+		printf("partition read returned %d bytes:\n", ret);
+		print_page(read_buffer, ret);
+		//invalidate range
+		ret = hlo_fs_mark_dirty(HLO_FS_Partition_Crashlog, &range);
+		printf("mark dirty returned %d\n", ret);
+
+		range.token = 0;
+		ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, read_buffer, &range);
+		if (ret > 0) {
+			printf("partition read returned %d bytes:\n", ret);
+			print_page(read_buffer, ret);
+		}
+/*
 		do {
 			ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, read_buffer, &range);
 			if (ret > 0) {
@@ -175,6 +200,8 @@ main(int argc, const char *argv[]) {
 			}
 
 		} while (ret > 0);
+*/
+end: {}
 	}
 
 	if (data_file)
