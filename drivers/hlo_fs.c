@@ -612,7 +612,7 @@ static int32_t
 _bitmap_get_partition_record(enum HLO_FS_Partition_ID id, struct HLO_FS_Bitmap_Record **record) {
 	int32_t ret;
 
-	if (!record || !*record) {
+	if (!record) {
 		return HLO_FS_Invalid_Parameter;
 	}
 
