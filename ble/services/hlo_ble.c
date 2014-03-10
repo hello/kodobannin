@@ -245,13 +245,14 @@ _packetize(void* src, uint16_t length)
     {
         packet->sequence_number = sequence_number++;
 
-        packet->header.size = length;
+        // We defer writing in the value of packet->packet_count here until
+        // we've finished processing all the packets.
 
         unsigned header_data_size = MIN(length, sizeof(packet->header.data));
         memcpy(packet->header.data, p, header_data_size);
         p += header_data_size;
 
-        _notify_context.packet_sizes[i++] = header_data_size+sizeof(packet->header.size)+sizeof(packet->sequence_number);
+        _notify_context.packet_sizes[i++] = header_data_size+sizeof(packet->header.packet_count)+sizeof(packet->sequence_number);
 
         packet++;
     }
@@ -285,7 +286,13 @@ _packetize(void* src, uint16_t length)
         packet++;
     }
 
+    // Write out total packet count
+
     uint8_t total = packet - _notify_context.packets;
+
+    {
+        _notify_context.packets[0].header.packet_count = total;
+    }
 
     return total;
 }
