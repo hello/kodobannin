@@ -601,9 +601,9 @@ Case_Done:
 		printf("\twrite pointer:0x%x\n", _bitmap_records[id].bitmap_write_ptr);
 		printf("\tWrite element:0x%x\n", _bitmap_records[id].bitmap_write_element);
 
-	} else {
+	}/* else {
 		printf("Record already cached for partition 0x%02X (0x%02X)\n", id, _bitmap_records[id].id);
-	}
+	}*/
 
 	return 0;
 }
