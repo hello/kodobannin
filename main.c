@@ -30,46 +30,12 @@
 static uint16_t test_size;
 #define APP_GPIOTE_MAX_USERS            2
 
-void
-test_3v3() {
-	PRINTS("BLINKING LEDS AND VIBE\r\n");
-    nrf_gpio_cfg_output(GPIO_3v3_Enable);
-    nrf_gpio_pin_set(GPIO_3v3_Enable);
-
-    nrf_gpio_cfg_output(GPIO_HRS_PWM_G1);
-    nrf_gpio_cfg_output(GPIO_HRS_PWM_G2);
-    nrf_gpio_cfg_output(GPIO_VIBE_PWM);
-
-    while (1){
-        nrf_gpio_pin_clear(GPIO_HRS_PWM_G2);
-        nrf_gpio_pin_set  (GPIO_HRS_PWM_G1);
-        nrf_gpio_pin_set  (GPIO_VIBE_PWM);
-		watchdog_pet();
-        nrf_delay_ms(100);
-        nrf_gpio_pin_clear(GPIO_VIBE_PWM);
-		watchdog_pet();
-        nrf_delay_ms(390);
-        nrf_gpio_pin_clear(GPIO_HRS_PWM_G1);
-        nrf_gpio_pin_set  (GPIO_HRS_PWM_G2);
-		watchdog_pet();
-        nrf_delay_ms(500);
-    }
-}
 
 void ble_init();
 void ble_advertising_start();
 
 static uint8_t _state;
-/*
-    // GPS Stuff
-    nrf_gpio_cfg_output(GPS_ON_OFF);
-    nrf_gpio_pin_set(GPS_ON_OFF);
-    nrf_delay_ms(2);
-    nrf_gpio_pin_clear(GPS_ON_OFF);
 
-    err_code = init_spi(SPI_Channel_1, SPI_Mode1, MISO, MOSI, SCLK, GPS_nCS);
-    APP_ERROR_CHECK(err_code);
-*/
 static void
 _mode_write_handler(ble_gatts_evt_write_t *event) {
     uint8_t  state = event->data[0];
@@ -490,23 +456,64 @@ _start()
 */
 	//pwm_test();
 	//test_3v3();
-#if 0
+#if 1
     uint8_t page_data[512];
-	memset(page_data, 0, 512);
-    memset(page_data, 0xEE, 256);
-	page_data[0] = 0xFD;
-	page_data[256] = 0xFB;
-	page_data[511] = 0xBF;
 
     PRINTS("\r\n********************\r\n\r\n");
     //flash test code
-    nrf_gpio_cfg_output(GPS_nCS);
-    nrf_gpio_pin_set(GPS_nCS);
 
     err = spinor_init(SPI_Channel_0, SPI_Mode3, MISO, MOSI, SCLK, FLASH_nCS);
     APP_ERROR_CHECK(err);
     PRINTS("SPI NOR configured\r\n");
 
+	err = hlo_fs_init();
+	if (err != 0) {
+		printf("fs init failed with %x\n", err);
+
+		parts[0].id = HLO_FS_Partition_Crashlog;
+		parts[0].block_offset = -1;
+		parts[0].block_count = 5;
+		printf("formatting...\n");
+		err = hlo_fs_format(1, parts, 1);
+		printf("format ret %x\n", err);
+		ret = hlo_fs_init();
+		if (ret != 0) {
+			goto spin;
+		}
+	}
+
+	memset(page_data, 0x11, 32);
+	memset(&page_data[224], 0x12, 32);
+	page_data[256] = 0x22;
+	ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 256, page_data);
+	if (ret != 256) {
+		printf("write returned %d instead of 256\n", ret);
+	}
+	memset(page_data, 0, 512);
+	memset(page_data, 0x22, 32);
+	memset(&page_data[224], 0x23, 32);
+	page_data[256] = 0x33;
+	ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 256, page_data);
+	if (ret != 256) {
+		printf("write returned %d instead of 256\n", ret);
+	}
+
+	HLO_FS_Page_Range range;
+	ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, page_data, &range);
+	if (ret != 256) {
+		printf("read returned %d instead of 256\n", ret);
+	}
+
+	print_page(page_data, 256);
+
+
+	ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, page_data, &range);
+	if (ret != 256) {
+		printf("read returned %d instead of 256\n", ret);
+	}
+
+	print_page(page_data, 256);
+/*
     PRINTS("SPI NOR Data Read: 0x");
     err = spinor_read(0, 20, sample);
     PRINT_HEX(&err, 4);
@@ -551,7 +558,8 @@ _start()
     APP_ERROR_CHECK(err <= 0);
     print_page(page_data, 512);
     PRINTS("\r\n");
-
+*/
+spin:
     while(1) {
         __WFE();
     }
