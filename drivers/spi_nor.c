@@ -283,7 +283,7 @@ spinor_chip_erase() {
 }
 
 int32_t
-spinor_block_erase(uint16_t block) {
+_block_erase(uint8_t cmd, uint16_t block) {
 	uint8_t data[4];
 	int32_t err;
 
@@ -304,6 +304,16 @@ spinor_block_erase(uint16_t block) {
 	err = spi_xfer(&_ctx, 4, data, 0, NULL);
 
 	return err < 0 ? err : 0;
+}
+
+int32_t
+spinor_block_erase(uint16_t block) {
+	return _block_erase(CMD_SE, block);
+}
+
+int32_t
+spinor_block_erase_64(uint16_t block) {
+	return _block_erase(CMD_BE64k, block);
 }
 
 void
