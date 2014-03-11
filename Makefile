@@ -199,13 +199,16 @@ $(BUILD_DIR)/git_description.c:
 
 # gdb
 
-.PHONY: gdbs gdb blgdb cgdb
+.PHONY: gdbs gdb blgdb cgdb gdbnor
 
 gdbs:
 	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
 
 gdb:
 	$(BIN)/arm-none-eabi-gdb $(BUILD_DIR)/app.elf -ex "tar remote :2331" -ex "mon reset"
+
+gdbnor:
+	$(BIN)/arm-none-eabi-gdb $(BUILD_DIR)/app.elf -ex "tar remote :2331"
 
 blgdb:
 	$(BIN)/arm-none-eabi-gdb $(BUILD_DIR)/bootloader.elf -ex "tar remote :2331" -ex "mon reset"
