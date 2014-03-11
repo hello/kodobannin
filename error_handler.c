@@ -33,9 +33,7 @@ _save_stack(uint8_t* stack_start, struct crash_log* crash_log)
 void
 app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filename)
 {
-	uint32_t error_led;
-
-    printf("[ERROR] app_error_handler");
+	printf("[ERROR] app_error_handler (%s:%d) error_code=%d\r\n", filename, line_num, error_code);
 
 	(void) sd_softdevice_disable();
 
@@ -58,6 +56,8 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 #ifdef KODOBANNIN_APP_ERROR_BKPT
     __asm("bkpt #0\n"); // Break into the debugger, or reboot if no debugger attached.
 #else
+    uint32_t error_led;
+
 	// look at the chip's hardware ID to make a guess of which type of device we're
 	// running on so that we can blink an LED to alert the user to the crash
 	switch ((NRF_FICR->CONFIGID & FICR_CONFIGID_HWID_Msk) >> FICR_CONFIGID_HWID_Pos)
