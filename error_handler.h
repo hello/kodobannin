@@ -23,10 +23,17 @@ struct crash_log_hardfault {
 	uint32_t stacked_registers[8];
 } PACKED;
 
+struct crash_log_app_error {
+	uint8_t filename[32];
+	uint32_t line_number;
+	uint32_t error_code;
+} PACKED;
+
 struct crash_log {
 	uint32_t signature;
 	union {
 		struct crash_log_hardfault hardfault;
+		struct crash_log_app_error app_error;
 	} PACKED;
     uint16_t stack_size;
     uint8_t stack[];
