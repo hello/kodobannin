@@ -67,6 +67,23 @@ spinor_block_erase(uint16_t block) {
 }
 
 int32_t
+spinor_block_erase_64(uint16_t block) {
+	int i;
+	int32_t ret;
+	uint8_t data[BLOCK_SIZE];
+
+	memset(data, 0xFF, BLOCK_SIZE);
+
+	for (i = 0; i < 16; i++) {
+		ret = spinor_write(((block * 16) + i) * BLOCK_SIZE, BLOCK_SIZE, data);
+		if (ret != BLOCK_SIZE)
+			return -1;
+	}
+
+	return 0;
+}
+
+int32_t
 spinor_chip_erase() {
 	int i;
 	uint8_t data[BLOCK_SIZE];
@@ -100,12 +117,32 @@ fstest_init(const char *filename) {
 	return 0;
 }
 
+
+#define STRIDE 32
+void
+print_page(uint8_t *ptr, uint32_t len)
+{
+    uint32_t i;
+    uint32_t j;
+
+    for (i = 0; i < len; i+=STRIDE) {
+		for (j=0; j < STRIDE; j++) {
+			if (i+j >= len) {
+				break;
+			}
+			printf("%02X ", ptr[i+j]);
+		}
+        printf("\r\n");
+    }
+}
+
 int
 main(int argc, const char *argv[]) {
 	int i;
 	int32_t ret;
 	HLO_FS_Partition_Info parts[2];
 	uint8_t buffer[256];
+	uint8_t read_buffer[576];
 
 	for (i=1; i < argc; i++) {
 		printf("\nTesting file '%s'\n", argv[i]);
@@ -124,9 +161,47 @@ main(int argc, const char *argv[]) {
         	printf("\tfs_init ret 0x%X\n", ret);
 
     	}
-		memset(buffer, 0x55, 256);
-		ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 10, buffer);
-		printf("\tfind page ret 0x%X\n", ret);
+		for(int j = 0; j < 32; j++) {
+			memset(buffer, j, 256);
+			ret = hlo_fs_append(HLO_FS_Partition_Crashlog, 256, buffer);
+			if (ret < 0) {
+				printf("append failed with 0x%x for iteration %i\n", ret, j);
+				goto end;
+			} else {
+				printf("\tappend ret 0x%X\n", ret);
+			}
+		}
+
+		HLO_FS_Page_Range range;
+		ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, read_buffer, &range);
+		if (ret < 0) {
+			printf("reading returned error 0x%x\n\n", ret);
+			goto end;
+		}
+
+		printf("partition read returned %d bytes:\n", ret);
+		print_page(read_buffer, ret);
+		//invalidate range
+		ret = hlo_fs_mark_dirty(HLO_FS_Partition_Crashlog, &range);
+		printf("mark dirty returned %d\n", ret);
+
+		range.token = 0;
+		ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, read_buffer, &range);
+		if (ret > 0) {
+			printf("partition read returned %d bytes:\n", ret);
+			print_page(read_buffer, ret);
+		}
+/*
+		do {
+			ret = hlo_fs_read(HLO_FS_Partition_Crashlog, 256, read_buffer, &range);
+			if (ret > 0) {
+				printf("\tpartition read returned %d bytes:\n", ret);
+				print_page(read_buffer, ret);
+			}
+
+		} while (ret > 0);
+*/
+end: {}
 	}
 
 	if (data_file)

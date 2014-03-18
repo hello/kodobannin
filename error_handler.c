@@ -16,24 +16,47 @@
 #include "util.h"
 
 enum crash_log_signature {
-    CRASH_LOG_SIGNATURE_APP_PANIC = 0xA5BE5705,
+    CRASH_LOG_SIGNATURE_APP_ERROR = 0xA5BE5705,
 	CRASH_LOG_SIGNATURE_HARDFAULT = 0xDEADBEA7,
 };
 
 static void* const CRASH_LOG_ADDRESS = (uint8_t*) 0x20000004;
 
+static void
+_save_stack(uint8_t* stack_start, struct crash_log* crash_log)
+{
+    const uint8_t* RAM_END = (uint8_t*) 0x20004000;
+    crash_log->stack_size = RAM_END - stack_start;
+    memcpy(&crash_log->stack[0], stack_start, crash_log->stack_size);
+}
+
 void
 app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filename)
 {
-	uint32_t error_led;
+	printf("[ERROR] app_error_handler (%s:%d) error_code=%d\r\n", filename, line_num, error_code);
 
-	// silence the stupid compiler
-	(void)error_code;
-	(void)line_num;
-	(void)filename;
+	(void) sd_softdevice_disable();
 
 	// let the bootloader know that we crashed
 	NRF_POWER->GPREGRET |= GPREGRET_APP_CRASHED_MASK;
+
+	struct crash_log* crash_log = CRASH_LOG_ADDRESS;
+
+    crash_log->signature = CRASH_LOG_SIGNATURE_APP_ERROR;
+	size_t filename_len = MAX(strlen((char* const)filename), sizeof(crash_log->app_error.filename));
+	memcpy(crash_log->app_error.filename, filename, filename_len);
+	crash_log->app_error.line_number = line_num;
+	crash_log->app_error.error_code = error_code;
+
+    uint8_t* stack_start = (uint8_t*)&crash_log;
+    _save_stack(stack_start, crash_log);
+
+#define KODOBANNIN_APP_ERROR_BKPT
+
+#ifdef KODOBANNIN_APP_ERROR_BKPT
+    __asm("bkpt #0\n"); // Break into the debugger, or reboot if no debugger attached.
+#else
+    uint32_t error_led;
 
 	// look at the chip's hardware ID to make a guess of which type of device we're
 	// running on so that we can blink an LED to alert the user to the crash
@@ -61,20 +84,13 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 	    nrf_gpio_pin_clear(error_led);
 	    nrf_delay_ms(500);
 	}
+#endif
 }
 
 void
 assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
 	app_error_handler(0xDEADBEEF, line_num, p_file_name);
-}
-
-static void
-_save_stack(uint8_t* stack_start, struct crash_log* crash_log)
-{
-    const uint8_t* RAM_END = (uint8_t*) 0x20004000;
-    crash_log->stack_size = RAM_END - stack_start;
-    memcpy(&crash_log->stack[0], stack_start, crash_log->stack_size);
 }
 
 void
@@ -86,10 +102,11 @@ crash_log_save()
 	case CRASH_LOG_SIGNATURE_HARDFAULT:
 		DEBUG("Found HardFault crash log at ", CRASH_LOG_ADDRESS);
 		break;
-	case CRASH_LOG_SIGNATURE_APP_PANIC:
-        DEBUG("Found app panic crash log at ", CRASH_LOG_ADDRESS);
+	case CRASH_LOG_SIGNATURE_APP_ERROR:
+        DEBUG("Found app error crash log at ", CRASH_LOG_ADDRESS);
 		break;
 	default:
+		DEBUG("No crash log found, signature is: ", crash_log->signature);
 		return;
 	}
 

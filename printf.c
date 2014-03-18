@@ -4,15 +4,15 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <simple_uart.h>
 #include "util.h"
-//#include <simple_uart.h>
 
 #ifndef __printflike
-/* 
- * Compiler-dependent macros to declare that functions take printf-like 
+/*
+ * Compiler-dependent macros to declare that functions take printf-like
  * or scanf-like arguments.  They are null except for versions of gcc
- * that are known to support the features properly (old versions of gcc-2   
- * didn't permit keeping the keywords out of the application namespace). 
+ * that are known to support the features properly (old versions of gcc-2
+ * didn't permit keeping the keywords out of the application namespace).
  */
 #    define __printflike(fmtarg, firstvararg)       \
             __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
@@ -49,17 +49,16 @@ _char_out(char *dest, size_t index, size_t len, char out)
 	return 1;
 }
 
+// TODO: fix case where *-ify don't print anything due to leading zeroes which causes problems upstream
+//       they should at least print one 0 or pair of zeroes
 static inline uint32_t
-_hexify(char *dest, size_t index, size_t len, va_list args)
+_hexify(char *dest, size_t index, size_t len, uint32_t val)
 {
-	uint32_t val;
 	char tmp;
 	uint32_t i = 0;
 	uint32_t used = 0;
 	uint8_t non_zero = 0;
 
-	val = (uint32_t) va_arg(args, uint32_t);
-	
 	for (i=0; i < 4; i++) {
 		uint8_t out = (val >> 8*(3-i)) & 0xFF;
 		tmp = hex[0xF & (out >> 4)];
@@ -87,22 +86,19 @@ out:
 }
 
 static inline uint32_t
-_intify(char *dest, size_t index, size_t len, va_list args)
+_intify(char *dest, size_t index, size_t len, uint32_t val)
 {
-	uint32_t val;
 	uint32_t val_p;
 	uint8_t rem;
 	uint32_t used = 0;
 	uint32_t output = 0;
 	uint8_t buf[11]; // INT32_MAX needs 10 digits
 
-	val = (uint32_t) va_arg(args, uint32_t);
-
 	do {
 		val_p = val/10;
 
 		rem = val - (val_p*10);
-				
+
 		buf[used++] = hex[rem];
 
 		val = val_p;
@@ -123,6 +119,8 @@ _vsnprintf(char *dest, size_t len, const char *fmt, va_list args)
 	uint32_t index = 0;
 	uint32_t used;
 
+	uint32_t val;
+
 	if (!fmt || (dest && !len))
 		return 0;
 
@@ -133,18 +131,22 @@ _vsnprintf(char *dest, size_t len, const char *fmt, va_list args)
 				switch (fmt[0]) {
 					case 'd':
 					case 'D':
-						used = _intify(dest, index, len, args);
-						if (!used)
-							goto out;
+						val = (uint32_t) va_arg(args, uint32_t);
+						used = _intify(dest, index, len, val);
+						//TODO: re-enable this check after fixing the zero printing bug
+						//if (!used)
+						//	goto out;
 						index += used;
 						++fmt;
 						break;
 
 					case 'x':
 					case 'X':
-						used = _hexify(dest, index, len, args);
-						if (!used)
-							goto out;
+						val = (uint32_t) va_arg(args, uint32_t);
+						used = _hexify(dest, index, len, val);
+						//TODO: re-enable this check after fixing the zero printing bug
+						//if (!used)
+						//	goto out;
 						index += used;
 						++fmt;
 						break;
@@ -153,7 +155,7 @@ _vsnprintf(char *dest, size_t len, const char *fmt, va_list args)
 					case 'S':
 					{
 						uint8_t *arg = (uint8_t *)va_arg(args, uint8_t *);
-					
+
 						while (*arg && (!dest || (index < len))) {
 							if (!_char_out(dest, index, len, *arg++))
 								goto out;
@@ -189,6 +191,7 @@ out:
 	return index;
 }
 
+#ifdef DEBUG_SERIAL
 __printflike(1, 2) int
 printf(const char *fmt, ...)
 {
@@ -201,8 +204,9 @@ printf(const char *fmt, ...)
 
 	va_end(args);
 
-	return ret;	
+	return ret;
 }
+#endif
 
 __printflike(3, 4) uint32_t
 _snprintf(char *dest, size_t len, const char *fmt, ...)
@@ -216,5 +220,6 @@ _snprintf(char *dest, size_t len, const char *fmt, ...)
 
 	va_end(args);
 
-	return ret;		
+	return ret;
 }
+

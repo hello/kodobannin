@@ -4,8 +4,32 @@
 #include <string.h>
 
 #include "hlo_ble.h"
+#include "sha1.h"
 #include "util.h"
 
+struct hlo_ble_notify_context {
+    /** This is an array of 15, because:
+
+        1 element = hlo_ble_packet.header.data: carries 17 bytes; 239 bytes left.
+        +
+        13 elements = hlo_ble_packet.body.data: carries 19*13 (247) bytes; 0 bytes left.
+        +
+        1 element = hlo_ble_packet.footer: carries SHA-1 for data.
+    */
+    struct hlo_ble_packet packets[15];
+    uint16_t packet_sizes[15];
+
+    uint16_t characteristic_handle;
+
+    uint8_t queued; //< number of packets queued to be sent
+    uint8_t total; //< total number of packets to send
+
+    hlo_ble_notify_callback callback;
+};
+
+static struct hlo_ble_notify_context _notify_context;
+
+
 struct uuid_handler {
     uint16_t uuid;
     uint16_t value_handle;
@@ -17,6 +41,8 @@ uint8_t hello_type;
 #define MAX_CHARACTERISTICS 9
 static struct uuid_handler _uuid_handlers[MAX_CHARACTERISTICS];
 static struct uuid_handler* _p_uuid_handler = _uuid_handlers;
+
+static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 
 static void
 _char_add(const uint16_t uuid,
@@ -72,8 +98,7 @@ hlo_ble_char_notify_add(uint16_t uuid)
 {
 	uint8_t ignored[BLE_GAP_DEVNAME_MAX_WR_LEN];
 
-	ble_gatt_char_props_t notify_props;
-	memset(&notify_props, 0, sizeof(notify_props));
+	ble_gatt_char_props_t notify_props = {};
 	notify_props.notify = 1;
 
 	_char_add(uuid, &notify_props, ignored, sizeof(ignored), NULL);
@@ -84,8 +109,7 @@ hlo_ble_char_indicate_add(uint16_t uuid)
 {
 	uint8_t ignored[BLE_GAP_DEVNAME_MAX_WR_LEN];
 
-	ble_gatt_char_props_t indicate_props;
-	memset(&indicate_props, 0, sizeof(indicate_props));
+	ble_gatt_char_props_t indicate_props = {};
 	indicate_props.indicate = 1;
 
 	_char_add(uuid, &indicate_props, ignored, sizeof(ignored), NULL);
@@ -96,8 +120,7 @@ hlo_ble_char_write_request_add(uint16_t uuid, hlo_ble_write_handler write_handle
 {
 	uint8_t ignored[max_buffer_size];
 
-	ble_gatt_char_props_t write_props;
-	memset(&write_props, 0, sizeof(write_props));
+	ble_gatt_char_props_t write_props = {};
 	write_props.write = 1;
 
 	_char_add(uuid, &write_props, ignored, sizeof(ignored), write_handler);
@@ -108,9 +131,15 @@ hlo_ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handle
 {
 	uint8_t ignored[max_buffer_size];
 
-	ble_gatt_char_props_t write_props;
-	memset(&write_props, 0, sizeof(write_props));
+	ble_gatt_char_props_t write_props = {};
 	write_props.write_wo_resp = 1;
+
+    // OS X Mavericks (10.9) has a bug where a Write Command
+    // (i.e. write without confirmation) to a characteristic will not
+    // work, unless that characteristic also supports Write Requests
+    // (i.e. write with confirmation). As such, we turn on suport for
+    // Write Requests here too.
+    write_props.write = 1;
 
 	_char_add(uuid, &write_props, ignored, sizeof(ignored), write_handler);
 }
@@ -118,8 +147,7 @@ hlo_ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handle
 void
 hlo_ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)
 {
-	ble_gatt_char_props_t read_props;
-	memset(&read_props, 0, sizeof(read_props));
+	ble_gatt_char_props_t read_props = {};
 	read_props.read = 1;
 
 	_char_add(uuid, &read_props, value, value_size, NULL);
@@ -146,8 +174,8 @@ hlo_ble_get_value_handle(const uint16_t uuid)
     APP_ASSERT(0);
 }
 
-void
-hlo_ble_dispatch_write(ble_evt_t *event) {
+static void
+_dispatch_write(ble_evt_t *event) {
     ble_gatts_evt_write_t* const write_evt = &event->evt.gatts_evt.params.write;
     const uint16_t handle = write_evt->handle;
 
@@ -160,4 +188,168 @@ hlo_ble_dispatch_write(ble_evt_t *event) {
     }
 
     DEBUG("Couldn't locate write handler for handle: ", handle);
+}
+
+/** Returns true if we queued a packet for BLE notification; returns false if we did not queue a packet (for whatever reason, from no available buffers to other errors). */
+static bool
+_dispatch_notify()
+{
+    if(_notify_context.queued < _notify_context.total) {
+        ble_gatts_hvx_params_t hvx_params = {
+            .handle = _notify_context.characteristic_handle,
+            .type = BLE_GATT_HVX_NOTIFICATION,
+            .offset = 0,
+            .p_len = &_notify_context.packet_sizes[_notify_context.queued],
+            .p_data = _notify_context.packets[_notify_context.queued].bytes,
+        };
+
+#define PRINT_NOTIFY
+
+#ifdef PRINT_NOTIFY
+        PRINT_HEX(_notify_context.packets[_notify_context.queued].bytes, *hvx_params.p_len);
+        PRINTS("\r\n");
+#endif
+
+        uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
+
+        switch(err) {
+        case NRF_SUCCESS:
+            _notify_context.queued++;
+            return true;
+        case BLE_ERROR_NO_TX_BUFFERS:
+            break;
+        default:
+            DEBUG("sd_ble_gatts_hvx returned ", err);
+        }
+    } else if (_notify_context.total && _notify_context.queued == _notify_context.total) {
+        hlo_ble_notify_callback callback = _notify_context.callback;
+
+        _notify_context = (struct hlo_ble_notify_context) {};
+
+        if(callback) {
+            callback();
+        }
+    }
+
+    return false;
+}
+
+static uint8_t
+_packetize(void* src, uint16_t length)
+{
+    struct hlo_ble_packet* packet = _notify_context.packets;
+
+    uint8_t* p = src;
+
+    uint8_t sequence_number = 0;
+
+    APP_ASSERT(length <= sizeof(packet->header.data) + sizeof(packet->body.data)*253);
+
+    unsigned i = 0;
+
+    // Write out header packet
+
+    {
+        packet->sequence_number = sequence_number++;
+
+        // We defer writing in the value of packet->packet_count here until
+        // we've finished processing all the packets.
+
+        unsigned header_data_size = MIN(length, sizeof(packet->header.data));
+        memcpy(packet->header.data, p, header_data_size);
+        p += header_data_size;
+
+        _notify_context.packet_sizes[i++] = header_data_size+sizeof(packet->header.packet_count)+sizeof(packet->sequence_number);
+
+        packet++;
+    }
+
+    // Write out body packets
+
+    uint8_t* end = src+length;
+    while(p < end) {
+        packet->sequence_number = sequence_number++;
+
+        size_t body_data_size = MIN(end-p, sizeof(packet->body.data));
+        memcpy(packet->body.data, p, body_data_size);
+        p += body_data_size;
+
+        _notify_context.packet_sizes[i++] = body_data_size+sizeof(packet->sequence_number);
+
+        packet++;
+    }
+
+    // Write out footer
+
+    {
+        packet->sequence_number = sequence_number++;
+
+        uint8_t src_sha1[20];
+        sha1_calc(src, length, src_sha1);
+        memcpy(packet->footer.sha19, src_sha1, sizeof(packet->footer.sha19));
+
+        _notify_context.packet_sizes[i++] = sizeof(packet->footer)+sizeof(packet->sequence_number);
+
+        packet++;
+    }
+
+    // Write out total packet count
+
+    uint8_t total = packet - _notify_context.packets;
+
+    {
+        _notify_context.packets[0].header.packet_count = total;
+    }
+
+    return total;
+}
+
+void
+hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback)
+{
+    _notify_context = (struct hlo_ble_notify_context) {
+        .packet_sizes = { 0 },
+        .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
+        .queued = 0,
+        .callback = callback,
+    };
+
+    _notify_context.total = _packetize(data, length);
+
+    for(;;) {
+        bool queued_packet = _dispatch_notify();
+
+        if(queued_packet) {
+            continue;
+        } else {
+            break;
+        }
+    }
+}
+
+uint16_t hlo_ble_get_connection_handle()
+{
+    return _connection_handle;
+}
+
+void hlo_ble_on_ble_evt(ble_evt_t* event)
+{
+    switch(event->header.evt_id) {
+    case BLE_GAP_EVT_CONNECTED:
+        _connection_handle = event->evt.gap_evt.conn_handle;
+        DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
+        break;
+    case BLE_GAP_EVT_DISCONNECTED:
+        DEBUG("Disconnect from MAC: ", event->evt.gap_evt.params.disconnected.peer_addr.addr);
+        DEBUG("Disconnect reason: ", event->evt.gap_evt.params.disconnected.reason);
+        _connection_handle = BLE_CONN_HANDLE_INVALID;
+        break;
+    case BLE_GATTS_EVT_WRITE:
+        _dispatch_write(event);
+        break;
+    case BLE_EVT_TX_COMPLETE:
+        _dispatch_notify();
+    default:
+        break;
+    }
 }

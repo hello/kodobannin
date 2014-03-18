@@ -1,1 +1,2 @@
-open nRF51_SDK/Documentation/index.html
+#!/bin/sh
+open "`dirname $0`"/../nRF51_SDK/Documentation/index.html

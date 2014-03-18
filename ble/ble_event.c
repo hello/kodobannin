@@ -19,9 +19,9 @@ ble_event_dispatch(ble_evt_t *event)
 {
 	//ble_bps_on_ble_evt(&m_bps, event);
 	//ble_bas_on_ble_evt(&m_bas, event);
-	ble_conn_params_on_ble_evt(event);
+    ble_conn_params_on_ble_evt(event);
+    hlo_ble_on_ble_evt(event);
 	hlo_ble_demo_on_ble_evt(event);
 	ble_bond_manager_event_handler(event);
 	on_ble_event(event);
 }
-
