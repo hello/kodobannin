@@ -110,7 +110,7 @@ Interrupts
 
 The IMU has an interrupt pin that is designed to be wired up to a GPIO
 pin on the host processor. The GPIO pin is defined as `IMU_INT` in
-`device_params.h`.
+`platform.h`.
 
 The IMU is configured to be level-triggered, push-pull, latch-out, and
 signals _low_ on an interrupt. You will need to clear the interrupt

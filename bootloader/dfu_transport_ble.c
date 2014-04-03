@@ -37,11 +37,9 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "device_params.h"
 #include "ble_core.h"
 
-#define DEVICE_NAME                          BLE_DEVICE_NAME
-#define MANUFACTURER_NAME                    BLE_MANUFACTURER_NAME
+#include "platform.h"
 
 #define SLAVE_LATENCY                        0                                                       /**< Slave latency. */
 

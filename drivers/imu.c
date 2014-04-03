@@ -4,7 +4,7 @@
 #include <drivers/spi.h>
 #include <simple_uart.h>
 #include <util.h>
-#include <device_params.h>
+#include <platform.h>
 #include <app_error.h>
 #include <nrf_delay.h>
 #include <string.h>

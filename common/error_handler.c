@@ -10,7 +10,6 @@
 #include <nrf_nvmc.h>
 #include <nrf_sdm.h>
 
-#include "device_params.h"
 #include "error_handler.h"
 #include "hello_dfu.h"
 #include "util.h"

@@ -1,0 +1,18 @@
+format:
+
+II LL LL DD…
+
+II = intended target:
+00 = server
+01 = app
+02 = band
+03-FF = reserved
+
+LL = length, max 64k. set high bit to say it’s more than 64k
+
+—
+
+* app initiates a mate
+* server controls the entire mating process
+* app passes packets until it receives a mated packet from both server and band
+- app can peek at packet to see if it's an error or not... if error, needs to decrypt and display error, and mating process stops

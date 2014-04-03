@@ -1,5 +1,5 @@
 #include <ble_bondmngr.h>
-#include "device_params.h"
+#include "platform.h"
 
 /**@brief Bond Manager module error handler.
  *

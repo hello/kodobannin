@@ -1,5 +1,5 @@
 #include <app_error.h>
-#include <device_params.h>
+#include <platform.h>
 #include <drivers/pwm.h>
 #include <nrf.h>
 #include <nrf_delay.h>
@@ -9,7 +9,7 @@
 #include <nrf_soc.h>
 #include <util.h>
 
-#include "device_params.h"
+#include "platform.h"
 
 static PWM_Mode          _mode  = PWM_Mode_Invalid;
 static PWM_Channel_Count _chans = PWM_Num_Channels;

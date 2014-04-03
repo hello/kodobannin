@@ -12,13 +12,14 @@
 #include <ble_bondmngr.h>
 #include "ble_event.h"
 #include <ble_stack_handler.h>
-#include "device_params.h"
+#include "platform.h"
 #include <ble_radio_notification.h>
 #include <ble_flash.h>
 #include <ble_conn_params.h>
 
 #include "ble_core.h"
 #include "util.h"
+#include "platform.h"
 
 extern void ble_bond_manager_init(void);
 extern void ble_services_init(void);
@@ -219,7 +220,7 @@ ble_init()
 	device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
 	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
-				BLE_L2CAP_MTU_DEF,
+                           BLE_L2CAP_MTU_DEF,
 				ble_event_dispatch,
 				false);
 

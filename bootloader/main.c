@@ -5,7 +5,7 @@
 #include <nrf_delay.h>
 #include <nrf_soc.h>
 #include <app_timer.h>
-#include <device_params.h>
+#include <platform.h>
 #include <ble_err.h>
 #include "sha1.h"
 #include <bootloader.h>
@@ -17,11 +17,12 @@
 
 #include <nrf_nvmc.h>
 
+#include "platform.h"
 #include "error_handler.h"
 #include "hello_dfu.h"
 #include "util.h"
 #include "ecc_benchmark.h"
-#include <git_description.h>
+#include "git_description.h"
 
 #define APP_GPIOTE_MAX_USERS            2
 

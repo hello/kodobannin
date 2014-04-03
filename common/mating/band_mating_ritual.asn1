@@ -1,0 +1,43 @@
+HelloBandMatingRitual DEFINITIONS ::= BEGIN
+
+Entity ::= ENUMERATED {
+	server,
+	app,
+	band,
+};
+Destination ::= SEQUENCE OF Entity;
+ErrorCode ::= INTEGER(0..255)
+ReadableErrorMessage ::= SEQUENCE {
+    locale PrintableString, // ISO 639-2,
+	message UTF8String,
+}
+ErrorMessage ::= {
+    CHOICE {
+	    ErrorCode
+	    ReadableErrorMessage
+	}
+}
+BandMatingRitualPacket ::= CHOICE {
+	error ErrorMessage,
+    directives SEQUENCE BandMatingRitualDirective,
+
+}
+ServerToBandDirective ::= ENUMERATED {
+    InitMate, -- to Server
+    AckMate, -- to Server
+}
+BandToServerDirective ::= ENUMERATED {
+    sendBandID, -- to Band
+    mate, -- to Band
+    mated, -- to App
+}
+BandMatingRitualDirective ::= SEQUENCE {
+    nonce INTEGER,
+	sequence_number INTEGER,
+	CHOICE {
+		serverToBand ServerToBandDirective,
+		bandToServer BandToServerDirective,
+	}
+}
+
+END

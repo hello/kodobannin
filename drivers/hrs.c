@@ -1,5 +1,4 @@
 #include <app_error.h>
-#include <device_params.h>
 #include <hrs.h>
 #include <limits.h>
 #include <nrf.h>
@@ -11,6 +10,8 @@
 #include <util.h>
 #include <nrf_soc.h>
 #include <drivers/watchdog.h>
+
+#include "platform.h"
 
 typedef void(*hrs_adc_callback)(uint8_t);
 

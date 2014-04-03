@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <simple_uart.h>
 
-#include "device_params.h"
 #include "util.h"
 
 void *

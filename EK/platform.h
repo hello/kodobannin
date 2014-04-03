@@ -2,13 +2,15 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #include <nrf51.h>
 #include <nrf51_bitfields.h>
 
 /*
  * Board GPIO defines
  */
-#define GPIO_3v3_Enable   13
+#define GPIO_3v3_Enable    13
 #define GPIO_VIBE_PWM      0
 
 #define IMU_SPI_MOSI       14
@@ -23,7 +25,6 @@
 #define GPS_nCS     12
 #define FLASH_nCS   16
 
-#if 1
 // For EVT-3
 #define GPIO_HRS_PWM_G1   21
 #define GPIO_HRS_PWM_G2   23
@@ -55,36 +56,6 @@
 
 #define nBATT_CHG   22
 
-#else
-
-// For EVT-2
-#define GPIO_HRS_PWM_G1   31
-#define GPIO_HRS_PWM_G2   25
-
-#define GPIO_1   8
-#define GPIO_2   5
-#define GPIO_3   3
-#define GPIO_4   1
-#define GPIO_5  30
-
-#define SERIAL_TX_PIN   1
-#define SERIAL_RX_PIN   8
-#define SERIAL_CTS_PIN  0
-#define SERIAL_RTS_PIN  0
-
-#define GPS_ON_OFF   9
-
-#define RTC_SDA     23
-#define RTC_SCL     24
-#define RTC_INT     28
-
-#define HRS_SENSE   26
-#define HRS_ADC     ADC_CONFIG_PSEL_AnalogInput0
-
-#define nBATT_CHG   21
-
-#endif
-
 /*
  * Timer config
  */
@@ -96,11 +67,7 @@
 /*
  * BLE Advertising Strings
  */
-#ifndef BLE_DEVICE_NAME
-#error You must specify a device name on the build line with "BLE_DEVICE_NAME=Blah make <options>"
-#endif
-
-//#define BLE_DEVICE_NAME       "Band (DFU mode)"
+#define BLE_DEVICE_NAME       "Band"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
 #define BLE_MODEL_NUM         "EVT3"
 #define BLE_MANUFACTURER_ID   0x43110

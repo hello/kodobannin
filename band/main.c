@@ -6,11 +6,7 @@
 #include <nrf_soc.h>
 #include <app_gpiote.h>
 #include <app_timer.h>
-#include <device_params.h>
 #include <ble_err.h>
-#include <bootloader.h>
-#include <dfu_types.h>
-#include <bootloader_util_arm.h>
 #include <ble_flash.h>
 #include <ble_stack_handler.h>
 #include <simple_uart.h>
@@ -24,10 +20,10 @@
 #include <drivers/watchdog.h>
 #include <drivers/hlo_fs.h>
 
+#include "platform.h"
 #include "hlo_ble_alpha0.h"
 #include "hlo_ble_demo.h"
 #include "git_description.h"
-#include "hello_dfu.h"
 #include "sensor_data.h"
 #include "util.h"
 
@@ -606,7 +602,7 @@ _start()
 */
 	//pwm_test();
 	//test_3v3();
-#if 1
+#if 0
     uint8_t page_data[512];
 
     PRINTS("\r\n********************\r\n\r\n");

@@ -2,7 +2,7 @@
 #include <ble_bas.h>
 #include <ble_dis.h>
 #include <string.h>
-#include <device_params.h>
+#include <platform.h>
 
 static ble_bas_t  m_bas; /**< Structure used to identify the battery service. */
 
@@ -46,8 +46,8 @@ ble_device_info_service_init(void)
 	memset(&sys_id, 0, sizeof(sys_id));
 
 	// Set device manufacturer and model strings
-	ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
-	ble_srv_ascii_to_utf8(&dis_init.model_num_str,     BLE_MODEL_NUM);
+	ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, (char*)BLE_MANUFACTURER_NAME);
+	ble_srv_ascii_to_utf8(&dis_init.model_num_str,     (char*)BLE_MODEL_NUM);
 
 	// setup sys_id with id numbers
 	sys_id.manufacturer_id            = BLE_MANUFACTURER_ID;

@@ -1,19 +1,25 @@
 kodobannin
 ==========
 
-コード番人 or "code keeper" is the bootloader for Hello products based on the nRF51822 chipset
+コード番人 or "code keeper" is the bootloader for Hello products based on the nRF51822 chipset.
 
 Design
 ======
 
 The primary goals of kodobannin are to be small, secure and efficient. Booting the firmware and device recovery are secondary goals... ;)
 
-For more in-depth design notes, please refer to [the wiki](http://wiki.sayhello.com/software/firmware/bootloader)
+Building & Programming
+======================
 
-Toolchain
-=========
+To **build** the firmware, you will need:
 
-We use the [Launchpad GCC Toolchain](https://launchpad.net/gcc-arm-embedded) Currently, we're on gcc-arm-none-eabi-4_7-2013q3
+1. GCC for ARM. A direct link to the current version we use is https://launchpad.net/gcc-arm-embedded/4.7/4.7-2013-q3-update/+download/gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2. There are also more recent versions (e.g. GCC 4.8) that are available for other platforms (Windows, Linux), if you'd like to be enterprising.
+
+To **program** the firmware (upload the firmware to the device), you will need:
+
+1. GCC for ARM (see above), and...
+
+2. The J-Link toolchain. The direct link to the current version we use is http://www.segger.com/jlink-software.html?step=1&file=JLinkMacOSX_474. (You will need to enter in the serial number on your J-Link to download it.)
 
 External libraries
 ==================
