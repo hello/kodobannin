@@ -11,7 +11,7 @@ MAKEFLAGS ?= -j$(shell sysctl -n hw.ncpu)
 # product aliases
 
 PLATFORMS = band_EVT3 EK
-APPS = band bootloader morpheus
+APPS = hello_world band bootloader morpheus
 
 .PHONY: b
 b: band+band_EVT3 bootloader+band_EVT3
