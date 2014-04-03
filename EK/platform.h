@@ -7,6 +7,17 @@
 #include <nrf51.h>
 #include <nrf51_bitfields.h>
 
+enum {
+    // serial (UART)
+    SERIAL_CTS_PIN = 10,
+    SERIAL_RTS_PIN = 8,
+    SERIAL_RX_PIN = 11,
+    SERIAL_TX_PIN = 9,
+    // LEDs
+    GPIO_HRS_PWM_G1 = 18,
+    GPIO_HRS_PWM_G2 = 19,
+};
+
 /*
  * Board GPIO defines
  */
@@ -26,8 +37,6 @@
 #define FLASH_nCS   16
 
 // For EVT-3
-#define GPIO_HRS_PWM_G1   21
-#define GPIO_HRS_PWM_G2   23
 
 #define GPS_ON_OFF         7
 
@@ -48,11 +57,6 @@
 #define HRS_RAW_ADC       ADC_CONFIG_PSEL_AnalogInput0
 #define HRS_FILT_ADC      ADC_CONFIG_PSEL_AnalogInput2
 #define HRS_ADC HRS_FILT_ADC
-
-#define SERIAL_TX_PIN     20
-#define SERIAL_RX_PIN      5
-#define SERIAL_CTS_PIN     0
-#define SERIAL_RTS_PIN     0
 
 #define nBATT_CHG   22
 
