@@ -1,6 +1,6 @@
 #!/bin/bash
 
-device=(/dev/cu.usbserial-*)
+device=(/dev/cu.usb*)
 
 exec 3< "$device"
 stty -f "$device" speed 38400 > /dev/null
