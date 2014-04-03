@@ -160,7 +160,7 @@ NRFREV=NRF51822_QFAA_CA
 NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV)
 MICROECCFLAGS=-DECC_CURVE=6 # see ecc.h for details
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
-LDFLAGS := `$(CC) -print-libgcc-file-name` --gc-sections -Lstartup
+LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup
 WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -fshort-enums -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
