@@ -226,6 +226,7 @@ $(BUILD_DIR)/%.jlink: prog/%.jlink.in
 .PHONY: p-$1+$2 p-$1+bootloader+$2
 p-$1+$2 p-$1+bootloader+$2: $(BUILD_DIR)/$1+$2.bin $(SOFTDEVICE_BINARIES)
 p-$1+$2: $(BUILD_DIR)/$1+$2.jlink
+	@$(JPROG) < $$<
 p-$1+bootloader+$2: $(BUILD_DIR)/$1+bootloader+$2.jlink $(BUILD_DIR)/bootloader+$2.bin $(BUILD_DIR)/$1+$2.sha1
 	@$(JPROG) < $$<
 
