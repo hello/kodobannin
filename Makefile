@@ -11,7 +11,7 @@ MAKEFLAGS ?= -j$(shell sysctl -n hw.ncpu)
 # product aliases
 
 PLATFORMS = band_EVT3 EK
-APPS = hello_world band bootloader morpheus
+APPS = hello_world rtc_test band bootloader morpheus
 
 .PHONY: b
 b: band+band_EVT3 bootloader+band_EVT3
@@ -82,6 +82,7 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
 	nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
+	nRF51_SDK/nrf51822/Source/twi_master/twi_hw_master.c \
 
 INCS =  ./ \
 	./ble \
