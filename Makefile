@@ -167,7 +167,7 @@ ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup
 WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format
 ASFLAGS := $(ARCHFLAGS)
-CFLAGS := -fshort-enums -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
+CFLAGS := -std=gnu99 -fshort-enums -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 
 
 # functions
