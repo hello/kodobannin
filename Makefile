@@ -3,10 +3,6 @@
 .PHONY: all
 all: b m
 
-# default to parallel builds
-
-MAKEFLAGS ?= -j$(shell sysctl -n hw.ncpu)
-
 
 # product aliases
 
