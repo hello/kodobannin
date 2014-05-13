@@ -67,6 +67,40 @@ For example:
     make g-band+band_EVT3
 	make g-bootloader+EK
 
+Build Details
+=============
+
+* All build products get put into the `build/` directory.
+
+* Each build product will get put into its own `app+platform` directory inside the build directory, and each source file will have its corresponding `.o` (object) and `.d` (dependency) file. This implies that _there are no object files shared between any app+platform combination_, by design.
+
+* The build is designed to be parallelized by default, so you should run `make -j8` where possible. (I'd recommend adding `export MAKEFLAGS=-j8` to your `~/.profile` for default parallel builds with Make. This will break some builds, but you can easily run those with make -j1.)
+
+* Every `.c` and `.s` (Assembly) file from each app directory and platform directory will be compiled.
+
+Adding an App
+=============
+
+1. Decide on a name for your app, e.g. _myapp_.
+
+2. Create a directory for your app: `mkdir myapp`.
+
+3. Add at least one .c file to your app directory that has a `void _start()` function, which is the entry point for your app. By convention, we call this file `main.c`, but you can call it whatever you want. You can also add whatever other other .c and .s your app needs to your app directory for it to function, e.g. the band app has both a main.c and a peak_detect.c file.
+
+4. Add a `startup/myapp.ld` file, which is the [linker script](https://sourceware.org/binutils/docs/ld/Scripts.html) for your app. In most cases, you can probably symlink this to the `app.ld` script, unless your app is unusual: `ln -s app.ld startup/myapp.ld`
+
+5. To enable programming via `make p-myapp+platform`, add a `prog/myapp+platform.jlink.in` file. This is a file that gets fed directly to the JLinkExe tool, and should have some commands to upload your code to the hardware device. See the other `prog/*.jlink.in` files for examples. You can use the `$PWD` and `$BUILD_DIR` variables in your script.
+
+Adding a Platform
+=================
+
+A platform is nothing special; it's just a directory where:
+
+1. `.c` and `.s` files in the directory are treated as source code and compiled, and
+2. the directory is added to the include search path for the compiler (with a straightforward `-I` flag to gcc).
+
+So it's really up to the app to define whatever you need from the platform. By convention, the app typically does `#include "platform.h"`, which implies that each platform has a platform.h file. You can put a `myapp/` directory inside the platform directory and do `#include "myapp/platform.h"`; it's entirely up to you. See the other platform directories (`EK`, `band_EVT3`) for examples.
+
 Dependencies
 ============
 
