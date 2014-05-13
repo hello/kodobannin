@@ -1,3 +1,5 @@
+* Use `#include <foo.h>` to include system headers and library headers (such as the nRF51822 SDK), and `#include "bar.h"` to include files specific for your app or platform.
+
 * `static` variables and functions should be prefixed with an underscore (`_`). This is for variables and functions only, not type declarations.
 
 * 4-space tabs.
