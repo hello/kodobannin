@@ -84,13 +84,7 @@ static inline uint32_t __attribute__((const)) bswap32(uint32_t x)
 }
 
 #undef MIN
-#define MIN(a,b)                                \
-    ({ __typeof__ (a) _a = (a);                 \
-        __typeof__ (b) _b = (b);                \
-        _a < _b ? _a : _b; })
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #undef MAX
-#define MAX(a,b)                                \
-    ({ __typeof__ (a) _a = (a);                 \
-        __typeof__ (b) _b = (b);                \
-        _a > _b ? _a : _b; })
+#define MAX(a, b) ((a) < (b) ? (b) : (a))
