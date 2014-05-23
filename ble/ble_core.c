@@ -11,11 +11,12 @@
 #include <string.h>
 #include <ble_bondmngr.h>
 #include "ble_event.h"
-#include <ble_stack_handler.h>
+#include <ble_stack_handler_types.h>
 #include "platform.h"
 #include <ble_radio_notification.h>
 #include <ble_flash.h>
 #include <ble_conn_params.h>
+#include <softdevice_handler.h>
 
 #include "ble_core.h"
 #include "util.h"
@@ -107,7 +108,7 @@ on_ble_event(ble_evt_t *p_ble_evt)
 		m_conn_handle               = BLE_CONN_HANDLE_INVALID;
 
 		// Since we are not in a connection and have not started advertising, store bonds
-		err_code = ble_bondmngr_bonded_masters_store();
+		err_code = ble_bondmngr_bonded_centrals_store();
 		APP_ERROR_CHECK(err_code);
 
 		ble_advertising_start();
@@ -219,10 +220,7 @@ ble_init()
 	device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
 	device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
-                           BLE_L2CAP_MTU_DEF,
-				ble_event_dispatch,
-				false);
+    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, false);
 
 	ble_bond_manager_init();
 	ble_gap_params_init(device_name);

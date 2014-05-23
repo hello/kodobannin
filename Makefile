@@ -70,15 +70,16 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/ble/ble_bondmngr.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_flash.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_stack_handler.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_radio_notification.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
 	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
-	nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
+	nRF51_SDK/nrf51822/Source/app_common/pstorage.c \
+        nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
 	nRF51_SDK/nrf51822/Source/twi_master/twi_hw_master.c \
+	SoftDevice/Examples/DFU/source/Libraries/softdevice_handler.c \
 
 INCS =  ./ \
 	./ble \
@@ -92,7 +93,8 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/gcc \
 	./nRF51_SDK/nrf51822/Include/ble \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
-	./nRF51_SDK/nrf51822/Include/ble/softdevice/ \
+	./nRF51_SDK/nrf51822/Include/sd_common/ \
+	./nRF51_SDK/nrf51822/Include/s110/ \
 #	./SoftDevice/s110_nrf51822_5.2.1_API/include \
 
 
@@ -178,7 +180,7 @@ app-srcs = $(SRCS) $(wildcard $1/*.c)
 platform-incs = $1 $(INCS)
 platform-srcs = $(SRCS) $(wildcard $1/*.c)
 
-product-incs-flags = $(addprefix -I,$(INCS) $(call app-incs,$1) $(call platform-incs,$2))
+product-incs-flags = $(addprefix -I,$(call app-incs,$1) $(call platform-incs,$2) $(INCS))
 
 # functions for object files, with a build/ prefix. $1 = app, $2 = platform
 define rule-product-objs

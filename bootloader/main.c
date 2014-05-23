@@ -3,6 +3,7 @@
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
+#include <nrf_sdm.h>
 #include <nrf_soc.h>
 #include <app_timer.h>
 #include <platform.h>
@@ -12,7 +13,7 @@
 #include <dfu_types.h>
 #include <bootloader_util_arm.h>
 #include <ble_flash.h>
-#include <ble_stack_handler.h>
+#include <ble_stack_handler_types.h>
 #include <string.h>
 
 #include <nrf_nvmc.h>

@@ -96,7 +96,7 @@ _char_add(const uint16_t uuid,
 void
 hlo_ble_char_notify_add(uint16_t uuid)
 {
-	uint8_t ignored[BLE_GAP_DEVNAME_MAX_WR_LEN];
+	uint8_t ignored[BLE_GAP_DEVNAME_MAX_LEN];
 
 	ble_gatt_char_props_t notify_props = {};
 	notify_props.notify = 1;
@@ -107,7 +107,7 @@ hlo_ble_char_notify_add(uint16_t uuid)
 void
 hlo_ble_char_indicate_add(uint16_t uuid)
 {
-	uint8_t ignored[BLE_GAP_DEVNAME_MAX_WR_LEN];
+	uint8_t ignored[BLE_GAP_DEVNAME_MAX_LEN];
 
 	ble_gatt_char_props_t indicate_props = {};
 	indicate_props.indicate = 1;
@@ -340,8 +340,7 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
         break;
     case BLE_GAP_EVT_DISCONNECTED:
-        DEBUG("Disconnect from MAC: ", event->evt.gap_evt.params.disconnected.peer_addr.addr);
-        DEBUG("Disconnect reason: ", event->evt.gap_evt.params.disconnected.reason);
+        DEBUG("Disconnected: ", event->evt.gap_evt.params.disconnected.reason);
         _connection_handle = BLE_CONN_HANDLE_INVALID;
         break;
     case BLE_GATTS_EVT_WRITE:

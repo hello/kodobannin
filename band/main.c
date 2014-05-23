@@ -8,7 +8,7 @@
 #include <app_timer.h>
 #include <ble_err.h>
 #include <ble_flash.h>
-#include <ble_stack_handler.h>
+#include <ble_stack_handler_types.h>
 #include <simple_uart.h>
 #include <string.h>
 #include <drivers/spi.h>
@@ -752,7 +752,7 @@ spin:
             //hlo_ble_demo_data_send_blocking(sample, 12);
         } else {
 */          // Switch to a low power state until an event is available for the application
-            err = sd_app_event_wait();
+            err = sd_app_evt_wait();
             APP_ERROR_CHECK(err);
 //        }
     }

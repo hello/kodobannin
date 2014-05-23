@@ -20,19 +20,19 @@
 #include "nrf_gpio.h"
 #include "app_util.h"
 #include "app_error.h"
-#include "ble_stack_handler.h"
+#include "ble_stack_handler_types.h"
 #include "ble_advdata.h"
 #include "ble_l2cap.h"
 #include "ble_gap.h"
 #include "ble_gatt.h"
 #include "ble_hci.h"
-#include "ble_nrf6310_pins.h"
 #include "ble_dfu.h"
 #include "nordic_common.h"
 #include "app_timer.h"
 #include "ble_flash.h"
 #include "ble_radio_notification.h"
 #include "ble_conn_params.h"
+#include <softdevice_handler.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -88,7 +88,7 @@ static void wait_for_events(void)
     for (;;)
     {
         // Wait in low power state for any events.
-        uint32_t err_code = sd_app_event_wait();
+        uint32_t err_code = sd_app_evt_wait();
         APP_ERROR_CHECK(err_code);
 
         // Event received. Process it from the scheduler.
@@ -456,8 +456,6 @@ static void advertising_start(void)
         err_code = sd_ble_gap_adv_start(&m_adv_params);
         APP_ERROR_CHECK(err_code);
 
-        nrf_gpio_pin_set(ADVERTISING_LED_PIN_NO);
-
         m_is_advertising = true;
     }
 }
@@ -473,8 +471,6 @@ static void advertising_stop(void)
 
         err_code = sd_ble_gap_adv_stop();
         APP_ERROR_CHECK(err_code);
-
-        nrf_gpio_pin_clear(ADVERTISING_LED_PIN_NO);
 
         m_is_advertising = false;
     }
@@ -492,16 +488,11 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
-            nrf_gpio_pin_set(CONNECTED_LED_PIN_NO);
-            nrf_gpio_pin_clear(ADVERTISING_LED_PIN_NO);
-
             m_conn_handle    = p_ble_evt->evt.gap_evt.conn_handle;
             m_is_advertising = false;
             break;
 
         case BLE_GAP_EVT_DISCONNECTED:
-            nrf_gpio_pin_clear(CONNECTED_LED_PIN_NO);
-
             if (!m_tear_down_in_progress)
             {
                 // The Disconnected event is because of an external event. (Link loss or
@@ -643,10 +634,7 @@ uint32_t dfu_transport_update_start()
 
     APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
 
-	BLE_STACK_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM,
-						   sizeof(ble_evt_t) + BLE_L2CAP_MTU_DEF,
-						   ble_evt_dispatch,
-						   true);
+    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, false);
 
 #define DFU_DEVICE_NAME_SUFFIX " (DFU)"
 

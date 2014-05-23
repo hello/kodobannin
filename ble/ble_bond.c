@@ -27,7 +27,7 @@ ble_bond_manager_event_handler(ble_bondmngr_evt_t * p_evt)
         case BLE_BONDMNGR_EVT_ENCRYPTED:
             break;
 
-        case BLE_BONDMNGR_EVT_CONN_TO_BONDED_MASTER:
+        case BLE_BONDMNGR_EVT_CONN_TO_BONDED_CENTRAL:
             // Send a single blood pressure measurement if indication is enabled.
             // NOTE: For this to work, make sure ble_bps_on_ble_evt() is called before
             //       ble_bondmngr_on_ble_evt() in ble_evt_dispatch().
@@ -62,4 +62,3 @@ ble_bond_manager_init(void)
 	err_code = ble_bondmngr_init(&bond_init_data);
 	APP_ERROR_CHECK(err_code);
 }
-
