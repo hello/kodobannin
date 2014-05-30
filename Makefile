@@ -106,7 +106,6 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
 	./nRF51_SDK/nrf51822/Include/sd_common/ \
 	./nRF51_SDK/nrf51822/Include/s110/ \
-#	./SoftDevice/s110_nrf51822_6.0.0_API/include \
 
 
 # SoftDevice
