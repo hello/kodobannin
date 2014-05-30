@@ -178,12 +178,10 @@ CFLAGS := -std=gnu99 -fshort-enums -fdata-sections -ffunction-sections $(ARCHFLA
 product-dir = $(BUILD_DIR)/$1+$2
 
 # functions for source files, without a build/ prefix. $1 = app
-app-incs = $1 $(INCS)
 app-srcs = $(SRCS) $(wildcard $1/*.c)
-platform-incs = $1 $(INCS)
 platform-srcs = $(SRCS) $(wildcard $1/*.c)
 
-product-incs-flags = $(addprefix -I,$(call app-incs,$1) $(call platform-incs,$2) $(INCS))
+product-incs-flags = $(addprefix -I,$1 $2 $(INCS))
 
 # functions for object files, with a build/ prefix. $1 = app, $2 = platform
 define rule-product-objs
