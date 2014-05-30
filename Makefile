@@ -3,11 +3,16 @@
 .PHONY: all
 all: b m
 
-
-# product aliases
+# apps & platforms
 
-PLATFORMS = band_EVT3 EK
-APPS = hello_world rtc_test band bootloader morpheus
+TEST_APPS = hello_world rtc_test imu_test ble_test
+APPS = band bootloader morpheus pill $(TEST_APPS)
+
+S110_PLATFORMS = band_EVT3 EK pill_EVT1
+S310_PLATFORMS =
+PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
+
+# product aliases
 
 .PHONY: b
 b: band+band_EVT3 bootloader+band_EVT3
