@@ -60,13 +60,14 @@ JLINK_OPTIONS = -device nrf51822 -if swd -speed 4000
 
 BUILD_DIR = build
 
-SRCS = \
+HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard drivers/*.c) \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
-	common/gcc_startup_nrf51.s \
+
+NRF_SRCS = \
 	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
@@ -80,9 +81,11 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
 	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
 	nRF51_SDK/nrf51822/Source/app_common/pstorage.c \
-        nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
+	nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
 	nRF51_SDK/nrf51822/Source/twi_master/twi_hw_master.c \
-	SoftDevice/Examples/DFU/source/Libraries/softdevice_handler.c \
+	nRF51_SDK/nrf51822/Source/sd_common/softdevice_handler.c \
+
+SRCS = $(HELLO_SRCS) $(NRF_SRCS)
 
 INCS =  ./ \
 	./ble \
@@ -98,12 +101,15 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
 	./nRF51_SDK/nrf51822/Include/sd_common/ \
 	./nRF51_SDK/nrf51822/Include/s110/ \
-#	./SoftDevice/s110_nrf51822_5.2.1_API/include \
+#	./SoftDevice/s110_nrf51822_6.0.0_API/include \
 
 
 # SoftDevice
 
-SOFTDEVICE_BINARIES = $(BUILD_DIR)/softdevice_uicr.bin $(BUILD_DIR)/softdevice_main.bin
+SOFTDEVICE_SRC = SoftDevice/s110_nrf51822_6.0.0_softdevice.hex
+SOFTDEVICE_MAIN = $(BUILD_DIR)/$(basename $(notdir $(SOFTDEVICE_SRC)))_main.bin
+SOFTDEVICE_UICR = $(BUILD_DIR)/$(basename $(notdir $(SOFTDEVICE_SRC)))_uicr.bin
+SOFTDEVICE_BINARIES = $(SOFTDEVICE_MAIN) $(SOFTDEVICE_UICR)
 
 .PHONY: SoftDevice
 SoftDevice: $(SOFTDEVICE_BINARIES)
@@ -111,11 +117,10 @@ SoftDevice: $(SOFTDEVICE_BINARIES)
 $(SOFTDEVICE_BINARIES):: $(BUILD_DIR)
 $(SOFTDEVICE_BINARIES):: | $(CC)
 
-SOFTDEV_SRC = SoftDevice/s110_nrf51822_5.2.1_softdevice.hex
-$(BUILD_DIR)/softdevice_main.bin:: $(SOFTDEV_SRC)
+$(SOFTDEVICE_MAIN):: $(SOFTDEVICE_SRC)
 	$(OBJCOPY) -I ihex -O binary --remove-section .sec3 $< $@
 
-$(BUILD_DIR)/softdevice_uicr.bin:: $(SOFTDEV_SRC)
+$(SOFTDEVICE_UICR):: $(SOFTDEVICE_SRC)
 	$(OBJCOPY) -I ihex -O binary --only-section .sec3 $< $@
 
 
@@ -257,7 +262,7 @@ $(DEFAULT_GCC_ROOT)/bin/$(PREFIX)gcc: | tools/$(GCC_PACKAGE_BASENAME)
 	@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2)
 # submodule inits
 
-GIT_SUBMODULE_DEPENDENCY_FILES = $(SOFTDEV_SRC) micro-ecc/README.md nRF51822/Documentation/index.html $(CURDIR)/tools/JLink_MacOSX_V474/JLinkExe.command
+GIT_SUBMODULE_DEPENDENCY_FILES = $(SOFTDEVICE_SRC) micro-ecc/README.md nRF51822/Documentation/index.html $(CURDIR)/tools/JLink_MacOSX_V474/JLinkExe.command
 
 $(GIT_SUBMODULE_DEPENDENCY_FILES):
 	$(info [GIT SUBMODULE UPDATE])
