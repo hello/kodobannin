@@ -226,7 +226,15 @@ $(BUILD_DIR)/$1+$2/$1 $(BUILD_DIR)/$1+$2/$2 $(BUILD_DIR)/$1+$2:
 
 $(BUILD_DIR)/$1+$2.jlink: prog/$1+$2.jlink.in
 	@mkdir -p $$(dir $$@)
-	sed -e 's,$$$$PWD,$(CURDIR),g' -e 's,$$$$BUILD_DIR,$$(abspath $(BUILD_DIR)),g' < $$< > $$@
+	sed \
+	 -e 's,$$$$PWD,$(CURDIR),g' \
+	 -e 's,$$$$BUILD_DIR,$$(abspath $(BUILD_DIR)),g' \
+	 -e 's,$$$$SOFTDEVICE_MAIN,$$(abspath $(SOFTDEVICE_MAIN)),g' \
+	 -e 's,$$$$SOFTDEVICE_UICR,$$(abspath $(SOFTDEVICE_UICR)),g' \
+	 -e 's,$$$$BIN,$$(abspath $(BUILD_DIR)/$1+$2.bin),g' \
+         -e 's,$$$$1,$1,g' \
+	 -e 's,$$$$2,$2,g' \
+          < $$< > $$@
 
 .PHONY: p-$1+$2 p-$1+bootloader+$2
 p-$1+$2 p-$1+bootloader+$2: $(BUILD_DIR)/$1+$2.bin $(SOFTDEVICE_BINARIES)
