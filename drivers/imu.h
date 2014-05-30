@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "spi_nor.h"
+
 #include "imu_data.h"
 
 #define IMU_FIFO_CAPACITY 4096 // Must be 512, 1024, 2048 or 4096
