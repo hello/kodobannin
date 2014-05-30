@@ -52,6 +52,10 @@ OBJCOPY = $(BIN)/$(PREFIX)objcopy
 JPROG=$(KODOBANNIN_JLINK_ROOT)/JLinkExe.command
 JGDBServer=$(KODOBANNIN_JLINK_ROOT)/JLinkGDBServer.command
 
+# J-Link
+
+JLINK_OPTIONS = -device nrf51822 -if swd -speed 4000
+
 # file paths
 
 BUILD_DIR = build
@@ -127,7 +131,7 @@ JGDBServer=$(KODOBANNIN_JLINK_ROOT)/JLinkGDBServer.command
 
 .PHONY: gdbs
 gdbs:
-	$(JGDBServer) -if SWD -device nRF51822 -speed 4000
+	$(JGDBServer) $(JLINK_OPTIONS)
 
 # clean
 .PHONY: clean
@@ -218,16 +222,16 @@ $(BUILD_DIR)/$1+$2.elf: startup/$1.ld startup/common.ld startup/memory.ld | $(di
 $(BUILD_DIR)/$1+$2/$1 $(BUILD_DIR)/$1+$2/$2 $(BUILD_DIR)/$1+$2:
 	mkdir -p $(call product-dir,$1,$2)
 
-$(BUILD_DIR)/%.jlink: prog/%.jlink.in
+$(BUILD_DIR)/$1+$2.jlink: prog/$1+$2.jlink.in
 	@mkdir -p $$(dir $$@)
 	sed -e 's,$$$$PWD,$(CURDIR),g' -e 's,$$$$BUILD_DIR,$$(abspath $(BUILD_DIR)),g' < $$< > $$@
 
 .PHONY: p-$1+$2 p-$1+bootloader+$2
 p-$1+$2 p-$1+bootloader+$2: $(BUILD_DIR)/$1+$2.bin $(SOFTDEVICE_BINARIES)
 p-$1+$2: $(BUILD_DIR)/$1+$2.jlink
-	@$(JPROG) < $$<
+	@$(JPROG) $(JLINK_OPTIONS) < $$<
 p-$1+bootloader+$2: $(BUILD_DIR)/$1+bootloader+$2.jlink $(BUILD_DIR)/bootloader+$2.bin $(BUILD_DIR)/$1+$2.sha1
-	@$(JPROG) < $$<
+	@$(JPROG) $(JLINK_OPTIONS) < $$<
 
 .PHONY: g-$1+$2
 g-$1+$2:
