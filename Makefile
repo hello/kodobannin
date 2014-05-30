@@ -71,7 +71,6 @@ SRCS = \
 	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_advdata.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_bondmngr.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_flash.c \
 	nRF51_SDK/nrf51822/Source/ble/ble_radio_notification.c \

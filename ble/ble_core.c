@@ -22,7 +22,6 @@
 #include "util.h"
 #include "platform.h"
 
-extern void ble_bond_manager_init(void);
 extern void ble_services_init(void);
 
 extern void services_init();
@@ -107,10 +106,6 @@ on_ble_event(ble_evt_t *p_ble_evt)
 	case BLE_GAP_EVT_DISCONNECTED:
 		m_conn_handle               = BLE_CONN_HANDLE_INVALID;
 
-		// Since we are not in a connection and have not started advertising, store bonds
-		err_code = ble_bondmngr_bonded_centrals_store();
-		APP_ERROR_CHECK(err_code);
-
 		ble_advertising_start();
 		break;
 
@@ -146,7 +141,7 @@ on_ble_event(ble_evt_t *p_ble_evt)
 }
 
 #define SEC_PARAM_TIMEOUT          30                    /**< Timeout for Pairing Request or Security Request (in seconds). */
-#define SEC_PARAM_BOND             1                     /**< Perform bonding. */
+#define SEC_PARAM_BOND             0                     /**< Perform bonding. */
 #define SEC_PARAM_MITM             0                     /**< Man In The Middle protection not required. */
 #define SEC_PARAM_IO_CAPABILITIES  BLE_GAP_IO_CAPS_NONE  /**< No I/O capabilities. */
 #define SEC_PARAM_OOB              0                     /**< Out Of Band data not available. */
