@@ -2,6 +2,9 @@
 
 #pragma once
 
+#undef PACKED
+#define PACKED __attribute__((packed))
+
 #include <stdint.h>
 
 enum imu_sensor_set {
