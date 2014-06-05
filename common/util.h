@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <app_error.h>
+
 extern const uint8_t hex[16];
 
 #undef PACKED
@@ -10,6 +12,9 @@ extern const uint8_t hex[16];
 #define UNUSED __attribute__((unused))
 
 #define APP_ASSERT(condition) APP_ERROR_CHECK(!(condition))
+
+#define APP_OK(expr) APP_ERROR_CHECK(expr);
+#define BOOL_OK(expr) APP_ASSERT(expr);
 
 #ifdef DEBUG_SERIAL //=====================================
 #include <simple_uart.h>
