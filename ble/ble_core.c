@@ -1,21 +1,19 @@
 // vi:noet:sw=4 ts=4
 
+#include <string.h>
+
 #include <ble_advdata.h>
-#include "hlo_ble_demo.h"
+#include <ble_conn_params.h>
+#include <ble_event.h>
+#include <ble_flash.h>
 #include <ble_gap.h>
 #include <ble_hci.h>
 #include <ble_l2cap.h>
+#include <ble_radio_notification.h>
+#include <ble_stack_handler_types.h>
+#include <ble_types.h>
 #include <nrf_gpio.h>
 #include <nrf_sdm.h>
-#include <ble_types.h>
-#include <string.h>
-#include <ble_bondmngr.h>
-#include "ble_event.h"
-#include <ble_stack_handler_types.h>
-#include "platform.h"
-#include <ble_radio_notification.h>
-#include <ble_flash.h>
-#include <ble_conn_params.h>
 #include <softdevice_handler.h>
 
 #include "ble_core.h"
@@ -42,17 +40,15 @@ extern uint8_t hello_type;
 void
 ble_advertising_init(void)
 {
-	uint32_t      err_code;
-	ble_advdata_t advdata;
-	uint8_t	      flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+	uint32_t err_code;
+	uint8_t flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
-	// Build and set advertising data
-	memset(&advdata, 0, sizeof(advdata));
+    ble_advdata_t advdata = {};
 
-	advdata.name_type               = BLE_ADVDATA_FULL_NAME;
-	advdata.include_appearance      = true;
-	advdata.flags.size              = sizeof(flags);
-	advdata.flags.p_data            = &flags;
+	advdata.name_type = BLE_ADVDATA_FULL_NAME;
+	advdata.include_appearance = true;
+	advdata.flags.size = sizeof(flags);
+	advdata.flags.p_data = &flags;
 
 	// Scan response packet
 	ble_uuid_t sr_uuid = {
