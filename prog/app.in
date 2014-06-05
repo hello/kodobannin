@@ -1,6 +1,6 @@
 w4 4001e504 2 # NVIC: enable erase
 w4 4001e50c 1 # NVIC: erase all flash, including UICR
-#w4 4001e514 1
+w4 4001e514 1 # NVIC: erase UICR
 sleep 100
 r
 w4 r001e504 1 # NVIC: enable writing
