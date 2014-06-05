@@ -39,6 +39,8 @@
 
 #include "ble_core.h"
 
+#include "app.h"
+#include "ble_core.h"
 #include "platform.h"
 
 #define SLAVE_LATENCY                        0                                                       /**< Slave latency. */

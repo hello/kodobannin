@@ -18,6 +18,7 @@
 
 #include <nrf_nvmc.h>
 
+#include "app.h"
 #include "platform.h"
 #include "error_handler.h"
 #include "hello_dfu.h"

@@ -16,6 +16,7 @@
 #include <nrf_sdm.h>
 #include <softdevice_handler.h>
 
+#include "app.h"
 #include "ble_core.h"
 #include "util.h"
 #include "platform.h"
