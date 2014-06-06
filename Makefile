@@ -67,7 +67,6 @@ BUILD_DIR = build
 
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
-	$(wildcard drivers/*.c) \
 	$(wildcard ble/*.c) \
 	$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \

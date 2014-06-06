@@ -1,12 +1,14 @@
 // vi:noet:sw=4 ts=4
 
-#include <drivers/spi.h>
-#include <drivers/spi_nor.h>
-#include <drivers/watchdog.h>
 #include <stdlib.h>
-#include <util.h>
-#include <app_error.h>
 #include <string.h>
+
+#include <app_error.h>
+
+#include "spi.h"
+#include "spi_nor.h"
+#include "util.h"
+#include "watchdog.h"
 
 static SPI_Context _ctx;
 

@@ -1,9 +1,11 @@
 // vi:noet:sw=4 ts=4
 
-#include <drivers/spi.h>
 #include <stdint.h>
+
 #include <nrf51.h>
 #include <nrf_gpio.h>
+
+#include "spi.h"
 
 #define TIMEOUT_COUNTER          0x3000UL
 

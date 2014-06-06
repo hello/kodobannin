@@ -1,9 +1,10 @@
 // vi:noet:sw=4 ts=4
 
-#include <drivers/spi_nor.h>
-#include <drivers/hlo_fs.h>
 #include <string.h>
-#include <util.h>
+
+#include "hlo_fs.h"
+#include "spi_nor.h"
+#include "util.h"
 
 //test band spinor serial should be C2 21 11 41 7E 01 2B C5 07 DC 9D 38 C3 53 FC 72
 

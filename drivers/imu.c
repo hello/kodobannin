@@ -1,7 +1,7 @@
 // vi:noet:sw=4 ts=4
 
 #include <app_timer.h>
-#include <drivers/spi.h>
+#include <spi.h>
 #include <simple_uart.h>
 #include <util.h>
 #include <platform.h>
@@ -11,7 +11,7 @@
 
 #include "imu.h"
 #include "mpu_6500_registers.h"
-#include <drivers/watchdog.h>
+#include <watchdog.h>
 
 #define BUF_SIZE 4
 
