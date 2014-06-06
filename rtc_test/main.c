@@ -5,6 +5,7 @@
 #include <nrf_sdm.h>
 #include <twi_master.h>
 
+#include "ab_rtcmc_32768khz_aigz_s7.h"
 #include "platform.h"
 #include "util.h"
 
@@ -14,36 +15,26 @@ _start()
     (void) sd_softdevice_disable();
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
-    PRINTS("i2c test started\n");
 
-    bool twi_inited = twi_master_init();
-    if(!twi_inited) {
-        PRINTS("twi_master_init() failed\n");
-    }
+    BOOL_OK(twi_master_init());
 
-    enum {
-        RTC_ADDRESS_WRITE = (0b1101000 << 1),
-        RTC_ADDRESS_READ = (0b1101000 << 1) | TWI_READ_BIT,
-    };
-
-    const uint8_t rtc_milliseconds_address = 0x0;
-    uint8_t milliseconds[1];
+    struct aigz_time_t time;
 
     for(;;) {
-        bool success;
+        aigz_read(&time);
+        PRINT_HEX(time.bytes, sizeof(time.bytes));
+        PRINTS("| ");
 
-        success = twi_master_transfer(RTC_ADDRESS_WRITE, &rtc_milliseconds_address, sizeof(rtc_milliseconds_address), TWI_ISSUE_STOP);
-        if(!success) {
-            PRINTS("write failed\n");
-        }
+        printf("%d/%d/%d%d %d:%d:%d.%d%d\r\n",
+               aigz_bcd_decode(time.month),
+               aigz_bcd_decode(time.date),
+               20+time.century, aigz_bcd_decode(time.year),
+               aigz_bcd_decode(time.hours),
+               aigz_bcd_decode(time.minutes),
+               aigz_bcd_decode(time.seconds),
+               aigz_bcd_decode(time.tenths),
+               aigz_bcd_decode(time.hundredths));
 
-        success = twi_master_transfer(RTC_ADDRESS_READ, milliseconds, sizeof(milliseconds), TWI_ISSUE_STOP);
-        if(success) {
-            DEBUG("Milliseconds: ", milliseconds);
-        } else {
-            PRINTS("read failed\n");
-        }
-
-        nrf_delay_ms(50);
+        nrf_delay_ms(20);
     }
 }
