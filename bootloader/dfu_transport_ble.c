@@ -12,32 +12,30 @@
  *
  */
 
-#include "dfu_transport.h"
-#include "dfu.h"
-#include "dfu_types.h"
-#include "nrf51.h"
-#include "nrf_sdm.h"
-#include "nrf_gpio.h"
-#include "app_util.h"
-#include "app_error.h"
-#include "ble_stack_handler_types.h"
-#include "ble_advdata.h"
-#include "ble_l2cap.h"
-#include "ble_gap.h"
-#include "ble_gatt.h"
-#include "ble_hci.h"
-#include "ble_dfu.h"
-#include "nordic_common.h"
-#include "app_timer.h"
-#include "ble_flash.h"
-#include "ble_radio_notification.h"
-#include "ble_conn_params.h"
-#include <softdevice_handler.h>
-
 #include <stddef.h>
 #include <string.h>
 
-#include "ble_core.h"
+#include <dfu_transport.h>
+#include <dfu.h>
+#include <dfu_types.h>
+#include <nrf51.h>
+#include <nrf_sdm.h>
+#include <nrf_gpio.h>
+#include <app_util.h>
+#include <app_error.h>
+#include <ble_stack_handler_types.h>
+#include <ble_advdata.h>
+#include <ble_l2cap.h>
+#include <ble_gap.h>
+#include <ble_gatt.h>
+#include <ble_hci.h>
+#include <ble_dfu.h>
+#include <nordic_common.h>
+#include <app_timer.h>
+#include <ble_flash.h>
+#include <ble_radio_notification.h>
+#include <ble_conn_params.h>
+#include <softdevice_handler.h>
 
 #include "app.h"
 #include "ble_core.h"

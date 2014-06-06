@@ -18,12 +18,9 @@
 
 #include "app.h"
 #include "ble_core.h"
-#include "util.h"
+#include "hlo_ble_demo.h"
 #include "platform.h"
-
-extern void ble_services_init(void);
-
-extern void services_init();
+#include "util.h"
 
 static ble_gap_sec_params_t sec_params;
 
@@ -194,10 +191,8 @@ ble_gap_params_init(char* device_name)
 }
 
 void
-ble_init()
+ble_init(services_init_t services_init)
 {
-	uint32_t err_code;
-
 	// append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
 
@@ -210,13 +205,13 @@ ble_init()
 	device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
 	device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, false);
+    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION /* NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM */, true);
 
-	ble_bond_manager_init();
+    APP_OK(softdevice_ble_evt_handler_set(ble_event_dispatch));
+
 	ble_gap_params_init(device_name);
 	services_init();  // Must come before ble_advertising_init()
 	ble_advertising_init();
-	ble_services_init();
 	ble_conn_params_init(NULL);
 	ble_gap_sec_params_init();
 
