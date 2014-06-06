@@ -157,8 +157,7 @@ void hlo_ble_init()
 {
 	const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
 
-	uint32_t err_code = sd_ble_uuid_vs_add(&hello_uuid, &hello_type);
-	APP_ERROR_CHECK(err_code);
+	APP_OK(sd_ble_uuid_vs_add(&hello_uuid, &hello_type));
 }
 
 uint16_t
