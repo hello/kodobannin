@@ -177,8 +177,7 @@ ble_gap_params_init(char* device_name)
 
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
-	err_code = sd_ble_gap_device_name_set(&sec_mode, (uint8_t*)device_name, strlen(device_name));
-	APP_ERROR_CHECK(err_code);
+	APP_OK(sd_ble_gap_device_name_set(&sec_mode, (uint8_t*)device_name, strlen(device_name)));
 
 /*
 	err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_GENERIC_BLOOD_PRESSURE);
@@ -191,8 +190,7 @@ ble_gap_params_init(char* device_name)
 	gap_conn_params.slave_latency     = SLAVE_LATENCY;
 	gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
-	err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
-	APP_ERROR_CHECK(err_code);
+	APP_OK(sd_ble_gap_ppcp_set(&gap_conn_params));
 }
 
 void
@@ -222,8 +220,7 @@ ble_init()
 	ble_conn_params_init(NULL);
 	ble_gap_sec_params_init();
 
-	err_code = ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
-										   NRF_RADIO_NOTIFICATION_DISTANCE_4560US,
-										   ble_flash_on_radio_active_evt);
-	APP_ERROR_CHECK(err_code);
+	APP_OK(ble_radio_notification_init(NRF_APP_PRIORITY_HIGH,
+                                       NRF_RADIO_NOTIFICATION_DISTANCE_4560US,
+                                       ble_flash_on_radio_active_evt));
 }
