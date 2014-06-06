@@ -263,12 +263,12 @@ $(foreach platform, $(PLATFORMS),$(foreach app, $(APPS), $(eval $(call rule-prod
 GCC_PACKAGE_BASENAME = gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2
 GCC_PACKAGE_URL = https://launchpadlibrarian.net/151487551/$(GCC_PACKAGE_BASENAME)
 
-.INTERMEDIATE: tools/$(GCC_PACKAGE_BASENAME)
-tools/$(GCC_PACKAGE_BASENAME):
+.INTERMEDIATE: $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
+$(CURDIR)/tools/$(GCC_PACKAGE_BASENAME):
 	$(info [DOWNLOADING GCC...])
 	@(cd $(CURDIR)/tools && curl -O $(GCC_PACKAGE_URL))
 
-$(DEFAULT_GCC_ROOT)/bin/$(PREFIX)gcc: | tools/$(GCC_PACKAGE_BASENAME)
+$(DEFAULT_GCC_ROOT)/bin/$(PREFIX)gcc: | $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
 	$(info [UNTARRING GCC...])
 	@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2)
 # submodule inits
