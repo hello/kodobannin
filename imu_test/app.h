@@ -1,0 +1,9 @@
+#pragma once
+
+#undef APP_WANTS_BLE
+
+enum {
+  APP_TIMER_PRESCALER = 0,
+  APP_TIMER_MAX_TIMERS = 1,
+  APP_TIMER_OP_QUEUE_SIZE = 1,
+};
