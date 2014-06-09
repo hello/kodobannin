@@ -64,3 +64,4 @@ void hlo_ble_dispatch_write(ble_evt_t *event);
 
 typedef void (*hlo_ble_notify_callback)();
 void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback);
+void hlo_ble_on_ble_evt(ble_evt_t* event);
