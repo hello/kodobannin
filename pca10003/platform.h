@@ -9,10 +9,10 @@
 
 enum {
     // serial (UART)
-    SERIAL_CTS_PIN = 10,
-    SERIAL_RTS_PIN = 8,
-    SERIAL_RX_PIN = 11,
-    SERIAL_TX_PIN = 9,
+    SERIAL_CTS_PIN = 0,
+    SERIAL_RTS_PIN = 0,
+    SERIAL_RX_PIN = 6,
+    SERIAL_TX_PIN = 4,
     // LEDs
     GPIO_HRS_PWM_G1 = 18,
     GPIO_HRS_PWM_G2 = 19,
@@ -59,15 +59,6 @@ enum {
 #define HRS_ADC HRS_FILT_ADC
 
 #define nBATT_CHG   22
-
-/*
- * BLE Advertising Strings
- */
-#define BLE_DEVICE_NAME       "Band"
-#define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT3"
-#define BLE_MANUFACTURER_ID   0x43110
-#define BLE_ORG_UNIQUE_ID     0x1337
 
 /*
  * BLE Bond Parameters
