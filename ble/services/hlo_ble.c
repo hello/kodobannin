@@ -170,6 +170,8 @@ hlo_ble_get_value_handle(const uint16_t uuid)
         }
     }
 
+    PRINTS("hlo_ble_get_value_handle error\r\n");
+
     APP_ASSERT(0);
 }
 
@@ -181,6 +183,7 @@ _dispatch_write(ble_evt_t *event) {
     struct uuid_handler* p;
     for(p = _uuid_handlers; p < _uuid_handlers+MAX_CHARACTERISTICS; p++) {
         if(p->value_handle == handle) {
+            DEBUG("Found handler at ", p->handler);
             p->handler(write_evt);
             return;
         }
@@ -341,6 +344,8 @@ uint16_t hlo_ble_get_connection_handle()
 
 void hlo_ble_on_ble_evt(ble_evt_t* event)
 {
+    DEBUG("hlo_ble_on_ble_evt: ", event->header.evt_id);
+
     switch(event->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
         _connection_handle = event->evt.gap_evt.conn_handle;
@@ -355,7 +360,10 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         break;
     case BLE_EVT_TX_COMPLETE:
         _dispatch_queue_packet();
+        break;
     default:
         break;
     }
+
+    PRINTS("hlo_ble_on_ble_evt finished.\r\n");
 }
