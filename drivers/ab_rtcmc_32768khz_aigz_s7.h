@@ -91,3 +91,9 @@ aigz_bcd_decode(uint8_t value)
         + ((value >> 4) & 1) * 10
         + (value & 0b1111);
 }
+
+uint8_t aigz_bcd_encode(uint8_t value, bool* success);
+
+struct hlo_ble_time;
+bool aigz_time_from_ble_time(struct hlo_ble_time* ble_time, struct aigz_time_t* out_out_rtc_time);
+void aigz_time_to_ble_time(struct aigz_time_t* rtc_time, struct hlo_ble_time* out_ble_time);
