@@ -40,6 +40,8 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
+    BOOL_OK(twi_master_init());
+
     APP_TIMER_INIT(APP_TIMER_PRESCALER,
                    APP_TIMER_MAX_TIMERS,
                    APP_TIMER_OP_QUEUE_SIZE,
