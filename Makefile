@@ -72,22 +72,22 @@ HELLO_SRCS = \
 	$(wildcard micro-ecc/*.c) \
 
 NRF_SRCS = \
-	nRF51_SDK/nrf51822/Source/templates/system_nrf51.c \
-	nRF51_SDK/nrf51822/Source/app_common/app_timer.c \
+	nRF51_SDK/nrf51422/Source/templates/system_nrf51.c \
+	nRF51_SDK/nrf51422/Source/app_common/app_timer.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_advdata.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_conn_params.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_flash.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_radio_notification.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_srv_common.c \
-	nRF51_SDK/nrf51822/Source/ble/ble_services/ble_dis.c \
-	nRF51_SDK/nrf51822/Source/nrf_delay/nrf_delay.c \
-	nRF51_SDK/nrf51822/Source/app_common/app_scheduler.c \
-	nRF51_SDK/nrf51822/Source/app_common/app_gpiote.c \
-	nRF51_SDK/nrf51822/Source/app_common/pstorage.c \
-	nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
-	nRF51_SDK/nrf51822/Source/twi_master/twi_hw_master.c \
-	nRF51_SDK/nrf51822/Source/sd_common/softdevice_handler.c \
+	nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
+	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
+	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
+	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \
+	nRF51_SDK/nrf51422/Source/ble/ble_services/ble_srv_common.c \
+	nRF51_SDK/nrf51422/Source/ble/ble_services/ble_dis.c \
+	nRF51_SDK/nrf51422/Source/nrf_delay/nrf_delay.c \
+	nRF51_SDK/nrf51422/Source/app_common/app_scheduler.c \
+	nRF51_SDK/nrf51422/Source/app_common/app_gpiote.c \
+	nRF51_SDK/nrf51422/Source/app_common/pstorage.c \
+	nRF51_SDK/nrf51422/Source/nrf_nvmc/nrf_nvmc.c \
+	nRF51_SDK/nrf51422/Source/twi_master/twi_hw_master.c \
+	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
 
 SRCS = $(HELLO_SRCS) $(NRF_SRCS)
 
@@ -98,18 +98,18 @@ INCS =  ./ \
 	./common \
 	./micro-ecc \
 	./common/hello_bootloader \
-	./nRF51_SDK/nrf51822/Include \
-	./nRF51_SDK/nrf51822/Include/app_common \
-	./nRF51_SDK/nrf51822/Include/gcc \
-	./nRF51_SDK/nrf51822/Include/ble \
-	./nRF51_SDK/nrf51822/Include/ble/ble_services/ \
-	./nRF51_SDK/nrf51822/Include/sd_common/ \
-	./nRF51_SDK/nrf51822/Include/s110/ \
+	./nRF51_SDK/nrf51422/Include \
+	./nRF51_SDK/nrf51422/Include/app_common \
+	./nRF51_SDK/nrf51422/Include/gcc \
+	./nRF51_SDK/nrf51422/Include/ble \
+	./nRF51_SDK/nrf51422/Include/ble/ble_services/ \
+	./nRF51_SDK/nrf51422/Include/sd_common/ \
+	./nRF51_SDK/nrf51422/Include/s310/ \
 
 
 # SoftDevice
 
-SOFTDEVICE_SRC = SoftDevice/s110_nrf51822_6.0.0_softdevice.hex
+SOFTDEVICE_SRC = SoftDevice/s310_nrf51422_1.0.0_softdevice.hex
 SOFTDEVICE_MAIN = $(BUILD_DIR)/$(basename $(notdir $(SOFTDEVICE_SRC)))_main.bin
 SOFTDEVICE_UICR = $(BUILD_DIR)/$(basename $(notdir $(SOFTDEVICE_SRC)))_uicr.bin
 SOFTDEVICE_BINARIES = $(SOFTDEVICE_MAIN) $(SOFTDEVICE_UICR)
@@ -165,12 +165,12 @@ DEBUG = 1
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=1
-SRCS += nRF51_SDK/nrf51822/Source/simple_uart/simple_uart.c
+SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
 OPTFLAGS=-Os -g -DECC_ASM=1
 endif
 
-NRFREV=NRF51822_QFAA_CA
+NRFREV=NRF51422_QFAA_ED
 NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV) -DBLE_STACK_SUPPORT_REQD # -DANT_STACK_SUPPORT_REQD
 MICROECCFLAGS=-DECC_CURVE=6 # see ecc.h for details
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
@@ -273,7 +273,7 @@ $(DEFAULT_GCC_ROOT)/bin/$(PREFIX)gcc: | $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
 	@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2)
 # submodule inits
 
-GIT_SUBMODULE_DEPENDENCY_FILES = $(SOFTDEVICE_SRC) micro-ecc/README.md nRF51822/Documentation/index.html $(CURDIR)/tools/JLink_MacOSX_V474/JLinkExe.command
+GIT_SUBMODULE_DEPENDENCY_FILES = $(SOFTDEVICE_SRC) micro-ecc/README.md nRF51422/Documentation/index.html $(CURDIR)/tools/JLink_MacOSX_V474/JLinkExe.command
 
 $(GIT_SUBMODULE_DEPENDENCY_FILES):
 	$(info [GIT SUBMODULE UPDATE])

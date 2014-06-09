@@ -6,7 +6,7 @@ r
 w4 r001e504 1 # NVIC: enable writing
 loadbin $SOFTDEVICE_MAIN 0x0
 loadbin $SOFTDEVICE_UICR 0x10001000
-loadbin $BIN 0x14000
-w4 10001014 0x00400100  # boot from 0x14000
+loadbin $BIN 0x20000
+w4 10001014 0x00000200  # boot from 0x20000
 r
 q
