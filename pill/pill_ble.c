@@ -6,6 +6,7 @@
 #include <ble_gatts.h>
 #include <ble_srv_common.h>
 
+#include "ab_rtcmc_32768khz_aigz_s7.h"
 #include "hlo_ble.h"
 #include "hlo_ble_time.h"
 #include "pill_ble.h"
@@ -13,19 +14,11 @@
 
 extern uint8_t hello_type;
 
-static uint16_t _time_service_handle;
 static uint16_t _pill_service_handle;
 static uint16_t _stream_service_handle;
 static struct hlo_ble_time _current_time;
 
 static uint8_t _big_buffer[256];
-
-static void
-_current_time_write_handler(ble_gatts_evt_write_t* event)
-{
-    PRINTS("_current_time_write_handler()\r\n");
-    memcpy(&_current_time, event->data, MIN(sizeof(_current_time), event->len));
-}
 
 static void
 _data_send_finished()
@@ -37,12 +30,26 @@ _stream_write_handler(ble_gatts_evt_write_t* event)
 {
 
 }
+
+static void
+_get_time(void* event_data, uint16_t event_size)
+{
+    PRINTS("_get_time\r\n");
+
+    struct aigz_time_t rtc_time;
+    aigz_read(&rtc_time);
+
+     aigz_time_to_ble_time(&rtc_time, &_current_time);
+     hlo_ble_notify(BLE_UUID_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time.bytes), NULL);
+ }
+
 static void
 _command_write_handler(ble_gatts_evt_write_t* event)
 {
-    PRINTS("_command_write_handler()\r\n");
-
     struct pill_command* command = (struct pill_command*)event->data;
+
+    DEBUG("_command_write_handler(): ", command->command);
+
     switch(command->command) {
     case PILL_COMMAND_STOP_ACCELEROMETER:
     case PILL_COMMAND_START_ACCELEROMETER:
@@ -53,6 +60,19 @@ _command_write_handler(ble_gatts_evt_write_t* event)
     case PILL_COMMAND_SEND_DATA:
         hlo_ble_notify(0xFEED, _big_buffer, sizeof(_big_buffer), _data_send_finished);
         break;
+    case PILL_COMMAND_GET_TIME:
+        {
+            // app_sched_event_put(NULL, 0, _get_time);
+            _get_time(NULL, 0);
+            break;
+        }
+    case PILL_COMMAND_SET_TIME:
+        {
+            struct aigz_time_t rtc_time;
+            aigz_time_from_ble_time(&command->set_time, &rtc_time);
+            aigz_write(&rtc_time);
+            break;
+        }
     };
 }
 
@@ -82,18 +102,6 @@ pill_ble_services_init()
     };
 
     {
-        ble_uuid_t time_service_uuid = {
-            .type = BLE_UUID_TYPE_BLE,
-            .uuid = BLE_UUID_CURRENT_TIME_SERVICE,
-        };
-
-        APP_OK(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &time_service_uuid, &_time_service_handle));
-
-        hlo_ble_char_read_add(BLE_UUID_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time));
-        hlo_ble_char_write_request_add(0x3A08, &_current_time_write_handler, sizeof(_current_time));
-    }
-
-    {
         ble_uuid_t pill_service_uuid = {
             .type = hello_type,
             .uuid = BLE_UUID_PILL_SVC,
@@ -105,6 +113,7 @@ pill_ble_services_init()
         hlo_ble_char_notify_add(0xD00D);
         hlo_ble_char_notify_add(0xFEED);
         hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
+        hlo_ble_char_notify_add(BLE_UUID_DATE_TIME_CHAR);
     }
 
     {

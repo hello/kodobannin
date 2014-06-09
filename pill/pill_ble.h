@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "hlo_ble_time.h"
+
 enum {
     BLE_UUID_PILL_SVC = 0xE110,
 };
@@ -12,13 +14,17 @@ enum pill_command_type {
     PILL_COMMAND_CALIBRATE,
     PILL_COMMAND_DISCONNECT,
     PILL_COMMAND_SEND_DATA,
+    PILL_COMMAND_GET_TIME,
+    PILL_COMMAND_SET_TIME,
 } __attribute__((packed));
 
 struct pill_command
 {
     union {
         enum pill_command_type command;
-        uint8_t bytes[1];
+        union {
+            struct hlo_ble_time set_time;
+        };
     };
 } __attribute__((packed));
 
