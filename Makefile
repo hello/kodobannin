@@ -5,7 +5,7 @@ all: b m
 
 # apps & platforms
 
-TEST_APPS = hello_world rtc_test imu_test ble_test
+TEST_APPS = hello_world rtc_test imu_test ble_test pill_test
 APPS = band bootloader morpheus pill $(TEST_APPS)
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000 pill_EVT1
