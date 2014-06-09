@@ -86,7 +86,6 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/app_gpiote.c \
 	nRF51_SDK/nrf51422/Source/app_common/pstorage.c \
 	nRF51_SDK/nrf51422/Source/nrf_nvmc/nrf_nvmc.c \
-	nRF51_SDK/nrf51422/Source/twi_master/twi_hw_master.c \
 	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
 
 SRCS = $(HELLO_SRCS) $(NRF_SRCS)
