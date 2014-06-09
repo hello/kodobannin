@@ -1,5 +1,6 @@
 // vi:noet:sw=4 ts=4
 
+#include <ant_interface.h>
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
@@ -60,6 +61,9 @@ _start()
 
     hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, false, device_name, hlo_ble_on_ble_evt);
     PRINTS("ble_init() done.\r\n");
+
+    APP_OK(sd_ant_stack_reset());
+    PRINTS("ANT initialized.\r\n");
 
     hlo_ble_init();
     pill_ble_services_init();
