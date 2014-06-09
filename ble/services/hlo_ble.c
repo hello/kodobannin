@@ -280,6 +280,7 @@ _packetize(void* src, uint16_t length)
 
     // Write out footer
 
+#if 0
     {
         packet->sequence_number = sequence_number++;
 
@@ -291,6 +292,7 @@ _packetize(void* src, uint16_t length)
 
         packet++;
     }
+#endif
 
     // Write out total packet count
 
