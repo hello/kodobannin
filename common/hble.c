@@ -95,7 +95,8 @@ _on_conn_params_error(uint32_t nrf_error)
     APP_ERROR_HANDLER(nrf_error);
 }
 
-void hble_advertising_start()
+void
+hble_advertising_start()
 {
     ble_gap_adv_params_t adv_params = {};
     adv_params.type = BLE_GAP_ADV_TYPE_ADV_IND;
