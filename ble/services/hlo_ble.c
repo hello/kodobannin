@@ -191,7 +191,7 @@ _dispatch_write(ble_evt_t *event) {
 
 /** Returns true if we queued a packet for BLE notification; returns false if we did not queue a packet (for whatever reason, from no available buffers to other errors). */
 static bool
-_dispatch_notify()
+_dispatch_queue_packet()
 {
     if(_notify_context.queued < _notify_context.total) {
         ble_gatts_hvx_params_t hvx_params = {
@@ -316,7 +316,7 @@ hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo
     _notify_context.total = _packetize(data, length);
 
     for(;;) {
-        bool queued_packet = _dispatch_notify();
+        bool queued_packet = _dispatch_queue_packet();
 
         if(queued_packet) {
             continue;
@@ -346,7 +346,7 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         _dispatch_write(event);
         break;
     case BLE_EVT_TX_COMPLETE:
-        _dispatch_notify();
+        _dispatch_queue_packet();
     default:
         break;
     }
