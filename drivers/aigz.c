@@ -4,7 +4,7 @@
 
 #include <twi_master.h>
 
-#include "ab_rtcmc_32768khz_aigz_s7.h"
+#include "aigz.h"
 #include "hlo_ble_time.h"
 
 enum {
@@ -17,11 +17,8 @@ aigz_read(struct aigz_time_t* time)
 {
     uint8_t AIGZ_CLOCK_SECTION_ADDRESS = 0x0;
 
-    PRINTS("a\r\n");
     BOOL_OK(twi_master_transfer(RTC_ADDRESS_WRITE, &AIGZ_CLOCK_SECTION_ADDRESS, sizeof(AIGZ_CLOCK_SECTION_ADDRESS), TWI_ISSUE_STOP));
-    PRINTS("b\r\n");
     BOOL_OK(twi_master_transfer(RTC_ADDRESS_READ, time->bytes, sizeof(time->bytes), TWI_ISSUE_STOP));
-    PRINTS("c\r\n");
 }
 
 void

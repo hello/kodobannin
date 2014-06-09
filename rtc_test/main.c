@@ -5,7 +5,7 @@
 #include <nrf_sdm.h>
 #include <twi_master.h>
 
-#include "ab_rtcmc_32768khz_aigz_s7.h"
+#include "aigz.h"
 #include "platform.h"
 #include "util.h"
 

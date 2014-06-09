@@ -6,7 +6,7 @@
 #include <ble_gatts.h>
 #include <ble_srv_common.h>
 
-#include "ab_rtcmc_32768khz_aigz_s7.h"
+#include "aigz.h"
 #include "hlo_ble.h"
 #include "hlo_ble_time.h"
 #include "pill_ble.h"
