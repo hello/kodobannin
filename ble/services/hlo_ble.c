@@ -313,7 +313,13 @@ hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo
         .callback = callback,
     };
 
-    _notify_context.total = _packetize(data, length);
+    if(callback) {
+        _notify_context.total = _packetize(data, length);
+    } else {
+        _notify_context.packet_sizes[0] = length;
+        _notify_context.total = 1,
+        memcpy(_notify_context.packets[0].bytes, data, length);
+    }
 
     for(;;) {
         bool queued_packet = _dispatch_queue_packet();
