@@ -1,7 +1,5 @@
 #pragma once
 
-#define APP_WANTS_BLE
-
 #include <stdint.h>
 
 #include <nrf51.h>
