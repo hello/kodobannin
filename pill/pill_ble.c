@@ -69,6 +69,9 @@ _command_write_handler(ble_gatts_evt_write_t* event)
     case PILL_COMMAND_SET_TIME:
         {
             struct rtc_time_t rtc_time;
+            PRINTS("Setting time to: ");
+            PRINT_HEX(&command->set_time.bytes, sizeof(struct hlo_ble_time));
+            PRINTS("\r\n");
             rtc_time_from_ble_time(&command->set_time, &rtc_time);
             rtc_write(&rtc_time);
             break;
