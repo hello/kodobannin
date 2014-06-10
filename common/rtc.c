@@ -6,6 +6,7 @@
 
 #include "rtc.h"
 #include "hlo_ble_time.h"
+#include "util.h"
 
 uint8_t
 rtc_bcd_encode(uint8_t value, bool* success)
