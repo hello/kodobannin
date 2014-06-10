@@ -77,7 +77,7 @@ struct rtc_time_t
             uint8_t year; // BCD, 0-99
         } __attribute__((packed));
 
-        uint8_t bytes[8];
+        uint8_t bytes[7];
     };
 } __attribute__((packed));
 
