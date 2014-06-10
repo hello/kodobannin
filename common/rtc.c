@@ -62,10 +62,10 @@ rtc_time_from_ble_time(struct hlo_ble_time* ble_time, struct rtc_time_t* out_rtc
     rtc_read(out_rtc_time);
 
     out_rtc_time->hundredths = 0;
-    out_rtc_time->tenths = 0;
-    out_rtc_time->seconds = ble_time->seconds;
-    out_rtc_time->minutes = ble_time->minutes;
-    out_rtc_time->hours = ble_time->hours;
+    out_rtc_time->tenths = rtc_bcd_encode(0);
+    out_rtc_time->seconds = rtc_bcd_encode(ble_time->seconds);
+    out_rtc_time->minutes = rtc_bcd_encode(ble_time->minutes);
+    out_rtc_time->hours = rtc_bcd_encode(ble_time->hours);
 
     // out_rtc_time->weekday = ?;
 
