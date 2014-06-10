@@ -34,13 +34,23 @@ _stream_write_handler(ble_gatts_evt_write_t* event)
 static void
 _get_time(void* event_data, uint16_t event_size)
 {
-    PRINTS("_get_time\r\n");
-
     struct rtc_time_t rtc_time;
     rtc_read(&rtc_time);
 
-     rtc_time_to_ble_time(&rtc_time, &_current_time);
-     hlo_ble_notify(BLE_UUID_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time.bytes), NULL);
+    PRINTS("_get_time: RTC = ");
+    PRINT_HEX(rtc_time.bytes, sizeof(rtc_time.bytes));
+    PRINTS(", ");
+    rtc_printf(&rtc_time);
+    PRINTS("\r\n");
+
+    rtc_time_to_ble_time(&rtc_time, &_current_time);
+    PRINTS("BLE: ");
+    PRINT_HEX(_current_time.bytes, sizeof(_current_time.bytes));
+    PRINTS(", ");
+    hlo_ble_time_printf(&_current_time);
+    PRINTS("\r\n");
+
+    hlo_ble_notify(BLE_UUID_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time.bytes), NULL);
  }
 
 static void
@@ -69,11 +79,25 @@ _command_write_handler(ble_gatts_evt_write_t* event)
     case PILL_COMMAND_SET_TIME:
         {
             struct rtc_time_t rtc_time;
+
             PRINTS("Setting time to: ");
             PRINT_HEX(&command->set_time.bytes, sizeof(struct hlo_ble_time));
             PRINTS("\r\n");
+
             rtc_time_from_ble_time(&command->set_time, &rtc_time);
+
+            PRINTS("BLE: ");
+            hlo_ble_time_printf(&command->set_time);
+            PRINTS("\r\n");
+
+            PRINTS("RTC: ");
+            rtc_printf(&rtc_time);
+            PRINTS("\r\nRTC: ");
+            PRINT_HEX(rtc_time.bytes, sizeof(rtc_time.bytes));
+            PRINTS("\r\n");
+
             rtc_write(&rtc_time);
+
             break;
         }
     };
