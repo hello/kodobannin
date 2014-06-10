@@ -23,7 +23,7 @@
 #include <softdevice_handler.h>
 #include <twi_master.h>
 
-#include "aigz.h"
+#include "rtc.h"
 #include "app.h"
 #include "hble.h"
 #include "platform.h"
@@ -39,18 +39,18 @@ _test_rtc()
 {
     BOOL_OK(twi_master_init());
 
-    struct aigz_time_t time;
+    struct rtc_time_t time;
 
-    aigz_read(&time);
+    rtc_read(&time);
     printf("[1/3] RTC test passed: %d/%d/%d%d %d:%d:%d.%d%d\r\n",
-           aigz_bcd_decode(time.month),
-           aigz_bcd_decode(time.date),
-           20+time.century, aigz_bcd_decode(time.year),
-           aigz_bcd_decode(time.hours),
-           aigz_bcd_decode(time.minutes),
-           aigz_bcd_decode(time.seconds),
-           aigz_bcd_decode(time.tenths),
-           aigz_bcd_decode(time.hundredths));
+           rtc_bcd_decode(time.month),
+           rtc_bcd_decode(time.date),
+           20+time.century, rtc_bcd_decode(time.year),
+           rtc_bcd_decode(time.hours),
+           rtc_bcd_decode(time.minutes),
+           rtc_bcd_decode(time.seconds),
+           rtc_bcd_decode(time.tenths),
+           rtc_bcd_decode(time.hundredths));
 
     return true;
 }
