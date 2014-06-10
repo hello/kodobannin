@@ -20,11 +20,9 @@ enum pill_command_type {
 
 struct pill_command
 {
+    enum pill_command_type command;
     union {
-        enum pill_command_type command;
-        union {
-            struct hlo_ble_time set_time;
-        };
+        struct hlo_ble_time set_time;
     };
 } __attribute__((packed));
 
