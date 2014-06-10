@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "util.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 enum rtc_weekday_t {
     //< Page 11.
@@ -74,11 +75,11 @@ struct rtc_time_t
             uint8_t _padding3:1;
             enum rtc_century_t century:2;
             uint8_t year; // BCD, 0-99
-        } PACKED;
+        } __attribute__((packed));
 
         uint8_t bytes[8];
     };
-} PACKED;
+} __attribute__((packed));
 
 void rtc_read(struct rtc_time_t* time);
 
