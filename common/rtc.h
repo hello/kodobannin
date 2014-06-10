@@ -82,6 +82,7 @@ struct rtc_time_t
 } __attribute__((packed));
 
 void rtc_read(struct rtc_time_t* time);
+void rtc_write(struct rtc_time_t* time);
 
 static inline uint8_t
 rtc_bcd_decode(uint8_t value)
