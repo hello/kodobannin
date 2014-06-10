@@ -54,23 +54,22 @@ bool
 rtc_time_from_ble_time(struct hlo_ble_time* ble_time, struct rtc_time_t* out_rtc_time)
 {
     if(ble_time->day == 0 || ble_time->month == 0) {
-        // Cannot set to unknown day/month
-        DEBUG("Bad incoming time: ", ble_time->bytes);
+        DEBUG("rtc_time_from_ble_time() has bad incoming time: ", ble_time->bytes);
         return false;
     }
 
     rtc_read(out_rtc_time);
 
     out_rtc_time->hundredths = 0;
-    out_rtc_time->tenths = rtc_bcd_encode(0);
-    out_rtc_time->seconds = rtc_bcd_encode(ble_time->seconds);
-    out_rtc_time->minutes = rtc_bcd_encode(ble_time->minutes);
-    out_rtc_time->hours = rtc_bcd_encode(ble_time->hours);
+    out_rtc_time->tenths = rtc_bcd_encode(0, NULL);
+    out_rtc_time->seconds = rtc_bcd_encode(ble_time->seconds, NULL);
+    out_rtc_time->minutes = rtc_bcd_encode(ble_time->minutes, NULL);
+    out_rtc_time->hours = rtc_bcd_encode(ble_time->hours, NULL);
 
-    // out_rtc_time->weekday = ?;
+    out_rtc_time->weekday = 0x20; // does this have an effect?
 
-    out_rtc_time->date = ble_time->day;
-    out_rtc_time->month = ble_time->month;
+    out_rtc_time->date = rtc_bcd_encode(ble_time->day, NULL);
+    out_rtc_time->month = rtc_bcd_encode(ble_time->month, NULL);
 
     if(ble_time->year >= 2000 && ble_time->year <= 2099) {
         out_rtc_time->century = RTC_CENTURY_21ST;
@@ -105,7 +104,7 @@ rtc_time_to_ble_time(struct rtc_time_t* rtc_time, struct hlo_ble_time* out_ble_t
         out_ble_time->year = 2300;
         break;
     }
-    out_ble_time->year += rtc_time->year;
+    out_ble_time->year += rtc_bcd_decode(rtc_time->year);
 
     out_ble_time->month = rtc_bcd_decode(rtc_time->month);
     out_ble_time->day = rtc_bcd_decode(rtc_time->date);
