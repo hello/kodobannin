@@ -3,6 +3,7 @@
 #include <nrf_delay.h>
 #include <nrf_gpio.h>
 #include <nrf_sdm.h>
+#include <softdevice_handler.h>
 #include <twi_master.h>
 
 #include "rtc.h"
@@ -12,11 +13,11 @@
 void
 _start()
 {
-    (void) sd_softdevice_disable();
-
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
     BOOL_OK(twi_master_init());
+
+    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, false);
 
     struct rtc_time_t time;
 
