@@ -45,7 +45,6 @@ rtc_bcd_encode(uint8_t value, bool* success)
   return encoded;
 }
 
-
 int main(int argc, char** argv)
 {
   time_t seconds_since_epoch = time(NULL);
@@ -53,6 +52,7 @@ int main(int argc, char** argv)
 
   struct tm* now = localtime(&seconds_since_epoch);
   char* human_readable_now = ctime(&seconds_since_epoch);
+  printf("year: %d\n", now->tm_year%100);
   printf("human: %s\n", human_readable_now);
 
   struct rtc_time_t rtc_time = {
@@ -74,9 +74,9 @@ int main(int argc, char** argv)
     .month = rtc_bcd_encode(now->tm_mon+1, NULL),
     ._padding3 = 0,
     .century = (now->tm_year/100)-1,
-    .year = now->tm_year%100,
+    .year = rtc_bcd_encode(now->tm_year%100, NULL),
   };
 
-  printf("Now: %02X %02X %02X %02X %02X %02X %02X\n",
-	 rtc_time.bytes[0], rtc_time.bytes[1], rtc_time.bytes[2], rtc_time.bytes[3], rtc_time.bytes[4], rtc_time.bytes[5], rtc_time.bytes[6]);
+  printf("Now: %02X %02X %02X %02X %02X %02X %02X %02X\n",
+	 rtc_time.bytes[0], rtc_time.bytes[1], rtc_time.bytes[2], rtc_time.bytes[3], rtc_time.bytes[4], rtc_time.bytes[5], rtc_time.bytes[6], rtc_time.bytes[7]);
 }
