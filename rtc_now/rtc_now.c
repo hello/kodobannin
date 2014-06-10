@@ -6,7 +6,11 @@
 uint8_t
 rtc_bcd_encode(uint8_t value, bool* success)
 {
-  if(value > 185) {
+  enum {
+    RTC_BCD_MAX = 80 + 40 + 20 + 10 + 8 + 4 + 2 + 1,
+  };
+
+  if(value > RTC_BCD_MAX) {
     if(success) {
       *success = false;
     }
@@ -17,20 +21,20 @@ rtc_bcd_encode(uint8_t value, bool* success)
 
   while(value) {
     if(value >= 80) {
-      encoded |= 1 >> 7;
+      encoded |= 1 << 7;
       value -= 80;
     } else if(value >= 40) {
-      encoded |= 1 >> 6;
+      encoded |= 1 << 6;
       value -= 40;
     } else if(value >= 20) {
-      encoded |= 1 >> 5;
+      encoded |= 1 << 5;
       value -= 20;
     } else if(value >= 10) {
-      encoded |= 1 >> 4;
+      encoded |= 1 << 4;
       value -= 10;
     } else {
       encoded |= value;
-      value -= value;
+      break;
     }
   }
 
