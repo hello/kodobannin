@@ -99,3 +99,6 @@ uint8_t rtc_bcd_encode(uint8_t value, bool* success);
 struct hlo_ble_time;
 bool rtc_time_from_ble_time(struct hlo_ble_time* ble_time, struct rtc_time_t* out_out_rtc_time);
 void rtc_time_to_ble_time(struct rtc_time_t* rtc_time, struct hlo_ble_time* out_ble_time);
+
+// For debugging
+void rtc_printf(struct rtc_time_t* rtc_time);

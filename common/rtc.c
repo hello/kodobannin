@@ -113,3 +113,16 @@ rtc_time_to_ble_time(struct rtc_time_t* rtc_time, struct hlo_ble_time* out_ble_t
     out_ble_time->minutes = rtc_bcd_decode(rtc_time->minutes);
     out_ble_time->seconds = rtc_bcd_decode(rtc_time->seconds);
 }
+
+void rtc_printf(struct rtc_time_t* rtc_time)
+{
+    printf("%d/%d/%d%d %d:%d:%d.%d%d\r\n",
+           rtc_bcd_decode(rtc_time->month),
+           rtc_bcd_decode(rtc_time->date),
+           20+rtc_time->century, rtc_bcd_decode(rtc_time->year),
+           rtc_bcd_decode(rtc_time->hours),
+           rtc_bcd_decode(rtc_time->minutes),
+           rtc_bcd_decode(rtc_time->seconds),
+           rtc_bcd_decode(rtc_time->tenths),
+           rtc_bcd_decode(rtc_time->hundredths));
+}
