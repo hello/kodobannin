@@ -38,9 +38,11 @@ rtc_bcd_encode(uint8_t value, bool* success)
         }
     }
 
-    if(*success) {
+    if(success) {
         *success = true;
     }
+
+    return encoded;
 }
 
 bool
