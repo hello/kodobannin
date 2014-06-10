@@ -14,7 +14,9 @@ struct hlo_ble_time
             uint8_t hours; // 0-23
             uint8_t minutes; // 0-59
             uint8_t seconds; // 0-59
-        };
+        } __attribute__((packed));
         uint8_t bytes[7];
-    };
+    } __attribute__((packed));
 } __attribute__((packed));
+
+void hlo_ble_time_printf(struct hlo_ble_time* ble_time);
