@@ -50,7 +50,7 @@ _get_time(void* event_data, uint16_t event_size)
     hlo_ble_time_printf(&_current_time);
     PRINTS("\r\n");
 
-    hlo_ble_notify(BLE_UUID_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time.bytes), NULL);
+    hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time.bytes), NULL);
  }
 
 static void
