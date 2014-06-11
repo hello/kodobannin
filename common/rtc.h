@@ -67,7 +67,7 @@ struct rtc_time_t
             uint8_t _padding1:2;
 
             uint8_t clockout_frequency:4; // (page 10)
-            enum rtc_weekday_t weekday:4; // BCD (0 = Sunday, 6 = Saturday)
+            enum rtc_weekday_t weekday:4; // 1-7 (1=Sun, 7=Sat), 0 is unused
             uint8_t date:6; // BCD, Date of month, i.e. 0-31
             uint8_t _padding2:2;
 

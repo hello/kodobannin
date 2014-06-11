@@ -53,7 +53,7 @@ rtc_bcd_encode(uint8_t value, bool* success)
 bool
 rtc_time_from_ble_time(struct hlo_ble_time* ble_time, struct rtc_time_t* out_rtc_time)
 {
-    if(ble_time->day == 0 || ble_time->month == 0) {
+    if(ble_time->day == 0 || ble_time->month == 0 || ble_time->weekday == 0) {
         DEBUG("rtc_time_from_ble_time() has bad incoming time: ", ble_time->bytes);
         return false;
     }
@@ -66,7 +66,14 @@ rtc_time_from_ble_time(struct hlo_ble_time* ble_time, struct rtc_time_t* out_rtc
     out_rtc_time->minutes = rtc_bcd_encode(ble_time->minutes, NULL);
     out_rtc_time->hours = rtc_bcd_encode(ble_time->hours, NULL);
 
-    out_rtc_time->weekday = 0x20; // does this have an effect?
+    switch(ble_time->weekday) {
+    case 7: // Sun
+        out_rtc_time->weekday = 1;
+        break;
+    default: // 1-6 or Mon-Sat (0 is unknown, and is checked above)
+        out_rtc_time->weekday = ble_time->weekday+1;
+        break;
+    }
 
     out_rtc_time->date = rtc_bcd_encode(ble_time->day, NULL);
     out_rtc_time->month = rtc_bcd_encode(ble_time->month, NULL);
@@ -111,6 +118,15 @@ rtc_time_to_ble_time(struct rtc_time_t* rtc_time, struct hlo_ble_time* out_ble_t
     out_ble_time->hours = rtc_bcd_decode(rtc_time->hours);
     out_ble_time->minutes = rtc_bcd_decode(rtc_time->minutes);
     out_ble_time->seconds = rtc_bcd_decode(rtc_time->seconds);
+
+    switch(rtc_time->weekday) {
+    case RTC_SUNDAY:
+        out_ble_time->weekday = 7;
+        break;
+    default:
+        out_ble_time->weekday = rtc_time->weekday-1;
+        break;
+    }
 }
 
 void rtc_printf(struct rtc_time_t* rtc_time)

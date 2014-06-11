@@ -140,7 +140,7 @@ pill_ble_services_init()
         hlo_ble_char_notify_add(0xD00D);
         hlo_ble_char_notify_add(0xFEED);
         hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
-        hlo_ble_char_notify_add(BLE_UUID_DATE_TIME_CHAR);
+        hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
     }
 
     {
