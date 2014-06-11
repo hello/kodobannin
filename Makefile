@@ -135,6 +135,12 @@ $(SOFTDEVICE_UICR):: $(SOFTDEVICE_SRC)
 	openssl sha1 -binary $< > $@
 	stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
 
+%.crc: %.bin $(CURDIR)/tools/crc16
+	$(CURDIR)/tools/crc16 $< | xxd -r -p | dd conv=swab 2> /dev/null > $@
+	echo ff ff ff ff | xxd -r -p >> $@
+	stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
+	echo 00 00 | xxd -r -p >> $@
+
 
 # gdb support
 JGDBServer=$(KODOBANNIN_JLINK_ROOT)/JLinkGDBServer.command
@@ -258,7 +264,7 @@ $(BUILD_DIR)/$1+$2.jlink: prog/$1+$2.jlink.in
 p-$1+$2 p-$1+bootloader+$2: $(BUILD_DIR)/$1+$2.bin $(SOFTDEVICE_BINARIES)
 p-$1+$2: $(BUILD_DIR)/$1+$2.jlink
 	@$(JPROG) $(JLINK_OPTIONS) < $$<
-p-$1+bootloader+$2: $(BUILD_DIR)/$1+bootloader+$2.jlink $(BUILD_DIR)/bootloader+$2.bin $(BUILD_DIR)/$1+$2.sha1
+p-$1+bootloader+$2: $(BUILD_DIR)/$1+bootloader+$2.jlink $(BUILD_DIR)/bootloader+$2.bin $(BUILD_DIR)/$1+$2.sha1 $(BUILD_DIR)/$1+$2.crc
 	@$(JPROG) $(JLINK_OPTIONS) < $$<
 
 .PHONY: g-$1+$2
