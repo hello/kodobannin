@@ -37,7 +37,7 @@ _sha1_fw_area(uint8_t *hash)
 	uint32_t *index = (uint32_t *)BOOTLOADER_REGION_START - DFU_APP_DATA_RESERVED;
 
 	// walk back to the end of the actual firmware
-	while (*--index == EMPTY_FLASH_MASK && code_size > 0)
+	while (index > CODE_REGION_1_START && *--index == EMPTY_FLASH_MASK && code_size > 0)
 		code_size -= 4;
 
     // only measure if there is something to measure
