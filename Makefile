@@ -61,6 +61,10 @@ JGDBServer=$(KODOBANNIN_JLINK_ROOT)/JLinkGDBServer.command
 
 JLINK_OPTIONS = -device nrf51822 -if swd -speed 4000
 
+.PHONY: jl
+jl:
+	@$(JPROG) $(JLINK_OPTIONS)
+
 # file paths
 
 BUILD_DIR = build
