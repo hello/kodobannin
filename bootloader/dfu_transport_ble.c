@@ -636,6 +636,9 @@ uint32_t dfu_transport_update_start()
 
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, false);
 
+    err_code = softdevice_ble_evt_handler_set(ble_evt_dispatch);
+    APP_ERROR_CHECK(err_code);
+
 #define DFU_DEVICE_NAME_SUFFIX " (DFU)"
 
 	const unsigned base_device_name_length = sizeof(BLE_DEVICE_NAME)-1;
