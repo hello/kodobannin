@@ -1,12 +1,11 @@
 w4 4001e504 2 # NVIC: enable erase
 w4 4001e50c 1 # NVIC: erase all flash, including UICR
-w4 4001e514 1 # NVIC: erase UICR
-sleep 100
+sleep 50
 r
-w4 r001e504 1 # NVIC: enable writing
+w4 4001e504 1 # NVIC: enable writing
 loadbin $SOFTDEVICE_MAIN 0x0
 loadbin $SOFTDEVICE_UICR 0x10001000
 loadbin $BIN 0x20000
-w4 10001014 0x00000200  # boot from 0x20000
+w4 10001014 0x00020000  # boot from 0x20000
 r
 q

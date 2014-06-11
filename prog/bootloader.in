@@ -5,9 +5,7 @@ r
 w4 4001e504 1 # NVMC: enable writing
 loadbin $SOFTDEVICE_MAIN 0x0
 loadbin $SOFTDEVICE_UICR 0x10001000
-loadbin $BIN 0x20000
-loadbin $BUILD_DIR/bootloader+$2.bin 0x36000
-loadbin $BUILD_DIR/$1+$2.sha1 0x3f800
+loadbin $BIN 0x36000
 w4 10001014 0x00036000  # boot from 0x36000
 r
 q
