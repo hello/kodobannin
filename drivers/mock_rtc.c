@@ -7,13 +7,16 @@
 #include "rtc.h"
 #include "util.h"
 
+static struct rtc_time_t _mock_time;
+
 void
-rtc_read(struct rtc_time_t* time)
+rtc_read(struct rtc_time_t* rtc_time)
 {
-  memset(time, 0x55, sizeof(*time));
+    *rtc_time = _mock_time;
 }
 
 void
-rtc_write(struct rtc_time_t* time)
+rtc_write(struct rtc_time_t* rtc_time)
 {
+    _mock_time = *rtc_time;
 }
