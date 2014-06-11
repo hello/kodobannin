@@ -269,6 +269,16 @@ endef
 
 
 
+# tools
+
+tools/crc16: tools/crc16.c
+	gcc \
+	-I./nRF51_SDK/nrf51422/Include/app_common \
+	-o $@ \
+	nRF51_SDK/nrf51422/Source/app_common/crc16.c $^
+
+
+
 # auto-generate product rules
 
 $(foreach platform, $(PLATFORMS),$(foreach app, $(APPS), $(eval $(call rule-product,$(app),$(platform)))))
