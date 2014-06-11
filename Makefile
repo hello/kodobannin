@@ -101,7 +101,6 @@ INCS =  ./ \
 	./drivers \
 	./common \
 	./micro-ecc \
-	./common/hello_bootloader \
 	./nRF51_SDK/nrf51422/Include \
 	./nRF51_SDK/nrf51422/Include/app_common \
 	./nRF51_SDK/nrf51422/Include/gcc \
