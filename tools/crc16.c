@@ -23,7 +23,7 @@ int main(int argc, char** argv)
   fclose(file);
 
   uint16_t crc = crc16_compute(data, file_size, NULL);
-  printf("%x\n", crc);
+  printf("%04hx\n", crc);
 
   free(data);
 }
