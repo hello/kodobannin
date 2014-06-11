@@ -35,10 +35,6 @@
  */
 bool bootloader_app_is_valid(uint32_t app_addr);
 
-/**@brief Function for disabling all interrupts before jumping from bootloader to application.
- */
-void interrupts_disable(void);
-
 /**@brief Function for starting the Device Firmware Update.
  * 
  * @retval     NRF_SUCCESS If new appliction image was successfully transfered. 
@@ -50,6 +46,13 @@ uint32_t bootloader_dfu_start(void);
  * @param[in]  app_addr      Address to the region where the application is stored.
  */
 void bootloader_app_start(uint32_t app_addr);
+
+/**@brief Function for retrieving the bootloader settings.
+ *
+ * @param[out] p_settings    A copy of the current bootloader settings is returned in the structure
+ *                           provided.
+ */
+void bootloader_settings_get(bootloader_settings_t * const p_settings);
 
 /**@brief Function for processing DFU status update.
  *

@@ -34,6 +34,16 @@ typedef enum
     BANK_INVALID_APP = 0xFF,
 } bootloader_bank_code_t;
 
+/**@brief Structure holding bootloader settings for application and bank data.
+ */
+typedef struct
+{
+    bootloader_bank_code_t bank_0;       /**< Variable to store if bank 0 contains a valid application. */
+    uint16_t               bank_0_crc;   /**< If bank is valid, this field will contain a valid CRC of the image. */
+    bootloader_bank_code_t bank_1;       /**< Variable to store if bank 1 has been erased/prepared for new image. Bank 1 is only used in Banked Update scenario. */
+    uint32_t               bank_0_size;  /**< Size of bank0. */
+} bootloader_settings_t;
+
 #endif // BOOTLOADER_TYPES_H__ 
 
 /**@} */

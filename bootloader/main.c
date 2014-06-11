@@ -1,168 +1,211 @@
-// vi:noet:sw=4 ts=4
+/* Copyright (c) 2013 Nordic Semiconductor. All Rights Reserved.
+ *
+ * The information contained herein is property of Nordic Semiconductor ASA.
+ * Terms and conditions of usage are described in detail in NORDIC
+ * SEMICONDUCTOR STANDARD SOFTWARE LICENSE AGREEMENT.
+ *
+ * Licensees are granted free, non-transferable use of the information. NO
+ * WARRANTY of ANY KIND is provided. This heading must NOT be removed from
+ * the file.
+ *
+ */
 
-#include <app_error.h>
-#include <nrf_gpio.h>
-#include <nrf_delay.h>
-#include <nrf_sdm.h>
-#include <nrf_soc.h>
-#include <app_timer.h>
-#include <platform.h>
-#include <ble_err.h>
-#include "sha1.h"
-#include <bootloader.h>
-#include <dfu_types.h>
-#include <bootloader_util_arm.h>
-#include <ble_flash.h>
-#include <ble_stack_handler_types.h>
+/**@file
+ *
+ * @defgroup ble_sdk_app_bootloader_main main.c
+ * @{
+ * @ingroup dfu_bootloader_api
+ * @brief Bootloader project main file.
+ *
+ * -# Receive start data package.
+ * -# Based on start packet, prepare NVM area to store received data.
+ * -# Receive data packet.
+ * -# Validate data packet.
+ * -# Write Data packet to NVM.
+ * -# If not finished - Wait for next packet.
+ * -# Receive stop data packet.
+ * -# Activate Image, boot application.
+ *
+ */
+#include "dfu.h"
+#include "dfu_transport.h"
+#include "bootloader.h"
+#include <stdint.h>
 #include <string.h>
+#include <stddef.h>
+#include "nordic_common.h"
+#include "nrf.h"
+#include "app_error.h"
+#include "nrf_gpio.h"
+#include "nrf51_bitfields.h"
+#include "ble.h"
+#include "nrf51.h"
+#include "ble_hci.h"
+#include "app_scheduler.h"
+#include "app_timer.h"
+#include "app_gpiote.h"
+#include "nrf_error.h"
+#include "boards.h"
+#include "ble_debug_assert_handler.h"
+#include "softdevice_handler.h"
+#include "pstorage_platform.h"
 
-#include <nrf_nvmc.h>
+#define BOOTLOADER_BUTTON_PIN           BUTTON_7                                                /**< Button used to enter SW update mode. */
 
-#include "app.h"
-#include "platform.h"
-#include "error_handler.h"
-#include "hello_dfu.h"
-#include "util.h"
-#include "ecc_benchmark.h"
-#include "git_description.h"
+#define APP_GPIOTE_MAX_USERS            1                                                       /**< Number of GPIOTE users in total. Used by button module and dfu_transport_serial module (flow control). */
 
-#define APP_GPIOTE_MAX_USERS            2
+#define APP_TIMER_PRESCALER             0                                                       /**< Value of the RTC1 PRESCALER register. */
+#define APP_TIMER_MAX_TIMERS            3                                                       /**< Maximum number of simultaneously created timers. */
+#define APP_TIMER_OP_QUEUE_SIZE         4                                                       /**< Size of timer operation queues. */
 
-static void
-_sha1_fw_area(uint8_t *hash)
+#define BUTTON_DETECTION_DELAY          APP_TIMER_TICKS(50, APP_TIMER_PRESCALER)                /**< Delay from a GPIOTE event until a button is reported as pushed (in number of timer ticks). */
+
+#define SCHED_MAX_EVENT_DATA_SIZE       MAX(APP_TIMER_SCHED_EVT_SIZE, 0)                        /**< Maximum size of scheduler events. */
+
+#define SCHED_QUEUE_SIZE                20                                                      /**< Maximum number of events in the scheduler queue. */
+
+
+/**@brief Function for initialization of LEDs.
+ *
+ * @details Initializes all LEDs used by the application.
+ */
+static void leds_init(void)
 {
-
-	uint32_t code_size    = DFU_IMAGE_MAX_SIZE_FULL;
-	uint8_t *code_address = (uint8_t *)CODE_REGION_1_START;
-	uint32_t *index = (uint32_t *)BOOTLOADER_REGION_START - DFU_APP_DATA_RESERVED;
-
-	// walk back to the end of the actual firmware
-	while (index > CODE_REGION_1_START && *--index == EMPTY_FLASH_MASK && code_size > 0)
-		code_size -= 4;
-
-    // only measure if there is something to measure
-    memset(hash, 0, SHA1_DIGEST_LENGTH);
-    if (code_size ==  0)
-        return;
-
-	NRF_RTC1->TASKS_START = 1;
-
-	uint32_t start_ticks, stop_ticks;
-
-	start_ticks = NRF_RTC1->COUNTER;
-    sha1_calc(code_address, code_size, hash);
-	stop_ticks = NRF_RTC1->COUNTER;
-
-	debug_print_ticks("SHA1 time in ticks: ", start_ticks, stop_ticks);
-
-	NRF_RTC1->TASKS_STOP = 1;
+    nrf_gpio_cfg_output(LED_0);
+    nrf_gpio_cfg_output(LED_1);
+    nrf_gpio_cfg_output(LED_2);
+    nrf_gpio_cfg_output(LED_7);
 }
 
-static bool
-_verify_fw_sha1(uint8_t *valid_hash)
+
+/**@brief Function for clearing the LEDs.
+ *
+ * @details Clears all LEDs used by the application.
+ */
+static void leds_off(void)
 {
-	uint8_t sha1[SHA1_DIGEST_LENGTH];
-    uint8_t comp = 0;
-    int i = 0;
-
-    _sha1_fw_area(sha1);
-
-#ifdef DEBUG
-    DEBUG("SHA1: ", sha1);
-#endif
-
-    for (i = 0; i < SHA1_DIGEST_LENGTH; i++)
-        comp |= sha1[i] ^ valid_hash[i];
-
-    return comp == 0;
+    nrf_gpio_pin_clear(LED_0);
+    nrf_gpio_pin_clear(LED_1);
+    nrf_gpio_pin_clear(LED_2);
+    nrf_gpio_pin_clear(LED_7);
 }
 
-bool dfu_success = false;
 
-extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
-
-void
-_start()
+/**@brief Function for initializing the GPIOTE handler module.
+ */
+static void gpiote_init(void)
 {
-	uint32_t err_code;
-    volatile uint8_t* proposed_fw_sha1 = __app_sha1_start__;
+    APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+}
 
-    uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
+/**@brief Function for the Timer initialization.
+ *
+ * @details Initializes the timer module.
+ */
+static void timers_init(void)
+{
+    // Initialize timer module, making it use the scheduler.
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+}
 
-	NRF_CLOCK->TASKS_LFCLKSTART = 1;
-	while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
 
-    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
+/**@brief Function for initializing the button module.
+ */
+static void buttons_init(void)
+{
+    nrf_gpio_cfg_sense_input(BOOTLOADER_BUTTON_PIN,
+                             BUTTON_PULL,
+                             NRF_GPIO_PIN_SENSE_LOW);
+}
 
-    PRINTS("\r\nBootloader v");
-	PRINTS(GIT_DESCRIPTION);
-	PRINTS(" is alive\r\n");
 
-	crash_log_save();
+/**@brief Function for dispatching a BLE stack event to all modules with a BLE stack event handler.
+ *
+ * @details This function is called from the scheduler in the main loop after a BLE stack
+ *          event has been received.
+ *
+ * @param[in]   p_ble_evt   Bluetooth stack event.
+ */
+static void sys_evt_dispatch(uint32_t event)
+{
+    pstorage_sys_event_handler(event);
+}
 
-#ifdef DEBUG
-    PRINTS("Device name: ");
-    PRINTS(BLE_DEVICE_NAME);
-    PRINTS("\r\n");
 
-	{
-		uint8_t mac_address[6];
+/**@brief Function for initializing the BLE stack.
+ *
+ * @details Initializes the SoftDevice and the BLE event interrupt.
+ */
+static void ble_stack_init(void)
+{
+    uint32_t err_code;
 
-		// MAC address is stored backwards; reverse it.
-		unsigned i;
-		for(i = 0; i < 6; i++) {
-			mac_address[i] = ((uint8_t*)NRF_FICR->DEVICEADDR)[5-i];
-		}
-		DEBUG("MAC address: ", mac_address);
-	}
-#endif
+    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
 
-#ifdef ECC_BENCHMARK
-	ecc_benchmark();
-#endif
+    err_code = softdevice_sys_evt_handler_set(sys_evt_dispatch);
+    APP_ERROR_CHECK(err_code);
+}
 
-	const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
 
-	if(!firmware_verified) {
-		PRINTS("Firmware doesn't match expected SHA-1: ");
-		PRINT_HEX(proposed_fw_sha1, 20);
-		PRINTS("\r\n");
-	}
+/**@brief Function for event scheduler initialization.
+ */
+static void scheduler_init(void)
+{
+    APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+}
 
-    if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
-        PRINTS("Application crashed :(\r\n");
-	}
 
-    if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
-        PRINTS("Forcefully booting into DFU mode.\r\n");
-	}
+/**@brief Function for application main entry.
+ */
+void _start()
+{
+    uint32_t err_code;
+    bool     bootloader_is_pushed = false;
 
-    if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK) || !firmware_verified) {
-	    PRINTS("Bootloader: in DFU mode...\r\n");
-		err_code = bootloader_dfu_start();
-		APP_ERROR_CHECK(err_code);
+    leds_init();
 
-		if (dfu_success) {
-			NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
+    // This check ensures that the defined fields in the bootloader corresponds with actual
+    // setting in the nRF51 chip.
+    APP_ERROR_CHECK_BOOL(NRF_UICR->CLENR0 == CODE_REGION_1_START);
 
-			// Need to turn the radio off before calling ble_flash_block_write?
-			ble_flash_on_radio_active_evt(false);
+    APP_ERROR_CHECK_BOOL(*((uint32_t *)NRF_UICR_BOOT_START_ADDRESS) == BOOTLOADER_REGION_START);
+    APP_ERROR_CHECK_BOOL(NRF_FICR->CODEPAGESIZE == CODE_PAGE_SIZE);
 
-			_sha1_fw_area(new_fw_sha1);
-			nrf_nvmc_page_erase(BOOTLOADER_SETTINGS_ADDRESS);
-			nrf_nvmc_write_words(BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
-		}
+    // Initialize.
+    timers_init();
+    gpiote_init();
+    buttons_init();
+    ble_stack_init();
+    scheduler_init();
 
-		NVIC_SystemReset();
-    } else {
-	    PRINTS("Bootloader kicking to app...\r\n");
-		interrupts_disable();
+    bootloader_is_pushed = ((nrf_gpio_pin_read(BOOTLOADER_BUTTON_PIN) == 0)? true: false);
 
-		err_code = sd_softdevice_forward_to_application();
-		APP_ERROR_CHECK(err_code);
+    if (bootloader_is_pushed || (!bootloader_app_is_valid(DFU_BANK_0_REGION_START)))
+    {
+        nrf_gpio_pin_set(LED_2);
 
-		StartApplication(CODE_REGION_1_START);
-	}
+        // Initiate an update of the firmware.
+        err_code = bootloader_dfu_start();
+        APP_ERROR_CHECK(err_code);
+
+        nrf_gpio_pin_clear(LED_2);
+    }
+
+    if (bootloader_app_is_valid(DFU_BANK_0_REGION_START))
+    {
+        leds_off();
+
+        // Select a bank region to use as application region.
+        // @note: Only applications running from DFU_BANK_0_REGION_START is supported.
+        bootloader_app_start(DFU_BANK_0_REGION_START);
+
+    }
+
+    nrf_gpio_pin_clear(LED_0);
+    nrf_gpio_pin_clear(LED_1);
+    nrf_gpio_pin_clear(LED_2);
+    nrf_gpio_pin_clear(LED_7);
+
+    NVIC_SystemReset();
 }

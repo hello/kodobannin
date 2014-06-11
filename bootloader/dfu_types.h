@@ -32,10 +32,14 @@
 #define PACKET_SIZE                     512                                                     /**< Size of each data packet. Also used for initial receiving of packets from transport layer. */
 #define PACKET_HEADER_SIZE              sizeof(uint32_t)                                        /**< Size of the data packet header. */
 
-#define CODE_REGION_1_START             0x00020000                                              /**< This field should correspond to the size of Code Region 0, (which is identical to Start of Code Region 1), found in UICR.CLEN0 register. This value is used for compile safety, as the linker will fail if application expands into bootloader. Runtime, the bootloader will use the value found in UICR.CLEN0. */
+#ifdef S310_STACK
+    #define CODE_REGION_1_START         0x00020000                                              /**< This field should correspond to the size of Code Region 0, (which is identical to Start of Code Region 1), found in UICR.CLEN0 register. This value is used for compile safety, as the linker will fail if application expands into bootloader. Runtime, the bootloader will use the value found in UICR.CLEN0. */
+#else
+    #define CODE_REGION_1_START         0x00014000                                              /**< This field should correspond to the size of Code Region 0, (which is identical to Start of Code Region 1), found in UICR.CLEN0 register. This value is used for compile safety, as the linker will fail if application expands into bootloader. Runtime, the bootloader will use the value found in UICR.CLEN0. */
+#endif 
 
-#define BOOTLOADER_REGION_START         0x00036000                                              /**< This field should correspond to start address of the bootloader, found in UICR.RESERVED, 0x10001014, register. This value is used for sanity check, so the bootloader will fail immediately if this value differs from runtime value. The value is used to determine max application size for updating. */
-#define BOOTLOADER_SETTINGS_ADDRESS     0x0003F800                                              /**< The field specifies the page location of the bootloader settings address. */
+#define BOOTLOADER_REGION_START         0x0003C800                                              /**< This field should correspond to start address of the bootloader, found in UICR.RESERVED, 0x10001014, register. This value is used for sanity check, so the bootloader will fail immediately if this value differs from runtime value. The value is used to determine max application size for updating. */
+#define BOOTLOADER_SETTINGS_ADDRESS     0x0003FC00                                              /**< The field specifies the page location of the bootloader settings address. */
 
 #define DFU_REGION_TOTAL_SIZE           (BOOTLOADER_REGION_START - CODE_REGION_1_START)         /**< Total size of the region between SD and Bootloader. */
 
@@ -74,7 +78,8 @@ typedef enum
     DFU_UPDATE_COMPLETE,                                                                        /**< Status update complete.*/
     DFU_BANK_0_ERASED,                                                                          /**< Status bank 0 erased.*/
     DFU_BANK_1_ERASED,                                                                          /**< Status bank 1 erased.*/
-    DFU_TIMEOUT                                                                                 /**< Status timeout.*/
+    DFU_TIMEOUT,                                                                                /**< Status timeout.*/
+    DFU_RESET                                                                                   /**< Status Reset to indicate current update procedure has been aborted and system should reset. */
 } dfu_update_status_code_t;
 
 /**@brief Structure holding DFU complete event.

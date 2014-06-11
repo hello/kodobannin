@@ -25,11 +25,22 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/**@brief DFU event callback for asynchronous calls.
+ *
+ * @param[in] result  Operation result code. NRF_SUCCESS when a queued operation was successful.
+ * @param[in] p_data  Pointer to the data to which the operation is related.
+ */
+typedef void (*dfu_callback_t)(uint32_t  result, uint8_t * p_data);
+
 /**@brief Function for initializing the Device Firmware Update module.
  * 
  * @return    NRF_SUCCESS on success, an error_code otherwise.
  */
 uint32_t dfu_init(void);
+
+/**@brief Function for registering a callback listener for \ref dfu_data_pkt_handle callbacks.
+ */
+void dfu_register_callback(dfu_callback_t callback_handler);
 
 /**@brief Function for setting the DFU image size. 
  *
@@ -67,6 +78,15 @@ uint32_t dfu_image_validate(void);
  * @return    NRF_SUCCESS on success, an error_code otherwise.
  */
 uint32_t dfu_image_activate(void);
+
+/**@brief Function for reseting the current update procedure and return to initial state.
+ *        
+ * @details This function call will result in a system reset to ensure correct system behavior.
+ *          The reset will might be scheduled to execute at a later point in time to ensure pending 
+ *          flash operations has completed.
+ *
+ */
+void dfu_reset(void);
 
 #endif // DFU_H__
 
