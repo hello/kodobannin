@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <app_timer.h>
 #include <ble_gatts.h>
 #include <ble_srv_common.h>
 
@@ -20,6 +21,8 @@ static struct hlo_ble_time _current_time;
 
 static uint8_t _big_buffer[256];
 
+static app_timer_id_t _stream_timer;
+
 static void
 _data_send_finished()
 {
@@ -28,7 +31,33 @@ _data_send_finished()
 static void
 _stream_write_handler(ble_gatts_evt_write_t* event)
 {
+    switch(event->data[0]) {
+    case 0x00:
+        // stop realtime accelerometer stream
+        PRINTS("Stream stop\r\n");
+        app_timer_stop(_stream_timer);
+        break;
+    case 0x01:
+        // start realtime accelerometer stream
+        PRINTS("Stream start\r\n");
+        app_timer_start(_stream_timer, 32768, NULL);
+        break;
+    }
+}
 
+static void
+_stream(void* context)
+{
+    PRINTS("_stream\r\n");
+
+    uint8_t accelerometer_values[6];
+#if 1
+    imu_accel_reg_read(accelerometer_values);
+#endif
+
+    hlo_ble_notify(0xFFAA, accelerometer_values, sizeof(accelerometer_values), NULL);
+
+    PRINTS("_stream done.\r\n");
 }
 
 static void
@@ -154,4 +183,6 @@ pill_ble_services_init()
         hlo_ble_char_write_command_add(0xFFA1, &_stream_write_handler, 1);
         hlo_ble_char_notify_add(0xFFAA);
     }
+
+    APP_OK(app_timer_create(&_stream_timer, APP_TIMER_MODE_REPEATED, _stream));
 }
