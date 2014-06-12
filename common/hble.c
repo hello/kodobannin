@@ -32,6 +32,7 @@ _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_DISCONNECTED:
         _connection_handle = BLE_CONN_HANDLE_INVALID;
+        hble_advertising_start();
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
         APP_OK(sd_ble_gap_sec_params_reply(_connection_handle,
