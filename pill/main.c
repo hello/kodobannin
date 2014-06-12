@@ -44,11 +44,16 @@ _start()
 
     BOOL_OK(twi_master_init());
 
+    enum {
+        SCHED_QUEUE_SIZE = 20,
+        SCHED_MAX_EVENT_DATA_SIZE = MAX(APP_TIMER_SCHED_EVT_SIZE, BLE_STACK_HANDLER_SCHED_EVT_SIZE),
+    };
+
+    APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
     APP_TIMER_INIT(APP_TIMER_PRESCALER,
                    APP_TIMER_MAX_TIMERS,
                    APP_TIMER_OP_QUEUE_SIZE,
                    true);
-    APP_SCHED_INIT(8, 8);
     APP_GPIOTE_INIT(8);
 
     // append something to device name
