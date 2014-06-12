@@ -20,4 +20,10 @@ struct hlo_ble_time
     } __attribute__((packed));
 } __attribute__((packed));
 
+#ifdef DEBUG
 void hlo_ble_time_printf(struct hlo_ble_time* ble_time);
+#else
+static inline void hlo_ble_time_printf(struct hlo_ble_time* ble_time)
+{
+}
+#endif
