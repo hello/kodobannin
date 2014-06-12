@@ -134,7 +134,7 @@ _start()
 	ecc_benchmark();
 #endif
 
-	const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
+	// const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
         PRINTS("Application crashed :(\r\n");
