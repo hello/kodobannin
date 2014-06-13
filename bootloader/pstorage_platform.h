@@ -52,7 +52,7 @@
     #define PSTORAGE_RAW_START_ADDR   0x00014000                                                /**< Start address for Raw access mode, configurable based on use case. */
 #endif
 
-#define PSTORAGE_RAW_END_ADDR       0x0003C800                                                  /**< End address for Raw access mode, configurable based on use case. */
+#define PSTORAGE_RAW_END_ADDR       0x00036000                                                  /**< End address for Raw access mode, configurable based on use case. */
 #endif // PSTORAGE_RAW_MODE_ENABLE
 
 
