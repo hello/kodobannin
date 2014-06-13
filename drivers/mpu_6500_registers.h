@@ -44,6 +44,13 @@ typedef enum MPU_Registers {
 	MPU_REG_FIFO_CNT_LO                    = 115,
 	MPU_REG_FIFO                           = 116,
 	MPU_REG_WHO_AM_I                       = 117,
+    MPU_REG_XA_OFFS_H = 119,
+    MPU_REG_XA_OFFS_L = 120,
+    MPU_REG_YA_OFFS_H = 122,
+    MPU_REG_YA_OFFS_L = 123,
+    MPU_REG_ZA_OFFS_H = 125,
+    MPU_REG_ZA_OFFS_L = 126,
+
 } MPU_Register_t;
 
 enum MPU_Reg_Bits {
