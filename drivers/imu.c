@@ -248,6 +248,10 @@ void imu_set_data_ready_callback(imu_data_ready_callback_t callback)
 void imu_set_wom_callback(imu_wom_callback_t callback)
 {
     _settings.wom_callback = callback;
+
+    if(callback) {
+        imu_deactivate();
+    }
 }
 
 void
