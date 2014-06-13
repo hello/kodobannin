@@ -7,6 +7,9 @@
 #include <ble_gatts.h>
 #include <ble_srv_common.h>
 
+#include "imu_data.h"
+#include "sensor_data.h"
+#include "imu.h"
 #include "rtc.h"
 #include "hlo_ble.h"
 #include "hlo_ble_time.h"
@@ -21,7 +24,28 @@ static struct hlo_ble_time _current_time;
 
 static uint8_t _big_buffer[256];
 
-static app_timer_id_t _stream_timer;
+static uint8_t _imu_data[12];
+
+static void
+_send_imu_data(void* imu_data, uint16_t fifo_bytes_available)
+{
+    hlo_ble_notify(0xFFAA, imu_data, fifo_bytes_available, NULL);
+}
+
+static void
+_imu_data_ready(uint16_t fifo_bytes_available)
+{
+    fifo_bytes_available = MIN(12, fifo_bytes_available);
+    imu_fifo_read(fifo_bytes_available, _imu_data);
+    app_sched_event_put(_imu_data, fifo_bytes_available, _send_imu_data);
+}
+
+static void
+_imu_wom_callback(struct sensor_data_header* header)
+{
+    uint16_t fifo_size = header->size;
+    DEBUG("IMU FIFO size: ", fifo_size);
+}
 
 static void
 _data_send_finished()
@@ -35,29 +59,17 @@ _stream_write_handler(ble_gatts_evt_write_t* event)
     case 0x00:
         // stop realtime accelerometer stream
         PRINTS("Stream stop\r\n");
-        app_timer_stop(_stream_timer);
+        imu_set_data_ready_callback(NULL);
+        imu_set_wom_callback(_imu_wom_callback);
         break;
     case 0x01:
         // start realtime accelerometer stream
         PRINTS("Stream start\r\n");
-        app_timer_start(_stream_timer, 32768, NULL);
+        imu_set_wom_callback(NULL);
+        imu_activate();
+        imu_set_data_ready_callback(_imu_data_ready);
         break;
     }
-}
-
-static void
-_stream(void* context)
-{
-    PRINTS("_stream\r\n");
-
-    uint8_t accelerometer_values[6];
-#if 1
-    imu_accel_reg_read(accelerometer_values);
-#endif
-
-    hlo_ble_notify(0xFFAA, accelerometer_values, sizeof(accelerometer_values), NULL);
-
-    PRINTS("_stream done.\r\n");
 }
 
 static void
@@ -184,5 +196,5 @@ pill_ble_services_init()
         hlo_ble_char_notify_add(0xFFAA);
     }
 
-    APP_OK(app_timer_create(&_stream_timer, APP_TIMER_MODE_REPEATED, _stream));
+    imu_set_wom_callback(_imu_wom_callback);
 }
