@@ -633,7 +633,7 @@ void imu_deactivate()
         // account for the hardware being stupid. (If we use delay for
         // exactly one sampling interval, the MPU-6500 still decides
         // to retrigger the wake-on-motion interrupt all the
-        // time. Sigh.)
+        // time.)
 
         _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE|PWR_MGMT_1_PD_PTAT);
 
@@ -727,27 +727,34 @@ _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to
 {
     uint8_t interrupt_status = imu_clear_interrupt_status();
 
-    if(interrupt_status & INT_STS_WOM_INT) {
-        PRINTS("IMU: motion detected.\r\n");
+    bool known_interrupt = false;
 
-        if(_settings.wom_callback) {
-            if(!_start_motion_time) {
-                (void) app_timer_cnt_get(&_start_motion_time);
-            }
-            (void) app_timer_cnt_get(&_last_motion_time);
+    if((interrupt_status & INT_STS_WOM_INT) && _settings.wom_callback) {
+        known_interrupt = true;
 
-            imu_activate();
+        PRINTS("IMU IRQ: motion detected.\r\n");
 
-            // The _wom_timer below may already be running, but the nRF
-            // documentation for app_timer_start() specifically says "When
-            // calling this method on a timer which is already running, the
-            // second start operation will be ignored." So we're OK here.
-            APP_OK(app_timer_start(_wom_timer, IMU_COLLECTION_INTERVAL, NULL));
+        if(!_start_motion_time) {
+            (void) app_timer_cnt_get(&_start_motion_time);
         }
+        (void) app_timer_cnt_get(&_last_motion_time);
+
+        imu_activate();
+
+        // The _wom_timer below may already be running, but the nRF
+        // documentation for app_timer_start() specifically says "When
+        // calling this method on a timer which is already running, the
+        // second start operation will be ignored." So we're OK here.
+        APP_OK(app_timer_start(_wom_timer, IMU_COLLECTION_INTERVAL, NULL));
     }
 
-    if(_settings.data_ready_callback && (interrupt_status & INT_STS_RAW_READY)) {
+    if((interrupt_status & INT_STS_RAW_READY) && _settings.data_ready_callback) {
+        known_interrupt = true;
         _settings.data_ready_callback(imu_fifo_bytes_available());
+    }
+
+    if(!known_interrupt) {
+        DEBUG("IMU IRQ unknown interrupt: ", interrupt_status);
     }
 }
 
@@ -944,12 +951,14 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
     _reset_sensors();
     _reset_active_sample_rate();
 
+    imu_deactivate();
+
     nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
     APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_wom_process));
     APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
     APP_OK(app_gpiote_user_enable(_gpiote_user));
 
-    imu_deactivate();
+    imu_clear_interrupt_status();
 
 	PRINTS("IMU: initialization done.\r\n");
 
