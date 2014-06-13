@@ -7,15 +7,26 @@
 #include <platform.h>
 #include <app_error.h>
 #include <nrf_delay.h>
+#include <nrf_gpio.h>
 #include <string.h>
+#include <app_gpiote.h>
 
 #include "imu.h"
 #include "mpu_6500_registers.h"
+#include "sensor_data.h"
+
 #include <watchdog.h>
 
-#define BUF_SIZE 4
+enum {
+    IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
+};
 
-static SPI_Context _ctx;
+static SPI_Context _spi_context;
+
+static app_timer_id_t _wom_timer;
+static app_gpiote_user_id_t _gpiote_user;
+static uint32_t _start_motion_time;
+static uint32_t _last_motion_time;
 
 static struct imu_settings _settings = {
 	.wom_threshold = 35,
@@ -27,6 +38,8 @@ static struct imu_settings _settings = {
 	.ticks_to_fill_fifo = 0,
 	.ticks_to_fifo_watermark = 0,
 	.active = true,
+    .data_ready_callback = NULL,
+    .wom_callback = NULL,
 };
 
 static inline void
@@ -35,7 +48,7 @@ _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 	uint8_t buf[2] = { SPI_Read(register_address), 0};
 	int32_t ret;
 
-	ret  = spi_xfer(&_ctx, 1, buf, 1, out_value);
+	ret  = spi_xfer(&_spi_context, 1, buf, 1, out_value);
 	APP_ERROR_CHECK_BOOL(ret == 1);
 }
 
@@ -45,7 +58,7 @@ _register_write(MPU_Register_t register_address, uint8_t value)
 	uint8_t buf[2] = { SPI_Write(register_address), value };
 	int32_t ret;
 
-	ret = spi_xfer(&_ctx, 2, buf, 0, NULL);
+	ret = spi_xfer(&_spi_context, 2, buf, 0, NULL);
 	APP_ERROR_CHECK_BOOL(ret == 2);
 }
 
@@ -166,7 +179,7 @@ void
 imu_set_accel_range(enum imu_accel_range range)
 {
 	_settings.accel_range = range;
-           _reset_accel_range();
+    _reset_accel_range();
 }
 
 static void
@@ -182,12 +195,12 @@ imu_set_gyro_range(enum imu_gyro_range range)
 	_reset_gyro_range();
 }
 
-void imu_clear_interrupt_status()
+uint8_t imu_clear_interrupt_status()
 {
     // Oddly, you clear the interrupt status register by _reading_ it,
     // not writing to it. Read that again for impact.
     //
-    // If you have INT_CFG_CLR_ON_STS set in the MPU_REG_INT_CFG
+    // If you have INTCFG_CLR_ON_STS set in the MPU_REG_INT_CFG
     // register (which we do), then you must read MPU_REG_INT_STS to
     // clear the interrupt status. If INT_CFG_CLR_ANY_READ is active,
     // then the interrupt status is cleared by reading _any_ register,
@@ -195,6 +208,8 @@ void imu_clear_interrupt_status()
 
     uint8_t int_status;
     _register_read(MPU_REG_INT_STS, &int_status);
+
+    return int_status;
 }
 
 void imu_set_sensors(enum imu_sensor_set sensors)
@@ -208,6 +223,31 @@ void imu_set_sensors(enum imu_sensor_set sensors)
     _reset_sensors();
 
 	DEBUG("IMU: sensors set to ", sensors);
+}
+
+void imu_set_data_ready_callback(imu_data_ready_callback_t callback)
+{
+    if(callback == _settings.data_ready_callback) {
+        return;
+    }
+
+    uint8_t interrupt_enable_register;
+    _register_read(MPU_REG_INT_EN, &interrupt_enable_register);
+
+    if(callback) {
+        interrupt_enable_register |= INT_EN_RAW_READY;
+    } else {
+        interrupt_enable_register &= ~INT_EN_RAW_READY;
+    }
+
+    _register_write(MPU_REG_INT_EN, interrupt_enable_register);
+
+    _settings.data_ready_callback = callback;
+}
+
+void imu_set_wom_callback(imu_wom_callback_t callback)
+{
+    _settings.wom_callback = callback;
 }
 
 void
@@ -229,7 +269,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 	if (count == 0)
 		return 0;
 
-	count = spi_xfer(&_ctx, 1, data, count, buf);
+	count = spi_xfer(&_spi_context, 1, data, count, buf);
 
 	imu_clear_interrupt_status();
 
@@ -623,13 +663,215 @@ static void _low_power_setup()
     _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE);
     _register_write(MPU_REG_INT_EN, INT_EN_WOM);
 }
+
+static void
+_imu_wom_process(void* context)
+{
+    uint32_t err;
 
+    uint32_t current_time;
+    (void) app_timer_cnt_get(&current_time);
+
+    uint32_t ticks_since_last_motion;
+    (void) app_timer_cnt_diff_compute(current_time, _last_motion_time, &ticks_since_last_motion);
+
+    uint32_t ticks_since_motion_start;
+    (void) app_timer_cnt_diff_compute(current_time, _start_motion_time, &ticks_since_motion_start);
+
+    struct imu_settings settings;
+    imu_get_settings(&settings);
+
+    // DEBUG("Ticks since last motion: ", ticks_since_last_motion);
+    // DEBUG("Ticks since motion start: ", ticks_since_motion_start);
+    // DEBUG("FIFO watermark ticks: ", settings.ticks_to_fifo_watermark);
+
+    if(ticks_since_last_motion < IMU_COLLECTION_INTERVAL
+       && ticks_since_motion_start < settings.ticks_to_fifo_watermark) {
+        err = app_timer_start(_wom_timer, IMU_COLLECTION_INTERVAL, NULL);
+        APP_ERROR_CHECK(err);
+        return;
+    }
+
+    imu_wom_disable();
+
+    // [TODO]: Figure out IMU profile here; need to add profile
+    // support to imu.c
+
+    struct sensor_data_header header = {
+        .signature = 0x55AA,
+        .checksum = 0,
+        .size = imu_fifo_bytes_available(),
+        .type = SENSOR_DATA_IMU_PROFILE_0,
+        .timestamp = 123456789,
+        .duration = 50,
+    };
+    header.checksum = memsum(&header, sizeof(header));
+
+    if(_settings.wom_callback) {
+        _settings.wom_callback(&header);
+    }
+
+    _start_motion_time = 0;
+
+    imu_deactivate();
+
+    PRINTS("Deactivating IMU.\r\n");
+}
+
+static void
+_imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
+{
+    uint8_t interrupt_status = imu_clear_interrupt_status();
+
+    if(interrupt_status & INT_STS_WOM_INT) {
+        PRINTS("IMU: motion detected.\r\n");
+
+        if(_settings.wom_callback) {
+            if(!_start_motion_time) {
+                (void) app_timer_cnt_get(&_start_motion_time);
+            }
+            (void) app_timer_cnt_get(&_last_motion_time);
+
+            imu_activate();
+
+            // The _wom_timer below may already be running, but the nRF
+            // documentation for app_timer_start() specifically says "When
+            // calling this method on a timer which is already running, the
+            // second start operation will be ignored." So we're OK here.
+            APP_OK(app_timer_start(_wom_timer, IMU_COLLECTION_INTERVAL, NULL));
+        }
+    }
+
+    if(_settings.data_ready_callback && (interrupt_status & INT_STS_RAW_READY)) {
+        _settings.data_ready_callback(imu_fifo_bytes_available());
+    }
+}
+
+void
+imu_printf_wom_callback(struct sensor_data_header* header)
+{
+    DEBUG("IMU sensor data header: ", *header);
+
+    uint16_t fifo_size = header->size;
+    DEBUG("IMU FIFO size: ", fifo_size);
+
+    imu_printf_data_ready_callback(fifo_size);
+}
+
+void
+imu_printf_data_ready_callback(uint16_t fifo_bytes_available)
+{
+    (void)fifo_bytes_available;
+
+    uint8_t buf[6];
+    imu_accel_reg_read(buf);
+    PRINT_HEX(buf, sizeof(buf));
+    PRINTS("\r\n");
+}
+
+void
+imu_printf_data_ready_callback_fifo(uint16_t fifo_bytes_available)
+{
+    PRINT_HEX(&fifo_bytes_available, sizeof(fifo_bytes_available));
+    PRINTS(" ");
+
+    while(fifo_bytes_available > 0) {
+        // For MAX_FIFO_READ_SIZE, we want to use a number that (1)
+        // will not overflow the stack (keep it under ~2k), and is (2)
+        // evenly divisible by 12, which is the number of bytes per
+        // sample if we're sampling from both gyroscope and the
+        // accelerometer.
+
+        enum {
+            MAX_FIFO_READ_SIZE = 1920, // Evenly divisible by 48
+        };
+
+        unsigned read_size = MIN(fifo_bytes_available, MAX_FIFO_READ_SIZE);
+        read_size -= fifo_bytes_available % 6;
+
+        uint8_t imu_data[read_size];
+        uint16_t bytes_read = imu_fifo_read(read_size, imu_data);
+
+        fifo_bytes_available -= bytes_read;
+
+#define PRINT_FIFO_DATA
+
+#ifdef PRINT_FIFO_DATA
+        unsigned i;
+        for(i = 0; i < bytes_read; i += sizeof(int16_t)) {
+            if(i % 6 == 0 && i != 0) {
+                PRINTS("\r\n");
+            }
+            int16_t* p = (int16_t*)(imu_data+i);
+            PRINT_HEX(p, sizeof(int16_t));
+        }
+
+        PRINTS("\r\n");
+#endif
+    }
+}
+
+void
+imu_calibrate_zero()
+{
+    imu_data_ready_callback_t active_data_ready_callback = _settings.data_ready_callback;
+    imu_set_data_ready_callback(NULL);
+    imu_wom_callback_t active_wom_callback = _settings.wom_callback;
+    imu_set_wom_callback(NULL);
+
+    enum imu_accel_range active_accel_range = _settings.accel_range;
+    imu_set_accel_range(IMU_ACCEL_RANGE_2G);
+
+    union int16_bits instantaneous_values[3];
+    imu_accel_reg_read(instantaneous_values[0].bytes);
+    DEBUG("Instantaneous: ", instantaneous_values);
+
+    union uint16_bits offset_values[3];
+    _register_read(MPU_REG_XA_OFFS_H, &offset_values[0].bytes[1]);
+    _register_read(MPU_REG_XA_OFFS_L, &offset_values[0].bytes[0]);
+    _register_read(MPU_REG_YA_OFFS_H, &offset_values[1].bytes[1]);
+    _register_read(MPU_REG_YA_OFFS_L, &offset_values[1].bytes[0]);
+    _register_read(MPU_REG_ZA_OFFS_H, &offset_values[2].bytes[1]);
+    _register_read(MPU_REG_ZA_OFFS_L, &offset_values[2].bytes[0]);
+    DEBUG("Old offsets: ", offset_values);
+    // printf("Old offsets: %d %d %d\r\n", offset_values[0].value, offset_values[1].value, offset_values[2].value);
+
+    offset_values[0].value = 0 - (instantaneous_values[0].value >> 3);
+    offset_values[1].value = 0 - (instantaneous_values[1].value >> 3);
+    offset_values[2].value = 0x800 - (instantaneous_values[2].value >> 3);
+
+    // for(unsigned i = 0; i < 3; i++){
+    //     offset_values[i].value -= (instantaneous_values[i].value >> 3);
+    //     // offset_values[i].value -= 0x100;
+    // }
+    // offset_values[2].value += 0x800;
+    DEBUG("New offsets: ", offset_values);
+
+	_register_write(MPU_REG_XA_OFFS_H, offset_values[0].bytes[1]);
+    _register_write(MPU_REG_XA_OFFS_L, offset_values[0].bytes[0]);
+	_register_write(MPU_REG_YA_OFFS_H, offset_values[1].bytes[1]);
+    _register_write(MPU_REG_YA_OFFS_L, offset_values[1].bytes[0]);
+    _register_write(MPU_REG_ZA_OFFS_H, offset_values[2].bytes[1]);
+	_register_write(MPU_REG_ZA_OFFS_L, offset_values[2].bytes[0]);
+
+    uint8_t user_control;
+    _register_read(MPU_REG_USER_CTL, &user_control);
+    user_control |= USR_CTL_FIFO_RST;
+    _register_write(MPU_REG_USER_CTL, user_control);
+    imu_fifo_clear();
+
+    imu_set_accel_range(active_accel_range);
+    imu_set_data_ready_callback(active_data_ready_callback);
+    imu_set_wom_callback(active_wom_callback);
+}
+
+
 int32_t
 imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
 {
  	int32_t err;
 
-	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_ctx);
+	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
 	if (err != 0) {
 		PRINTS("Could not configure SPI bus for IMU\r\n");
 		return err;
@@ -698,7 +940,12 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
     _reset_sensors();
     _reset_active_sample_rate();
 
-	imu_deactivate();
+    nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
+    APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_wom_process));
+    APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
+    APP_OK(app_gpiote_user_enable(_gpiote_user));
+
+    imu_deactivate();
 
 	PRINTS("IMU: initialization done.\r\n");
 

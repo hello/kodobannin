@@ -6,7 +6,14 @@
 
 #include "imu_data.h"
 
-#define IMU_FIFO_CAPACITY 4096 // Must be 512, 1024, 2048 or 4096
+struct sensor_data_header;
+
+enum {
+    IMU_FIFO_CAPACITY = 4096, // Must be 512, 1024, 2048 or 4096
+};
+
+typedef void(*imu_data_ready_callback_t)(uint16_t fifo_bytes_available);
+typedef void(*imu_wom_callback_t)(struct sensor_data_header* header);
 
 struct imu_settings {
 	uint16_t wom_threshold; // in microgravities
@@ -18,6 +25,8 @@ struct imu_settings {
     unsigned ticks_to_fill_fifo;
 	unsigned ticks_to_fifo_watermark;
 	bool active;
+    imu_data_ready_callback_t data_ready_callback;
+    imu_wom_callback_t wom_callback;
 };
 
 /* See README_IMU.md for an introduction to the IMU, and vocabulary
@@ -29,7 +38,7 @@ int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uin
 
 uint16_t imu_accel_reg_read(uint8_t *buf);
 uint16_t imu_read_regs(uint8_t *buf);
-void imu_set_sample_rate(uint8_t hz);
+void imu_set_sample_rate(enum imu_hz hz);
 
 void imu_set_accel_range(enum imu_accel_range range);
 void imu_set_gyro_range(enum imu_gyro_range range);
@@ -50,5 +59,13 @@ bool imu_is_active();
 void imu_activate();
 /// Deactivate the IMU by putting it into sleep mode. This also clears the the IMU interrupt.
 void imu_deactivate();
-void imu_clear_interrupt_status();
+uint8_t imu_clear_interrupt_status();
 void imu_wom_disable();
+
+void imu_set_data_ready_callback(imu_data_ready_callback_t callback);
+void imu_set_wom_callback(imu_wom_callback_t callback);
+
+void imu_printf_wom_callback(struct sensor_data_header* header);
+void imu_printf_data_ready_callback(uint16_t fifo_bytes_available);
+
+void imu_calibrate_zero();
