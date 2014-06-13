@@ -25,7 +25,17 @@ struct pill_command
         struct hlo_ble_time set_time;
     };
 } __attribute__((packed));
+
+enum pill_stream_command_type {
+    PILL_STREAM_COMMAND_STOP,
+    PILL_STREAM_COMMAND_START,
+} __attribute__((packed));
 
+struct pill_stream_command
+{
+    enum pill_stream_command_type command;
+} __attribute__((packed));
+
 enum pill_data_response_type {
     PILL_DATA_RESPONSE_ACK,
     PILL_DATA_RESPONSE_MISSING,

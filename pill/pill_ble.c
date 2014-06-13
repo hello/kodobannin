@@ -55,16 +55,14 @@ _data_send_finished()
 static void
 _stream_write_handler(ble_gatts_evt_write_t* event)
 {
-    switch(event->data[0]) {
-    case 0x00:
-        // stop realtime accelerometer stream
-        PRINTS("Stream stop\r\n");
+    struct pill_stream_command* command = (struct pill_stream_command*)event->data;
+
+    switch(command->command) {
+    case PILL_STREAM_COMMAND_STOP:
         imu_set_data_ready_callback(NULL);
         imu_set_wom_callback(_imu_wom_callback);
         break;
-    case 0x01:
-        // start realtime accelerometer stream
-        PRINTS("Stream start\r\n");
+    case PILL_STREAM_COMMAND_START:
         imu_set_wom_callback(NULL);
         imu_activate();
         imu_set_data_ready_callback(_imu_data_ready);
