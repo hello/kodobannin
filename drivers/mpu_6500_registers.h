@@ -75,7 +75,9 @@ enum MPU_Reg_Bits {
 	INT_EN_FSYNC       = (1UL << 3),
 	INT_EN_RAW_READY   = (1UL << 0),
 
+    INT_STS_WOM_INT = (1UL << 6),
 	INT_STS_FIFO_OVRFLO = (1UL << 4),
+    INT_STS_RAW_READY = (1UL << 0),
 
 	CONFIG_LPF_32kHz_8800bw = 0,
 	CONFIG_LPF_32kHz_3600bw = 0,
