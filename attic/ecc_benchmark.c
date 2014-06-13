@@ -4,11 +4,13 @@
 
 #include <nrf51.h>
 
-#include "ecc.h"
+#define uECC_CURVE uECC_secp160r1
+
+#include "uECC.h"
 #include "sha1.h"
 #include "util.h"
 
-#if ECC_CURVE == 4
+#if uECC_CURVE == 4
 
 static uint32_t private_0[NUM_ECC_DIGITS] = {0xA900C5AF, 0xFD4D7240, 0x108DE95B, 0x8FAF8AD1};
 static EccPoint public_0 = {
@@ -19,7 +21,7 @@ static EccPoint public_1 = {
 	{0xF686BE87, 0xFFA3BAC7, 0x3E131BF4, 0x6A431448},
     {0x277C9196, 0xDF8A5581, 0x29AF0A89, 0xF8832A32}};
 
-#elif ECC_CURVE == 6
+#elif uECC_CURVE == 6
 
 static uint32_t private_0[NUM_ECC_DIGITS] = {0x24CC0981, 0x426997E1, 0x87A7A90E, 0x8FD5DA9D, 0x87D0CDAD, 0x489B0F3B};
 static EccPoint public_0 = {
@@ -30,7 +32,7 @@ static EccPoint public_1 = {
 	{0xDDB31CB8, 0xF4373C76, 0x10D9DB46, 0xE1DD295D, 0x436B987A, 0x17E9B1C7},
     {0xE1A02F9D, 0xC002D249, 0x7CB5C6C0, 0x5B62BE4B, 0xE9E81017, 0xB9FC7041}};
 
-#elif ECC_CURVE == 12
+#elif uECC_CURVE == 12
 
 static uint32_t private_0[NUM_ECC_DIGITS] = {0x1340E83E, 0x6F0F2B9F, 0x2390C740, 0xA35B380C, 0x3740C400, 0x6DE75C8B, 0xE868AF31, 0x47D69CA5, 0x54B7A33D, 0x1C1F0DD5, 0xFF7FF7BA, 0x06323156};
 static EccPoint public_0 = {
@@ -42,10 +44,10 @@ static EccPoint public_1 = {
     {0x61EAA726, 0x07D8838C, 0x32EF9492, 0xF52938B7, 0xAD79F96C, 0xD31D2390, 0x7FBB2F0B, 0x10017AA0, 0x6D82DB7A, 0x5DE01886, 0x44F5FA69, 0xC0C90B50}};
 
 #else
-#error Need to define ECC_CURVE (e.g. -DECC_CURVE=6)
+#error Need to define uECC_CURVE (e.g. -DuECC_CURVE=6)
 #endif
 
-#define NUM_ECC_DIGITS ECC_CURVE
+#define NUM_ECC_DIGITS uECC_CURVE
 
 void ecc_benchmark()
 {
@@ -59,7 +61,7 @@ void ecc_benchmark()
 
 	memset(message_hash, 0xAC, sizeof(message_hash));
 
-	static const uint8_t ecc_curve = ECC_CURVE;
+	static const uint8_t ecc_curve = uECC_CURVE;
 	DEBUG("ECC curve (number of digits): ", ecc_curve);
 
 	static uint32_t RANDOMS[12] = { 398201, 5489012, 3217890, 3218902, 4789312, 4312789, 398201, 5489012, 3217890, 3218902, 4789312, 4312789 };
