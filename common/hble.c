@@ -124,7 +124,7 @@ hble_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler, char* device_na
         ble_gap_conn_sec_mode_t sec_mode;
         BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
-        APP_OK(sd_ble_gap_device_name_set(&sec_mode, (char*)device_name, strlen(device_name)));
+        APP_OK(sd_ble_gap_device_name_set(&sec_mode, (const uint8_t* const)device_name, strlen(device_name)));
 
         ble_gap_conn_params_t gap_conn_params = {};
         gap_conn_params.min_conn_interval = MIN_CONN_INTERVAL;
