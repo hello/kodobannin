@@ -31,7 +31,7 @@ static uint32_t _last_motion_time;
 static struct imu_settings _settings = {
 	.wom_threshold = 35,
 	.inactive_sample_rate = IMU_HZ_15_63,
-    .active_sample_rate = IMU_HZ_31_25,
+    .active_sample_rate = IMU_HZ_15_63,
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
     .accel_range = IMU_ACCEL_RANGE_2G,
 	.gyro_range = IMU_GYRO_RANGE_2000_DPS,
