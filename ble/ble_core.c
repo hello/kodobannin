@@ -168,7 +168,6 @@ ble_gap_sec_params_init(void)
 void
 ble_gap_params_init(char* device_name)
 {
-	uint32_t                err_code;
 	ble_gap_conn_params_t   gap_conn_params;
 	ble_gap_conn_sec_mode_t sec_mode;
 
