@@ -173,10 +173,10 @@ $(BUILD_DIR)/git_description.o: $(BUILD_DIR)/git_description.c | $(CC)
 DEBUG = 1
 
 ifeq ($(DEBUG), 1)
-OPTFLAGS=-O0 -g -DDEBUG_SERIAL=1
+OPTFLAGS=-O0 -g -DDEBUG_SERIAL=1 -DuECC_ASM=0
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
-OPTFLAGS=-Os -g -DECC_ASM=1
+OPTFLAGS=-Os -g -DuECC_ASM=2
 endif
 
 NRFREV=NRF51422_QFAA_ED
