@@ -22,12 +22,12 @@ static uint16_t _pill_service_handle;
 static uint16_t _stream_service_handle;
 static struct hlo_ble_time _current_time;
 
-static uint8_t _big_buffer[256];
+static uint8_t _daily_data[1440];
 
-static uint8_t _imu_data[12];
+static uint8_t _imu_realtime_stream_data[12];
 
 static void
-_send_imu_data(void* imu_data, uint16_t fifo_bytes_available)
+_send_imu_realtime_stream_data(void* imu_data, uint16_t fifo_bytes_available)
 {
     hlo_ble_notify(0xFFAA, imu_data, fifo_bytes_available, NULL);
 }
@@ -36,15 +36,34 @@ static void
 _imu_data_ready(uint16_t fifo_bytes_available)
 {
     fifo_bytes_available = MIN(12, fifo_bytes_available);
-    imu_fifo_read(fifo_bytes_available, _imu_data);
-    app_sched_event_put(_imu_data, fifo_bytes_available, _send_imu_data);
+    imu_fifo_read(fifo_bytes_available, _imu_realtime_stream_data);
+    app_sched_event_put(_imu_realtime_stream_data, fifo_bytes_available, _send_imu_realtime_stream_data);
+}
+
+enum aggregation_method {
+    AGGREGATE_SAMPLES_MAX = 0,
+    AGGREGATE_SAMPLES_AVERAGE = 1,
+};
+
+static void
+_aggregate_samples(uint8_t* data, uint16_t size, enum aggregation_method method)
+{
+    /* ~k/build/pill+pill_EVT1 % echo $(( (255**2+255**2+255**2) >> 10)) */
 }
 
 static void
 _imu_wom_callback(struct sensor_data_header* header)
 {
-    uint16_t fifo_size = header->size;
-    DEBUG("IMU FIFO size: ", fifo_size);
+    enum {
+        MAX_FIFO_READ_SIZE = 180, // 30 samples worth of accelerometer data
+    };
+
+    unsigned read_size = MIN(header->size, MAX_FIFO_READ_SIZE);
+
+    uint8_t data[read_size];
+    imu_fifo_read(read_size, data);
+
+    _aggregate_samples(data, read_size, AGGREGATE_SAMPLES_MAX);
 }
 
 static void
@@ -101,13 +120,22 @@ _command_write_handler(ble_gatts_evt_write_t* event)
 
     switch(command->command) {
     case PILL_COMMAND_STOP_ACCELEROMETER:
+        imu_set_wom_callback(NULL);
+        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+        break;
     case PILL_COMMAND_START_ACCELEROMETER:
+        imu_set_wom_callback(_imu_wom_callback);
+        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+        break;
     case PILL_COMMAND_CALIBRATE:
+        imu_calibrate_zero();
+        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+        break;
     case PILL_COMMAND_DISCONNECT:
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
     case PILL_COMMAND_SEND_DATA:
-        hlo_ble_notify(0xFEED, _big_buffer, sizeof(_big_buffer), _data_send_finished);
+        hlo_ble_notify(0xFEED, _daily_data, sizeof(_daily_data), _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
         {
@@ -193,6 +221,4 @@ pill_ble_services_init()
         hlo_ble_char_write_command_add(0xFFA1, &_stream_write_handler, 1);
         hlo_ble_char_notify_add(0xFFAA);
     }
-
-    imu_set_wom_callback(_imu_wom_callback);
 }
