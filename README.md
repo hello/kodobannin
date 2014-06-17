@@ -18,7 +18,7 @@ It's easiest to understand these with examples. Some examples of hardware platfo
 * band_EVT3: EVT-3 version of the Band.
 * EK: **E**valuation **K**it, a more colloquial name for the Nordic PCA10001 nRF51822 evaluation board.
 
-Some examples of apps are:
+Some examples of apps are: 
 
 * band: The firmware for the Band, which collects accelerometer and heart rate data, saves the data to storage, and transfers the data back to a phone via Bluetooth Low Energy (BLE).
 * morpheus: The firmware for Morpheus, which collects environmental data (e.g. temperature and humidity) and audio, processes and stores that data, and sends the data back to Hello servers via Wi-Fi.
