@@ -5,11 +5,11 @@ all: b m
 
 # apps & platforms
 
-TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test pill_test
+TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test morpheus_test pill_test
 APPS = band bootloader morpheus pill $(TEST_APPS)
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
-S310_PLATFORMS = pca10003 pill_EVT1
+S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 
 # product aliases
@@ -173,7 +173,7 @@ $(BUILD_DIR)/git_description.o: $(BUILD_DIR)/git_description.c | $(CC)
 DEBUG = 1
 
 ifeq ($(DEBUG), 1)
-OPTFLAGS=-O0 -g -DDEBUG_SERIAL=1 -DuECC_ASM=0
+OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
 OPTFLAGS=-Os -g -DuECC_ASM=2
@@ -184,7 +184,7 @@ NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV) -DBLE_STAC
 MICROECCFLAGS=-DECC_CURVE=6 # see ecc.h for details
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup
-WARNFLAGS=-Wall -Werror -Wno-packed-bitfield-compat -Wno-format
+WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -std=gnu99 -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 
