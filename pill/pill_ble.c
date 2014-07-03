@@ -15,6 +15,9 @@
 #include "hlo_ble_time.h"
 #include "pill_ble.h"
 #include "util.h"
+#include "message_app.h"
+#include "message_uart.h"
+#include "platform.h"
 
 extern uint8_t hello_type;
 
@@ -26,6 +29,10 @@ static uint8_t _daily_data[1440];
 
 static uint8_t _imu_realtime_stream_data[12];
 
+static void
+_test_event(void* event_data, uint16_t event_size){
+    PRINTS("GOT TEST EVENT");
+}
 static void
 _send_imu_realtime_stream_data(void* imu_data, uint16_t fifo_bytes_available)
 {
@@ -220,5 +227,13 @@ pill_ble_services_init()
 
         hlo_ble_char_write_command_add(0xFFA1, &_stream_write_handler, 1);
         hlo_ble_char_notify_add(0xFFAA);
+    }
+	app_uart_comm_params_t uartp = {SERIAL_RX_PIN,SERIAL_TX_PIN,SERIAL_RTS_PIN,SERIAL_CTS_PIN,0,1,38400};
+	MSG_Base_t * uart_test = MSG_Uart_Init(&uartp, NULL);
+    MSG_Base_t * test = MSG_App_Init(_test_event );
+    if(test){
+        test->queue(NULL);
+    }else{
+        PRINTS("FAIL");
     }
 }
