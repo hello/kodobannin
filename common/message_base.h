@@ -10,7 +10,6 @@
 
 typedef struct{
     uint32_t len;
-    void ( *dtor )(MSG_Data_t*);
     uint8_t  buf[];
 }MSG_Data_t;
 
