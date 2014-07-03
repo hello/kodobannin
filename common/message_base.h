@@ -29,6 +29,7 @@ typedef enum{
 typedef enum{
     SUCCESS = 0,
     FAIL,
+    OOM
 }MSG_Status;
 
 /**
@@ -43,7 +44,7 @@ typedef struct{
     MSG_Status ( *destroy ) ( void );
     MSG_Status ( *flush ) ( void );
     //probably need a source parameter
-    MSG_Status ( *queue ) (  MSG_Data_t * data  );
+    MSG_Status ( *send ) (  MSG_Data_t * data  );
 }MSG_Base_t;
 
 #endif

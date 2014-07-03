@@ -57,7 +57,7 @@ _flush(void){
     return SUCCESS;
 }
 static MSG_Status
-_queue(MSG_Data_t * data){
+_send(MSG_Data_t * data){
     return SUCCESS;
 }
 static void

@@ -21,7 +21,7 @@ _flush(void){
     return SUCCESS;
 }
 static MSG_Status
-_queue(MSG_Data_t * data){
+_send(MSG_Data_t * data){
     uint32_t ret = app_sched_event_put(&ret, sizeof(ret), self.notifier);
     PRINT_HEX(&ret, sizeof(ret));
 
@@ -35,7 +35,7 @@ MSG_Base_t * MSG_App_Init( app_sched_event_handler_t handler ){
         self.base.init = _init;
         self.base.destroy = _destroy;
         self.base.flush = _flush;
-        self.base.queue = _queue;
+        self.base.send = _send;
     }
     
     return &self.base;
