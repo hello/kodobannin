@@ -8,9 +8,10 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+
 typedef struct{
     uint32_t len;
-    uint8_t  buf[];
+    uint8_t  *buf;
 }MSG_Data_t;
 
 typedef enum{
