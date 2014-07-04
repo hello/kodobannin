@@ -1,47 +1,12 @@
 #include "nrf.h"
-#include "message_uart.h"
 #include "util.h"
+#include "message_uart.h"
 
 static struct{
     MSG_Base_t base;
     MSG_Base_t * parent;
     bool initialized;
 }self;
-void UART0_IRQHandler(void)
-{
-    uint8_t m_rx_byte;
-    if (NRF_UART0->EVENTS_RXDRDY != 0)
-    {
-
-        // Clear UART RX event flag
-        NRF_UART0->EVENTS_RXDRDY  = 0;
-        m_rx_byte                 = (uint8_t)NRF_UART0->RXD;    
-        //NRF_UART0->TXD = (uint8_t)m_rx_byte;
-        
-    }
-    /*
-    // TX not ready yet 
-    // Handle transmission.
-    if (NRF_UART0->EVENTS_TXDRDY != 0)
-    {
-        // Clear UART TX event flag.
-        NRF_UART0->EVENTS_TXDRDY = 0;
-    }
-    */
-    // Handle errors.
-    if (NRF_UART0->EVENTS_ERROR != 0)
-    {
-        uint32_t       error_source;
-
-        // Clear UART ERROR event flag.
-        NRF_UART0->EVENTS_ERROR = 0;
-        
-        // Clear error source.
-        error_source        = NRF_UART0->ERRORSRC;
-        NRF_UART0->ERRORSRC = error_source;
-
-    }
-}
 
 static MSG_Status
 _init(void){
@@ -58,25 +23,56 @@ _flush(void){
 }
 static MSG_Status
 _send(MSG_Data_t * data){
+    for(int i = 0; i < data->len; i++){
+        app_uart_put(data->buf[i]);
+    }
     return SUCCESS;
 }
 static void
 _uart_event_handler(app_uart_evt_t * evt){
-    PRINTS("Event");
+    uint8_t c;
+    switch(evt->evt_type){
+        /**< An event indicating that UART data has been received. The data is available in the FIFO and can be fetched using @ref app_uart_get. */
+        case APP_UART_DATA_READY:
+            while(!app_uart_get(&c)){
+                app_uart_put(c);
+            }
+            break;
+        /**< An error in the FIFO module used by the app_uart module has occured. The FIFO error code is stored in app_uart_evt_t.data.error_code field. */
+        case APP_UART_FIFO_ERROR:
+            break;
+        /**< An communication error has occured during reception. The error is stored in app_uart_evt_t.data.error_communication field. */
+        case APP_UART_COMMUNICATION_ERROR:
+            break;
+        /**< An event indicating that UART has completed transmission of all available data in the TX FIFO. */
+        case APP_UART_TX_EMPTY:
+            break;
+        /**< An event indicating that UART data has been received, and data is present in data field. This event is only used when no FIFO is configured. */
+        case APP_UART_DATA:
+            break;
+    }
 }
 
 MSG_Base_t * MSG_Uart_Init(const app_uart_comm_params_t * params, MSG_Base_t * central){
     uint32_t err;
+    if(self.initialized){
+        return &self.base;
+    }
     self.parent = central;
-    NRF_UART0->INTENCLR = 0xffffffffUL;
-    NRF_UART0->INTENSET = (UART_INTENSET_RXDRDY_Set << UART_INTENSET_RXDRDY_Pos) |
-            //disabed tx interrupt for now for cross compatibility of simple_uart
-            //will be reimplemented later
-            //            (UART_INTENSET_TXDRDY_Set << UART_INTENSET_TXDRDY_Pos) |
-                          (UART_INTENSET_ERROR_Set << UART_INTENSET_ERROR_Pos);
-
-    NVIC_ClearPendingIRQ(UART0_IRQn);
-    NVIC_SetPriority(UART0_IRQn, APP_IRQ_PRIORITY_LOW);
-    NVIC_EnableIRQ(UART0_IRQn);
+    APP_UART_FIFO_INIT(params, 32, 512, _uart_event_handler, APP_IRQ_PRIORITY_HIGH, err);
+    if(!err){
+        self.initialized = 1;
+    }
     return &self.base;
 }
+void MSG_Uart_Prints(const char * str){
+    if(self.initialized){
+        char * head = str;
+        while(*head){
+            app_uart_put(*head);
+            head++;
+        }
+        app_uart_put('\0');
+    }
+}
+
