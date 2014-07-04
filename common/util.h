@@ -3,6 +3,7 @@
 #pragma once
 
 #include <app_error.h>
+#include "message_uart.h"
 
 extern const uint8_t hex[16];
 
@@ -18,10 +19,9 @@ extern const uint8_t hex[16];
 
 #ifdef DEBUG_SERIAL //=====================================
 #include <simple_uart.h>
-#define PRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
-#define PRINTS(a) simple_uart_putstring((const uint8_t *)a)
-#define PRINTC(a) simple_uart_put(a)
-int printf(const char *fmt, ...);
+#define PRINT_HEX(a,b) {}
+#define PRINTS(a) MSG_Uart_Prints(a)
+#define PRINTC(a) {}
 #else //---------------------------------------------------
 #define PRINT_HEX(a,b) {}
 #define PRINTS(a) {}
