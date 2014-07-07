@@ -8,6 +8,8 @@
 #include "message_base.h"
 
 
+#define MSG_UART_COMMAND_MAX_SIZE 32
+
 MSG_Base_t * MSG_Uart_Init(const app_uart_comm_params_t * params, MSG_Base_t * central);
 //quick print function for debug
 void MSG_Uart_Prints(const char * str);

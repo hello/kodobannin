@@ -6,6 +6,8 @@ static struct{
     MSG_Base_t base;
     MSG_Base_t * parent;
     bool initialized;
+    char cmdbuf[MSG_UART_COMMAND_MAX_SIZE];
+    uint8_t cmdbuf_index;
 }self;
 
 static MSG_Status
@@ -28,6 +30,12 @@ _send(MSG_Data_t * data){
     }
     return SUCCESS;
 }
+static MSG_Status
+_buf_to_msg_data(MSG_Data_t * out_msg_data){
+    if(out_msg_data){
+        out_msg_data->len = self.cmdbuf_index;
+    }
+}
 static void
 _uart_event_handler(app_uart_evt_t * evt){
     uint8_t c;
@@ -35,7 +43,34 @@ _uart_event_handler(app_uart_evt_t * evt){
         /**< An event indicating that UART data has been received. The data is available in the FIFO and can be fetched using @ref app_uart_get. */
         case APP_UART_DATA_READY:
             while(!app_uart_get(&c)){
-                app_uart_put(c);
+                switch(c){
+                    case '\r':
+                    case '\n':
+                        if(self.cmdbuf_index){
+                            app_uart_put('\n');
+                            app_uart_put('\r');
+                            //execute command
+                            _buf_to_msg_data(0);
+                            self.parent->send(0);
+                            self.cmdbuf_index = 0;
+                        }
+                        break;
+                    case '\b':
+                    case '\177': // backspace
+                        if(self.cmdbuf_index){
+                            app_uart_put('\b');
+                            app_uart_put(' ');
+                            app_uart_put('\b');
+                            self.cmdbuf_index--;
+                        }
+                        break;
+                    default:
+                        app_uart_put(c);
+                        if(self.cmdbuf_index < MSG_UART_COMMAND_MAX_SIZE - 1){
+                            self.cmdbuf_index++;
+                        }
+                        break;
+                }
             }
             break;
         /**< An error in the FIFO module used by the app_uart module has occured. The FIFO error code is stored in app_uart_evt_t.data.error_code field. */
