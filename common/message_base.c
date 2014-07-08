@@ -26,10 +26,19 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     CRITICAL_REGION_EXIT();
     return ret;
 }
+//TODO
+//this method is unsafe, switch to strncpy later
 MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str){
-    //wrapper for implementing string copy that drops null terminator
-    //
-    return NULL;
+    if(!str) return NULL;
+    int n = strlen(str);
+    n = MIN(MSG_BASE_DATA_BUFFER_SIZE, n);
+    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(n);
+    if(ret){
+        memcpy(ret->buf, str, n);
+        return ret;
+    }else{
+        return NULL;
+    }
 }
 
 MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
