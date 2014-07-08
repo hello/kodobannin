@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include "util.h"
 #include "message_cli.h"
 
 typedef struct{
@@ -15,13 +16,14 @@ MSG_Status MSG_Cli_Initialize(void){
         self.cli_cmds[i].handler = NULL;
         self.cli_cmds[i].name[0] = '\0';
     }
+    return SUCCESS;
 }
-MSG_Status MSG_Cli_Register_Command(const char * name, msg_cli_cmd cmd){
+MSG_Status MSG_Cli_Register_Command(const char * name, msg_cli_handler handler){
     MSG_Cmd_t * tmp;
     for(int i = 0; i < MSG_CLI_MAX_COMMANDS; i++){
         tmp = &self.cli_cmds[i];
         if(!tmp -> handler){
-            tmp->handler = cmd;
+            tmp->handler = handler;
             strncpy(tmp->name, name, MSG_CLI_MAX_NAME_LEN);
             return SUCCESS;
         }
@@ -29,6 +31,16 @@ MSG_Status MSG_Cli_Register_Command(const char * name, msg_cli_cmd cmd){
     return OOM;
 }
 MSG_Status MSG_Cli_Exec(const MSG_Data_t * d){
-    message_cli
+    MSG_Cmd_t * tmp = 0;
+    if(d->len > 0){
+        for(int i = 0; i < MSG_CLI_MAX_COMMANDS; i++){
+            //need to tokenize but for now just use entire msg
+            tmp = &self.cli_cmds[i];
+            if(!memcmp(tmp->name, d->buf, MIN(d->len, MSG_CLI_MAX_NAME_LEN)) && tmp->handler){
+                tmp->handler(0,0);
+            }
+        }
+    }
+    return SUCCESS;
 
 }
