@@ -19,7 +19,7 @@ extern const uint8_t hex[16];
 
 #ifdef DEBUG_SERIAL //=====================================
 #include <simple_uart.h>
-#define PRINT_HEX(a,b) {}
+#define PRINT_HEX(a,b) MSG_Uart_PrintHex(a,b) 
 #define PRINTS(a) MSG_Uart_Prints(a)
 #define PRINTC(a) {}
 #else //---------------------------------------------------
