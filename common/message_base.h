@@ -1,3 +1,4 @@
+#pragma once
 /**
  * Messaging framework type declarations.
  *
@@ -5,13 +6,14 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#ifndef MESSAGE_H
-#define MESSAGE_H
 
+#define MSG_BASE_SHARED_POOL_SIZE 10
+#define MSG_BASE_DATA_BUFFER_SIZE 31
 
 typedef struct{
     uint32_t len;
-    uint8_t  *buf;
+    uint8_t  ref;
+    uint8_t  buf[31];
 }MSG_Data_t;
 
 typedef enum{
@@ -47,5 +49,8 @@ typedef struct{
     //probably need a source parameter
     MSG_Status ( *send ) (  MSG_Data_t * data  );
 }MSG_Base_t;
+MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size);
+MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str);
 
-#endif
+MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
+MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
