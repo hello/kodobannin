@@ -4,11 +4,12 @@
 
 static struct{
     MSG_Base_t base;
-    MSG_Base_t * parent;
+    MSG_Central_t * parent;
     bool initialized;
     char cmdbuf[MSG_UART_COMMAND_MAX_SIZE];
     uint8_t cmdbuf_index;
 }self;
+static char * name = "UART";
 
 static MSG_Status
 _init(void){
@@ -24,7 +25,7 @@ _flush(void){
     return SUCCESS;
 }
 static MSG_Status
-_send(MSG_Data_t * data){
+_send(MSG_ModuleType src, MSG_Data_t * data){
     if(data){
         MSG_Base_AcquireDataAtomic(data);
         for(int i = 0; i < data->len; i++){
@@ -61,7 +62,7 @@ _uart_event_handler(app_uart_evt_t * evt){
                             {
                                 MSG_Data_t * d = MSG_Base_AllocateDataAtomic(self.cmdbuf_index);
                                 _buf_to_msg_data(d);
-                                self.parent->send(d);
+                                self.parent->send(0,11,d);
                                 MSG_Base_ReleaseDataAtomic(d);
                             }
                             self.cmdbuf_index = 0;
@@ -103,16 +104,19 @@ _uart_event_handler(app_uart_evt_t * evt){
     }
 }
 
-MSG_Base_t * MSG_Uart_Init(const app_uart_comm_params_t * params, MSG_Base_t * central){
+MSG_Base_t * MSG_Uart_Init(const app_uart_comm_params_t * params, const MSG_Central_t * parent){
     uint32_t err;
     if(self.initialized){
         return &self.base;
     }
-    self.parent = central;
     self.base.init = _init;
     self.base.destroy = _destroy;
     self.base.flush = _flush;
     self.base.send = _send;
+    self.base.type = UART;
+    self.base.typestr = name;
+
+    self.parent = parent;
     APP_UART_FIFO_INIT(params, 32, 512, _uart_event_handler, APP_IRQ_PRIORITY_HIGH, err);
     if(!err){
         self.initialized = 1;
