@@ -52,13 +52,12 @@ MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str);
 MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
 
-
-#define MSG_SEND_TO_UART(r,s) do{ \
-    MSG_Data_t * tmp = MSG_Base_AllocateStringAtomic(s); \
-    r->send(0,UART, tmp);\
+#define MSG_PING(c,r) do{ \
+    MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(1); \
+    tmp->buf[0] = 0; \
+    c->send(0,r, tmp);\
     MSG_Base_ReleaseDataAtomic(tmp); \
     }while(0)
-    
     
 
 
