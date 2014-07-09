@@ -52,9 +52,9 @@ MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str);
 MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
 
-#define MSG_PING(c,r) do{ \
+#define MSG_PING(c,r,i) do{ \
     MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(1); \
-    tmp->buf[0] = 0; \
+    tmp->buf[0] = i; \
     c->send(0,r, tmp);\
     MSG_Base_ReleaseDataAtomic(tmp); \
     }while(0)
