@@ -12,7 +12,8 @@ typedef struct{
         PING=0,
         SYNC,
         STOP_PERIODIC,
-        SET_1_S_PERIODIC
+        SET_1S_RESOLUTION,
+        SET_5S_RESOLUTION
     }cmd;
     union{
         struct rtc_time_t time;
