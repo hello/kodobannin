@@ -15,6 +15,7 @@ typedef enum{
     BTLE,
     ANT,
     RTC,
-    CLI
+    CLI,
+    TIME
 }MSG_ModuleType;
 
