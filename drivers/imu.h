@@ -5,6 +5,7 @@
 #include "spi_nor.h"
 
 #include "imu_data.h"
+#include "message_base.h"
 
 struct sensor_data_header;
 
@@ -29,12 +30,23 @@ struct imu_settings {
     imu_wom_callback_t wom_callback;
 };
 
+typedef struct{
+    enum{
+        IMU_PING=0,
+		IMU_READ_XYZ
+    }cmd;
+    union{
+		struct imu_accel16_sample out_accel;
+    }param;
+}MSG_IMUCommand_t;
+
 /* See README_IMU.md for an introduction to the IMU, and vocabulary
    that you may need to understand the rest of this. */
 
 /// Initializes the IMU.
 /** This immediately sets the IMU into sleep (deactivated) mode, with some default values specified in the _settings variable in imu.c. You will get an interrupt low trigger on IMU_INT when the IMU detects motion.  */
 int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS);
+MSG_Base_t * imu_init_base(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS, MSG_Central_t * central);
 
 uint16_t imu_accel_reg_read(uint8_t *buf);
 uint16_t imu_read_regs(uint8_t *buf);

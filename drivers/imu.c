@@ -14,6 +14,7 @@
 #include "imu.h"
 #include "mpu_6500_registers.h"
 #include "sensor_data.h"
+#include "message_base.h"
 
 #include <watchdog.h>
 
@@ -27,6 +28,12 @@ static app_timer_id_t _wom_timer;
 static app_gpiote_user_id_t _gpiote_user;
 static uint32_t _start_motion_time;
 static uint32_t _last_motion_time;
+static char * name = "IMU";
+static bool initialized;
+
+static MSG_Central_t * parent;
+static MSG_Base_t base;
+
 
 static struct imu_settings _settings = {
 	.wom_threshold = 35,
@@ -754,8 +761,10 @@ _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to
     }
 
     if(!known_interrupt) {
-        DEBUG("IMU IRQ unknown interrupt: ", interrupt_status);
+       // DEBUG("IMU IRQ unknown interrupt: ", interrupt_status);
     }
+	MSG_PING(parent,IMU,IMU_READ_XYZ);
+
 }
 
 void
@@ -876,6 +885,58 @@ imu_calibrate_zero()
     imu_set_wom_callback(active_wom_callback);
 }
 
+static MSG_Status
+_init(void){
+    return SUCCESS;
+}
+
+static MSG_Status
+_destroy(void){
+    return SUCCESS;
+}
+
+static MSG_Status
+_flush(void){
+    return SUCCESS;
+}
+
+static MSG_Status
+_send(MSG_ModuleType src, MSG_Data_t * data){
+	if(data){
+		MSG_Base_AcquireDataAtomic(data);
+		MSG_IMUCommand_t * cmd = data->buf;
+		switch(cmd->cmd){
+			default:
+			case IMU_PING:
+				break;
+			case IMU_READ_XYZ:
+				imu_accel_reg_read(&cmd->param.out_accel);
+				PRINT_HEX(&cmd->param.out_accel, 6);
+				break;
+		}
+		MSG_Base_ReleaseDataAtomic(data);
+		PRINTS("\r\n");
+	}
+    return SUCCESS;
+}
+
+MSG_Base_t *
+imu_init_base(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS, MSG_Central_t * central){
+	if(!initialized){
+		parent = central;
+        base.init = _init;
+        base.destroy = _destroy;
+        base.flush = _flush;
+        base.send = _send;
+        base.type = IMU;
+        base.typestr = name;
+		if(!imu_init(channel,mode,miso,mosi,sclk,nCS)){
+			initialized = 1;
+		}
+	}
+	return &base;
+
+}
 
 int32_t
 imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
