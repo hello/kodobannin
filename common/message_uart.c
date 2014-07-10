@@ -8,6 +8,9 @@ static struct{
     bool initialized;
     char cmdbuf[MSG_UART_COMMAND_MAX_SIZE];
     uint8_t cmdbuf_index;
+    MSG_Data_t * tx_queue[8];
+    MSG_Data_t * current_tx;
+    uint8_t * tx_ptr;
 }self;
 static char * name = "UART";
 
@@ -117,7 +120,7 @@ MSG_Base_t * MSG_Uart_Init(const app_uart_comm_params_t * params, const MSG_Cent
     self.base.typestr = name;
 
     self.parent = parent;
-    APP_UART_FIFO_INIT(params, 32, 512, _uart_event_handler, APP_IRQ_PRIORITY_HIGH, err);
+    APP_UART_FIFO_INIT(params, sizeof(MSG_Data_t), sizeof(MSG_Data_t), _uart_event_handler, APP_IRQ_PRIORITY_HIGH, err);
     if(!err){
         self.initialized = 1;
     }
