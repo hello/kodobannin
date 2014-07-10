@@ -8,7 +8,7 @@ static struct{
     MSG_Base_t base;
     bool initialized;
     struct rtc_time_t time;
-    uint64_t monotonic_time;
+    uint64_t monotonic_time;//used for internal datastructure
     MSG_Central_t * central;
     app_timer_id_t timer_id;
 }self;
@@ -31,7 +31,9 @@ _flush(void){
 }
 static void
 _timer_handler(void * ctx){
-    self.monotonic_time += 5000;
+    self.monotonic_time += 1000;
+    //in the future tf should be handled in a separate module
+    TF_UpdateIdx(self.monotonic_time);
     PRINT_HEX(&self.monotonic_time, sizeof(self.monotonic_time));
 }
 
@@ -43,23 +45,24 @@ _send(MSG_ModuleType src, MSG_Data_t * data){
         MSG_TimeCommand_t * tmp = data->buf;
         switch(tmp->cmd){
             default:
-            case PING:
+            case TIME_PING:
                 PRINTS("TIMEPONG");
                 break;
-            case SYNC:
+            case TIME_SYNC:
                 self.time = tmp->param.time;
                 PRINT_HEX(&tmp->param.time, sizeof(tmp->param.time));
                 break;
-            case STOP_PERIODIC:
+            case TIME_STOP_PERIODIC:
                 PRINTS("STOP_HEARTBEAT");
+                app_timer_stop(self.timer_id);
                 break;
-            case SET_1S_RESOLUTION:
+            case TIME_SET_1S_RESOLUTION:
                 PRINTS("PERIODIC 1S");
                 ticks = APP_TIMER_TICKS(1000,APP_TIMER_PRESCALER);
                 app_timer_stop(self.timer_id);
                 app_timer_start(self.timer_id, ticks, NULL);
                 break;
-            case SET_5S_RESOLUTION:
+            case TIME_SET_5S_RESOLUTION:
                 PRINTS("PERIODIC 1S");
                 ticks = APP_TIMER_TICKS(5000,APP_TIMER_PRESCALER);
                 app_timer_stop(self.timer_id);
@@ -83,6 +86,7 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
         self.central = central;
         self.monotonic_time = 0;
         if(app_timer_create(&self.timer_id,APP_TIMER_MODE_REPEATED,_timer_handler) == NRF_SUCCESS){
+            TF_Initialize(self.monotonic_time);
             self.initialized = 1;
         }
     }

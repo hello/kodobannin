@@ -9,11 +9,11 @@
 
 typedef struct{
     enum{
-        PING=0,
-        SYNC,
-        STOP_PERIODIC,
-        SET_1S_RESOLUTION,
-        SET_5S_RESOLUTION
+        TIME_PING=0,
+        TIME_SYNC,
+        TIME_STOP_PERIODIC,
+        TIME_SET_1S_RESOLUTION,
+        TIME_SET_5S_RESOLUTION
     }cmd;
     union{
         struct rtc_time_t time;
