@@ -20,7 +20,6 @@ static void
 _future_event_handler(void* event_data, uint16_t event_size){
     future_event * evt = event_data;
     if(evt->dst < MSG_CENTRAL_MODULE_NUM && self.mods[evt->dst]){
-        PRINTS("FOUND");
         self.mods[evt->dst]->send(evt->src, evt->data);
     }else{
         if(self.unknown_handler){
