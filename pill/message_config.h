@@ -11,7 +11,7 @@
 typedef enum{
     CENTRAL = 0,
     UART,
-    SPI,
+    IMU,
     BTLE,
     ANT,
     RTC,
