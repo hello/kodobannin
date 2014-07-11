@@ -120,7 +120,7 @@ MSG_Base_t * MSG_Uart_Init(const app_uart_comm_params_t * params, const MSG_Cent
     self.base.typestr = name;
 
     self.parent = parent;
-    APP_UART_FIFO_INIT(params, 64, 512, _uart_event_handler, APP_IRQ_PRIORITY_HIGH, err);
+    APP_UART_FIFO_INIT(params, 32, 256, _uart_event_handler, APP_IRQ_PRIORITY_HIGH, err);
     if(!err){
         self.initialized = 1;
     }
@@ -140,7 +140,7 @@ void MSG_Uart_Prints(const char * str){
 void MSG_Uart_PrintHex(const uint8_t * ptr, uint32_t len){
 	while(len-- >0) {
 		app_uart_put(hex[0xF&(*ptr>>4)]);
-		app_uart_put(hex[0xF&*ptr++]);
-		app_uart_put(' ');
+        app_uart_put(hex[0xF&*ptr++]);
+        app_uart_put(' ');
 	}
 }
