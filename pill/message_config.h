@@ -12,7 +12,7 @@ typedef enum{
     CENTRAL = 0,
     UART,
     IMU,
-    BTLE,
+    BLE,
     ANT,
     RTC,
     CLI,
