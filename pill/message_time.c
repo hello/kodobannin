@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <nrf_soc.h>
 #include "app_timer.h"
 #include "message_time.h"
 #include "util.h"
@@ -29,11 +30,33 @@ static MSG_Status
 _flush(void){
     return SUCCESS;
 }
+static uint8_t 
+_incCarry(uint8_t * target, uint8_t carry, uint8_t overflow){
+    *target = *target + carry;
+    if(*target > overflow){
+        *target = 0;
+        return 1;
+    }
+    return 0;
+}
 static void
 _timer_handler(void * ctx){
+    uint8_t carry;
     self.monotonic_time += 1000;
     TF_TickOneSecond();
-    //add internal bletime
+    {
+        struct hlo_ble_time t = self.ble_time;
+        _incCarry(&t.year,
+                _incCarry(&t.month,
+                    _incCarry(&t.day,
+                        _incCarry(&t.hours,
+                            _incCarry(&t.minutes,
+                                _incCarry(&t.seconds, 1, 59),59),23),31),12),9999);
+        PRINT_HEX(&t, sizeof(t));
+        CRITICAL_REGION_ENTER();
+        self.ble_time = t;
+        CRITICAL_REGION_EXIT();
+    }
 }
 
 static MSG_Status
