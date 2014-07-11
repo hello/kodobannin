@@ -93,3 +93,6 @@ static inline uint32_t __attribute__((const)) bswap32(uint32_t x)
 
 #undef MAX
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
+
+#undef ABS
+#define ABS(a) (a>0?a:-a)
