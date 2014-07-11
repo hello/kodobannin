@@ -5,16 +5,36 @@
  */
 
 #include <stdint.h>
+#include "hlo_ble_time.h"
 
 /*
  * change this to be the unit of the fifo
  */
 
 //time of each index
-#define TF_UNIT_TIME_MS 60000 
+#define TF_UNIT_TIME_S 60 
 #define TF_BUFFER_SIZE (2 * 60)
 typedef uint16_t tf_unit_t;
 
-void TF_Initialize(uint64_t initial_time);
-uint16_t TF_UpdateIdx(uint64_t current_time);
-tf_unit_t * TF_GetCurrent(void);
+typedef struct{
+    uint8_t version;
+    uint8_t reserved_1;
+    uint16_t length;
+    uint8_t seconds;
+    uint8_t minutes;
+    uint8_t hours;
+    uint8_t day;
+    uint8_t month;
+    uint8_t reserved_2;
+    uint16_t year;
+    uint16_t idx;
+    tf_unit_t data[TF_BUFFER_SIZE];
+}tf_data_t;
+
+
+void TF_Initialize(const struct hlo_ble_time * init_time);
+uint16_t TF_UpdateTime(const struct hlo_ble_time * new_time);
+void TF_TickOneSecond(void);
+tf_unit_t TF_GetCurrent(void);
+void TF_SetCurrent(tf_unit_t val);
+tf_data_t * TF_GetAll(void);
