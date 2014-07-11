@@ -15,6 +15,7 @@
 #include "mpu_6500_registers.h"
 #include "sensor_data.h"
 #include "message_base.h"
+#include "timedfifo.h"
 
 #include <watchdog.h>
 
@@ -36,7 +37,7 @@ static MSG_Base_t base;
 
 
 static struct imu_settings _settings = {
-	.wom_threshold = 35,
+	.wom_threshold = 15,
 	.inactive_sample_rate = IMU_HZ_15_63,
     .active_sample_rate = IMU_HZ_15_63,
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
@@ -911,7 +912,16 @@ _send(MSG_ModuleType src, MSG_Data_t * data){
 				break;
 			case IMU_READ_XYZ:
 				imu_accel_reg_read(&cmd->param.out_accel);
-				PRINT_HEX(&cmd->param.out_accel, 6);
+				int32_t aggregate = ABS(cmd->param.out_accel.x)^2 + ABS(cmd->param.out_accel.y)^2 + ABS(cmd->param.out_accel.z)^2;
+				if( aggregate > UINT16_MAX){
+					aggregate = UINT16_MAX;
+				}
+				if(TF_GetCurrent() < aggregate ){
+					TF_SetCurrent((uint16_t)aggregate);
+					PRINTS("NEW MAX: ");
+					PRINT_HEX(&aggregate, sizeof(aggregate));
+				}
+				
 				break;
 		}
 		MSG_Base_ReleaseDataAtomic(data);
@@ -1020,6 +1030,7 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
     APP_OK(app_gpiote_user_enable(_gpiote_user));
 
     imu_clear_interrupt_status();
+imu_calibrate_zero();
 
 	PRINTS("IMU: initialization done.\r\n");
 
