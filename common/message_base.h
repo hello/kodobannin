@@ -55,9 +55,19 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
 #define MSG_PING(c,r,i) do{ \
     MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(1); \
     tmp->buf[0] = i; \
-    c->send(0,r, tmp);\
+    if(c) c->send(0,r, tmp);\
     MSG_Base_ReleaseDataAtomic(tmp); \
     }while(0)
     
-
+#define MSG_SEND(central, recipient, command, payload, len) do{\
+    MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(len + 1);\
+    if(obj){\
+        if(central){\
+            obj->buf[0] = command;\
+            memcpy(obj->buf+1, payload,len);\
+            central->send(0,recipient,obj);\
+        }\
+        MSG_Base_ReleaseDataAtomic(obj);\
+    }\
+}while(0)
 
