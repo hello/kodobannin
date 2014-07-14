@@ -52,10 +52,10 @@ _timer_handler(void * ctx){
                         _incCarry(&t.hours,
                             _incCarry(&t.minutes,
                                 _incCarry(&t.seconds, 1, 59),59),23),31),12),9999);
-        PRINT_HEX(&t, sizeof(t));
         CRITICAL_REGION_ENTER();
         self.ble_time = t;
         CRITICAL_REGION_EXIT();
+        TF_UpdateTime(&t);
     }
 }
 
