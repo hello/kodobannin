@@ -133,7 +133,6 @@ void MSG_Uart_Prints(const char * str){
             app_uart_put(*head);
             head++;
         }
-        app_uart_put('\0');
     }
 }
 
