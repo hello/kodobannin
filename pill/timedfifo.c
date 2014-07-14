@@ -8,13 +8,16 @@ static struct{
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
     self.data.length = sizeof(self);
+    self.data.idx = 0;
+    TF_UpdateTime(init_time);
+}
+void TF_UpdateTime(const struct hlo_ble_time * init_time){
     self.data.seconds = init_time->seconds;
     self.data.minutes = init_time->minutes;
     self.data.hours = init_time->hours;
     self.data.day = init_time->day;
     self.data.month = init_time->month;
     self.data.year = init_time->year;
-    self.data.idx = 0;
 }
 void TF_TickOneSecond(void){
     PRINTS("*");
