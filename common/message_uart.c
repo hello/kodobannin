@@ -62,7 +62,6 @@ _uart_event_handler(app_uart_evt_t * evt){
                             {
                                 MSG_Data_t * d = MSG_Base_AllocateDataAtomic(self.cmdbuf_index);
                                 _buf_to_msg_data(d);
-                                self.parent->send(0,11,d);
                                 MSG_Base_ReleaseDataAtomic(d);
                             }
                             self.cmdbuf_index = 0;
