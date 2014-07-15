@@ -5,10 +5,12 @@
 
 static struct{
     MSG_Central_t central;
+    MSG_Base_t base;
     bool initialized;
     app_sched_event_handler_t unknown_handler;
     MSG_Base_t * mods[MSG_CENTRAL_MODULE_NUM]; 
 }self;
+static name = "CENTRAL";
 
 typedef struct{
     MSG_ModuleType src;
@@ -31,7 +33,7 @@ _future_event_handler(void* event_data, uint16_t event_size){
     }
 }
 static MSG_Status
-_send (MSG_ModuleType src, MSG_ModuleType dst, MSG_Data_t * data){
+_dispatch (MSG_ModuleType src, MSG_ModuleType dst, MSG_Data_t * data){
     if(data){
         MSG_Base_AcquireDataAtomic(data);
     }
@@ -79,9 +81,55 @@ MSG_Central_t * MSG_App_Central( app_sched_event_handler_t unknown_handler ){
         self.initialized = 1;
         self.central.loadmod = _loadmod;
         self.central.unloadmod = _unloadmod;
-        self.central.send = _send;
+        self.central.dispatch = _dispatch;
     }
     
     return &self.central;
 }
 
+static MSG_Status
+_init(void){
+    return SUCCESS;
+}
+
+static MSG_Status
+_destroy(void){
+    return SUCCESS;
+}
+
+static MSG_Status
+_flush(void){
+    return SUCCESS;
+}
+static MSG_Status
+_send(MSG_ModuleType src, MSG_Data_t * data){
+    if(data){
+        MSG_Base_AcquireDataAtomic(data);
+        MSG_AppCommand_t * tmp = data->buf;
+        switch(tmp->cmd){
+            default:
+            case APP_PING:
+                break;
+            case APP_LSMOD:
+                PRINTS("Loaded Mods\r\n");
+                for(int i = 0; i < MSG_CENTRAL_MODULE_NUM; i++){
+                    if(self.mods[i]){
+                        PRINTS(self.mods[i]->typestr);
+                        PRINTS("\r\n");
+                    }
+                }
+                break;
+        }
+        MSG_Base_ReleaseDataAtomic(data);
+    }
+    return SUCCESS;
+}
+MSG_Base_t * MSG_App_Base(MSG_Central_t * parent){
+    self.base.init = _init;
+    self.base.destroy = _destroy;
+    self.base.flush = _flush;
+    self.base.send = _send;
+    self.base.typestr = name;
+    self.base.type = CENTRAL;
+    return &self.base;
+}
