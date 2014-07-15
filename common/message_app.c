@@ -45,8 +45,12 @@ static MSG_Status
 _loadmod(MSG_Base_t * mod){
     if(mod){
         if(mod->type < MSG_CENTRAL_MODULE_NUM){
-            self.mods[mod->type] = mod;
-            return SUCCESS;
+            if(mod->init() == SUCCESS){
+                self.mods[mod->type] = mod;
+                return SUCCESS;
+            }else{
+                return FAIL;
+            }
         }else{
             return OOM;
         }
@@ -56,10 +60,12 @@ _loadmod(MSG_Base_t * mod){
 
 static MSG_Status
 _unloadmod(MSG_Base_t * mod){
+    MSG_Status ret;
     if(mod){
         if(mod->type < MSG_CENTRAL_MODULE_NUM){
+            ret = mod->destroy();
             self.mods[mod->type] = NULL;
-            return SUCCESS;
+            return ret;
         }else{
             return OOM;
         }
