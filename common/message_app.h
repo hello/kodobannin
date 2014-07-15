@@ -7,7 +7,7 @@
 #include <app_timer.h>
 
 
-MSG_Central_t * MSG_App_Init( app_sched_event_handler_t unknown_handler );
+MSG_Central_t * MSG_App_Central( app_sched_event_handler_t unknown_handler );
 
 
 #endif

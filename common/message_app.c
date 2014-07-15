@@ -4,7 +4,7 @@
 
 
 static struct{
-    MSG_Central_t base;
+    MSG_Central_t central;
     bool initialized;
     app_sched_event_handler_t unknown_handler;
     MSG_Base_t * mods[MSG_CENTRAL_MODULE_NUM]; 
@@ -73,14 +73,15 @@ _unloadmod(MSG_Base_t * mod){
     return FAIL;
 }
 
-MSG_Central_t * MSG_App_Init( app_sched_event_handler_t unknown_handler ){
+MSG_Central_t * MSG_App_Central( app_sched_event_handler_t unknown_handler ){
     if ( !self.initialized ){
         self.unknown_handler = unknown_handler; 
         self.initialized = 1;
-        self.base.loadmod = _loadmod;
-        self.base.unloadmod = _unloadmod;
-        self.base.send = _send;
+        self.central.loadmod = _loadmod;
+        self.central.unloadmod = _unloadmod;
+        self.central.send = _send;
     }
     
-    return &self.base;
+    return &self.central;
 }
+
