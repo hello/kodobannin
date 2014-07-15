@@ -11,13 +11,10 @@ static struct{
     MSG_Data_t * tx_queue[8];
     MSG_Data_t * current_tx;
     uint8_t * tx_ptr;
+    app_uart_comm_params_t uart_params;
 }self;
 static char * name = "UART";
 
-static MSG_Status
-_init(void){
-    return SUCCESS;
-}
 
 static MSG_Status
 _destroy(void){
@@ -106,25 +103,29 @@ _uart_event_handler(app_uart_evt_t * evt){
             break;
     }
 }
-
-MSG_Base_t * MSG_Uart_Init(const app_uart_comm_params_t * params, const MSG_Central_t * parent){
+static MSG_Status
+_init(void){
     uint32_t err;
-    if(self.initialized){
-        return &self.base;
+    APP_UART_FIFO_INIT(&self.uart_params, 32, 256, _uart_event_handler, APP_IRQ_PRIORITY_LOW, err);
+    if(!err){
+        self.initialized = 1;
+        return SUCCESS;
     }
+    return FAIL;
+    
+}
+
+MSG_Base_t * MSG_Uart_Base(const app_uart_comm_params_t * params, const MSG_Central_t * parent){
     self.base.init = _init;
     self.base.destroy = _destroy;
     self.base.flush = _flush;
     self.base.send = _send;
     self.base.type = UART;
     self.base.typestr = name;
-
     self.parent = parent;
-    APP_UART_FIFO_INIT(params, 32, 256, _uart_event_handler, APP_IRQ_PRIORITY_HIGH, err);
-    if(!err){
-        self.initialized = 1;
-    }
+    self.uart_params = *params;
     return &self.base;
+
 }
 void MSG_Uart_Prints(const char * str){
     if(self.initialized){
@@ -137,9 +138,11 @@ void MSG_Uart_Prints(const char * str){
 }
 
 void MSG_Uart_PrintHex(const uint8_t * ptr, uint32_t len){
-	while(len-- >0) {
-		app_uart_put(hex[0xF&(*ptr>>4)]);
-        app_uart_put(hex[0xF&*ptr++]);
-        app_uart_put(' ');
-	}
+    if(self.initialized){
+        while(len-- >0) {
+            app_uart_put(hex[0xF&(*ptr>>4)]);
+            app_uart_put(hex[0xF&*ptr++]);
+            app_uart_put(' ');
+        }
+    }
 }

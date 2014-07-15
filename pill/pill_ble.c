@@ -224,7 +224,7 @@ pill_ble_services_init()
 			0,
 			UART_BAUDRATE_BAUDRATE_Baud38400
 		};
-		central->loadmod(MSG_Uart_Init(&uart_params, central));
+		central->loadmod(MSG_Uart_Base(&uart_params, central));
 		central->loadmod(MSG_Time_Init(central));
 		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
 		MSG_PING(central, TIME, 0);
