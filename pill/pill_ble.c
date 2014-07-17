@@ -6,7 +6,6 @@
 #include <app_timer.h>
 #include <ble_gatts.h>
 #include <ble_srv_common.h>
-#include <ble_advdata.h>
 
 #include "imu_data.h"
 #include "sensor_data.h"
@@ -16,28 +15,17 @@
 #include "hlo_ble_time.h"
 #include "pill_ble.h"
 #include "util.h"
-#include "message_app.h"
-#include "message_uart.h"
-#include "message_time.h"
-#include "platform.h"
-#include "nrf.h"
-#include "timedfifo.h"
 
 extern uint8_t hello_type;
 
 static uint16_t _pill_service_handle;
 static uint16_t _stream_service_handle;
 static struct hlo_ble_time _current_time;
-static MSG_Central_t * central; 
-//static uint8_t _daily_data[1440];
+
+static uint8_t _daily_data[1440];
 
 static uint8_t _imu_realtime_stream_data[12];
 
-static void
-_test_event(void* event_data, uint16_t event_size){
-	PRINTS("Unknown Event");
-	
-}
 static void
 _send_imu_realtime_stream_data(void* imu_data, uint16_t fifo_bytes_available)
 {
@@ -81,7 +69,6 @@ _imu_wom_callback(struct sensor_data_header* header)
 static void
 _data_send_finished()
 {
-	PRINTS("DONE!");
 }
 
 static void
@@ -129,6 +116,8 @@ _command_write_handler(ble_gatts_evt_write_t* event)
 {
     struct pill_command* command = (struct pill_command*)event->data;
 
+    DEBUG("_command_write_handler(): ", command->command);
+
     switch(command->command) {
     case PILL_COMMAND_STOP_ACCELEROMETER:
         imu_set_wom_callback(NULL);
@@ -146,23 +135,36 @@ _command_write_handler(ble_gatts_evt_write_t* event)
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
     case PILL_COMMAND_SEND_DATA:
-        //hlo_ble_notify(0xFEED, _daily_data, sizeof(_daily_data), _data_send_finished);
-		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
+        hlo_ble_notify(0xFEED, _daily_data, sizeof(_daily_data), _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
-			{
-				uint64_t mtime;
-				if(!MSG_Time_GetMonotonicTime(&mtime)){
-    				hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, &mtime, sizeof(mtime), NULL);
-				}
-			}
-			/*if(!MSG_Time_GetTime(&_current_time)){
-    			hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time), NULL);
-			}*/
+        {
+            // app_sched_event_put(NULL, 0, _get_time);
+            _get_time(NULL, 0);
             break;
+        }
     case PILL_COMMAND_SET_TIME:
         {
-			MSG_SEND(central,TIME,TIME_SYNC,&command->set_time.bytes, sizeof(struct hlo_ble_time));
+            struct rtc_time_t rtc_time;
+
+            PRINTS("Setting time to: ");
+            PRINT_HEX(&command->set_time.bytes, sizeof(struct hlo_ble_time));
+            PRINTS("\r\n");
+
+            rtc_time_from_ble_time(&command->set_time, &rtc_time);
+
+            PRINTS("BLE: ");
+            hlo_ble_time_printf(&command->set_time);
+            PRINTS("\r\n");
+
+            PRINTS("RTC: ");
+            rtc_printf(&rtc_time);
+            PRINTS("\r\nRTC: ");
+            PRINT_HEX(rtc_time.bytes, sizeof(rtc_time.bytes));
+            PRINTS("\r\n");
+
+            rtc_write(&rtc_time);
+
             break;
         }
     };
@@ -219,69 +221,4 @@ pill_ble_services_init()
         hlo_ble_char_write_command_add(0xFFA1, &_stream_write_handler, 1);
         hlo_ble_char_notify_add(0xFFAA);
     }
-    central = MSG_App_Central(_test_event );
-    if(central){
-		app_uart_comm_params_t uart_params = {
-			SERIAL_RX_PIN,
-			SERIAL_TX_PIN,
-			SERIAL_RTS_PIN,
-			SERIAL_CTS_PIN,
-    		APP_UART_FLOW_CONTROL_ENABLED,
-			0,
-			UART_BAUDRATE_BAUDRATE_Baud38400
-		};
-		central->loadmod(MSG_App_Base(central));
-		central->loadmod(MSG_Uart_Base(&uart_params, central));
-		central->loadmod(MSG_Time_Init(central));
-		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
-		MSG_PING(central, TIME, 0);
-		MSG_PING(central, TIME, TIME_SET_1S_RESOLUTION);
-		MSG_PING(central, IMU, 0);
-    }else{
-        PRINTS("FAIL");
-    }
-}
-void pill_ble_advertising_init(void){
-	ble_advdata_t advdata;
-	ble_advdata_t scanrsp;
-	uint8_t       flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE; //BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
-
-
-	uint8_t array[] = { 100 };  // get battery level here?
-
-	uint8_array_t data = {
-		.size = sizeof(array),
-		.p_data = array
-	};
-
-	ble_advdata_service_data_t battery_service_data = {
-		.service_uuid = BLE_UUID_BATTERY_SERVICE,
-		.data = data
-	};
-
-	ble_advdata_service_data_t service_data_array[] = { battery_service_data };
-
-	ble_uuid_t pill_service_uuid = {
-		.type = hello_type,
-		.uuid = BLE_UUID_PILL_SVC
-	};
-
-	// YOUR_JOB: Use UUIDs for service(s) used in your application.
-	ble_uuid_t adv_uuids[] = {pill_service_uuid};
-	// Build and set advertising data
-	memset(&advdata, 0, sizeof(advdata));
-	advdata.name_type = BLE_ADVDATA_FULL_NAME;
-	advdata.include_appearance = true;
-	advdata.flags.size = sizeof(flags);
-	advdata.flags.p_data = &flags;
-	advdata.p_service_data_array = service_data_array;
-	advdata.service_data_count = sizeof(service_data_array) / sizeof(service_data_array[0]);
-
-
-
-
-	memset(&scanrsp, 0, sizeof(scanrsp));
-	scanrsp.uuids_more_available.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
-	scanrsp.uuids_more_available.p_uuids  = adv_uuids;
-	APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
