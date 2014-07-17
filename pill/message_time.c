@@ -72,7 +72,7 @@ _send(MSG_ModuleType src, MSG_Data_t * data){
                 break;
             case TIME_SYNC:
                 PRINTS("SETTIME = ");
-                self.ble_time = tmp->param.ble_time;
+                self.monotonic_time = tmp->param.ble_time.monotonic_time;
                 PRINT_HEX(&tmp->param.ble_time, sizeof(tmp->param.ble_time));
                 break;
             case TIME_STOP_PERIODIC:
@@ -103,13 +103,24 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
         self.central = central;
         self.monotonic_time = 0;
         if(app_timer_create(&self.timer_id,APP_TIMER_MODE_REPEATED,_timer_handler) == NRF_SUCCESS){
-//            TF_Initialize(self.monotonic_time);
             self.initialized = 1;
         }
     }
     return &self.base;
 }
 MSG_Status MSG_Time_GetTime(struct hlo_ble_time * out_time){
-    *out_time = self.ble_time;
-    return SUCCESS;
+    if(out_time){
+        *out_time = self.ble_time;
+        return SUCCESS;
+    }else{
+        return FAIL;
+    }
+}
+MSG_Status MSG_Time_GetMonotonicTime(uint64_t * out_time){
+    if(out_time){
+        *out_time = self.monotonic_time;
+        return SUCCESS;
+    }else{
+        return FAIL;
+    }
 }
