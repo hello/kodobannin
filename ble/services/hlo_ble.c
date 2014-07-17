@@ -198,11 +198,12 @@ _dispatch_write(ble_evt_t *event) {
 
 static bool
 _dispatch_packet(struct hlo_ble_packet * t){
+	uint16_t mlen = 20;
 	ble_gatts_hvx_params_t hvx_params = {
 		.handle = _notify_context.characteristic_handle,
 		.type = BLE_GATT_HVX_NOTIFICATION,
 		.offset = 0,
-		.p_len = 20,
+		.p_len = &mlen,
 		.p_data = (uint8_t*)t,
 	};
 	PRINTS("!");
@@ -210,10 +211,12 @@ _dispatch_packet(struct hlo_ble_packet * t){
 	uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
 	switch(err){
 		case NRF_SUCCESS:
+			PRINTS("@");
 			return true;
 			break;
 		default:
 		case BLE_ERROR_NO_TX_BUFFERS:
+			PRINTS("ERROR");
 			return false;
 			break;
 	}
