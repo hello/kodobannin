@@ -1030,7 +1030,7 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
     APP_OK(app_gpiote_user_enable(_gpiote_user));
 
     imu_clear_interrupt_status();
-imu_calibrate_zero();
+	//imu_calibrate_zero();
 
 	PRINTS("IMU: initialization done.\r\n");
 
