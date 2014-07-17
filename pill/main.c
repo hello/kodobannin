@@ -91,6 +91,8 @@ _start()
     pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
 
+
+	pill_ble_advertising_init();
     hble_advertising_start();
     PRINTS("Advertising started.\r\n");
 
