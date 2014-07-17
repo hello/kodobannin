@@ -16,13 +16,18 @@ struct hlo_ble_notify_context {
         +
         1 element = hlo_ble_packet.footer: carries SHA-1 for data.
     */
-    struct hlo_ble_packet packets[15];
-    uint16_t packet_sizes[15];
+    //struct hlo_ble_packet packets[15];
+    //uint16_t packet_sizes[15];
 
     uint16_t characteristic_handle;
 
-    uint8_t queued; //< number of packets queued to be sent
+    uint8_t seq; //< number of packets queued to be sent
     uint8_t total; //< total number of packets to send
+
+	uint8_t *orig; //origin of buffer to be sent
+	uint8_t *current; //current pointer of the buffer to be sent
+	uint8_t *end;//end of the buffer to be sent
+	uint8_t last_len;
 
     hlo_ble_notify_callback callback;
 };
@@ -191,149 +196,92 @@ _dispatch_write(ble_evt_t *event) {
     DEBUG("Couldn't locate write handler for handle: ", handle);
 }
 
-/** Returns true if we queued a packet for BLE notification; returns false if we did not queue a packet (for whatever reason, from no available buffers to other errors). */
 static bool
-_dispatch_queue_packet()
-{
-    if(_notify_context.queued < _notify_context.total) {
-        ble_gatts_hvx_params_t hvx_params = {
-            .handle = _notify_context.characteristic_handle,
-            .type = BLE_GATT_HVX_NOTIFICATION,
-            .offset = 0,
-            .p_len = &_notify_context.packet_sizes[_notify_context.queued],
-            .p_data = _notify_context.packets[_notify_context.queued].bytes,
-        };
-
-#define PRINT_NOTIFY
-
-#ifdef PRINT_NOTIFY
-        PRINT_HEX(_notify_context.packets[_notify_context.queued].bytes, *hvx_params.p_len);
-        PRINTS("\r\n");
-#endif
-
-        uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
-
-        switch(err) {
-        case NRF_SUCCESS:
-            _notify_context.queued++;
-            return true;
-        case BLE_ERROR_NO_TX_BUFFERS:
-            break;
-        default:
-            DEBUG("sd_ble_gatts_hvx returned ", err);
-        }
-    } else if (_notify_context.total && _notify_context.queued == _notify_context.total) {
-        hlo_ble_notify_callback callback = _notify_context.callback;
-
-        _notify_context = (struct hlo_ble_notify_context) {};
-
-        if(callback) {
-            callback();
-        }
-    }
-
-    return false;
+_dispatch_packet(struct hlo_ble_packet * t){
+	uint16_t mlen = 20;
+	ble_gatts_hvx_params_t hvx_params = {
+		.handle = _notify_context.characteristic_handle,
+		.type = BLE_GATT_HVX_NOTIFICATION,
+		.offset = 0,
+		.p_len = &mlen,
+		.p_data = (uint8_t*)t,
+	};
+	PRINTS("!");
+	PRINT_HEX(t,20);
+	uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
+	switch(err){
+		case NRF_SUCCESS:
+			PRINTS("@");
+			return true;
+			break;
+		default:
+		case BLE_ERROR_NO_TX_BUFFERS:
+			PRINTS("ERROR");
+			return false;
+			break;
+	}
 }
 
-static uint8_t
-_packetize(void* src, uint16_t length)
-{
-    struct hlo_ble_packet* packet = _notify_context.packets;
+static uint16_t 
+_rem(const uint8_t * src, const uint8_t * dest){
+	if(dest >= src){
+		return (dest-src)+1;
+	}else{
+		return 0;
+	}
+}
 
-    uint8_t* p = src;
-
-    uint8_t sequence_number = 0;
-
-    APP_ASSERT(length <= sizeof(packet->header.data) + sizeof(packet->body.data)*253);
-
-    unsigned i = 0;
-
-    // Write out header packet
-
-    {
-        packet->sequence_number = sequence_number++;
-
-        // We defer writing in the value of packet->packet_count here until
-        // we've finished processing all the packets.
-
-        unsigned header_data_size = MIN(length, sizeof(packet->header.data));
-        memcpy(packet->header.data, p, header_data_size);
-        p += header_data_size;
-
-        _notify_context.packet_sizes[i++] = header_data_size+sizeof(packet->header.packet_count)+sizeof(packet->sequence_number);
-
-        packet++;
-    }
-
-    // Write out body packets
-
-    uint8_t* end = src+length;
-    while(p < end) {
-        packet->sequence_number = sequence_number++;
-
-        size_t body_data_size = MIN(end-p, sizeof(packet->body.data));
-        memcpy(packet->body.data, p, body_data_size);
-        p += body_data_size;
-
-        _notify_context.packet_sizes[i++] = body_data_size+sizeof(packet->sequence_number);
-
-        packet++;
-    }
-
-    // Write out footer
-
-#if 0
-    {
-        packet->sequence_number = sequence_number++;
-
-        uint8_t src_sha1[20];
-        sha1_calc(src, length, src_sha1);
-        memcpy(packet->footer.sha19, src_sha1, sizeof(packet->footer.sha19));
-
-        _notify_context.packet_sizes[i++] = sizeof(packet->footer)+sizeof(packet->sequence_number);
-
-        packet++;
-    }
-#endif
-
-    // Write out total packet count
-
-    uint8_t total = packet - _notify_context.packets;
-
-    {
-        _notify_context.packets[0].header.packet_count = total;
-    }
-
-    return total;
+//this function is not reentrant!!111
+static struct hlo_ble_packet *
+_make_packet(void){
+	static struct hlo_ble_packet packet;
+	if(_notify_context.current > _notify_context.end){
+		return NULL;
+	}
+	uint16_t advance;
+	uint16_t rem = _rem(_notify_context.orig, _notify_context.end);
+	packet.sequence_number = _notify_context.seq++;
+	if(_notify_context.current == _notify_context.orig){
+		//header
+		advance = (rem>18)?18:rem;
+		packet.header.packet_count = _notify_context.total;
+		memcpy(packet.header.data, _notify_context.current, advance);
+	}else{
+		//everything
+		advance = (rem>19)?19:rem;
+		memcpy(packet.body.data, _notify_context.current,advance);
+	}
+	//PRINT_HEX(&packet, 20);
+	PRINTS("\r\n");
+	_notify_context.current += advance;
+	return &packet;
+}
+static uint8_t 
+_calculate_total(uint16_t length){
+	//assume header and no footer
+	return (length+1)/19 + ((length+1)%19>0?1:0);
 }
 
 void
 hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback)
 {
+	if(length == 0) return;
     _notify_context = (struct hlo_ble_notify_context) {
-        .packet_sizes = { 0 },
         .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
-        .queued = 0,
+        .seq = 0,
         .callback = callback,
+		.orig = data,
+		.current = data,
+		.end = (data + length - 1),
+		.total = _calculate_total(length)//TODO actual total
     };
 
-    if(callback) {
-        _notify_context.total = _packetize(data, length);
-    } else {
-        _notify_context.packet_sizes[0] = length;
-        _notify_context.total = 1,
-        memcpy(_notify_context.packets[0].bytes, data, length);
-    }
+	struct hlo_ble_packet * packet = _make_packet();
+	if(packet){
+		_dispatch_packet(packet);
+	}
 
-    for(;;) {
-        bool queued_packet = _dispatch_queue_packet();
 
-        if(queued_packet) {
-            continue;
-        } else {
-            break;
-        }
-    }
 }
 
 uint16_t hlo_ble_get_connection_handle()
@@ -356,7 +304,13 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         _dispatch_write(event);
         break;
     case BLE_EVT_TX_COMPLETE:
-        _dispatch_queue_packet();
+		{
+			struct hlo_ble_packet * packet = _make_packet();
+			if(packet){
+				_dispatch_packet(packet);
+			}
+		}
+        //_dispatch_queue_packet();
         break;
     default:
         DEBUG("Unknown BLE event: ", event->header.evt_id);

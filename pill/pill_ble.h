@@ -55,3 +55,4 @@ struct pill_data_response
 
 void pill_ble_services_init();
 void pill_ble_evt_handler(ble_evt_t* ble_evt);
+void pill_ble_advertising_init(void);
