@@ -147,12 +147,18 @@ _command_write_handler(ble_gatts_evt_write_t* event)
         break;
     case PILL_COMMAND_SEND_DATA:
         //hlo_ble_notify(0xFEED, _daily_data, sizeof(_daily_data), _data_send_finished);
-		hlo_ble_notify(0xFEED, TF_GetAll(), sizeof(tf_data_t), _data_send_finished);
+		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
-			if(!MSG_Time_GetTime(&_current_time)){
-    			hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time.bytes), NULL);
+			{
+				uint64_t mtime;
+				if(!MSG_Time_GetMonotonicTime(&mtime)){
+    				hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, &mtime, sizeof(mtime), NULL);
+				}
 			}
+			/*if(!MSG_Time_GetTime(&_current_time)){
+    			hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time), NULL);
+			}*/
             break;
     case PILL_COMMAND_SET_TIME:
         {
