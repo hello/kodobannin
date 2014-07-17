@@ -8,8 +8,9 @@ static struct{
 }self;
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
+    memset(&self.data, 0, sizeof(self.data));
     self.data.length = sizeof(self.data);
-    self.data.prev_idx = 0;
+    
     self.current_idx = 0;
     TF_UpdateTime(init_time);
 }

@@ -27,14 +27,14 @@ struct hlo_ble_notify_context {
 	uint8_t *orig; //origin of buffer to be sent
 	uint8_t *current; //current pointer of the buffer to be sent
 	uint8_t *end;//end of the buffer to be sent
-	uint8_t last_len;
+	uint8_t last_len; // You have it!
 
     hlo_ble_notify_callback callback;
 };
 
 static struct hlo_ble_notify_context _notify_context;
 
-
+
 struct uuid_handler {
     uint16_t uuid;
     uint16_t value_handle;
@@ -44,6 +44,7 @@ struct uuid_handler {
 uint8_t hello_type;
 
 #define MAX_CHARACTERISTICS 9
+
 static struct uuid_handler _uuid_handlers[MAX_CHARACTERISTICS];
 static struct uuid_handler* _p_uuid_handler = _uuid_handlers;
 
@@ -198,7 +199,7 @@ _dispatch_write(ble_evt_t *event) {
 
 static bool
 _dispatch_packet(struct hlo_ble_packet * t){
-	uint16_t mlen = 20;
+	uint16_t mlen = (t->sequence_number == _notify_context.total - 1 ? _notify_context.last_len : 20);
 	ble_gatts_hvx_params_t hvx_params = {
 		.handle = _notify_context.characteristic_handle,
 		.type = BLE_GATT_HVX_NOTIFICATION,
@@ -207,7 +208,7 @@ _dispatch_packet(struct hlo_ble_packet * t){
 		.p_data = (uint8_t*)t,
 	};
 	PRINTS("!");
-	PRINT_HEX(t,20);
+	PRINT_HEX(t, mlen);
 	uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
 	switch(err){
 		case NRF_SUCCESS:
@@ -256,10 +257,16 @@ _make_packet(void){
 	_notify_context.current += advance;
 	return &packet;
 }
-static uint8_t 
-_calculate_total(uint16_t length){
+
+static inline uint8_t _calculate_total(uint16_t length){
 	//assume header and no footer
-	return (length+1)/19 + ((length+1)%19>0?1:0);
+	return (length + 1) / 19 + ((length + 1) % 19 > 0 ? 1 : 0);
+}
+
+static inline uint8_t _last_packet_len(uint16_t length){
+
+	uint8_t remain = (length - 18) % 19;
+	return length <= 18 ? (length + 2) : (remain == 0 ? 20 : remain + 1);
 }
 
 void
@@ -273,6 +280,7 @@ hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo
 		.orig = data,
 		.current = data,
 		.end = (data + length - 1),
+		.last_len = _last_packet_len(length),
 		.total = _calculate_total(length)//TODO actual total
     };
 
