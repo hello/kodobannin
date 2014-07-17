@@ -78,8 +78,6 @@ HELLO_SRCS = \
 NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51422/Source/app_common/app_timer.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_fifo.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_uart_fifo.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
         nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
@@ -185,7 +183,7 @@ NRFREV=NRF51422_QFAA_ED
 NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV) -DBLE_STACK_SUPPORT_REQD -DANT_STACK_SUPPORT_REQD -DS310_STACK
 MICROECCFLAGS=-DECC_CURVE=6 # see ecc.h for details
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
-LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup -Map=build/build.map
+LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup
 WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -std=gnu99 -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
