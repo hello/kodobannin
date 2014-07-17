@@ -20,13 +20,7 @@ typedef struct{
     uint8_t version;
     uint8_t reserved_1;
     uint16_t length;
-    uint8_t seconds;
-    uint8_t minutes;
-    uint8_t hours;
-    uint8_t day;
-    uint8_t month;
-    uint8_t reserved_2;
-    uint16_t year;
+    uint64_t mtime;
     uint16_t idx;
     tf_unit_t data[TF_BUFFER_SIZE];
 }tf_data_t;
