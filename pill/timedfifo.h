@@ -21,7 +21,7 @@ typedef struct{
     uint8_t reserved_1;
     uint16_t length;
     uint64_t mtime;
-    uint16_t idx;
+    uint16_t prev_idx;
     tf_unit_t data[TF_BUFFER_SIZE];
 }__attribute__((packed)) tf_data_t;
 
