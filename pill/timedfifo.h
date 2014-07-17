@@ -23,7 +23,7 @@ typedef struct{
     uint64_t mtime;
     uint16_t idx;
     tf_unit_t data[TF_BUFFER_SIZE];
-}tf_data_t;
+}__attribute__((packed)) tf_data_t;
 
 
 void TF_Initialize(const struct hlo_ble_time * init_time);

@@ -7,7 +7,7 @@ static struct{
 }self;
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
-    self.data.length = sizeof(self);
+    self.data.length = sizeof(self.data);
     self.data.idx = 0;
     TF_UpdateTime(init_time);
 }
