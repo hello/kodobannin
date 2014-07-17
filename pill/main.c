@@ -39,7 +39,6 @@
 void
 _start()
 {
-    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
     BOOL_OK(twi_master_init());
 
@@ -65,7 +64,6 @@ _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
-    APP_OK(imu_init(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS));
 
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
