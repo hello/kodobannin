@@ -85,7 +85,7 @@ _start()
     PRINTS("ANT initialized.\r\n");
 #endif
 
-	pill_ble_load_modules();
+    pill_ble_load_modules();
     hlo_ble_init();
     pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
