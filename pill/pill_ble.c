@@ -209,6 +209,7 @@ pill_ble_load_modules(void){
 		central->loadmod(MSG_Time_Init(central));
 		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
 		MSG_SEND(central, TIME, TIME_SET_1S_RESOLUTION,NULL,0);
+		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
     }else{
         PRINTS("FAIL");
     }
