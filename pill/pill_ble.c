@@ -33,7 +33,7 @@ static MSG_Central_t * central;
 static uint8_t _imu_realtime_stream_data[12];
 
 static void
-_test_event(void* event_data, uint16_t event_size){
+_unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
 }
@@ -189,7 +189,7 @@ pill_ble_services_init()
         hlo_ble_char_write_command_add(0xFFA1, &_stream_write_handler, 1);
         hlo_ble_char_notify_add(0xFFAA);
     }
-    central = MSG_App_Central(_test_event );
+    central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		app_uart_comm_params_t uart_params = {
 			SERIAL_RX_PIN,
