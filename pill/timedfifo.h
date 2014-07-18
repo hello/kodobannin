@@ -13,8 +13,9 @@
 
 //time of each index
 #define TF_UNIT_TIME_S 60 
+#define TF_UNIT_TIME_MS 60000
 #define TF_BUFFER_SIZE (8 * 60)
-typedef uint16_t tf_unit_t;
+typedef int16_t tf_unit_t;  // Good job, this is a keen design!
 
 typedef struct{
     uint8_t version;
@@ -27,8 +28,7 @@ typedef struct{
 
 
 void TF_Initialize(const struct hlo_ble_time * init_time);
-void TF_UpdateTime(const struct hlo_ble_time * new_time);
-void TF_TickOneSecond(void);
+void TF_TickOneSecond(const struct hlo_ble_time * init_time);
 tf_unit_t TF_GetCurrent(void);
 void TF_SetCurrent(tf_unit_t val);
 tf_data_t * TF_GetAll(void);

@@ -9,7 +9,6 @@ static struct{
     MSG_Base_t base;
     bool initialized;
     struct hlo_ble_time ble_time;
-    //uint64_t monotonic_time;//used for internal datastructure
     MSG_Central_t * central;
     app_timer_id_t timer_id;
 }self;
@@ -30,37 +29,12 @@ static MSG_Status
 _flush(void){
     return SUCCESS;
 }
-static uint8_t 
-_incCarry(uint8_t * target, uint8_t carry, uint8_t overflow){
-    *target = *target + carry;
-    if(*target > overflow){
-        *target = 0;
-        return 1;
-    }
-    return 0;
-}
+
 static void
 _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;
-    TF_TickOneSecond();
-    /*{
-        
-        struct hlo_ble_time t = self.ble_time;
-        _incCarry(&t.year,
-                _incCarry(&t.month,
-                    _incCarry(&t.day,
-                        _incCarry(&t.hours,
-                            _incCarry(&t.minutes,
-                                _incCarry(&t.seconds, 1, 59),59),23),31),12),9999);
-                                
-        CRITICAL_REGION_ENTER();
-        self.ble_time = t;
-        CRITICAL_REGION_EXIT();
-        TF_UpdateTime(&self.ble_time);
-    }*/
-
-    TF_UpdateTime(&self.ble_time);
+    TF_TickOneSecond(&self.ble_time);
 }
 
 static MSG_Status

@@ -623,7 +623,7 @@ void imu_deactivate()
     // Figure 8 (page 29) of MPU-6500 v2.0.pdf.
 
     _register_write(MPU_REG_PWR_MGMT_2, PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
-    _imu_set_low_pass_filter(IMU_HZ_250);
+    _imu_set_low_pass_filter(_settings.inactive_sample_rate);
     _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
     _reset_wom_threshold();
     _register_write(MPU_REG_ACCEL_ODR, (uint8_t)_settings.inactive_sample_rate);
@@ -911,17 +911,31 @@ _send(MSG_ModuleType src, MSG_Data_t * data){
 			case IMU_PING:
 				break;
 			case IMU_READ_XYZ:
-				imu_accel_reg_read(&cmd->param.out_accel);
-				int32_t aggregate = ABS(cmd->param.out_accel.x)^2 + ABS(cmd->param.out_accel.y)^2 + ABS(cmd->param.out_accel.z)^2;
-				if( aggregate > UINT16_MAX){
-					aggregate = UINT16_MAX;
+				{
+					tf_unit_t values[3];
+					imu_accel_reg_read((uint8_t*)values);
+
+#define KG_CONVERT_FACTOR	16   // Magic number: (0xFFFF / 4000)
+					//The range of accelerometer is +/-2G, the range of representation is 16bit in IMU
+					// And we want 3 digit precision, so it is 0xFFFF / 4000 = 16.38375
+					values[0] /= KG_CONVERT_FACTOR;
+					values[1] /= KG_CONVERT_FACTOR;
+					values[2] /= KG_CONVERT_FACTOR;
+
+					//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
+					int32_t aggregate = values[0]*values[0] + values[1]*values[1] + values[2]*values[2];
+					if( aggregate > INT16_MAX){
+						aggregate = INT16_MAX;
+					}
+
+					//TF_SetCurrent((uint16_t)values[0]);
+					
+					if(TF_GetCurrent() < aggregate ){
+						TF_SetCurrent((tf_unit_t)aggregate);
+						PRINTS("NEW MAX: ");
+						PRINT_HEX(&aggregate, sizeof(aggregate));
+					}
 				}
-				if(TF_GetCurrent() < aggregate ){
-					TF_SetCurrent((uint16_t)aggregate);
-					PRINTS("NEW MAX: ");
-					PRINT_HEX(&aggregate, sizeof(aggregate));
-				}
-				
 				break;
 		}
 		MSG_Base_ReleaseDataAtomic(data);
@@ -1025,7 +1039,7 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
     imu_deactivate();
 
     nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
-    APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_wom_process));
+    //APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_wom_process));
     APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
     APP_OK(app_gpiote_user_enable(_gpiote_user));
 
