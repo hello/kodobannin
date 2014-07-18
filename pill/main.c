@@ -39,7 +39,6 @@
 void
 _start()
 {
-    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
     BOOL_OK(twi_master_init());
 
@@ -65,7 +64,6 @@ _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
-    APP_OK(imu_init(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS));
 
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
@@ -79,7 +77,7 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-    hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, false, device_name, hlo_ble_on_ble_evt);
+    hble_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true, device_name, hlo_ble_on_ble_evt);
     PRINTS("ble_init() done.\r\n");
 
 #if 0
@@ -91,6 +89,8 @@ _start()
     pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
 
+
+	pill_ble_advertising_init();
     hble_advertising_start();
     PRINTS("Advertising started.\r\n");
 

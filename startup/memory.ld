@@ -2,7 +2,9 @@
 MEMORY
 {
   SOFTDEVICE (rx) : ORIGIN = 0x0, LENGTH = 0x20000 /* ~128K */
-  APP (rx) : ORIGIN = 0x20000, LENGTH = 0x16000 /* ~138K */
+  APP (rx) : ORIGIN = 0x20000, LENGTH = 0x12000 /* ~73K */
+  /* Persistent Storage */
+  APP_DATA (rw) : ORIGIN = 0x32000, LENGTH = 0x4000 /* 16K */
   /* DFU_APP_DATA_RESERVED _can_ occupy space here if we wish; this
      may be a better idea than defining our own USER_DATA section,
      since it's SDK-supported. */
