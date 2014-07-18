@@ -160,7 +160,7 @@ pill_ble_evt_handler(ble_evt_t* ble_evt)
 }
 
 void
-pill_ble_services_init()
+pill_ble_services_init(void)
 {
 
     {
@@ -189,6 +189,10 @@ pill_ble_services_init()
         hlo_ble_char_write_command_add(0xFFA1, &_stream_write_handler, 1);
         hlo_ble_char_notify_add(0xFFAA);
     }
+}
+
+void
+pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		app_uart_comm_params_t uart_params = {
@@ -211,7 +215,6 @@ pill_ble_services_init()
         PRINTS("FAIL");
     }
 }
-
 void pill_ble_advertising_init(void){
 	ble_advdata_t advdata;
 	ble_advdata_t scanrsp;
