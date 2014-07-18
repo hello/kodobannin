@@ -27,7 +27,6 @@ extern uint8_t hello_type;
 
 static uint16_t _pill_service_handle;
 static uint16_t _stream_service_handle;
-static struct hlo_ble_time _current_time;
 static MSG_Central_t * central; 
 //static uint8_t _daily_data[1440];
 
@@ -102,27 +101,6 @@ _stream_write_handler(ble_gatts_evt_write_t* event)
     }
 }
 
-static void
-_get_time(void* event_data, uint16_t event_size)
-{
-    struct rtc_time_t rtc_time;
-    rtc_read(&rtc_time);
-
-    PRINTS("_get_time: RTC = ");
-    PRINT_HEX(rtc_time.bytes, sizeof(rtc_time.bytes));
-    PRINTS(", ");
-    rtc_printf(&rtc_time);
-    PRINTS("\r\n");
-
-    rtc_time_to_ble_time(&rtc_time, &_current_time);
-    PRINTS("BLE: ");
-    PRINT_HEX(_current_time.bytes, sizeof(_current_time.bytes));
-    PRINTS(", ");
-    hlo_ble_time_printf(&_current_time);
-    PRINTS("\r\n");
-
-    hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time.bytes), NULL);
- }
 
 static void
 _command_write_handler(ble_gatts_evt_write_t* event)
@@ -184,14 +162,6 @@ pill_ble_evt_handler(ble_evt_t* ble_evt)
 void
 pill_ble_services_init()
 {
-    _current_time = (struct hlo_ble_time) {
-        .year = 2014,
-        .month = 1,
-        .day = 2,
-        .hours = 3,
-        .minutes = 4,
-        .seconds = 5,
-    };
 
     {
         ble_uuid_t pill_service_uuid = {
@@ -241,6 +211,7 @@ pill_ble_services_init()
         PRINTS("FAIL");
     }
 }
+
 void pill_ble_advertising_init(void){
 	ble_advdata_t advdata;
 	ble_advdata_t scanrsp;
