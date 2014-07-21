@@ -27,7 +27,9 @@
 #include "error_handler.h"
 #include "hello_dfu.h"
 #include "util.h"
+#ifdef ECC_BENCHMARK
 #include "ecc_benchmark.h"
+#endif
 #include "git_description.h"
 
 enum {
