@@ -220,20 +220,7 @@ void pill_ble_advertising_init(void){
 	uint8_t       flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE; //BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
 
 
-	uint8_t array[] = { 100 };  // get battery level here?
-
-	uint8_array_t data = {
-		.size = sizeof(array),
-		.p_data = array
-	};
-
-	ble_advdata_service_data_t battery_service_data = {
-		.service_uuid = BLE_UUID_BATTERY_SERVICE,
-		.data = data
-	};
-
-	ble_advdata_service_data_t service_data_array[] = { battery_service_data };
-
+	
 	ble_uuid_t pill_service_uuid = {
 		.type = hello_type,
 		.uuid = BLE_UUID_PILL_SVC
@@ -247,10 +234,7 @@ void pill_ble_advertising_init(void){
 	advdata.include_appearance = true;
 	advdata.flags.size = sizeof(flags);
 	advdata.flags.p_data = &flags;
-	advdata.p_service_data_array = service_data_array;
-	advdata.service_data_count = sizeof(service_data_array) / sizeof(service_data_array[0]);
-
-
+	
 
 
 	memset(&scanrsp, 0, sizeof(scanrsp));
