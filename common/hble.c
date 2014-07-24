@@ -147,6 +147,7 @@ void bond_manager_init()
     bond_init_data.bonds_delete            = true;
 
     APP_OK(ble_bondmngr_init(&bond_init_data));
+    PRINTS("bond manager init.");
 }
 
 

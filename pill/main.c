@@ -68,7 +68,7 @@ void _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
-    //bond_manager_init();
+    bond_manager_init();
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
 
