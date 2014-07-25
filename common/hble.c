@@ -141,6 +141,8 @@ void bond_manager_init()
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
 
+    //memset(&bond_init_data, 0, sizeof(bond_init_data));
+    
     // Initialize the Bond Manager.
     bond_init_data.evt_handler             = _bond_evt_handler;
     bond_init_data.error_handler           = _bond_manager_error_handler;

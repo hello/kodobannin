@@ -3,6 +3,10 @@
 #ifdef ANT_STACK_SUPPORT_REQD
 #include <ant_interface.h>
 #endif
+
+#include "pstorage_platform.h"
+#include "ble_bondmngr_cfg.h"
+
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
@@ -36,8 +40,7 @@
 #include "pill_ble.h"
 #include "sensor_data.h"
 #include "util.h"
-#include "pstorage_platform.h"
-#include "ble_bondmngr_cfg.h"
+
 
 extern uint8_t hello_type;
 
