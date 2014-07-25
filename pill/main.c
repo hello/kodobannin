@@ -3,6 +3,10 @@
 #ifdef ANT_STACK_SUPPORT_REQD
 #include <ant_interface.h>
 #endif
+
+#include "pstorage_platform.h"
+#include "ble_bondmngr_cfg.h"
+
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
@@ -26,6 +30,7 @@
 #include <softdevice_handler.h>
 #include <twi_master.h>
 
+
 #include "app.h"
 #include "hble.h"
 #include "platform.h"
@@ -36,8 +41,10 @@
 #include "sensor_data.h"
 #include "util.h"
 
-void
-_start()
+
+extern uint8_t hello_type;
+
+void _start()
 {
 
     BOOL_OK(twi_master_init());
@@ -64,7 +71,7 @@ _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
-
+    bond_manager_init();
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
 
@@ -90,9 +97,14 @@ _start()
     pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
 
+    ble_uuid_t service_uuid = {
+        .type = hello_type,
+        .uuid = BLE_UUID_PILL_SVC
+    };
 
-	pill_ble_advertising_init();
+	hble_advertising_init(service_uuid);
     hble_advertising_start();
+
     PRINTS("Advertising started.\r\n");
 
     for(;;) {
