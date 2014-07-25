@@ -25,16 +25,22 @@ static bool no_advertising = false;
 static ble_uuid_t _service_uuid;
 static int8_t  _last_connected_central; 
 
+//static ble_gap_addr_t _whitelist_central_addr;
+//static ble_gap_irk_t _whitelist_irk;
 
+//static ble_gap_whitelist_t  _whitelist;
+//static ble_gap_addr_t* p_whitelist_addr = { &_whitelist_central_addr };
+//static ble_gap_irk_t* p_whitelist_irk = { &_whitelist_irk };
 
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
 {
-    static ble_gap_evt_auth_status_t _auth_status;
+    //static ble_gap_evt_auth_status_t _auth_status;
 
     switch(ble_evt->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
         _connection_handle = ble_evt->evt.gap_evt.conn_handle;
+        //_last_central_addr = ble_evt->evt.gap_evt.params.connected.peer_addr;
         break;
     case BLE_GAP_EVT_DISCONNECTED:
         _connection_handle = BLE_CONN_HANDLE_INVALID;
@@ -51,10 +57,28 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     case BLE_GATTS_EVT_SYS_ATTR_MISSING:
         APP_OK(sd_ble_gatts_sys_attr_set(_connection_handle, NULL, 0));
         break;
-    /*case BLE_GAP_EVT_AUTH_STATUS:
+    /* 
+    case BLE_GAP_EVT_AUTH_STATUS:
         _auth_status = ble_evt->evt.gap_evt.params.auth_status;
-        break;*/
-    /*case BLE_GAP_EVT_SEC_INFO_REQUEST:
+
+        //if(_auth_status.auth_status == BLE_GAP_SEC_STATUS_SUCCESS)
+        {
+            _whitelist_central_addr = _central_addr;
+            //p_whitelist_addr[0] = &_whitelist_central_addr;
+
+            _whitelist_irk = _auth_status.central_keys.irk;
+            //p_whitelist_irk[0] = &_whitelist_irk;
+            _whitelist.addr_count = 1;
+            _whitelist.irk_count = 1;
+            _whitelist.pp_addrs = p_whitelist_addr;
+            _whitelist.pp_irks = p_whitelist_irk;
+
+            PRINTS("paired");
+        }
+        break;
+    */
+    /* 
+    case BLE_GAP_EVT_SEC_INFO_REQUEST:
         {
             ble_gap_enc_info_t* p_enc_info = &_auth_status.periph_keys.enc_info;
             if(p_enc_info->div == ble_evt->evt.gap_evt.params.sec_info_request.div) {
@@ -64,7 +88,8 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
                 APP_OK(sd_ble_gap_sec_info_reply(_connection_handle, NULL, NULL));
             }
         }
-        break;*/
+        break;
+    */
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
             // APP_OK(sd_power_system_off());
@@ -140,8 +165,9 @@ void bond_manager_init()
 
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
+    PRINTS("pstorage_init() done.");
 
-    //memset(&bond_init_data, 0, sizeof(bond_init_data));
+    memset(&bond_init_data, 0, sizeof(bond_init_data));
     
     // Initialize the Bond Manager.
     bond_init_data.evt_handler             = _bond_evt_handler;
@@ -194,40 +220,50 @@ void hble_advertising_start()
     adv_params.interval = APP_ADV_INTERVAL;
     adv_params.timeout = APP_ADV_TIMEOUT_IN_SECONDS;
 
-    //ble_gap_whitelist_t  whitelist;
-   // APP_OK(ble_bondmngr_whitelist_get(&whitelist));
-    
-    //if (whitelist.irk_count != 0)
-    if(no_advertising)                
+    /*if(no_advertising)                
     {
         ble_gap_addr_t peer_address;
         uint32_t err_code = ble_bondmngr_central_addr_get(_last_connected_central, &peer_address);
-        uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_DIRECT_IND; //(err_code == NRF_SUCCESS ? BLE_GAP_ADV_TYPE_ADV_DIRECT_IND : BLE_GAP_ADV_TYPE_ADV_IND);
+        uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_IND; //(err_code == NRF_SUCCESS ? BLE_GAP_ADV_TYPE_ADV_DIRECT_IND : BLE_GAP_ADV_TYPE_ADV_IND);
         adv_params.type        = adv_mode;
 
         switch(adv_mode)
         {
             case BLE_GAP_ADV_TYPE_ADV_DIRECT_IND:
-                adv_params.type        = BLE_GAP_ADV_TYPE_ADV_DIRECT_IND;
+                
                 adv_params.timeout     = 0;
+                adv_params.p_peer_addr = &peer_address;
                 break;
 
             case BLE_GAP_ADV_TYPE_ADV_IND:
                 {
-                    ble_gap_whitelist_t  whitelist;
+                    
+                    ble_gap_whitelist_t whitelist;
                     APP_OK(ble_bondmngr_whitelist_get(&whitelist));
+                    
+
                     if (whitelist.addr_count != 0 || whitelist.irk_count != 0)
                     {
                         adv_params.p_whitelist = &whitelist;
                         adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
                     }
+                    
+
+                    
+                    //if(_whitelist.addr_count != 0 || _whitelist.irk_count != 0)
+                    //{
+                    //    adv_params.p_whitelist = &_whitelist;
+                    //    adv_params.fp          = BLE_GAP_ADV_FP_FILTER_CONNREQ;
+                    //}
+                    
                 }
                 break;
         }
         
-        _advertising_data_init(BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED);
+        _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
+        PRINTS("adv reset");
     }
-    else
+    else*/
     {
         _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
         no_advertising = true;
