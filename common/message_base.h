@@ -17,7 +17,6 @@ typedef struct{
 #else
     uint8_t * buf;
 #endif
-    
 }MSG_Data_t;
 
 typedef enum{
