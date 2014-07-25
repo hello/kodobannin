@@ -7,18 +7,22 @@ static struct{
     MSG_Data_t pool[MSG_BASE_SHARED_POOL_SIZE]; 
     MSG_Data_t * cached;
 }self;
+
 #define MSG_DATA_POOL_START (self.pool)
 #define MSG_DATA_POOL_END (&self.pool[MSG_BASE_SHARED_POOL_SIZE])
 
 MSG_Data_t * MSG_Base_Orig(void * data){
+#ifdef MSG_BASE_DATA_BUFFER_SIZE
     if(data >= MSG_DATA_POOL_START && data < MSG_DATA_POOL_END){
         return &self.pool[((data - MSG_DATA_POOL_START) / sizeof(MSG_Data_t))];
     }
+#endif
     return NULL;
 }
 
 MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     MSG_Data_t * ret = NULL;
+#ifdef MSG_BASE_DATA_BUFFER_SIZE
     if( size > MSG_BASE_DATA_BUFFER_SIZE ){
         return NULL;
     }
@@ -33,6 +37,10 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
         }
     }
     CRITICAL_REGION_EXIT();
+#else
+    //psudo code
+    //allocate memory, assign, and inc ref
+#endif
     return ret;
 }
 //TODO
@@ -68,6 +76,9 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
             PRINTS("-");
             if(d->ref==0){
                 PRINTS("~");
+#ifndef MSG_BASE_DATA_BUFFER_SIZE
+                //here we free the buffer
+#endif
             }
         }
         CRITICAL_REGION_EXIT();

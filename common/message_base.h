@@ -12,7 +12,12 @@
 typedef struct{
     uint32_t len;
     uint8_t  ref;
-    uint8_t  buf[31];
+#ifdef MSG_BASE_DATA_BUFFER_SIZE
+    uint8_t  buf[MSG_BASE_DATA_BUFFER_SIZE];
+#else
+    uint8_t * buf;
+#endif
+    
 }MSG_Data_t;
 
 typedef enum{
@@ -48,7 +53,6 @@ typedef struct{
 
 MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size);
 MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str);
-//returns the MSG_Data_t * of the data(if its within the buffer zone)
 MSG_Data_t * MSG_Base_Orig(void * data);
 
 MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
