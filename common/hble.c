@@ -12,7 +12,6 @@
 #include <nrf_soc.h>
 #include <pstorage.h>
 #include <softdevice_handler.h>
-#include <ble_bondmngr.h>
 
 #include "app.h"
 #include "hble.h"
@@ -21,14 +20,9 @@
 static hble_evt_handler_t _user_ble_evt_handler;
 static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 static ble_gap_sec_params_t _sec_params;
-static bool no_advertising = false;
-static ble_uuid_t _service_uuid;
-static int8_t  _last_connected_central; 
 
-
-
-
-static void _on_ble_evt(ble_evt_t* ble_evt)
+static void
+_on_ble_evt(ble_evt_t* ble_evt)
 {
     static ble_gap_evt_auth_status_t _auth_status;
 
@@ -38,10 +32,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_DISCONNECTED:
         _connection_handle = BLE_CONN_HANDLE_INVALID;
-
-        APP_OK(ble_bondmngr_bonded_centrals_store());
         hble_advertising_start();
-        
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
         APP_OK(sd_ble_gap_sec_params_reply(_connection_handle,
@@ -51,10 +42,10 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     case BLE_GATTS_EVT_SYS_ATTR_MISSING:
         APP_OK(sd_ble_gatts_sys_attr_set(_connection_handle, NULL, 0));
         break;
-    /*case BLE_GAP_EVT_AUTH_STATUS:
+    case BLE_GAP_EVT_AUTH_STATUS:
         _auth_status = ble_evt->evt.gap_evt.params.auth_status;
-        break;*/
-    /*case BLE_GAP_EVT_SEC_INFO_REQUEST:
+        break;
+    case BLE_GAP_EVT_SEC_INFO_REQUEST:
         {
             ble_gap_enc_info_t* p_enc_info = &_auth_status.periph_keys.enc_info;
             if(p_enc_info->div == ble_evt->evt.gap_evt.params.sec_info_request.div) {
@@ -64,7 +55,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
                 APP_OK(sd_ble_gap_sec_info_reply(_connection_handle, NULL, NULL));
             }
         }
-        break;*/
+        break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
             // APP_OK(sd_power_system_off());
@@ -76,20 +67,10 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     }
 
-    
-}
-
-
-static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
-{
-    ble_bondmngr_on_ble_evt(p_ble_evt);
-    ble_conn_params_on_ble_evt(p_ble_evt);
-    _on_ble_evt(p_ble_evt);
     if(_user_ble_evt_handler) {
-        _user_ble_evt_handler(p_ble_evt);
+        _user_ble_evt_handler(ble_evt);
     }
 }
-
 
 static void
 _on_sys_evt(uint32_t sys_evt)
@@ -109,83 +90,14 @@ _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
     }
 }
 
-
-/**@brief Function for handling a Bond Manager error.
- *
- * @param[in]   nrf_error   Error code containing information about what went wrong.
- */
-static void _bond_manager_error_handler(uint32_t nrf_error)
-{
-    APP_ERROR_HANDLER(nrf_error);
-}
-
-
-/**@brief Function for handling the Bond Manager events.
- *
- * @param[in]   p_evt   Data associated to the bond manager event.
- */
-static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
-{
-    _last_connected_central = p_evt->central_handle;
-}
-
-
-/**@brief Function for the Bond Manager initialization.
- */
-void bond_manager_init()
-{
-    uint32_t            err_code;
-    ble_bondmngr_init_t bond_init_data;
-    bool                bonds_delete;
-
-    // Initialize persistent storage module.
-    APP_OK(pstorage_init());
-
-    //memset(&bond_init_data, 0, sizeof(bond_init_data));
-    
-    // Initialize the Bond Manager.
-    bond_init_data.evt_handler             = _bond_evt_handler;
-    bond_init_data.error_handler           = _bond_manager_error_handler;
-    bond_init_data.bonds_delete            = true;
-
-    APP_OK(ble_bondmngr_init(&bond_init_data));
-    PRINTS("bond manager init.");
-}
-
-
 static void
 _on_conn_params_error(uint32_t nrf_error)
 {
     APP_ERROR_HANDLER(nrf_error);
 }
 
-static void _advertising_data_init(uint8_t flags){
-    ble_advdata_t advdata;
-    ble_advdata_t scanrsp;
-    
-
-    ble_uuid_t adv_uuids[] = {_service_uuid};
-    // Build and set advertising data
-    memset(&advdata, 0, sizeof(advdata));
-    advdata.name_type = BLE_ADVDATA_FULL_NAME;
-    advdata.include_appearance = true;
-    advdata.flags.size = sizeof(flags);
-    advdata.flags.p_data = &flags;
-    
-
-
-    memset(&scanrsp, 0, sizeof(scanrsp));
-    scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
-    scanrsp.uuids_complete.p_uuids  = adv_uuids;
-    APP_OK(ble_advdata_set(&advdata, &scanrsp));
-}
-
-void hble_advertising_init(ble_uuid_t service_uuid)
-{
-    _service_uuid = service_uuid;
-}
-
-void hble_advertising_start()
+void
+hble_advertising_start()
 {
     ble_gap_adv_params_t adv_params = {};
     adv_params.type = BLE_GAP_ADV_TYPE_ADV_IND;
@@ -194,48 +106,8 @@ void hble_advertising_start()
     adv_params.interval = APP_ADV_INTERVAL;
     adv_params.timeout = APP_ADV_TIMEOUT_IN_SECONDS;
 
-    //ble_gap_whitelist_t  whitelist;
-   // APP_OK(ble_bondmngr_whitelist_get(&whitelist));
-    
-    //if (whitelist.irk_count != 0)
-    if(no_advertising)                
-    {
-        ble_gap_addr_t peer_address;
-        uint32_t err_code = ble_bondmngr_central_addr_get(_last_connected_central, &peer_address);
-        uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_DIRECT_IND; //(err_code == NRF_SUCCESS ? BLE_GAP_ADV_TYPE_ADV_DIRECT_IND : BLE_GAP_ADV_TYPE_ADV_IND);
-        adv_params.type        = adv_mode;
-
-        switch(adv_mode)
-        {
-            case BLE_GAP_ADV_TYPE_ADV_DIRECT_IND:
-                adv_params.type        = BLE_GAP_ADV_TYPE_ADV_DIRECT_IND;
-                adv_params.timeout     = 0;
-                break;
-
-            case BLE_GAP_ADV_TYPE_ADV_IND:
-                {
-                    ble_gap_whitelist_t  whitelist;
-                    APP_OK(ble_bondmngr_whitelist_get(&whitelist));
-                    if (whitelist.addr_count != 0 || whitelist.irk_count != 0)
-                    {
-                        adv_params.p_whitelist = &whitelist;
-                        adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
-                    }
-                }
-                break;
-        }
-        
-        _advertising_data_init(BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED);
-    }
-    else
-    {
-        _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
-        no_advertising = true;
-    }
-
     APP_OK(sd_ble_gap_adv_start(&adv_params));
 }
-
 
 void
 hble_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler, char* device_name, hble_evt_handler_t ble_evt_handler)
@@ -244,7 +116,7 @@ hble_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler, char* device_na
 
     SOFTDEVICE_HANDLER_INIT(clock_source, use_scheduler);
 
-    APP_OK(softdevice_ble_evt_handler_set(_ble_evt_dispatch));
+    APP_OK(softdevice_ble_evt_handler_set(_on_ble_evt));
     APP_OK(softdevice_sys_evt_handler_set(_on_sys_evt));
 
     // initialize GAP parameters
