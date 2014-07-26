@@ -5,10 +5,10 @@
 #include "hlo_ble_time.h"
 
 enum {
-    BLE_UUID_MORPHEUS_SVC = 0xE110,
+    BLE_UUID_MORPHEUS_SVC = 0xEEE0,
 };
 
-enum MORPHEUS_command_type {
+enum morpheus_command_type {
     MORPHEUS_COMMAND_STOP_ACCELEROMETER = 0,
     MORPHEUS_COMMAND_START_ACCELEROMETER,
     MORPHEUS_COMMAND_CALIBRATE,
@@ -26,7 +26,7 @@ struct morpheus_command
     };
 } __attribute__((packed));
 
-enum pill_data_response_type {
+enum morpheus_data_response_type {
     PILL_DATA_RESPONSE_ACK,
     PILL_DATA_RESPONSE_MISSING,
 } __attribute__((packed));
