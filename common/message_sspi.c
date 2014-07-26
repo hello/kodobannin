@@ -1,10 +1,14 @@
 #include "message_sspi.h"
+#include "util.h"
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     spi_slave_config_t config;
+    MSG_Data_t * rx_obj;
+    MSG_Data_t * tx_obj;
 }self;
-static name = "SSPI";
+static char * name = "SSPI";
+static void _spi_evt_handler(spi_slave_evt_t event);
 
 static MSG_Status
 _destroy(void){
@@ -18,10 +22,11 @@ static MSG_Status
 _send(MSG_ModuleType src, MSG_Data_t * data){
     return SUCCESS;
 }
+
 static void
-_evt_handler(spi_slave_evt event){
+_spi_evt_handler(spi_slave_evt_t event){
     switch(event.evt_type){
-        case SPI_SLAVE_BUFFER_SET_DONE:
+        case SPI_SLAVE_BUFFERS_SET_DONE:
             break;
         case SPI_SLAVE_XFER_DONE:
             break;
@@ -34,13 +39,12 @@ _evt_handler(spi_slave_evt event){
 static MSG_Status
 _init(){
     uint32_t ret;
-    ret = spi_slave_init(&self.config);
-    if(!ret){
-        //LOG
+    if(spi_slave_init(&self.config) || 
+            spi_slave_evt_handler_register(_spi_evt_handler)){
+        PRINTS("SPI FAIL");
         return FAIL;
     }
-    spi_slave_evt_handler_register(_evt_handler);
-    return ret;
+    return SUCCESS;
 
 }
 

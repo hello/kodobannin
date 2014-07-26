@@ -1,4 +1,5 @@
 #pragma once
+#include <stddef.h>
 #include "spi_slave.h"
 #include "message_base.h"
 
