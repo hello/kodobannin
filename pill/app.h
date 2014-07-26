@@ -56,7 +56,7 @@ enum {
 // Timeout for Pairing Request or Security Request (in seconds)
 #define SEC_PARAM_TIMEOUT                    30
 // Perform bonding.
-#define SEC_PARAM_BOND                       0
+#define SEC_PARAM_BOND                       1
 // Man In The Middle protection not required.
 #define SEC_PARAM_MITM                       0
 // No I/O capabilities

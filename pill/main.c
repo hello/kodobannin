@@ -47,7 +47,7 @@ extern uint8_t hello_type;
 void _start()
 {
 
-    BOOL_OK(twi_master_init());
+    //BOOL_OK(twi_master_init());
 
     {
         enum {
@@ -71,7 +71,11 @@ void _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
-    bond_manager_init();
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+    hble_bond_manager_init();
+    
+
+    
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
 
@@ -84,14 +88,9 @@ void _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-    hble_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true, device_name, hlo_ble_on_ble_evt);
-    PRINTS("ble_init() done.\r\n");
-
-#if 0
-    APP_OK(sd_ant_stack_reset());
-    PRINTS("ANT initialized.\r\n");
-#endif
-
+    
+    
+    hble_params_init(device_name, hlo_ble_on_ble_evt);
     pill_ble_load_modules();
     hlo_ble_init();
     pill_ble_services_init();
@@ -102,10 +101,27 @@ void _start()
         .uuid = BLE_UUID_PILL_SVC
     };
 
-	hble_advertising_init(service_uuid);
-    hble_advertising_start();
+    hble_advertising_init(service_uuid);
 
-    PRINTS("Advertising started.\r\n");
+
+    PRINTS("ble_init() done.\r\n");
+
+#if 0
+    APP_OK(sd_ant_stack_reset());
+    PRINTS("ANT initialized.\r\n");
+#endif
+
+    
+    uint32_t count;
+    uint32_t err_code = pstorage_access_status_get(&count);
+    if ((err_code == NRF_SUCCESS) && (count == 0))
+    {
+        
+        hble_advertising_start();
+        PRINTS("Advertising started.\r\n");
+    }
+
+    PRINTS("INIT DONE.\r\n");
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
