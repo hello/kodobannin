@@ -32,7 +32,7 @@
 #include "hlo_ble_alpha0.h"
 #include "hlo_ble_demo.h"
 #include "git_description.h"
-#include "pill_ble.h"
+#include "morpheus_ble.h"
 #include "sensor_data.h"
 #include "util.h"
 
@@ -76,6 +76,7 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
     hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
+	morpheus_ble_load_modules();
     PRINTS("ble_init() done.\r\n");
 
 #if 1
