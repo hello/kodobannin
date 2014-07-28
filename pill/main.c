@@ -71,7 +71,7 @@ void _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
     hble_bond_manager_init();
     
 
