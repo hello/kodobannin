@@ -36,6 +36,7 @@
 #include "sensor_data.h"
 #include "util.h"
 
+
 void
 _start()
 {
@@ -64,11 +65,7 @@ _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
-    hble_bond_manager_init();
-    
-
-      // append something to device name
+    // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
 
     memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
@@ -79,9 +76,17 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+
+
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
+    pill_ble_load_modules();
+
+    hble_bond_manager_init();
+    
+    //app_sched_event_put(NULL, 0, _sch_init_bondmngr);
  
     hble_params_init(device_name, hlo_ble_on_ble_evt);
-    pill_ble_load_modules();
+    //pill_ble_load_modules();
     hlo_ble_init();
     pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
@@ -90,7 +95,7 @@ _start()
         .type = hello_type,
         .uuid = BLE_UUID_PILL_SVC
     };
-    
+
     hble_advertising_init(service_uuid);
 
     PRINTS("ble_init() done.\r\n");
@@ -101,15 +106,16 @@ _start()
 #endif
 
     
-    uint32_t count;
+    /*uint32_t count;
     uint32_t err_code = pstorage_access_status_get(&count);
     if ((err_code == NRF_SUCCESS) && (count == 0))
     {
         
         hble_advertising_start();
-        PRINTS("Advertising started.\r\n");
-    }
+    }*/
 
+    //hble_advertising_start();
+    
     PRINTS("INIT DONE.\r\n");
 
     for(;;) {

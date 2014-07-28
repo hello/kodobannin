@@ -35,9 +35,10 @@ static int8_t  _last_connected_central;
 //static ble_gap_addr_t* p_whitelist_addr = { &_whitelist_central_addr };
 //static ble_gap_irk_t* p_whitelist_irk = { &_whitelist_irk };
 
-static void _bond_manager_store_central(void * p_event_data, uint16_t event_size)
+static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     APP_OK(ble_bondmngr_bonded_centrals_store());
+    hble_advertising_start();
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
@@ -51,9 +52,9 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_DISCONNECTED:
         _connection_handle = BLE_CONN_HANDLE_INVALID;
-        APP_OK(ble_bondmngr_bonded_centrals_store());
-        app_sched_event_put(NULL, 0, _bond_manager_store_central);
-        hble_advertising_start();
+        //APP_OK(ble_bondmngr_bonded_centrals_store());
+        app_sched_event_put(NULL, 0, _on_disconnect);
+        
        
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
@@ -290,7 +291,7 @@ void hble_advertising_start()
     {
         _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
         no_advertising = true;
-        PRINTS("inital adv started.\r\n");
+        PRINTS("Advertising started.\r\n");
     }
 
     APP_OK(sd_ble_gap_adv_start(&adv_params));
