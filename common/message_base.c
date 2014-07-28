@@ -14,7 +14,7 @@ static struct{
 MSG_Data_t * MSG_Base_Orig(void * data){
 #ifdef MSG_BASE_DATA_BUFFER_SIZE
     if(data >= MSG_DATA_POOL_START && data < MSG_DATA_POOL_END){
-        return &self.pool[((data - MSG_DATA_POOL_START) / sizeof(MSG_Data_t))];
+        return &self.pool[((data - (void*)MSG_DATA_POOL_START) / sizeof(MSG_Data_t))];
     }
 #endif
     return NULL;
