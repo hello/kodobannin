@@ -12,7 +12,7 @@
 #include <nrf_soc.h>
 #include <pstorage.h>
 #include <softdevice_handler.h>
-#include <ble_bondmngr.h>
+#include "ble_bondmngr.h"
 
 #include "app.h"
 #include "hble.h"
@@ -21,6 +21,7 @@
 static hble_evt_handler_t _user_ble_evt_handler;
 static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 static ble_gap_sec_params_t _sec_params;
+
 static bool no_advertising = false;
 static bool _app_initialized = false;
 
@@ -34,6 +35,10 @@ static int8_t  _last_connected_central;
 //static ble_gap_addr_t* p_whitelist_addr = { &_whitelist_central_addr };
 //static ble_gap_irk_t* p_whitelist_irk = { &_whitelist_irk };
 
+static void _bond_manager_store_central(void * p_event_data, uint16_t event_size)
+{
+    APP_OK(ble_bondmngr_bonded_centrals_store());
+}
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
 {
@@ -46,10 +51,10 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_DISCONNECTED:
         _connection_handle = BLE_CONN_HANDLE_INVALID;
-
         APP_OK(ble_bondmngr_bonded_centrals_store());
-        //hble_advertising_start();
-        
+        app_sched_event_put(NULL, 0, _bond_manager_store_central);
+        hble_advertising_start();
+       
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
         APP_OK(sd_ble_gap_sec_params_reply(_connection_handle,
@@ -92,6 +97,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         }
         break;
     */
+
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
             // APP_OK(sd_power_system_off());
@@ -102,7 +108,6 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         // No implementation needed.
         break;
     }
-
     
 }
 
@@ -111,6 +116,7 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 {
     ble_bondmngr_on_ble_evt(p_ble_evt);
     ble_conn_params_on_ble_evt(p_ble_evt);
+
     if(_user_ble_evt_handler) {
         _user_ble_evt_handler(p_ble_evt);
     }
@@ -124,6 +130,7 @@ static void _on_sys_evt(uint32_t sys_evt)
     uint32_t err_code;
     uint32_t count;
     pstorage_sys_event_handler(sys_evt);
+
     if(_app_initialized)
     {
         err_code = pstorage_access_status_get(&count);
@@ -135,6 +142,7 @@ static void _on_sys_evt(uint32_t sys_evt)
     }else{
         _app_initialized = true;
     }
+
 }
 
 static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
@@ -148,6 +156,7 @@ static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
         break;
     }
 }
+
 
 
 /**@brief Function for handling a Bond Manager error.
@@ -195,6 +204,7 @@ void hble_bond_manager_init()
 }
 
 
+
 static void
 _on_conn_params_error(uint32_t nrf_error)
 {
@@ -204,8 +214,6 @@ _on_conn_params_error(uint32_t nrf_error)
 static void _advertising_data_init(uint8_t flags){
     ble_advdata_t advdata;
     ble_advdata_t scanrsp;
-    
-
     ble_uuid_t adv_uuids[] = {_service_uuid};
     // Build and set advertising data
     memset(&advdata, 0, sizeof(advdata));
@@ -213,14 +221,12 @@ static void _advertising_data_init(uint8_t flags){
     advdata.include_appearance = true;
     advdata.flags.size = sizeof(flags);
     advdata.flags.p_data = &flags;
-    
-
-
     memset(&scanrsp, 0, sizeof(scanrsp));
     scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
-    scanrsp.uuids_complete.p_uuids  = adv_uuids;
+    scanrsp.uuids_complete.p_uuids = adv_uuids;
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
+
 
 void hble_advertising_init(ble_uuid_t service_uuid)
 {
@@ -376,7 +382,7 @@ void hble_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler, char* devi
 
     SOFTDEVICE_HANDLER_INIT(clock_source, use_scheduler);
 
-    APP_OK(softdevice_ble_evt_handler_set(_ble_evt_dispatch));
+    APP_OK(softdevice_ble_evt_handler_set(_on_ble_evt));
     APP_OK(softdevice_sys_evt_handler_set(_on_sys_evt));
 
     // initialize GAP parameters
