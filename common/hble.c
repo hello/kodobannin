@@ -131,8 +131,8 @@ static void _on_sys_evt(uint32_t sys_evt)
     uint32_t err_code;
     uint32_t count;
     pstorage_sys_event_handler(sys_evt);
-    /*
-    if(_app_initialized)
+    
+    /*if(_app_initialized)
     {
         err_code = pstorage_access_status_get(&count);
         if(err_code == NRF_SUCCESS && count == 0)
@@ -142,8 +142,8 @@ static void _on_sys_evt(uint32_t sys_evt)
         }
     }else{
         _app_initialized = true;
-    }
-    */
+    }*/
+    
 
 }
 
@@ -244,7 +244,7 @@ void hble_advertising_start()
     adv_params.interval = APP_ADV_INTERVAL;
     adv_params.timeout = APP_ADV_TIMEOUT_IN_SECONDS;
 
-    /*if(no_advertising)                
+    if(no_advertising)                
     {
         ble_gap_addr_t peer_address;
         //APP_OK(ble_bondmngr_central_addr_get(_last_connected_central, &peer_address));
@@ -285,17 +285,16 @@ void hble_advertising_start()
                 break;
         }
         
-        _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
-        PRINTS("adv reset\r\n");
+        //_advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
     }
-    else*/
+    else
     {
         _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
         no_advertising = true;
-        PRINTS("Advertising started.\r\n");
     }
 
     APP_OK(sd_ble_gap_adv_start(&adv_params));
+    PRINTS("Advertising started.\r\n");
 }
 
 void hble_stack_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler)

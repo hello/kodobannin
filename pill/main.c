@@ -40,7 +40,6 @@
 void
 _start()
 {
-
     //BOOL_OK(twi_master_init());
 
     {
@@ -78,7 +77,9 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
 
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_50_PPM, true);
+    //hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_50_PPM, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+
     
     hble_bond_manager_init();
     hble_params_init(device_name, hlo_ble_on_ble_evt);
