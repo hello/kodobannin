@@ -87,9 +87,7 @@ void _start()
     device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-
-    
-    
+ 
     hble_params_init(device_name, hlo_ble_on_ble_evt);
     pill_ble_load_modules();
     hlo_ble_init();
@@ -102,7 +100,6 @@ void _start()
     };
 
     hble_advertising_init(service_uuid);
-
 
     PRINTS("ble_init() done.\r\n");
 
