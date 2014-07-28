@@ -78,15 +78,12 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
 
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
-    pill_ble_load_modules();
-
-    hble_bond_manager_init();
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_50_PPM, true);
     
-    //app_sched_event_put(NULL, 0, _sch_init_bondmngr);
- 
+    hble_bond_manager_init();
     hble_params_init(device_name, hlo_ble_on_ble_evt);
-    //pill_ble_load_modules();
+    pill_ble_load_modules();  // MUST load brefore everything else is initialized.
+
     hlo_ble_init();
     pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
@@ -104,17 +101,7 @@ _start()
     APP_OK(sd_ant_stack_reset());
     PRINTS("ANT initialized.\r\n");
 #endif
-
-    
-    /*uint32_t count;
-    uint32_t err_code = pstorage_access_status_get(&count);
-    if ((err_code == NRF_SUCCESS) && (count == 0))
-    {
-        
-        hble_advertising_start();
-    }*/
-
-    //hble_advertising_start();
+    hble_advertising_start();
     
     PRINTS("INIT DONE.\r\n");
 

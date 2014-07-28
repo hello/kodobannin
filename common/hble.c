@@ -131,7 +131,7 @@ static void _on_sys_evt(uint32_t sys_evt)
     uint32_t err_code;
     uint32_t count;
     pstorage_sys_event_handler(sys_evt);
-
+    /*
     if(_app_initialized)
     {
         err_code = pstorage_access_status_get(&count);
@@ -143,6 +143,7 @@ static void _on_sys_evt(uint32_t sys_evt)
     }else{
         _app_initialized = true;
     }
+    */
 
 }
 
@@ -191,7 +192,7 @@ void hble_bond_manager_init()
 
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
-    PRINTS("pstorage_init() done.\r\n");
+    //PRINTS("pstorage_init() done.\r\n");
 
     memset(&bond_init_data, 0, sizeof(bond_init_data));
     
@@ -201,7 +202,7 @@ void hble_bond_manager_init()
     bond_init_data.bonds_delete            = true;
 
     APP_OK(ble_bondmngr_init(&bond_init_data));
-    PRINTS("bond manager init.\r\n");
+    //PRINTS("bond manager init.\r\n");
 }
 
 
