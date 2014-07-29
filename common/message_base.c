@@ -12,8 +12,8 @@ static struct{
 #define MSG_DATA_POOL_END (&self.pool[MSG_BASE_SHARED_POOL_SIZE])
 
 MSG_Data_t * MSG_Base_QueueAtomic(MSG_Data_t * head, MSG_Data_t * obj){
-    CRITICAL_REGION_ENTER();
     MSG_Data_t * ret = head;
+    CRITICAL_REGION_ENTER();
     if(head){
         while(head->next){
             head = head->next;
@@ -26,8 +26,8 @@ MSG_Data_t * MSG_Base_QueueAtomic(MSG_Data_t * head, MSG_Data_t * obj){
     return ret;
 }
 MSG_Data_t * MSG_Base_DeQueueAtomic(MSG_Data_t * head, MSG_Data_t * out_obj){
-    CRITICAL_REGION_ENTER();
     MSG_Data_t * ret;
+    CRITICAL_REGION_ENTER();
     if(head){
         out_obj = head;
         ret = head->next;
