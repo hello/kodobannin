@@ -29,7 +29,7 @@
 #include "app.h"
 #include "platform.h"
 
-#include "hlo_ble.h"
+#include "pill_gatt.h"
 #include "hble.h"
 
 #include "git_description.h"
@@ -79,11 +79,11 @@ _start()
 
 
     //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
 
     
     hble_bond_manager_init();
-    hble_params_init(device_name, hlo_ble_on_ble_evt);
+    hble_params_init(device_name);
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
     hlo_ble_init();

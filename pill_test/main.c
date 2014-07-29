@@ -27,11 +27,8 @@
 #include "app.h"
 #include "hble.h"
 #include "platform.h"
-#include "hlo_ble_alpha0.h"
-#include "hlo_ble_demo.h"
 #include "git_description.h"
 #include "pill_ble.h"
-#include "sensor_data.h"
 #include "util.h"
 
 static bool

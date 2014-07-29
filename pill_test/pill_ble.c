@@ -6,8 +6,7 @@
 #include <ble_gatts.h>
 #include <ble_srv_common.h>
 
-#include "hlo_ble.h"
-#include "hlo_ble_time.h"
+#include "pill_gatt.h"
 #include "pill_ble.h"
 #include "util.h"
 

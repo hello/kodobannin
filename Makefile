@@ -71,8 +71,8 @@ BUILD_DIR = build
 
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
-	$(wildcard ble/*.c) \
-	$(wildcard ble/services/*.c) \
+	#$(wildcard ble/*.c) \
+	#$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
 
 NRF_SRCS = \
