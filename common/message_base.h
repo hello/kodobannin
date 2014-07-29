@@ -8,9 +8,12 @@
 #include <stdint.h>
 #include "message_config.h"
 
+#define INCREF
+#define DECREF
 
-typedef struct{
+typedef struct _MSG_Data_t{
     uint32_t len;
+    struct _MSG_Data_t * next;
     uint8_t  ref;
 #ifdef MSG_BASE_DATA_BUFFER_SIZE
     uint8_t  buf[MSG_BASE_DATA_BUFFER_SIZE];
@@ -50,13 +53,14 @@ typedef struct{
     MSG_Status ( *unloadmod )(MSG_Base_t * mod);
 }MSG_Central_t;
 
-MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size);
-MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str);
+MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(uint32_t size);
+MSG_Data_t * INCREF MSG_Base_AllocateStringAtomic(const char * str);
+MSG_Status   INCREF MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
+MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
+
 MSG_Data_t * MSG_Base_Orig(void * data);
-
-MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
-MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
-
+MSG_Data_t * MSG_Base_QueueAtomic(MSG_Data_t * head, MSG_Data_t * obj);
+MSG_Data_t * MSG_Base_DeQueueAtomic(MSG_Data_t * head, MSG_Data_t * out_obj);
 
 #define MSG_PING(c,r,i) do{ \
     MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(1); \

@@ -11,10 +11,37 @@ static struct{
 #define MSG_DATA_POOL_START (self.pool)
 #define MSG_DATA_POOL_END (&self.pool[MSG_BASE_SHARED_POOL_SIZE])
 
+MSG_Data_t * MSG_Base_QueueAtomic(MSG_Data_t * head, MSG_Data_t * obj){
+    CRITICAL_REGION_ENTER();
+    MSG_Data_t * ret = head;
+    if(head){
+        while(head->next){
+            head = head->next;
+        }
+        head->next = obj;
+    }else{
+        ret = obj;
+    }
+    CRITICAL_REGION_EXIT();
+    return ret;
+}
+MSG_Data_t * MSG_Base_DeQueueAtomic(MSG_Data_t * head, MSG_Data_t * out_obj){
+    CRITICAL_REGION_ENTER();
+    MSG_Data_t * ret;
+    if(head){
+        out_obj = head;
+        ret = head->next;
+    }else{
+        out_obj = NULL;
+        ret = NULL;
+    }
+    CRITICAL_REGION_EXIT();
+    return ret;
+}
 MSG_Data_t * MSG_Base_Orig(void * data){
 #ifdef MSG_BASE_DATA_BUFFER_SIZE
     if(data >= MSG_DATA_POOL_START && data < MSG_DATA_POOL_END){
-        return &self.pool[((data - MSG_DATA_POOL_START) / sizeof(MSG_Data_t))];
+        return &self.pool[(((uint8_t*)data - (uint8_t*)MSG_DATA_POOL_START) / sizeof(MSG_Data_t))];
     }
 #endif
     return NULL;
@@ -32,6 +59,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
             ret = &self.pool[i];
             ret->len = size;
             ret->ref = 1;
+            ret->next = NULL;
             PRINTS("+");
             break;
         }
@@ -76,6 +104,7 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
             PRINTS("-");
             if(d->ref==0){
                 PRINTS("~");
+                d->next = NULL;
 #ifndef MSG_BASE_DATA_BUFFER_SIZE
                 //here we free the buffer
 #endif
