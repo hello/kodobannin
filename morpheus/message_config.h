@@ -6,6 +6,7 @@
 #define MSG_BASE_SHARED_POOL_SIZE 12
 #define MSG_BASE_DATA_BUFFER_SIZE 31
 
+#define MSG_SSPI_TXRX_BUFFER_SIZE 512
 
 typedef enum{
     CENTRAL = 0,
