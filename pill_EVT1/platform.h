@@ -13,7 +13,6 @@ enum {
 };
 
 #define PLATFORM_HAS_RTC
-
 enum {
     RTC_SDA = 0,
     RTC_SCL = 24,
