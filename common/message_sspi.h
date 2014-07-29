@@ -7,8 +7,13 @@
 typedef struct{
     enum{
         SSPI_PING=0,
+        SSPI_QUEUE,
     }cmd;
     union{
+        struct{
+            uint16_t len;
+            void * payload;
+        }SSPI_QueueData;
     }param;
 }MSG_SSPICommand_t;
 
