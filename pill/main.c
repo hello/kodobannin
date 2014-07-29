@@ -21,16 +21,16 @@
 #include <pwm.h>
 #include <hrs.h>
 #include <watchdog.h>
-#include <hlo_fs.h>
+//#include <hlo_fs.h>
 #include <nrf_sdm.h>
 #include <softdevice_handler.h>
-#include <twi_master.h>
+//#include <twi_master.h>
 
 #include "app.h"
 #include "hble.h"
 #include "platform.h"
-#include "hlo_ble_alpha0.h"
-#include "hlo_ble_demo.h"
+//#include "hlo_ble_alpha0.h"
+//#include "hlo_ble_demo.h"
 #include "git_description.h"
 #include "pill_ble.h"
 #include "sensor_data.h"
