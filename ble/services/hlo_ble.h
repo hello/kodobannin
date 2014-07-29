@@ -59,6 +59,7 @@ void hlo_ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_h
 void hlo_ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size);
 
 uint16_t hlo_ble_get_value_handle(const uint16_t uuid);
+uint16_t hlo_ble_get_connection_handle();
 
 void hlo_ble_dispatch_write(ble_evt_t *event);
 

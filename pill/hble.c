@@ -17,9 +17,10 @@
 #include "app.h"
 #include "hble.h"
 #include "util.h"
+#include "hlo_ble.h"
 
 static hble_evt_handler_t _user_ble_evt_handler;
-static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
+//static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 static ble_gap_sec_params_t _sec_params;
 
 static bool no_advertising = false;
@@ -58,12 +59,12 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
        
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
-        APP_OK(sd_ble_gap_sec_params_reply(_connection_handle,
+        APP_OK(sd_ble_gap_sec_params_reply(hlo_ble_get_connection_handle(),
                                        BLE_GAP_SEC_STATUS_SUCCESS,
                                        &_sec_params));
         break;
     case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-        APP_OK(sd_ble_gatts_sys_attr_set(_connection_handle, NULL, 0));
+        APP_OK(sd_ble_gatts_sys_attr_set(hlo_ble_get_connection_handle(), NULL, 0));
         break;
     /* 
     case BLE_GAP_EVT_AUTH_STATUS:

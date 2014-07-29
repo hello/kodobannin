@@ -27,10 +27,11 @@
 //#include <twi_master.h>
 
 #include "app.h"
-#include "hble.h"
 #include "platform.h"
-//#include "hlo_ble_alpha0.h"
-//#include "hlo_ble_demo.h"
+
+#include "hlo_ble.h"
+#include "hble.h"
+
 #include "git_description.h"
 #include "pill_ble.h"
 #include "sensor_data.h"
