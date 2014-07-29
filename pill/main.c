@@ -77,8 +77,8 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
 
-    //hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_50_PPM, true);
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+    //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
 
     
     hble_bond_manager_init();
