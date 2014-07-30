@@ -28,13 +28,6 @@ static bool no_advertising = false;
 static ble_uuid_t _service_uuid;
 static int8_t  _last_connected_central; 
 
-//static ble_gap_addr_t _whitelist_central_addr;
-//static ble_gap_irk_t _whitelist_irk;
-
-//static ble_gap_whitelist_t  _whitelist;
-//static ble_gap_addr_t* p_whitelist_addr = { &_whitelist_central_addr };
-//static ble_gap_irk_t* p_whitelist_irk = { &_whitelist_irk };
-
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     ble_bondmngr_bonded_centrals_store();
@@ -48,55 +41,13 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     switch(ble_evt->header.evt_id) {
     
     case BLE_GAP_EVT_DISCONNECTED:
-        //_connection_handle = BLE_CONN_HANDLE_INVALID;
-        //APP_OK(ble_bondmngr_bonded_centrals_store());
         app_sched_event_put(NULL, 0, _on_disconnect);
-        
-       
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
         APP_OK(sd_ble_gap_sec_params_reply(hlo_ble_get_connection_handle(),
                                        BLE_GAP_SEC_STATUS_SUCCESS,
                                        &_sec_params));
         break;
-
-    /*case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-        APP_OK(sd_ble_gatts_sys_attr_set(hlo_ble_get_connection_handle(), NULL, 0));
-        break;
-        */
-    /* 
-    case BLE_GAP_EVT_AUTH_STATUS:
-        _auth_status = ble_evt->evt.gap_evt.params.auth_status;
-
-        //if(_auth_status.auth_status == BLE_GAP_SEC_STATUS_SUCCESS)
-        {
-            _whitelist_central_addr = _central_addr;
-            //p_whitelist_addr[0] = &_whitelist_central_addr;
-
-            _whitelist_irk = _auth_status.central_keys.irk;
-            //p_whitelist_irk[0] = &_whitelist_irk;
-            _whitelist.addr_count = 1;
-            _whitelist.irk_count = 1;
-            _whitelist.pp_addrs = p_whitelist_addr;
-            _whitelist.pp_irks = p_whitelist_irk;
-
-            PRINTS("paired");
-        }
-        break;
-    */
-    /* 
-    case BLE_GAP_EVT_SEC_INFO_REQUEST:
-        {
-            ble_gap_enc_info_t* p_enc_info = &_auth_status.periph_keys.enc_info;
-            if(p_enc_info->div == ble_evt->evt.gap_evt.params.sec_info_request.div) {
-                APP_OK(sd_ble_gap_sec_info_reply(_connection_handle, p_enc_info, NULL));
-            } else {
-                // No keys found for this device
-                APP_OK(sd_ble_gap_sec_info_reply(_connection_handle, NULL, NULL));
-            }
-        }
-        break;
-    */
 
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
