@@ -1,20 +1,60 @@
 #include "message_sspi.h"
 #include "util.h"
 
+#define REG_READ 0
+#define REG_WRITE 1
+typedef enum{
+    IDLE = 0,
+    READING,
+    WRITING,
+    ERROR
+}SSPIState;
+
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     spi_slave_config_t config;
-    SSPIState current_state;
+    volatile SSPIState current_state;
+    uint8_t control_reg;
+    /*
+     * A transaction is a series of 3 CS pin transitions
+     * That may not be interrupted
+     */
     struct{
-        MSG_Data_t * tx_obj;
-        uint16_t offset;
-    }current_tx_context;
+        enum{
+            WAIT_READ_RX_LEN = 0,
+            WRITE_TX_LEN,
+            WAIT_READ_RX_BUF,
+            WRITE_TX_BUF,
+            FIN_READ,
+            FIN_WRITE,
+            TXRX_ERROR
+        }state;
+        uint16_t length_reg;
+        void * buf;
+    }transaction;
 }self;
 
 static char * name = "SSPI";
 static void _spi_evt_handler(spi_slave_evt_t event);
 
+static SSPIState
+_initialize_transaction(){
+    switch(self.control_reg){
+        default:
+            return IDLE;
+            break;
+        case REG_READ:
+            break;
+        case REG_WRITE:
+            break;
+    }
+}
+static SSPIState
+_reset(void){
+    spi_slave_buffers_set(NULL, &self.control_reg, 0, 1);
+    return IDLE;
+}
 
 static MSG_Status
 _destroy(void){
@@ -39,6 +79,17 @@ _spi_evt_handler(spi_slave_evt_t event){
             break;
         case SPI_SLAVE_XFER_DONE:
             //do things with buffer
+            switch(self.current_state){
+                case IDLE:
+                    self.current_state = _initialize_transaction();
+                case WRITING:
+                case READING:
+                    //self.current_state = _handle_transaction();
+                    break;
+                default:
+                    self.current_state = _reset();
+                    break;
+            }
             //reload
             break;
         default:
@@ -55,8 +106,7 @@ _init(){
         PRINTS("SPI FAIL");
         return FAIL;
     }
-    self.current_state = IDLE;
-    _spi_reload_buffers(self.current_state);
+    self.current_state = _reset();
     return SUCCESS;
 
 }
