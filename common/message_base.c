@@ -3,44 +3,46 @@
 #include <nrf_soc.h>
 #include "message_base.h"
 #include "util.h"
+
+#define POOL_OBJ_SIZE(buf_size) (buf_size + sizeof(MSG_Data_t))
+
 static struct{
-    MSG_Data_t pool[MSG_BASE_SHARED_POOL_SIZE]; 
-    MSG_Data_t * cached;
-}self;
-
-#define MSG_DATA_POOL_START (self.pool)
-#define MSG_DATA_POOL_END (&self.pool[MSG_BASE_SHARED_POOL_SIZE])
-
-MSG_Data_t * MSG_Base_Orig(void * data){
-#ifdef MSG_BASE_DATA_BUFFER_SIZE
-    if(data >= MSG_DATA_POOL_START && data < MSG_DATA_POOL_END){
-        return &self.pool[((data - (void*)MSG_DATA_POOL_START) / sizeof(MSG_Data_t))];
-    }
+    uint8_t pool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE) * MSG_BASE_SHARED_POOL_SIZE];
+#ifdef MSG_BASE_USE_BIG_POOL
+    uint8_t bigpool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG) * MSG_BASE_SHARED_POOL_SIZE_BIG];
 #endif
-    return NULL;
-}
+}self;
 
 MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     MSG_Data_t * ret = NULL;
-#ifdef MSG_BASE_DATA_BUFFER_SIZE
+    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
+    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
+    uint8_t * p = self.pool;
     if( size > MSG_BASE_DATA_BUFFER_SIZE ){
+#ifdef MSG_BASE_USE_BIG_POOL
+        if( size > MSG_BASE_DATA_BUFFER_SIZE_BIG ){
+            step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG);
+            step_limit = MSG_BASE_SHARED_POOL_SIZE_BIG;
+            p = self.bigpool;
+            goto allocate;
+        }
+#else
         return NULL;
+#endif
     }
+allocate:
     CRITICAL_REGION_ENTER();
-    for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE; i++){
-        if(self.pool[i].ref == 0){
-            ret = &self.pool[i];
-            ret->len = size;
-            ret->ref = 1;
+    for(int i = 0; i < step_limit; i++){
+        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
+        if(tmp->ref == 0){
+            tmp->len = size;
+            tmp->ref = 1;
+            ret = tmp;
             PRINTS("+");
             break;
         }
     }
     CRITICAL_REGION_EXIT();
-#else
-    //psudo code
-    //allocate memory, assign, and inc ref
-#endif
     return ret;
 }
 //TODO
@@ -84,5 +86,36 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
         CRITICAL_REGION_EXIT();
     }
     return FAIL;
+}
+static void
+_free_all(){
+
+}
+MSG_Status
+MSG_Base_BufferTest(void){
+    for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE; i++){
+        MSG_Data_t * o = MSG_Base_AllocateDataAtomic(1); 
+        MSG_Data_t * b = MSG_Base_AllocateDataAtomic(1); 
+        MSG_Data_t * j = MSG_Base_AllocateDataAtomic(1); 
+        MSG_Base_ReleaseDataAtomic(o);
+        MSG_Base_ReleaseDataAtomic(j);
+    }
+    for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE_BIG; i++){
+        MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(MSG_BASE_SHARED_POOL_SIZE_BIG); 
+        MSG_Data_t * o = MSG_Base_AllocateDataAtomic(MSG_BASE_SHARED_POOL_SIZE_BIG); 
+        MSG_Data_t * b = MSG_Base_AllocateDataAtomic(MSG_BASE_SHARED_POOL_SIZE_BIG); 
+        MSG_Data_t * j = MSG_Base_AllocateDataAtomic(MSG_BASE_SHARED_POOL_SIZE_BIG); 
+        MSG_Base_ReleaseDataAtomic(o);
+        MSG_Base_ReleaseDataAtomic(j);
+    }
+    MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(1); 
+    MSG_Data_t * objbig = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE_BIG); 
+    if(obj || objbig){
+        PRINTS("Failed Test\r\n");
+        return FAIL;
+    }else{
+        PRINTS("All Pass\r\n");
+    }
+    return SUCCESS;
 }
 
