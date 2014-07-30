@@ -24,7 +24,6 @@
 static ble_gap_sec_params_t _sec_params;
 
 static bool no_advertising = false;
-static bool _app_initialized = false;
 
 static ble_uuid_t _service_uuid;
 static int8_t  _last_connected_central; 
@@ -38,7 +37,7 @@ static int8_t  _last_connected_central;
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
-    APP_OK(ble_bondmngr_bonded_centrals_store());
+    ble_bondmngr_bonded_centrals_store();
     hble_advertising_start();
 }
 
@@ -60,9 +59,11 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
                                        BLE_GAP_SEC_STATUS_SUCCESS,
                                        &_sec_params));
         break;
-    case BLE_GATTS_EVT_SYS_ATTR_MISSING:
+
+    /*case BLE_GATTS_EVT_SYS_ATTR_MISSING:
         APP_OK(sd_ble_gatts_sys_attr_set(hlo_ble_get_connection_handle(), NULL, 0));
         break;
+        */
     /* 
     case BLE_GAP_EVT_AUTH_STATUS:
         _auth_status = ble_evt->evt.gap_evt.params.auth_status;
@@ -124,22 +125,7 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 
 static void _on_sys_evt(uint32_t sys_evt)
 {
-    uint32_t err_code;
-    uint32_t count;
     pstorage_sys_event_handler(sys_evt);
-    
-    /*if(_app_initialized)
-    {
-        err_code = pstorage_access_status_get(&count);
-        if(err_code == NRF_SUCCESS && count == 0)
-        {
-            hble_advertising_start();
-            PRINTS("Adv triggered by sys event.\r\n");
-        }
-    }else{
-        _app_initialized = true;
-    }*/
-    
 
 }
 
@@ -267,9 +253,10 @@ void hble_advertising_start()
                         adv_params.p_whitelist = &whitelist;
                         adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
                         PRINTS("whitelist retrieved.\r\n");
-                    }
+                    }else{
                     
-                    PRINTS("NO whitelist retrieved.\r\n");
+                        PRINTS("NO whitelist retrieved.\r\n");
+                    }
                     
                     //if(_whitelist.addr_count != 0 || _whitelist.irk_count != 0)
                     //{
@@ -281,15 +268,16 @@ void hble_advertising_start()
                 break;
         }
         
-        //_advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
+        _advertising_data_init(BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED);
+        APP_OK(sd_ble_gap_adv_start(&adv_params));
     }
     else
     {
         _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
+        APP_OK(sd_ble_gap_adv_start(&adv_params));
         no_advertising = true;
     }
 
-    APP_OK(sd_ble_gap_adv_start(&adv_params));
     PRINTS("Advertising started.\r\n");
 }
 

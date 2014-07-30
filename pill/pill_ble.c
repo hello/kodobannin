@@ -164,7 +164,7 @@ void pill_ble_advertising_init(void){
 
 
 	memset(&scanrsp, 0, sizeof(scanrsp));
-	scanrsp.uuids_more_available.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
-	scanrsp.uuids_more_available.p_uuids  = adv_uuids;
+	scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
+	scanrsp.uuids_complete.p_uuids  = adv_uuids;
 	APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }

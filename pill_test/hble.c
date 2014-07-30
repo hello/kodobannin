@@ -38,7 +38,7 @@ static int8_t  _last_connected_central;
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
-    APP_OK(ble_bondmngr_bonded_centrals_store());
+    ble_bondmngr_bonded_centrals_store();
     hble_advertising_start();
 }
 

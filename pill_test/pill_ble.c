@@ -106,15 +106,4 @@ pill_ble_services_init()
         hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
     }
 
-    {
-        ble_uuid_t stream_service_uuid = {
-            .type = hello_type,
-            .uuid = 0xFFA0,
-        };
-
-        APP_OK(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &stream_service_uuid, &_stream_service_handle));
-
-        hlo_ble_char_write_command_add(0xFFA1, &_stream_write_handler, 1);
-        hlo_ble_char_notify_add(0xFFAA);
-    }
 }
