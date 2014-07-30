@@ -31,7 +31,7 @@ static struct{
             TXRX_ERROR
         }state;
         uint16_t length_reg;
-        void * buf;
+        MSG_Data_t * payload;
     }transaction;
 }self;
 
@@ -39,21 +39,66 @@ static char * name = "SSPI";
 static void _spi_evt_handler(spi_slave_evt_t event);
 
 static SSPIState
+_reset(void){
+    PRINTS("RESET\r\n");
+    spi_slave_buffers_set(&self.control_reg, &self.control_reg, 1, 1);
+    return IDLE;
+}
+static SSPIState
 _initialize_transaction(){
     switch(self.control_reg){
         default:
-            return IDLE;
+            return _reset();
             break;
         case REG_READ:
-            break;
+            PRINTS("IN READ MODE\r\n");
+            self.transaction.state = WAIT_READ_RX_LEN;
+            return READING;
         case REG_WRITE:
-            break;
+            //prepare buffer here
+            /*MSG_Data_t * txctx = get_tx_queue();*/
+            self.transaction.length_reg = 0; //get from tx queue;
+            self.transaction.payload = NULL;
+            return WRITING;
     }
 }
 static SSPIState
-_reset(void){
-    spi_slave_buffers_set(NULL, &self.control_reg, 0, 1);
-    return IDLE;
+_handle_transaction(){
+    switch(self.transaction.state){
+        case WAIT_READ_RX_LEN:
+            PRINTS("@WAIT RX LEN\r\n");
+            spi_slave_buffers_set(&self.transaction.length_reg, &self.transaction.length_reg, sizeof(self.transaction.length_reg), sizeof(self.transaction.length_reg));
+            self.transaction.state = WAIT_READ_RX_BUF;
+            break;
+        case WRITE_TX_LEN:
+            spi_slave_buffers_set(&self.transaction.length_reg,&self.transaction.length_reg, sizeof(self.transaction.length_reg), sizeof(self.transaction.length_reg));
+            self.transaction.state = WRITE_TX_BUF;
+            break;
+        case WAIT_READ_RX_BUF:
+            PRINTS("@WAIT RX BUF\r\n");
+            self.transaction.payload = MSG_Base_AllocateDataAtomic(self.transaction.length_reg);
+            if(self.transaction.payload){
+                spi_slave_buffers_set(self.transaction.payload->buf, self.transaction.payload->buf, self.transaction.length_reg, self.transaction.length_reg);
+                self.transaction.state = FIN_READ;
+                break;
+            }
+            //fall through to reset
+        case WRITE_TX_BUF:
+            //fall through to reset
+        case FIN_READ:
+            PRINTS("@FIN RX BUF\r\n");
+            //send and release
+            MSG_Base_ReleaseDataAtomic(self.transaction.payload);
+            //fall through to reset
+        case FIN_WRITE:
+            //fall through to reset
+        case TXRX_ERROR:
+            //fall through to reset
+        default:
+            //fall through to reset
+            return _reset();
+    }
+
 }
 
 static MSG_Status
@@ -84,7 +129,7 @@ _spi_evt_handler(spi_slave_evt_t event){
                     self.current_state = _initialize_transaction();
                 case WRITING:
                 case READING:
-                    //self.current_state = _handle_transaction();
+                    self.current_state = _handle_transaction();
                     break;
                 default:
                     self.current_state = _reset();
