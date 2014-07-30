@@ -27,9 +27,9 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
         }else{
             return NULL;
         }
-#endif
-    }else{
+#else
         return NULL;
+#endif
     }
     CRITICAL_REGION_ENTER();
     for(int i = 0; i < step_limit; i++){
