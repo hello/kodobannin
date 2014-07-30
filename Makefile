@@ -59,7 +59,7 @@ JGDBServer=$(KODOBANNIN_JLINK_ROOT)/JLinkGDBServer.command
 
 # J-Link
 
-JLINK_OPTIONS = -device nrf51822 -if swd -speed 4000
+JLINK_OPTIONS = -device nrf51422 -if swd -speed 4000
 
 .PHONY: jl
 jl:
