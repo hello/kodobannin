@@ -1,8 +1,8 @@
 #include "message_sspi.h"
 #include "util.h"
 
-#define REG_READ 0
-#define REG_WRITE 1
+#define REG_READ 1
+#define REG_WRITE 0
 typedef enum{
     IDLE = 0,
     READING,
@@ -48,6 +48,7 @@ static SSPIState
 _initialize_transaction(){
     switch(self.control_reg){
         default:
+            PRINTS("IN UNKNOWN MODE\r\n");
             return _reset();
             break;
         case REG_READ:
@@ -55,6 +56,7 @@ _initialize_transaction(){
             self.transaction.state = WAIT_READ_RX_LEN;
             return READING;
         case REG_WRITE:
+            PRINTS("IN WRITE MODE\r\n");
             //prepare buffer here
             /*MSG_Data_t * txctx = get_tx_queue();*/
             self.transaction.length_reg = 0; //get from tx queue;
@@ -81,6 +83,8 @@ _handle_transaction(){
                 spi_slave_buffers_set(self.transaction.payload->buf, self.transaction.payload->buf, self.transaction.length_reg, self.transaction.length_reg);
                 self.transaction.state = FIN_READ;
                 break;
+            }else{
+                //no buffer wat do?
             }
             //fall through to reset
         case WRITE_TX_BUF:
@@ -98,6 +102,7 @@ _handle_transaction(){
             //fall through to reset
             return _reset();
     }
+    return self.current_state;
 
 }
 
