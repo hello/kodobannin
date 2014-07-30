@@ -8,12 +8,19 @@
 #include <ble_srv_common.h>
 #include <ble_advdata.h>
 
+#include "pill_ble.h"
+
+#ifdef PLATFORM_HAS_IMU
+
+#include "imu.h"
 #include "imu_data.h"
 #include "sensor_data.h"
-#include "imu.h"
+
+#endif
+
 #include "rtc.h"
 #include "pill_gatt.h"
-#include "pill_ble.h"
+
 #include "util.h"
 #include "message_app.h"
 #include "message_uart.h"
@@ -87,8 +94,7 @@ _data_ack_handler(ble_gatts_evt_write_t* event)
     PRINTS("_data_ack_handler()\r\n");
 }
 
-void
-pill_ble_evt_handler(ble_evt_t* ble_evt)
+void pill_ble_evt_handler(ble_evt_t* ble_evt)
 {
     DEBUG("Pill BLE event handler: ", ble_evt->header.evt_id);
     // sd_ble_gatts_rw_authorize_reply

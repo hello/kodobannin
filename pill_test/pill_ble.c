@@ -8,9 +8,17 @@
 #include <ble_srv_common.h>
 #include <ble_advdata.h>
 
+
+
+
+#ifdef PLATFORM_HAS_IMU
+
+#include "imu.h"
 #include "imu_data.h"
 #include "sensor_data.h"
-#include "imu.h"
+
+#endif
+
 #include "rtc.h"
 #include "pill_gatt.h"
 #include "pill_ble.h"

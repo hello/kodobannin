@@ -77,6 +77,10 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 
 static void _on_sys_evt(uint32_t sys_evt)
 {
+    PRINTS("_on_sys_evt: ");
+    PRINT_HEX(&sys_evt, sizeof(sys_evt));
+    PRINTS("\r\n");
+    
     pstorage_sys_event_handler(sys_evt);
 
 }
@@ -101,6 +105,10 @@ static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
  */
 static void _bond_manager_error_handler(uint32_t nrf_error)
 {
+    PRINTS("_bond_manager_error_handler, err: ");
+    PRINT_HEX(&nrf_error, sizeof(nrf_error));
+    PRINTS("\r\n");
+
     APP_ERROR_HANDLER(nrf_error);
 }
 
