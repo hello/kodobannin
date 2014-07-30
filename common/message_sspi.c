@@ -1,31 +1,10 @@
 #include "message_sspi.h"
 #include "util.h"
 
-enum{
-    READ_REQ = 0,
-    WRITE_REQ
-}SSPI_State_Req;
-
-typedef enum{
-    IDLE = 0,
-    READ_RX_LEN,
-    READING,
-    WRITE_TX_LEN,
-    WRITING,
-    ERROR = 0xFF
-}SSPIState;
-
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     spi_slave_config_t config;
-#ifdef MSG_SSPI_TXRX_BUFFER_SIZE
-    uint8_t tx_buf[MSG_SSPI_TX_BUFFER_SIZE+1];
-    uint8_t rx_buf[MSG_SSPI_RX_BUFFER_SIZE+1];
-#else
-    uint8_t tx_buf[2];
-    uint8_t rx_buf[2];
-#endif
     SSPIState current_state;
     struct{
         MSG_Data_t * tx_obj;
@@ -37,44 +16,6 @@ static char * name = "SSPI";
 static void _spi_evt_handler(spi_slave_evt_t event);
 
 
-static SSPIState
-_change_state(SSPIState s, uint8_t * r){
-    switch(s){
-        case IDLE:
-            if(r[0] == WRITE_REQ){
-                PRINTS("->WTXL\r\n");
-                return WRITE_TX_LEN;
-            }else if(r[0] == READ_REQ){
-                PRINTS("->RRXL\r\n");
-                return READ_RX_LEN;
-            }else{
-                PRINTS("->ERROR\r\n");
-                return ERROR;
-            }
-        case READ_RX_LEN:
-            PRINTS("->R\r\n");
-            return READING;
-        case WRITE_TX_LEN:
-            PRINTS("->W\r\n");
-            return WRITING;
-        case READING:
-        case WRITING:
-            PRINTS("->IDLE\r\n");
-            return IDLE;
-    }
-}
-static uint32_t
-_spi_reload_buffers(SSPIState s){
-    switch(s){
-        case IDLE:
-            return spi_slave_buffers_set(self.tx_buf, self.rx_buf, 1,1);
-        case READ_RX_LEN:
-        case WRITE_TX_LEN:
-            return spi_slave_buffers_set(self.tx_buf, self.rx_buf, 2,2);
-        default:
-            return spi_slave_buffers_set(self.tx_buf, self.rx_buf, sizeof(self.tx_buf),sizeof(self.rx_buf));
-    }
-}
 static MSG_Status
 _destroy(void){
     return SUCCESS;
@@ -97,10 +38,8 @@ _spi_evt_handler(spi_slave_evt_t event){
         case SPI_SLAVE_BUFFERS_SET_DONE:
             break;
         case SPI_SLAVE_XFER_DONE:
-            self.current_state = _change_state(self.rx_buf, self.current_state);
             //do things with buffer
             //reload
-            _spi_reload_buffers(self.current_state);
             break;
         default:
         case SPI_SLAVE_EVT_TYPE_MAX:
