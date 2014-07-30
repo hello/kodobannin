@@ -24,7 +24,6 @@
 //#include <hlo_fs.h>
 #include <nrf_sdm.h>
 #include <softdevice_handler.h>
-//#include <twi_master.h>
 
 #include "app.h"
 #include "platform.h"
@@ -37,9 +36,7 @@
 #include "sensor_data.h"
 #include "util.h"
 
-
-void
-_start()
+void _start()
 {
     //BOOL_OK(twi_master_init());
 
@@ -76,7 +73,6 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-
 
     //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
     
