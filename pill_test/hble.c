@@ -141,8 +141,7 @@ void hble_bond_manager_init()
 
 
 
-static void
-_on_conn_params_error(uint32_t nrf_error)
+static void _on_conn_params_error(uint32_t nrf_error)
 {
     APP_ERROR_HANDLER(nrf_error);
 }

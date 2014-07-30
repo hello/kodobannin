@@ -23,13 +23,14 @@
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 static ble_gap_sec_params_t _sec_params;
 
-static bool no_advertising = false;
+static bool app_initialized = false;
 
 static ble_uuid_t _service_uuid;
 static int8_t  _last_connected_central; 
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
+    //APP_OK(ble_bondmngr_bonded_centrals_store());
     ble_bondmngr_bonded_centrals_store();
     hble_advertising_start();
 }
@@ -176,20 +177,22 @@ void hble_advertising_start()
     adv_params.fp = BLE_GAP_ADV_FP_ANY;
     adv_params.interval = APP_ADV_INTERVAL;
     adv_params.timeout = APP_ADV_TIMEOUT_IN_SECONDS;
+    uint8_t flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
-    if(no_advertising)                
+    if(app_initialized)                
     {
-        ble_gap_addr_t peer_address;
-        //APP_OK(ble_bondmngr_central_addr_get(_last_connected_central, &peer_address));
-        uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_IND; //(err_code == NRF_SUCCESS ? BLE_GAP_ADV_TYPE_ADV_DIRECT_IND : BLE_GAP_ADV_TYPE_ADV_IND);
-        adv_params.type        = adv_mode;
+        // ble_gap_addr_t peer_address;
+        //uint32_t err_code = ble_bondmngr_central_addr_get(_last_connected_central, &peer_address));
+        //uint8_t adv_mode = (err_code == NRF_SUCCESS ? BLE_GAP_ADV_TYPE_ADV_DIRECT_IND : BLE_GAP_ADV_TYPE_ADV_IND);
+        uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_IND; 
+        adv_params.type = adv_mode;
 
         switch(adv_mode)
         {
             case BLE_GAP_ADV_TYPE_ADV_DIRECT_IND:
-                
-                adv_params.timeout     = 0;
-                adv_params.p_peer_addr = &peer_address;
+                // Direct advertising, no used for now since no much device supports BLE 4.1
+                // adv_params.timeout     = 0;
+                // adv_params.p_peer_addr = &peer_address;
                 break;
 
             case BLE_GAP_ADV_TYPE_ADV_IND:
@@ -198,36 +201,31 @@ void hble_advertising_start()
                     ble_gap_whitelist_t whitelist;
                     APP_OK(ble_bondmngr_whitelist_get(&whitelist));
                     
-
+                    
                     if (whitelist.addr_count != 0 || whitelist.irk_count != 0)
                     {
                         adv_params.p_whitelist = &whitelist;
                         adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
+                        flags = BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED;
+
                         PRINTS("whitelist retrieved.\r\n");
                     }else{
-                    
+                        flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just make it clear what we want to do.
                         PRINTS("NO whitelist retrieved.\r\n");
                     }
-                    
-                    //if(_whitelist.addr_count != 0 || _whitelist.irk_count != 0)
-                    //{
-                    //    adv_params.p_whitelist = &_whitelist;
-                    //    adv_params.fp          = BLE_GAP_ADV_FP_FILTER_CONNREQ;
-                    //}
-                    
                 }
                 break;
-        }
+        } 
         
-        _advertising_data_init(BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED);
-        APP_OK(sd_ble_gap_adv_start(&adv_params));
     }
     else
     {
-        _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
-        APP_OK(sd_ble_gap_adv_start(&adv_params));
-        no_advertising = true;
+        flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just to make things clear
+        app_initialized = true;
     }
+
+    _advertising_data_init(flags);
+    APP_OK(sd_ble_gap_adv_start(&adv_params));
 
     PRINTS("Advertising started.\r\n");
 }

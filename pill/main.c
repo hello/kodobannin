@@ -76,8 +76,8 @@ void _start()
 
     //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
     
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
-    //hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
+    //hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_250_PPM, true);
 
     
     hble_bond_manager_init();
