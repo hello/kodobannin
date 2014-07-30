@@ -25,11 +25,8 @@
 extern uint8_t hello_type;
 
 static uint16_t _pill_service_handle;
-static uint16_t _stream_service_handle;
-static MSG_Central_t * central; 
-//static uint8_t _daily_data[1440];
+static MSG_Central_t * central;
 
-static uint8_t _imu_realtime_stream_data[12];
 
 static void
 _unhandled_msg_event(void* event_data, uint16_t event_size){
@@ -53,7 +50,9 @@ _command_write_handler(ble_gatts_evt_write_t* event)
 
     switch(command->command) {
     case PILL_COMMAND_CALIBRATE:
+#ifdef PLATFORM_HAS_IMU
         imu_calibrate_zero();
+#endif
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
     case PILL_COMMAND_DISCONNECT:
@@ -130,11 +129,15 @@ pill_ble_load_modules(void){
 			UART_BAUDRATE_BAUDRATE_Baud38400
 		};
 		central->loadmod(MSG_App_Base(central));
+
 #ifdef DEBUG_SERIAL
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #endif
 		central->loadmod(MSG_Time_Init(central));
+
+#ifdef PLATFORM_HAS_IMU
 		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
+#endif		
 		MSG_SEND(central, TIME, TIME_SET_1S_RESOLUTION,NULL,0);
 		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
     }else{
