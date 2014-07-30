@@ -24,13 +24,13 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
             step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG);
             step_limit = MSG_BASE_SHARED_POOL_SIZE_BIG;
             p = self.bigpool;
-            goto allocate;
+        }else{
+            return NULL;
         }
-#else
-        return NULL;
 #endif
+    }else{
+        return NULL;
     }
-allocate:
     CRITICAL_REGION_ENTER();
     for(int i = 0; i < step_limit; i++){
         MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
