@@ -41,9 +41,9 @@ enum {
 #define MAX_CONN_INTERVAL                    (2*TWENTY_MS_1_25_MS_UNITS)
 
 // Slave latency. */
-#define SLAVE_LATENCY                        0
+#define SLAVE_LATENCY                        1
 // Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units
-#define CONN_SUP_TIMEOUT                     (5*TWENTY_MS_1_25_MS_UNITS)
+#define CONN_SUP_TIMEOUT                     (2 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
 
 // Time from initiating event (connect or start of notification) to first
 // time ble_gap_conn_param_update is called (5 seconds)

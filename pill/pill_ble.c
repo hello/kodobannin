@@ -191,8 +191,8 @@ pill_ble_services_init(void)
     }
 }
 
-void
-pill_ble_load_modules(void){
+
+void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		app_uart_comm_params_t uart_params = {
@@ -205,7 +205,9 @@ pill_ble_load_modules(void){
 			UART_BAUDRATE_BAUDRATE_Baud38400
 		};
 		central->loadmod(MSG_App_Base(central));
+#ifdef DEBUG_SERIAL
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
+#endif
 		central->loadmod(MSG_Time_Init(central));
 		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
 		MSG_SEND(central, TIME, TIME_SET_1S_RESOLUTION,NULL,0);
@@ -214,6 +216,7 @@ pill_ble_load_modules(void){
         PRINTS("FAIL");
     }
 }
+
 void pill_ble_advertising_init(void){
 	ble_advdata_t advdata;
 	ble_advdata_t scanrsp;
