@@ -141,7 +141,7 @@ morpheus_ble_load_modules(void){
 			//csn
 			SSPI_nCS,
 			SPI_MODE_0,
-			SPIM_LSB_FIRST,
+			SPIM_MSB_FIRST,
 			0xAA,
 			0x55,
 		};
