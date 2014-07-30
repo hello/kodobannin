@@ -41,15 +41,25 @@ static SSPIState
 _change_state(SSPIState s, uint8_t * r){
     switch(s){
         case IDLE:
-            if(r[0] == WRITE_REQ) return WRITE_TX_LEN;
-            if(r[0] == READ_REQ) return READ_RX_LEN;
-            return ERROR;
+            if(r[0] == WRITE_REQ){
+                PRINTS("->WTXL\r\n");
+                return WRITE_TX_LEN;
+            }else if(r[0] == READ_REQ){
+                PRINTS("->RRXL\r\n");
+                return READ_RX_LEN;
+            }else{
+                PRINTS("->ERROR\r\n");
+                return ERROR;
+            }
         case READ_RX_LEN:
+            PRINTS("->R\r\n");
             return READING;
         case WRITE_TX_LEN:
+            PRINTS("->W\r\n");
             return WRITING;
         case READING:
         case WRITING:
+            PRINTS("->IDLE\r\n");
             return IDLE;
     }
 }
