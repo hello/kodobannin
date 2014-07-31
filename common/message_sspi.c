@@ -34,6 +34,7 @@ static struct{
         uint16_t length_reg;
         MSG_Data_t * payload;
     }transaction;
+    MSG_Data_t * queued_tx;
     uint8_t * dummy;
 }self;
 
@@ -48,8 +49,34 @@ _reset(void){
 }
 static MSG_Data_t *
 _dequeue_tx(void){
+    MSG_Data_t * ret = self.queued_tx;
+#ifdef PLATFORM_HAS_SSPI
+    if(SSPI_INT != 0){
+        nrf_gpio_cfg_output(SSPI_INT);
+        nrf_gpio_pin_write(SSPI_INT, 0);
+    }
+#endif
+    self.queued_tx = NULL;
+    return ret;
     //this function pops the tx queue for spi, for now, simply returns a new buffer with test code
-    return MSG_Base_AllocateStringAtomic(TEST_STR);
+    //return MSG_Base_AllocateStringAtomic(TEST_STR);
+}
+static uint32_t
+_queue_tx(MSG_Data_t * o){
+    if(self.queued_tx){
+        //we are forced to drop since something shouldn't be here
+        MSG_Base_ReleaseDataAtomic(self.queued_tx);
+    }
+    self.queued_tx = o;
+#ifdef PLATFORM_HAS_SSPI
+    if(SSPI_INT != 0){
+        nrf_gpio_cfg_output(SSPI_INT);
+        nrf_gpio_pin_write(SSPI_INT, 1);
+    }
+#endif
+    
+    return 0;
+
 }
 
 static SSPIState
@@ -176,6 +203,12 @@ _init(){
         PRINTS("SPI FAIL");
         return FAIL;
     }
+#ifdef PLATFORM_HAS_SSPI
+    if(SSPI_INT != 0){
+        nrf_gpio_cfg_output(SSPI_INT);
+        nrf_gpio_pin_write(SSPI_INT, 0);
+    }
+#endif
     self.dummy = MSG_Base_AllocateDataAtomic(230)->buf;
     self.current_state = _reset();
     return SUCCESS;
