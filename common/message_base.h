@@ -8,13 +8,27 @@
 #include <stdint.h>
 #include "message_config.h"
 
+#define INCREF
+#define DECREF
 
 typedef struct{
+    /*
+     * Length of the valid data in the buffer 
+     */
     uint16_t len;
+    /*
+     * reference count, user do not modify
+     */
     uint8_t  ref;
-    uint8_t  reserved;
+    /*
+     * context specific register
+     */
+    uint8_t  context;
+    /*
+     * data buffer
+     */
     uint8_t  buf[];
-}MSG_Data_t;
+}PACKED MSG_Data_t;
 
 typedef enum{
     SUCCESS = 0,
@@ -47,12 +61,12 @@ typedef struct{
     MSG_Status ( *unloadmod )(MSG_Base_t * mod);
 }MSG_Central_t;
 
-MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size);
-MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str);
+MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(uint32_t size);
+MSG_Data_t * INCREF MSG_Base_AllocateStringAtomic(const char * str);
 MSG_Status MSG_Base_BufferTest(void);
 
-MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
-MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
+MSG_Status   INCREF MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
+MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
 
 
 #define MSG_PING(c,r,i) do{ \
