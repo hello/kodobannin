@@ -7,7 +7,7 @@
 typedef struct{
     enum{
         SSPI_PING=0,
-        SSPI_QUEUE,
+        SSPI_QUEUE_TX
     }cmd;
     union{
         struct{
