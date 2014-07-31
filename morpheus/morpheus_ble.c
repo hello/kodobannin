@@ -146,8 +146,8 @@ morpheus_ble_load_modules(void){
 			0x55,
 		};
 		central->loadmod(MSG_SSPI_Base(&spi_params,central));
-		MSG_Base_BufferTest();
-		//MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
+		//MSG_Base_BufferTest();
+		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
     }else{
         PRINTS("FAIL");
     }
