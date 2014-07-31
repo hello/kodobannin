@@ -3,6 +3,7 @@
 
 #define REG_READ 1
 #define REG_WRITE 0
+#define TEST_STR "RELLO"
 typedef enum{
     IDLE = 0,
     READING,
@@ -33,6 +34,7 @@ static struct{
         uint16_t length_reg;
         MSG_Data_t * payload;
     }transaction;
+    uint8_t * dummy;
 }self;
 
 static char * name = "SSPI";
@@ -44,6 +46,12 @@ _reset(void){
     spi_slave_buffers_set(&self.control_reg, &self.control_reg, 1, 1);
     return IDLE;
 }
+static MSG_Data_t *
+_dequeue_tx(void){
+    //this function pops the tx queue for spi, for now, simply returns a new buffer with test code
+    return MSG_Base_AllocateStringAtomic(TEST_STR);
+}
+
 static SSPIState
 _initialize_transaction(){
     switch(self.control_reg){
@@ -59,8 +67,9 @@ _initialize_transaction(){
             PRINTS("IN WRITE MODE\r\n");
             //prepare buffer here
             /*MSG_Data_t * txctx = get_tx_queue();*/
-            self.transaction.length_reg = 0; //get from tx queue;
-            self.transaction.payload = NULL;
+            self.transaction.length_reg = 43; //get from tx queue;
+            self.transaction.payload = _dequeue_tx();
+            self.transaction.state = WRITE_TX_LEN;
             return WRITING;
     }
 }
@@ -73,7 +82,9 @@ _handle_transaction(){
             self.transaction.state = WAIT_READ_RX_BUF;
             break;
         case WRITE_TX_LEN:
-            spi_slave_buffers_set(&self.transaction.length_reg,&self.transaction.length_reg, sizeof(self.transaction.length_reg), sizeof(self.transaction.length_reg));
+            PRINTS("@WRITE TX LEN\r\n");
+            spi_slave_buffers_set(&self.transaction.length_reg,self.dummy, sizeof(self.transaction.length_reg), sizeof(self.transaction.length_reg));
+            //spi_slave_buffers_set(&self.transaction.length_reg,&self.transaction.length_reg, sizeof(self.transaction.length_reg), sizeof(self.transaction.length_reg));
             self.transaction.state = WRITE_TX_BUF;
             break;
         case WAIT_READ_RX_BUF:
@@ -86,16 +97,25 @@ _handle_transaction(){
             }else{
                 //no buffer wat do?
             }
-            //fall through to reset
+            return _reset();
         case WRITE_TX_BUF:
-            //fall through to reset
+            PRINTS("@WRITE TX BUF\r\n");
+            if(self.transaction.payload){
+                spi_slave_buffers_set(self.transaction.payload->buf, self.dummy, self.transaction.length_reg, self.transaction.length_reg);
+                self.transaction.state = FIN_WRITE;
+                break;
+            }else{
+                //no buffer wat do?
+            }
+            return _reset();
         case FIN_READ:
             PRINTS("@FIN RX BUF\r\n");
             //send and release
-            MSG_Base_ReleaseDataAtomic(self.transaction.payload);
-            //fall through to reset
+            return _reset();
         case FIN_WRITE:
-            //fall through to reset
+            PRINTS("@FIN TX BUF\r\n");
+            MSG_Base_ReleaseDataAtomic(self.transaction.payload);
+            return _reset();
         case TXRX_ERROR:
             //fall through to reset
         default:
@@ -156,6 +176,7 @@ _init(){
         PRINTS("SPI FAIL");
         return FAIL;
     }
+    self.dummy = MSG_Base_AllocateDataAtomic(230)->buf;
     self.current_state = _reset();
     return SUCCESS;
 
