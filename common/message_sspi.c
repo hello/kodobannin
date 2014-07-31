@@ -93,11 +93,11 @@ _initialize_transaction(){
         case REG_READ:
             PRINTS("IN READ MODE\r\n");
             self.transaction.state = WAIT_READ_RX_LEN;
+            self.transaction.payload = MSG_Base_AllocateDataAtomic(256);
             return READING;
         case REG_WRITE:
             PRINTS("IN WRITE MODE\r\n");
             //prepare buffer here
-            /*MSG_Data_t * txctx = get_tx_queue();*/
             self.transaction.length_reg = 43; //get from tx queue;
             self.transaction.payload = _dequeue_tx();
             self.transaction.state = WRITE_TX_LEN;
@@ -119,9 +119,10 @@ _handle_transaction(){
             break;
         case WAIT_READ_RX_BUF:
             PRINTS("@WAIT RX BUF\r\n");
-            self.transaction.payload = MSG_Base_AllocateDataAtomic(self.transaction.length_reg);
             if(self.transaction.payload){
-                spi_slave_buffers_set(self.transaction.payload->buf, self.transaction.payload->buf, self.transaction.length_reg, self.transaction.length_reg);
+                //the context variable in MSG_Base_t will receive the first Byte(address) of the data, while the rest will receive the same
+                //it'll be then routed to the correct module with addr->module translation module message_router
+                spi_slave_buffers_set(self.transaction.payload->buf, &self.transaction.payload->context, self.transaction.length_reg, self.transaction.length_reg);
                 self.transaction.state = FIN_READ;
                 break;
             }else{
