@@ -7,6 +7,7 @@
 #include <nrf51.h>
 #include <nrf51_bitfields.h>
 
+
 enum {
     // serial (UART)
     SERIAL_CTS_PIN = 0,

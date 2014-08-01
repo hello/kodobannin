@@ -1,7 +1,7 @@
 // vi:noet:sw=4 ts=4
 
 #pragma once
-
+#include "platform.h"
 #include "hlo_ble_time.h"
 
 enum {
