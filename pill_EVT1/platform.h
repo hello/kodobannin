@@ -13,7 +13,6 @@ enum {
 };
 
 #define PLATFORM_HAS_RTC
-
 enum {
     RTC_SDA = 0,
     RTC_SCL = 24,
@@ -35,3 +34,4 @@ enum {
     SERIAL_CTS_PIN = 0,
     SERIAL_RTS_PIN = 0,
 };
+

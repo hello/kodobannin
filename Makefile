@@ -5,8 +5,8 @@ all: b m
 
 # apps & platforms
 
-TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test morpheus_test pill_test
-APPS = band bootloader morpheus pill $(TEST_APPS)
+TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test morpheus_test
+APPS = bootloader morpheus pill $(TEST_APPS)
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
 S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1
@@ -59,7 +59,7 @@ JGDBServer=$(KODOBANNIN_JLINK_ROOT)/JLinkGDBServer.command
 
 # J-Link
 
-JLINK_OPTIONS = -device nrf51822 -if swd -speed 4000
+JLINK_OPTIONS = -device nrf51422 -if swd -speed 4000
 
 .PHONY: jl
 jl:
@@ -71,8 +71,8 @@ BUILD_DIR = build
 
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
-	$(wildcard ble/*.c) \
-	$(wildcard ble/services/*.c) \
+	#$(wildcard ble/*.c) \
+	#$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
 
 NRF_SRCS = \
@@ -82,7 +82,8 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/app_uart_fifo.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
-        nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
+    nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
+    nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \

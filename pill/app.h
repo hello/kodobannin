@@ -24,7 +24,7 @@ enum {
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800//40
+#define APP_ADV_INTERVAL                     800 * 4//40
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           180
 
@@ -38,12 +38,12 @@ enum {
 // Connection interval uses 1.25 ms units
 #define MIN_CONN_INTERVAL                    (TWENTY_MS_1_25_MS_UNITS)
 // Maximum acceptable connection interval (1 second), Connection interval uses 1.25 ms units.
-#define MAX_CONN_INTERVAL                    (2*TWENTY_MS_1_25_MS_UNITS)
+#define MAX_CONN_INTERVAL                    (2 * TWENTY_MS_1_25_MS_UNITS)
 
 // Slave latency. */
-#define SLAVE_LATENCY                        0
+#define SLAVE_LATENCY                        1
 // Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units
-#define CONN_SUP_TIMEOUT                     (5*TWENTY_MS_1_25_MS_UNITS)
+#define CONN_SUP_TIMEOUT                     (2 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
 
 // Time from initiating event (connect or start of notification) to first
 // time ble_gap_conn_param_update is called (5 seconds)
@@ -56,7 +56,7 @@ enum {
 // Timeout for Pairing Request or Security Request (in seconds)
 #define SEC_PARAM_TIMEOUT                    30
 // Perform bonding.
-#define SEC_PARAM_BOND                       0
+#define SEC_PARAM_BOND                       1
 // Man In The Middle protection not required.
 #define SEC_PARAM_MITM                       0
 // No I/O capabilities
