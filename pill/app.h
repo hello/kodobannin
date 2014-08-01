@@ -24,7 +24,7 @@ enum {
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800 * 4//40
+#define APP_ADV_INTERVAL                     800 * 8
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           180
 
@@ -36,12 +36,12 @@ enum {
 #define SECOND_10_MS_UNITS                   100
 // Minimum acceptable connection interval (0.5 seconds),
 // Connection interval uses 1.25 ms units
-#define MIN_CONN_INTERVAL                    (TWENTY_MS_1_25_MS_UNITS)
+#define MIN_CONN_INTERVAL                    (20 * TWENTY_MS_1_25_MS_UNITS)
 // Maximum acceptable connection interval (1 second), Connection interval uses 1.25 ms units.
-#define MAX_CONN_INTERVAL                    (2 * TWENTY_MS_1_25_MS_UNITS)
+#define MAX_CONN_INTERVAL                    (20 * TWENTY_MS_1_25_MS_UNITS)
 
 // Slave latency. */
-#define SLAVE_LATENCY                        1
+#define SLAVE_LATENCY                        4
 // Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units
 #define CONN_SUP_TIMEOUT                     (2 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
 
