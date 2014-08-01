@@ -30,8 +30,8 @@ static int8_t  _last_connected_central;
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
-    //APP_OK(ble_bondmngr_bonded_centrals_store());
-    ble_bondmngr_bonded_centrals_store();
+    APP_OK(ble_bondmngr_bonded_centrals_store());
+    //ble_bondmngr_bonded_centrals_store();
     hble_advertising_start();
 }
 
@@ -49,7 +49,6 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
                                        BLE_GAP_SEC_STATUS_SUCCESS,
                                        &_sec_params));
         break;
-
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
             // APP_OK(sd_power_system_off());

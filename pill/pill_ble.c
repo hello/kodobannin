@@ -18,7 +18,6 @@
 
 #endif
 
-#include "rtc.h"
 #include "pill_gatt.h"
 
 #include "util.h"
@@ -96,7 +95,9 @@ _data_ack_handler(ble_gatts_evt_write_t* event)
 
 void pill_ble_evt_handler(ble_evt_t* ble_evt)
 {
-    DEBUG("Pill BLE event handler: ", ble_evt->header.evt_id);
+    PRINTS("Pill BLE event handler: ");
+    PRINT_HEX(ble_evt->header.evt_id, sizeof(ble_evt->header.evt_id));
+    PRINTS("\r\n");
     // sd_ble_gatts_rw_authorize_reply
 }
 
