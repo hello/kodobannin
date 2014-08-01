@@ -35,7 +35,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     for(int i = 0; i < step_limit; i++){
         MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
         if(tmp->ref == 0){
-            tmp->len = size;
+            tmp->len = (uint16_t)size;
             tmp->ref = 1;
             ret = tmp;
             PRINTS("+");

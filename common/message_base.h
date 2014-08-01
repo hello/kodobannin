@@ -27,7 +27,7 @@ typedef struct{
     /*
      * data buffer
      */
-    uint8_t  buf[];
+    uint8_t buf[0];
 }MSG_Data_t;
 
 typedef enum{
