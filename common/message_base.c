@@ -35,7 +35,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     for(int i = 0; i < step_limit; i++){
         MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
         if(tmp->ref == 0){
-            tmp->len = size;
+            tmp->len = (uint16_t)size;
             tmp->ref = 1;
             ret = tmp;
             PRINTS("+");
@@ -99,19 +99,23 @@ _inspect(MSG_Data_t * o){
 MSG_Status
 MSG_Base_BufferTest(void){
     uint8_t junk = 5;
+    MSG_Data_t * objbig = NULL;
+    MSG_Data_t * obj = NULL;
     for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE; i++){
         MSG_Data_t * o = MSG_Base_AllocateDataAtomic(1); 
         if(!o)goto fail;
         //_inspect(o);
     }
     PRINTS("B");
+#ifdef MSG_BASE_USE_BIG_POOL
     for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE_BIG; i++){
         MSG_Data_t * o = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE_BIG); 
         if(!o)goto fail;
         _inspect(o);
     }
-    MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(1); 
-    MSG_Data_t * objbig = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE_BIG); 
+    objbig = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE_BIG); 
+#endif
+    obj = MSG_Base_AllocateDataAtomic(1); 
     if(obj || objbig){
         PRINTS("Failed Test\r\n");
         return FAIL;
