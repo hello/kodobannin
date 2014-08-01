@@ -1,8 +1,8 @@
 #include "message_sspi.h"
 #include "util.h"
 
-#define REG_READ 1
-#define REG_WRITE 0
+#define REG_READ_FROM_SSPI  0
+#define REG_WRITE_TO_SSPI 1
 #define TEST_STR "RELLO"
 typedef enum{
     IDLE = 0,
@@ -47,7 +47,7 @@ static void _spi_evt_handler(spi_slave_evt_t event);
 
 static SSPIState
 _reset(void){
-    PRINTS("RESET\r\n");
+    PRINTS("RESET\r\nWaiting Input....\r\n");
     spi_slave_buffers_set(&self.control_reg, &self.control_reg, 1, 1);
     return IDLE;
 }
@@ -61,9 +61,9 @@ _dequeue_tx(void){
     }
 #endif
     self.queued_tx = NULL;
-    return ret;
+    //return ret;
     //this function pops the tx queue for spi, for now, simply returns a new buffer with test code
-    //return MSG_Base_AllocateStringAtomic(TEST_STR);
+    return MSG_Base_AllocateStringAtomic(TEST_STR);
 }
 static uint32_t
 _queue_tx(MSG_Data_t * o){
@@ -90,15 +90,15 @@ _initialize_transaction(){
             PRINTS("IN UNKNOWN MODE\r\n");
             return _reset();
             break;
-        case REG_READ:
-            PRINTS("IN READ MODE\r\n");
+        case REG_WRITE_TO_SSPI:
+            PRINTS("READ FROM MASTER\r\n");
             self.transaction.state = WAIT_READ_RX_LEN;
-            self.transaction.payload = MSG_Base_AllocateDataAtomic(256);
+            self.transaction.payload = MSG_Base_AllocateDataAtomic(128);
             return READING;
-        case REG_WRITE:
-            PRINTS("IN WRITE MODE\r\n");
+        case REG_READ_FROM_SSPI:
+            PRINTS("WRITE TO MASTER\r\n");
             //prepare buffer here
-            self.transaction.length_reg = 43; //get from tx queue;
+            self.transaction.length_reg = 8; //get from tx queue;
             self.transaction.payload = _dequeue_tx();
             self.transaction.state = WRITE_TX_LEN;
             return WRITING;
@@ -142,6 +142,8 @@ _handle_transaction(){
         case FIN_READ:
             PRINTS("@FIN RX BUF\r\n");
             //send and release
+            MSG_Base_ReleaseDataAtomic(self.transaction.payload);
+            //only releasing now
             return _reset();
         case FIN_WRITE:
             PRINTS("@FIN TX BUF\r\n");
@@ -184,6 +186,7 @@ _spi_evt_handler(spi_slave_evt_t event){
             switch(self.current_state){
                 case IDLE:
                     self.current_state = _initialize_transaction();
+                    if(self.current_state == IDLE) break;
                 case WRITING:
                 case READING:
                     self.current_state = _handle_transaction();
