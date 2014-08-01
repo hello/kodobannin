@@ -28,7 +28,7 @@ typedef struct{
      * data buffer
      */
     uint8_t  buf[];
-}PACKED MSG_Data_t;
+}MSG_Data_t;
 
 typedef enum{
     SUCCESS = 0,
