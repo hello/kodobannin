@@ -25,11 +25,11 @@
 #include "app.h"
 #include "platform.h"
 
-#include "pill_gatt.h"
+#include "morpheus_gatt.h"
 #include "hble.h"
 
 #include "git_description.h"
-#include "pill_ble.h"
+#include "morpheus_ble.h"
 #include "sensor_data.h"
 #include "util.h"
 
