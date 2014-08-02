@@ -45,6 +45,8 @@ enum {
 // Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units
 #define CONN_SUP_TIMEOUT                     (2 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
 
+#define TX_POWER_LEVEL						(-8)
+
 // Time from initiating event (connect or start of notification) to first
 // time ble_gap_conn_param_update is called (5 seconds)
 #define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)

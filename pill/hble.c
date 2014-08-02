@@ -268,6 +268,7 @@ void hble_params_init(char* device_name)
         gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
         APP_OK(sd_ble_gap_ppcp_set(&gap_conn_params));
+        APP_OK(sd_ble_gap_tx_power_set(TX_POWER_LEVEL));
     }
 
     // initialize advertising parameters
