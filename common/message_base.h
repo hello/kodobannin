@@ -36,6 +36,10 @@ typedef enum{
     OOM
 }MSG_Status;
 
+typedef struct{
+    MSG_ModuleType module;
+    uint8_t submodule;
+}MSG_Address_t;
 /**
  * Message object.
  * All modules that implements message capability must define the struct
