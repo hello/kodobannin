@@ -17,9 +17,6 @@
 #include <spi.h>
 #include <spi_nor.h>
 #include <util.h>
-#include <imu.h>
-#include <pwm.h>
-#include <hrs.h>
 #include <watchdog.h>
 //#include <hlo_fs.h>
 #include <nrf_sdm.h>
