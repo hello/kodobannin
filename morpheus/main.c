@@ -80,11 +80,6 @@ _start()
 	morpheus_ble_load_modules();
     PRINTS("ble_init() done.\r\n");
 
-#if 1
-    APP_OK(sd_ant_stack_reset());
-    PRINTS("ANT initialized.\r\n");
-#endif
-
     hlo_ble_init();
 //    pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
