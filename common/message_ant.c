@@ -8,6 +8,18 @@
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
 
 typedef struct{
+    union{
+        struct{
+
+        }peripheral_info;
+        struct{
+
+        }central_info;
+        uint8_t buf[8];
+    }
+}ANT_AirPacket_t;
+
+typedef struct{
 
 }ANT_Channel_t;
 
@@ -39,11 +51,11 @@ _set_discovery_mode(uint8_t role){
             //central mode
             APP_OK(sd_ant_channel_assign(0, CHANNEL_TYPE_SHARED_SLAVE, 0, 0));
             APP_OK(sd_ant_channel_radio_freq_set(0, 66));
-            APP_OK(sd_ant_channel_period_set(0,3277));
+            APP_OK(sd_ant_channel_period_set(0,32768));
             APP_OK(sd_ant_channel_id_set(0,
                         0,//Two byte deive number
                         1,//1 byte device type
-                        5));//transmit type
+                        0));//transmit type
             //APP_OK(sd_ant_rx_scan_mode_start(1));
             APP_OK(sd_ant_channel_open(0));
             break;
@@ -55,6 +67,13 @@ _set_discovery_mode(uint8_t role){
     }
 }
 
+static void
+_handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
+    ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
+    PRINT_HEX(msg->ANT_MESSAGE_aucPayload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
+    PRINTS("\r\n");
+
+}
 
 
 static MSG_Status
@@ -101,18 +120,23 @@ void ant_handler(void* event_data, uint16_t event_size){
         err_code = sd_ant_event_get(&ant_channel, &event, event_message_buffer);
         if (err_code == NRF_SUCCESS)
         {
-            PRINTS("A");
+            PRINT_HEX(&event, sizeof(event));
             switch(event){
+                case EVENT_RX_FAIL:
+                    PRINTS("FRX\r\n");
+                    break;
                 case EVENT_RX:
-                    PRINTS("ARX\r\n");
+                    PRINTS("RX\r\n");
+                    _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
                     break;
                 case EVENT_RX_SEARCH_TIMEOUT:
-                    PRINTS("ATO\r\n");
+                    PRINTS("RXTO\r\n");
                     break;
                 case EVENT_RX_FAIL_GO_TO_SEARCH:
-                    PRINTS("AFTS\r\n");
+                    PRINTS("RXFTS\r\n");
                     break;
                 case EVENT_TRANSFER_RX_FAILED:
+                    PRINTS("RFFAIL\r\n");
                     break;
                 case EVENT_TX:
                     break;
