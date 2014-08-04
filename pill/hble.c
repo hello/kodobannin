@@ -30,8 +30,10 @@ static int8_t  _last_connected_central;
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
+#ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
-    //ble_bondmngr_bonded_centrals_store();
+#endif
+
     hble_advertising_start();
 }
 
@@ -65,7 +67,11 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 
 static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 {
+
+#ifdef BONDING_REQUIRED
     ble_bondmngr_on_ble_evt(p_ble_evt);
+#endif
+
     ble_conn_params_on_ble_evt(p_ble_evt);
     hlo_ble_on_ble_evt(p_ble_evt);
     
@@ -80,7 +86,9 @@ static void _on_sys_evt(uint32_t sys_evt)
     PRINT_HEX(&sys_evt, sizeof(sys_evt));
     PRINTS("\r\n");
 
+#ifdef BONDING_REQUIRED
     pstorage_sys_event_handler(sys_evt);
+#endif
 
 }
 
@@ -148,8 +156,7 @@ void hble_bond_manager_init()
 
 
 
-static void
-_on_conn_params_error(uint32_t nrf_error)
+static void _on_conn_params_error(uint32_t nrf_error)
 {
     APP_ERROR_HANDLER(nrf_error);
 }
@@ -185,6 +192,8 @@ void hble_advertising_start()
     adv_params.interval = APP_ADV_INTERVAL;
     adv_params.timeout = APP_ADV_TIMEOUT_IN_SECONDS;
     uint8_t flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+
+#ifdef BONDING_REQUIRED
 
     if(app_initialized)                
     {
@@ -230,6 +239,8 @@ void hble_advertising_start()
         flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just to make things clear
         app_initialized = true;
     }
+
+#endif
 
     _advertising_data_init(flags);
     APP_OK(sd_ble_gap_adv_start(&adv_params));

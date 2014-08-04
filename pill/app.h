@@ -20,6 +20,9 @@ enum {
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
+//#define BONDING_REQUIRED
+#define IN_MEMORY_BONDING
+
 /*
  * BLE Connection Parameters
  */
@@ -57,8 +60,14 @@ enum {
 
 // Timeout for Pairing Request or Security Request (in seconds)
 #define SEC_PARAM_TIMEOUT                    30
+
 // Perform bonding.
+#ifndef BONDING_REQUIRED
+#define SEC_PARAM_BOND                       0
+#else
 #define SEC_PARAM_BOND                       1
+#endif
+
 // Man In The Middle protection not required.
 #define SEC_PARAM_MITM                       0
 // No I/O capabilities
@@ -75,3 +84,6 @@ enum {
  */
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
+
+
+
