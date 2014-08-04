@@ -16,6 +16,7 @@
 #include "message_app.h"
 #include "message_sspi.h"
 #include "message_uart.h"
+#include "message_ant.h"
 #include "platform.h"
 #include "nrf.h"
 #include "morpheus_ble.h"
@@ -149,6 +150,7 @@ morpheus_ble_load_modules(void){
 		central->loadmod(MSG_ANT_Base(central));
 		//MSG_Base_BufferTest();
 		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
+		MSG_SEND(central, ANT, ANT_SET_ROLE, 0,1);
     }else{
         PRINTS("FAIL");
     }

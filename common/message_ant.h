@@ -4,8 +4,7 @@
 typedef struct{
     enum{
         ANT_PING=0,
-        ANT_Set_Role,
-        ANT_Unpair_Channel,
+        ANT_SET_ROLE,
     }cmd;
     union{
         uint8_t role;

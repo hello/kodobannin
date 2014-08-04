@@ -1,8 +1,5 @@
 // vi:noet:sw=4 ts=4
 
-#ifdef ANT_STACK_SUPPORT_REQD
-#include <ant_interface.h>
-#endif
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
@@ -91,6 +88,9 @@ _start()
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
+#ifdef ANT_ENABLE
+        app_sched_event_put(NULL, 0, ant_handler);
+#endif
         app_sched_execute();
     }
 }
