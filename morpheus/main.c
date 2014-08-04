@@ -75,7 +75,8 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-    hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
+    //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
 	morpheus_ble_load_modules();
     PRINTS("ble_init() done.\r\n");
 

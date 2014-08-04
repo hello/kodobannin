@@ -169,7 +169,15 @@ _flush(void){
     return SUCCESS;
 }
 static MSG_Status
-_send(MSG_ModuleType src, MSG_Data_t * data){
+_send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
+    if(dst.submodule == 0){
+        //command for this module
+
+    }else if(dst.submodule == 1){
+        //send to sspi slave
+    }else{
+        return FAIL;
+    }
     return SUCCESS;
 }
 
