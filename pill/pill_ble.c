@@ -47,6 +47,14 @@ _data_send_finished()
 	PRINTS("DONE!");
 }
 
+static void _reply_time(void * p_event_data, uint16_t event_size)
+{
+	struct hlo_ble_time* current_time = get_time();
+	if(current_time)
+	{
+		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, current_time, sizeof(struct hlo_ble_time), NULL);
+	}
+}
 
 
 static void
@@ -69,15 +77,16 @@ _command_write_handler(ble_gatts_evt_write_t* event)
 		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
-			{
+			/*{
 				uint64_t mtime;
 				if(!MSG_Time_GetMonotonicTime(&mtime)){
     				hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, &mtime, sizeof(mtime), NULL);
 				}
-			}
+			}*/
 			/*if(!MSG_Time_GetTime(&_current_time)){
     			hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time), NULL);
 			}*/
+			app_sched_event_put(NULL, 0, _reply_time);
             break;
     case PILL_COMMAND_SET_TIME:
         {
