@@ -27,8 +27,8 @@ typedef struct{
     /*
      * data buffer
      */
-    uint8_t  buf[];
-}PACKED MSG_Data_t;
+    uint8_t buf[0];
+}MSG_Data_t;
 
 typedef enum{
     SUCCESS = 0,
@@ -36,6 +36,10 @@ typedef enum{
     OOM
 }MSG_Status;
 
+typedef struct{
+    MSG_ModuleType module;
+    uint8_t submodule;
+}MSG_Address_t;
 /**
  * Message object.
  * All modules that implements message capability must define the struct
@@ -48,7 +52,7 @@ typedef struct{
     MSG_Status ( *destroy ) ( void );
     MSG_Status ( *flush ) ( void );
     //probably need a source parameter
-    MSG_Status ( *send ) ( MSG_ModuleType src, MSG_Data_t * data  );
+    MSG_Status ( *send ) ( MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data  );
 }MSG_Base_t;
 /*
  *
@@ -56,7 +60,7 @@ typedef struct{
  * all Base objects will send messages to central and then dispatch to respective modules.
  */
 typedef struct{
-    MSG_Status ( *dispatch )(MSG_ModuleType src, MSG_ModuleType dst, MSG_Data_t * data);
+    MSG_Status ( *dispatch )(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data);
     MSG_Status ( *loadmod )(MSG_Base_t * mod);
     MSG_Status ( *unloadmod )(MSG_Base_t * mod);
 }MSG_Central_t;
@@ -72,7 +76,7 @@ MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
 #define MSG_PING(c,r,i) do{ \
     MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(1); \
     tmp->buf[0] = i; \
-    if(c) c->dispatch(0,r, tmp);\
+    if(c) c->dispatch((MSG_Address_t){0,0},(MSG_Address_t){r,0}, tmp);\
     MSG_Base_ReleaseDataAtomic(tmp); \
     }while(0)
     
@@ -82,7 +86,7 @@ MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
         if(central){\
             obj->buf[0] = command;\
             memcpy(obj->buf+1, payload,len);\
-            central->dispatch(0,recipient,obj);\
+            central->dispatch((MSG_Address_t){0,0},(MSG_Address_t){recipient}, obj);\
         }\
         MSG_Base_ReleaseDataAtomic(obj);\
     }\
