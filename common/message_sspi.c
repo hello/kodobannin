@@ -23,15 +23,21 @@ static struct{
      */
     struct{
         enum{
-            WAIT_READ_RX_LEN = 0,
-            WRITE_TX_LEN,
+            WAIT_READ_RX_CTX = 0,
+            WRITE_TX_CTX,
             WAIT_READ_RX_BUF,
             WRITE_TX_BUF,
             FIN_READ,
             FIN_WRITE,
             TXRX_ERROR
         }state;
-        uint16_t length_reg;
+        struct{
+            uint16_t length;
+            union{
+                MSG_Address_t address;
+                uint16_t pad;
+            };
+        }context_reg PACKED;
         MSG_Data_t * payload;
     }transaction;
 
@@ -92,37 +98,41 @@ _initialize_transaction(){
             break;
         case REG_WRITE_TO_SSPI:
             PRINTS("READ FROM MASTER\r\n");
-            self.transaction.state = WAIT_READ_RX_LEN;
+            self.transaction.state = WAIT_READ_RX_CTX;
             self.transaction.payload = MSG_Base_AllocateDataAtomic(128);
             return READING;
         case REG_READ_FROM_SSPI:
             PRINTS("WRITE TO MASTER\r\n");
             //prepare buffer here
-            self.transaction.length_reg = 8; //get from tx queue;
+            self.transaction.context_reg.length = 8; //get from tx queue;
             self.transaction.payload = _dequeue_tx();
-            self.transaction.state = WRITE_TX_LEN;
+            if(self.transaction.payload){
+                //change to payload address
+                self.transaction.context_reg.address = (MSG_Address_t){0,0}; 
+            }else{
+                self.transaction.context_reg.address = (MSG_Address_t){0,0};
+            }
+            self.transaction.state = WRITE_TX_CTX;
             return WRITING;
     }
 }
 static SSPIState
 _handle_transaction(){
     switch(self.transaction.state){
-        case WAIT_READ_RX_LEN:
+        case WAIT_READ_RX_CTX:
             PRINTS("@WAIT RX LEN\r\n");
-            spi_slave_buffers_set(&self.transaction.length_reg, &self.transaction.length_reg, sizeof(self.transaction.length_reg), sizeof(self.transaction.length_reg));
+            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, (uint8_t*)&self.transaction.context_reg, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
             self.transaction.state = WAIT_READ_RX_BUF;
             break;
-        case WRITE_TX_LEN:
+        case WRITE_TX_CTX:
             PRINTS("@WRITE TX LEN\r\n");
-            spi_slave_buffers_set(&self.transaction.length_reg,self.dummy->buf, sizeof(self.transaction.length_reg), sizeof(self.transaction.length_reg));
+            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg,self.dummy->buf, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
             self.transaction.state = WRITE_TX_BUF;
             break;
         case WAIT_READ_RX_BUF:
             PRINTS("@WAIT RX BUF\r\n");
             if(self.transaction.payload){
-                //the context variable in MSG_Base_t will receive the first Byte(address) of the data, while the rest will receive the same
-                //it'll be then routed to the correct module with addr->module translation module message_router
-                spi_slave_buffers_set(self.transaction.payload->buf, &self.transaction.payload->context, self.transaction.length_reg, self.transaction.length_reg);
+                spi_slave_buffers_set(self.transaction.payload->buf, &self.transaction.payload->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
                 self.transaction.state = FIN_READ;
                 break;
             }else{
@@ -132,7 +142,7 @@ _handle_transaction(){
         case WRITE_TX_BUF:
             PRINTS("@WRITE TX BUF\r\n");
             if(self.transaction.payload){
-                spi_slave_buffers_set(self.transaction.payload->buf, self.dummy->buf, self.transaction.length_reg, self.transaction.length_reg);
+                spi_slave_buffers_set(self.transaction.payload->buf, self.dummy->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
                 self.transaction.state = FIN_WRITE;
                 break;
             }else{
@@ -141,12 +151,20 @@ _handle_transaction(){
             return _reset();
         case FIN_READ:
             PRINTS("@FIN RX BUF\r\n");
+            PRINTS("LEN = ");
+            PRINT_HEX(&self.transaction.context_reg.length, sizeof(uint16_t));
+            PRINTS(" ADDR  = ");
+            PRINT_HEX(&self.transaction.context_reg.pad, sizeof(uint16_t));
             //send and release
             MSG_Base_ReleaseDataAtomic(self.transaction.payload);
             //only releasing now
             return _reset();
         case FIN_WRITE:
             PRINTS("@FIN TX BUF\r\n");
+            PRINTS("LEN = ");
+            PRINT_HEX(&self.transaction.context_reg.length, sizeof(uint16_t));
+            PRINTS(" ADDR  = ");
+            PRINT_HEX(&self.transaction.context_reg.pad, sizeof(uint16_t));
             MSG_Base_ReleaseDataAtomic(self.transaction.payload);
             return _reset();
         case TXRX_ERROR:
