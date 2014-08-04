@@ -105,3 +105,8 @@ MSG_Status MSG_Time_GetMonotonicTime(uint64_t * out_time){
         return FAIL;
     }
 }
+
+struct hlo_ble_time* get_time()
+{
+    return &self.ble_time;
+}

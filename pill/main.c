@@ -79,8 +79,10 @@ void _start()
     hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
     //hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_250_PPM, true);
 
-    
+ #ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
+#endif
+    
     hble_params_init(device_name);
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
