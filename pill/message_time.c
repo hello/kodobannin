@@ -38,7 +38,7 @@ _timer_handler(void * ctx){
 }
 
 static MSG_Status
-_send(MSG_ModuleType src, MSG_Data_t * data){
+_send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(data){
         uint32_t ticks;
         MSG_Base_AcquireDataAtomic(data);

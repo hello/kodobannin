@@ -95,6 +95,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/pstorage.c \
 	nRF51_SDK/nrf51422/Source/nrf_nvmc/nrf_nvmc.c \
 	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
+	nRF51_SDK/nrf51422/Source/spi_slave/spi_slave.c \
 
 SRCS = $(HELLO_SRCS) $(NRF_SRCS)
 
