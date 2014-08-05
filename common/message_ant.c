@@ -97,12 +97,14 @@ _set_discovery_mode(uint8_t role){
     switch(role){
         case 0:
             //central mode
+            PRINTS("Slave\r\n");
             _configure_channel(0, &phy);
             _connect(0, &id);
             break;
         case 1:
             //peripheral mode
             //configure shit here
+            PRINTS("Master\r\n");
             phy.channel_type = CHANNEL_TYPE_SHARED_MASTER;
             //set up id
             {
@@ -126,6 +128,13 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
 }
 
+static void
+_handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
+    uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {0,1,2,3,4,5,6,7};
+    if(*channel == 0){
+        sd_ant_broadcast_message_tx(0,ANT_STANDARD_DATA_PAYLOAD_SIZE, message);
+    }
+}
 static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
@@ -178,8 +187,10 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 static MSG_Status
 _init(){
     uint32_t ret;
+    uint8_t network_key[8] = {0xE, 0x1, 0x1, 0x0,0xE,0x1,0x1,0x0};
     ret = sd_ant_stack_reset();
     if(!ret){
+        sd_ant_network_address_set(1,network_key);
         return SUCCESS;
     }else{
         return FAIL;
@@ -213,6 +224,8 @@ void ant_handler(void* event_data, uint16_t event_size){
                     PRINTS("RFFAIL\r\n");
                     break;
                 case EVENT_TX:
+                    PRINTS("TX\r\n");
+                    _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
                     break;
                 case EVENT_TRANSFER_TX_FAILED:
                     break;
