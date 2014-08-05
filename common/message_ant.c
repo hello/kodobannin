@@ -24,6 +24,8 @@ static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     ANT_Channel_t channels[NUM_ANT_CHANNELS];//only 8 channels on 51422
+    uint8_t discovery_role;
+
 }self;
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
@@ -101,6 +103,14 @@ _set_discovery_mode(uint8_t role){
         case 1:
             //peripheral mode
             //configure shit here
+            phy.channel_type = CHANNEL_TYPE_SHARED_MASTER;
+            //set up id
+            {
+                //test only
+                id.transmit_type = 5;
+                id.device_type = 1;
+                id.device_number = 0x5354;
+            }
             _configure_channel(0, &phy);
             _connect(0, &id);
             break;
@@ -113,6 +123,7 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     PRINTS("Re-opening Channel ");
     PRINT_HEX(channel, 1);
     PRINTS("\r\n");
+    MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
 }
 
 static void
@@ -158,7 +169,8 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 break;
             case ANT_SET_ROLE:
                 PRINTS("ANT_SET_ROLE\r\n");
-                return _set_discovery_mode(antcmd->param.role);
+                self.discovery_role = antcmd->param.role;
+                return _set_discovery_mode(self.discovery_role);
         }
     }
 }
