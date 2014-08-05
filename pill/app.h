@@ -63,9 +63,9 @@ enum {
 
 // Perform bonding.
 #ifndef BONDING_REQUIRED
-#define SEC_PARAM_BOND                       0
-#else
 #define SEC_PARAM_BOND                       1
+#else
+#define SEC_PARAM_BOND                       0
 #endif
 
 // Man In The Middle protection not required.
