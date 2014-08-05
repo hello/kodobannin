@@ -23,6 +23,7 @@
 #include "util.h"
 #include "message_app.h"
 #include "message_uart.h"
+#include "message_ant.h"
 #include "message_time.h"
 #include "platform.h"
 #include "nrf.h"
@@ -47,6 +48,14 @@ _data_send_finished()
 	PRINTS("DONE!");
 }
 
+static void _reply_time(void * p_event_data, uint16_t event_size)
+{
+	struct hlo_ble_time* current_time = get_time();
+	if(current_time)
+	{
+		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, current_time, sizeof(struct hlo_ble_time), NULL);
+	}
+}
 
 
 static void
@@ -69,15 +78,16 @@ _command_write_handler(ble_gatts_evt_write_t* event)
 		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
-			{
+			/*{
 				uint64_t mtime;
 				if(!MSG_Time_GetMonotonicTime(&mtime)){
     				hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, &mtime, sizeof(mtime), NULL);
 				}
-			}
+			}*/
 			/*if(!MSG_Time_GetTime(&_current_time)){
     			hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time), NULL);
 			}*/
+			app_sched_event_put(NULL, 0, _reply_time);
             break;
     case PILL_COMMAND_SET_TIME:
         {
@@ -144,8 +154,15 @@ void pill_ble_load_modules(void){
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
 #endif		
+#ifdef ANT_ENABLE
+		central->loadmod(MSG_ANT_Base(central));
+#endif
 		MSG_SEND(central, TIME, TIME_SET_1S_RESOLUTION,NULL,0);
 		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
+		{
+			uint8_t role = 1;
+			MSG_SEND(central, ANT, ANT_SET_ROLE, &role,1);
+		}
     }else{
         PRINTS("FAIL");
     }

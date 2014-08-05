@@ -4,11 +4,13 @@
 
 #define PLATFORM_HAS_SSPI
 
+/* CS and MOSI are inverted in EVT1*/
 enum {
-    SSPI_MOSI = 15,
-    SSPI_MISO = 11,
-    SSPI_SCLK = 12,
-    SSPI_nCS = 9,
+	SSPI_MOSI = 9,
+	SSPI_MISO = 11,
+	SSPI_SCLK = 12,
+	SSPI_nCS = 15,
+	SSPI_INT = 16,/* notifies master slave has data, software generated*/
 };
 
 #define PLATFORM_HAS_RTC

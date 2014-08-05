@@ -20,6 +20,9 @@ enum {
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
+//#define BONDING_REQUIRED
+#define IN_MEMORY_BONDING
+
 /*
  * BLE Connection Parameters
  */
@@ -45,6 +48,8 @@ enum {
 // Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units
 #define CONN_SUP_TIMEOUT                     (2 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
 
+#define TX_POWER_LEVEL						(-8)
+
 // Time from initiating event (connect or start of notification) to first
 // time ble_gap_conn_param_update is called (5 seconds)
 #define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
@@ -55,8 +60,14 @@ enum {
 
 // Timeout for Pairing Request or Security Request (in seconds)
 #define SEC_PARAM_TIMEOUT                    30
+
 // Perform bonding.
+#ifndef BONDING_REQUIRED
 #define SEC_PARAM_BOND                       1
+#else
+#define SEC_PARAM_BOND                       0
+#endif
+
 // Man In The Middle protection not required.
 #define SEC_PARAM_MITM                       0
 // No I/O capabilities
@@ -73,3 +84,6 @@ enum {
  */
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
+
+
+

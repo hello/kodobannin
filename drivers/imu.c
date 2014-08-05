@@ -902,7 +902,7 @@ _flush(void){
 }
 
 static MSG_Status
-_send(MSG_ModuleType src, MSG_Data_t * data){
+_send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 	if(data){
 		MSG_Base_AcquireDataAtomic(data);
 		MSG_IMUCommand_t * cmd = data->buf;
