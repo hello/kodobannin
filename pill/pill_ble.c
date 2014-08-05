@@ -23,6 +23,7 @@
 #include "util.h"
 #include "message_app.h"
 #include "message_uart.h"
+#include "message_ant.h"
 #include "message_time.h"
 #include "platform.h"
 #include "nrf.h"
@@ -153,8 +154,15 @@ void pill_ble_load_modules(void){
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
 #endif		
+#ifdef ANT_ENABLE
+		central->loadmod(MSG_ANT_Base(central));
+#endif
 		MSG_SEND(central, TIME, TIME_SET_1S_RESOLUTION,NULL,0);
 		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
+		{
+			uint8_t role = 1;
+			MSG_SEND(central, ANT, ANT_SET_ROLE, &role,1);
+		}
     }else{
         PRINTS("FAIL");
     }

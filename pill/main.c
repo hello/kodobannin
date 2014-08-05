@@ -74,9 +74,9 @@ void _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-    //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_50_PPM, true);
     
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+    //hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
     //hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_250_PPM, true);
 
  #ifdef BONDING_REQUIRED   
@@ -109,6 +109,9 @@ void _start()
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
+#ifdef ANT_ENABLE
+        app_sched_event_put(NULL, 0, ant_handler);
+#endif
         app_sched_execute();
     }
 }
