@@ -74,10 +74,9 @@ void _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_50_PPM, true);
     
     //hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
-    //hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_250_PPM, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_50_PPM, true);
 
  #ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
