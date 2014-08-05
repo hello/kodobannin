@@ -89,10 +89,10 @@ static MSG_Status
 _set_discovery_mode(uint8_t role){
     ANT_ChannelID_t id = {0};
     ANT_ChannelPHY_t phy = { 
-        .period = 32768,
+        .period = 3277,
         .frequency = 66,
         .channel_type = CHANNEL_TYPE_SHARED_SLAVE,
-        .network = 1};
+        .network = 0};
     _destroy_channel(0);
     switch(role){
         case 0:
@@ -109,7 +109,8 @@ _set_discovery_mode(uint8_t role){
             //set up id
             {
                 //test only
-                id.transmit_type = 5;
+                //id.transmit_type = ANT_TRANS_TYPE_2_BYTE_SHARED_ADDRESS;
+                id.transmit_type = 0;
                 id.device_type = 1;
                 id.device_number = 0x5354;
             }
@@ -130,9 +131,13 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
 
 static void
 _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
-    uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {0,1,2,3,4,5,6,7};
+    static uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {0,1,2,3,4,5,6,7};
+    uint32_t ret;
     if(*channel == 0){
-        sd_ant_broadcast_message_tx(0,ANT_STANDARD_DATA_PAYLOAD_SIZE, message);
+        *((uint16_t*)message) = 0x5354;
+        message[7]++;
+        PRINT_HEX(message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
+        ret = sd_ant_broadcast_message_tx(0,ANT_STANDARD_DATA_PAYLOAD_SIZE, message);
     }
 }
 static void
