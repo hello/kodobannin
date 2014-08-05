@@ -19,18 +19,6 @@ typedef struct{
     }
 }ANT_AirPacket_t;
 
-typedef struct{
-    uint8_t status;
-    //shared by both master and slave
-    uint8_t channel_type;//MASTER SLAVE ETC
-    uint8_t channel_frequency;
-    uint8_t network_key;
-    uint16_t channel_period;
-    //below are set by master only
-    uint8_t master_transmit_type;
-    uint8_t master_device_type;
-    uint16_t master_device_number;
-}ANT_Channel_t;
 
 static struct{
     MSG_Base_t base;
@@ -40,88 +28,91 @@ static struct{
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
 
-static uint8_t
-_update_channel_status(uint8_t channel){
-    uint8_t ret = 0;
-    if(!sd_ant_channel_status_get(channel, &ret)){
-        self.channels[channel].status = ret;
-    }
-    return ret;
-}
 static MSG_Status
 _destroy_channel(uint8_t channel){
-    uint32_t ret = 0;
-    if(_update_channel_status(channel)){
-        ret |= sd_ant_channel_unassign(channel);
-        ret |= sd_ant_channel_close(channel);
-        _update_channel_status(channel);
+    //this destroys the channel regardless of what state its in
+    sd_ant_channel_close(channel);
+    sd_ant_channel_unassign(channel);
+    return SUCCESS;
+}
+/*
+ *#define STATUS_UNASSIGNED_CHANNEL                  ((uint8_t)0x00) ///< Indicates channel has not been assigned.
+ *#define STATUS_ASSIGNED_CHANNEL                    ((uint8_t)0x01) ///< Indicates channel has been assigned.
+ *#define STATUS_SEARCHING_CHANNEL                   ((uint8_t)0x02) ///< Indicates channel is active and in searching state.
+ *#define STATUS_TRACKING_CHANNEL                    ((uint8_t)0x03) ///< Indicates channel is active and in tracking state.
+ */
+static uint8_t
+_get_channel_status(uint8_t channel){
+    uint8_t ret;
+    sd_ant_channel_status_get(channel, &ret);
+    return ret;
+}
+static MSG_Status
+_connect(uint8_t channel, const ANT_ChannelID_t * id){
+    //needs at least assigned
+    MSG_Status ret = FAIL;
+    if(_get_channel_status(channel)){
+        sd_ant_channel_close(channel);
+        sd_ant_channel_id_set(channel, id->device_number, id->device_type, id->transmit_type);
+        if(!sd_ant_channel_open(channel)){
+            ret = SUCCESS;
+        }
+    }
+    return ret;
+}
+
+static MSG_Status
+_disconnect(uint8_t channel){
+    if(!sd_ant_channel_close(channel)){
+        return SUCCESS;
+    }
+    return FAIL;
+}
+
+static MSG_Status
+_configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec){
+    MSG_Status ret = SUCCESS;
+    if(_get_channel_status(channel)){
+        ret = _destroy_channel(channel);
     }
     if(!ret){
-        return SUCCESS;
-    }else{
-        return FAIL;
+        ret += sd_ant_channel_assign(channel, spec->channel_type, spec->network, 0);
+        ret += sd_ant_channel_radio_freq_set(channel, spec->frequency);
+        ret += sd_ant_channel_period_set(channel, spec->period);
     }
-}
-//this closes the channel
-static MSG_Status
-_reconfig_channel(uint8_t channel, const ANT_Channel_t * config){
-    MSG_Status ret;
-    ret = _destroy_channel(channel);
-    self.channels[channel] = *config;
     return ret;
+}
 
-}
-static MSG_Status
-_open_channel(uint8_t channel){
-    uint32_t err = 0;
-    ANT_Channel_t * cfg = &self.channels[channel];
-    if(!_update_channel_status(channel)){
-        err += sd_ant_channel_assign(channel,cfg->channel_type, cfg->network_key, 0);
-        err += sd_ant_channel_radio_freq_set(channel, cfg->channel_frequency);
-        err += sd_ant_channel_period_set(channel, cfg->channel_period);
-        err += sd_ant_channel_id_set(channel, cfg->master_device_number, cfg->master_device_type, cfg->master_transmit_type);
-        err += sd_ant_channel_open(channel);
-    }else{
-        return FAIL;
-    }
-    if(!err){
-        return SUCCESS;
-    }else{
-        return FAIL;
-    }
-}
 static MSG_Status
 _set_discovery_mode(uint8_t role){
-    ANT_Channel_t ch = {
+    ANT_ChannelID_t id = {0};
+    ANT_ChannelPHY_t phy = { 
+        .period = 32768,
+        .frequency = 66,
         .channel_type = CHANNEL_TYPE_SHARED_SLAVE,
-        .channel_frequency = 66,
-        .network_key = 1,
-        .channel_period = 32768,
-        .master_transmit_type = 0,
-        .master_device_type = 0,
-        .master_device_number = 0
-    };
+        .network = 1};
+    _destroy_channel(0);
     switch(role){
         case 0:
             //central mode
-            _reconfig_channel(0, &ch);
-            return _open_channel(0);
+            _configure_channel(0, &phy);
+            _connect(0, &id);
+            break;
         case 1:
             //peripheral mode
-            ch.master_transmit_type = 5;
-            ch.master_device_type = 1;
-            ch.master_device_number = 34;//set to actual number xor from devid
-            ch.channel_type = CHANNEL_TYPE_SHARED_MASTER;
-            _reconfig_channel(0, &ch);
-            return _open_channel(0);
+            //configure shit here
+            _configure_channel(0, &phy);
+            _connect(0, &id);
             break;
         default:
-            return _destroy_channel(0);
+            break;
     }
 }
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
-    _open_channel(*channel);
+    PRINTS("Re-opening Channel ");
+    PRINT_HEX(channel, 1);
+    PRINTS("\r\n");
 }
 
 static void
@@ -129,6 +120,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
     PRINT_HEX(msg->ANT_MESSAGE_aucPayload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
     if(*channel == 0){
+        //discovery mode channel
         uint16_t dev_id;
         uint8_t dev_type;
         uint8_t transmit_type;
@@ -140,6 +132,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             PRINTS(" | ");
             PRINT_HEX(&transmit_type, sizeof(transmit_type));
         }
+        //allocate channel, configure it as slave, then open...
     }
     PRINTS("\r\n");
 }
