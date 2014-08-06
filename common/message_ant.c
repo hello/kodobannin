@@ -201,51 +201,6 @@ _init(){
         return FAIL;
     }
 }
-void ant_handler(void* event_data, uint16_t event_size){
-    uint8_t event;
-    uint8_t ant_channel;  
-    uint8_t event_message_buffer[ANT_EVENT_MSG_BUFFER_MIN_SIZE]; 
-    uint32_t err_code;
-    do{
-        err_code = sd_ant_event_get(&ant_channel, &event, event_message_buffer);
-        if (err_code == NRF_SUCCESS)
-        {
-            PRINT_HEX(&event, sizeof(event));
-            switch(event){
-                case EVENT_RX_FAIL:
-                    PRINTS("FRX\r\n");
-                    break;
-                case EVENT_RX:
-                    PRINTS("RX\r\n");
-                    _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
-                    break;
-                case EVENT_RX_SEARCH_TIMEOUT:
-                    PRINTS("RXTO\r\n");
-                    break;
-                case EVENT_RX_FAIL_GO_TO_SEARCH:
-                    PRINTS("RXFTS\r\n");
-                    break;
-                case EVENT_TRANSFER_RX_FAILED:
-                    PRINTS("RFFAIL\r\n");
-                    break;
-                case EVENT_TX:
-                    PRINTS("TX\r\n");
-                    _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
-                    break;
-                case EVENT_TRANSFER_TX_FAILED:
-                    break;
-                case EVENT_CHANNEL_COLLISION:
-                    break;
-                case EVENT_CHANNEL_CLOSED:
-                    _handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
-                    break;
-                default:
-                    break;
-            }
-        }            
-    }while (err_code == NRF_SUCCESS);
-}
-
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent){
     self.parent = parent;
     {
@@ -257,5 +212,42 @@ MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent){
         self.base.typestr = name;
     }
     return &self.base;
+
+}
+void ant_handler(ant_evt_t * p_ant_evt){
+    uint8_t event = p_ant_evt->event;
+    uint8_t ant_channel = p_ant_evt->channel;
+    uint32_t * event_message_buffer = p_ant_evt->evt_buffer;
+    switch(event){
+        case EVENT_RX_FAIL:
+            //PRINTS("FRX\r\n");
+            break;
+        case EVENT_RX:
+            PRINTS("RX\r\n");
+            _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            break;
+        case EVENT_RX_SEARCH_TIMEOUT:
+            PRINTS("RXTO\r\n");
+            break;
+        case EVENT_RX_FAIL_GO_TO_SEARCH:
+            PRINTS("RXFTS\r\n");
+            break;
+        case EVENT_TRANSFER_RX_FAILED:
+            PRINTS("RFFAIL\r\n");
+            break;
+        case EVENT_TX:
+            PRINTS("TX\r\n");
+            _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            break;
+        case EVENT_TRANSFER_TX_FAILED:
+            break;
+        case EVENT_CHANNEL_COLLISION:
+            break;
+        case EVENT_CHANNEL_CLOSED:
+            _handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            break;
+        default:
+            break;
+    }
 
 }

@@ -150,7 +150,6 @@ void pill_ble_load_modules(void){
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #endif
 		central->loadmod(MSG_Time_Init(central));
-
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
 #endif		

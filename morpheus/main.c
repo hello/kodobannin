@@ -78,6 +78,9 @@ _start()
     PRINTS("ble_init() done.\r\n");
 
     hlo_ble_init();
+#ifdef ANT_ENABLE
+    APP_OK(softdevice_ant_evt_handler_set(ant_handler));
+#endif
 //    pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
 
@@ -88,9 +91,6 @@ _start()
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
-#ifdef ANT_ENABLE
-        app_sched_event_put(NULL, 0, ant_handler);
-#endif
         app_sched_execute();
     }
 }
