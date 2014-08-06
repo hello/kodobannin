@@ -3,26 +3,25 @@
 #pragma once
 
 #include "hlo_ble_time.h"
+#include "morpheus_gatt.h"
 
 enum {
     BLE_UUID_MORPHEUS_SVC = 0xEEE0,
 };
 
 enum morpheus_command_type {
-    MORPHEUS_COMMAND_STOP_ACCELEROMETER = 0,
-    MORPHEUS_COMMAND_START_ACCELEROMETER,
-    MORPHEUS_COMMAND_CALIBRATE,
-    MORPHEUS_COMMAND_DISCONNECT,
-    MORPHEUS_COMMAND_SEND_DATA,
+    MORPHEUS_COMMAND_SET_TIME = 0,
     MORPHEUS_COMMAND_GET_TIME,
-    MORPHEUS_COMMAND_SET_TIME,
+    MORPHEUS_COMMAND_SET_WIFI_ENDPOINT,
+    MORPHEUS_COMMAND_GET_WIFI_ENDPOINT
+    
 } __attribute__((packed));
 
 struct morpheus_command
 {
     enum morpheus_command_type command;
     union {
-        struct hlo_ble_time set_time;
+        struct hlo_ble_packet payload;   // Now the command format is [command_type][optional: [seq#][optional:total][data] ]
     };
 } __attribute__((packed));
 

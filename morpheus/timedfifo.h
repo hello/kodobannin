@@ -14,7 +14,7 @@
 //time of each index
 #define TF_UNIT_TIME_S 60 
 #define TF_UNIT_TIME_MS 60000
-#define TF_BUFFER_SIZE (8 * 60)
+#define TF_BUFFER_SIZE (0 * 60)
 typedef int16_t tf_unit_t;  // Good job, this is a keen design!
 
 typedef struct{
