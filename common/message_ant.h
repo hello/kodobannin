@@ -1,6 +1,7 @@
 #pragma once
 #include "message_base.h"
 
+#define ANT_DISCOVERY_CHANNEL 0
 typedef struct{
     uint8_t hlo_hw_type;
     uint8_t hlo_hw_revision;

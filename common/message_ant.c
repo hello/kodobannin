@@ -97,9 +97,9 @@ _set_discovery_mode(uint8_t role){
         .network = 0};
     if(role != self.discovery_role){
         app_timer_stop(self.discovery_timeout);
-        _destroy_channel(0);
+        _destroy_channel(ANT_DISCOVERY_CHANNEL);
         self.discovery_role = role;
-    }else if(_get_channel_status(0)>1){
+    }else if(_get_channel_status(ANT_DISCOVERY_CHANNEL)>1){
         return SUCCESS;
     }
     switch(role){
@@ -107,8 +107,8 @@ _set_discovery_mode(uint8_t role){
             //central mode
             PRINTS("SLAVE\r\n");
             phy.period = 1092;
-            _configure_channel(0, &phy);
-            _connect(0, &id);
+            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
+            _connect(ANT_DISCOVERY_CHANNEL, &id);
             break;
         case 1:
             //peripheral mode
@@ -124,8 +124,8 @@ _set_discovery_mode(uint8_t role){
                 id.device_type = 1;
                 id.device_number = 0x5354;
             }
-            _configure_channel(0, &phy);
-            _connect(0, &id);
+            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
+            _connect(ANT_DISCOVERY_CHANNEL, &id);
             {
                 uint32_t to = APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER);
                 app_timer_start(self.discovery_timeout,to, NULL);
@@ -143,13 +143,13 @@ static void
 _discovery_timeout(void * ctx){
     PRINTS("Good Night Sweet Prince\r\n");
     self.discovery_role = 0xFF;
-    _destroy_channel(0);
+    _destroy_channel(ANT_DISCOVERY_CHANNEL);
 }
 
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     PRINTS("Channel Close\r\n");
-    if(*channel == 0){
+    if(*channel == ANT_DISCOVERY_CHANNEL){
         PRINTS("Re-opening Channel ");
         PRINT_HEX(channel, 1);
         PRINTS("\r\n");
@@ -161,7 +161,7 @@ static void
 _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     static uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {0,1,2,3,4,5,6,7};
     uint32_t ret;
-    if(*channel == 0){
+    if(*channel == ANT_DISCOVERY_CHANNEL){
         *((uint16_t*)message) = (uint16_t)0x5354;
         message[7]++;
 //        PRINT_HEX(message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
@@ -174,7 +174,7 @@ static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
     PRINT_HEX(msg->ANT_MESSAGE_aucPayload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
-    if(*channel == 0){
+    if(*channel == ANT_DISCOVERY_CHANNEL){
         //discovery mode channel
         uint16_t dev_id;
         uint8_t dev_type;
