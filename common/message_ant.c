@@ -92,19 +92,19 @@ _set_discovery_mode(uint8_t role){
     ANT_ChannelPHY_t phy = { 
         .period = 32768,
         .frequency = 66,
-        .channel_type = CHANNEL_TYPE_SHARED_SLAVE,
+        .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0};
     if(role != self.discovery_role){
         app_timer_stop(self.discovery_timeout);
         _destroy_channel(0);
         self.discovery_role = role;
-    }else{
+    }else if(_get_channel_status(0)>1){
         return SUCCESS;
     }
     switch(role){
         case 0:
             //central mode
-            PRINTS("Slave\r\n");
+            PRINTS("SLAVE\r\n");
             phy.period = 1092;
             _configure_channel(0, &phy);
             _connect(0, &id);
@@ -112,8 +112,8 @@ _set_discovery_mode(uint8_t role){
         case 1:
             //peripheral mode
             //configure shit here
-            PRINTS("Master\r\n");
-            phy.channel_type = CHANNEL_TYPE_SHARED_MASTER;
+            PRINTS("MASTER\r\n");
+            phy.channel_type = CHANNEL_TYPE_MASTER;
             phy.period = 1092;
             //set up id
             {
@@ -163,8 +163,10 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     if(*channel == 0){
         *((uint16_t*)message) = (uint16_t)0x5354;
         message[7]++;
-        PRINT_HEX(message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
-        ret = sd_ant_broadcast_message_tx(0,ANT_STANDARD_DATA_PAYLOAD_SIZE, message);
+//        PRINT_HEX(message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
+        ret = sd_ant_broadcast_message_tx(0,sizeof(message), message);
+        PRINTS("Ret = ");
+        PRINT_HEX(&ret, 2);
     }
 }
 static void
@@ -265,7 +267,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("RFFAIL\r\n");
             break;
         case EVENT_TX:
-            PRINTS("TX\r\n");
+            //PRINTS("TX\r\n");
             _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_TRANSFER_TX_FAILED:
