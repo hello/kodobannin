@@ -94,8 +94,13 @@ _set_discovery_mode(uint8_t role){
         .frequency = 66,
         .channel_type = CHANNEL_TYPE_SHARED_SLAVE,
         .network = 0};
-    app_timer_stop(self.discovery_timeout);
-    _destroy_channel(0);
+    if(role != self.discovery_role){
+        app_timer_stop(self.discovery_timeout);
+        _destroy_channel(0);
+        self.discovery_role = role;
+    }else{
+        return SUCCESS;
+    }
     switch(role){
         case 0:
             //central mode
@@ -121,7 +126,7 @@ _set_discovery_mode(uint8_t role){
             _configure_channel(0, &phy);
             _connect(0, &id);
             {
-                uint32_t to = APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER);
+                uint32_t to = APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER);
                 app_timer_start(self.discovery_timeout,to, NULL);
             }
             break;
@@ -136,13 +141,14 @@ _set_discovery_mode(uint8_t role){
 static void
 _discovery_timeout(void * ctx){
     PRINTS("Good Night Sweet Prince\r\n");
+    self.discovery_role = 0xFF;
     _destroy_channel(0);
 }
 
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
-    PRINTS("Channel TO\r\n");
-    if(*channel == 0 && self.discovery_role == 0){
+    PRINTS("Channel Close\r\n");
+    if(*channel == 0){
         PRINTS("Re-opening Channel ");
         PRINT_HEX(channel, 1);
         PRINTS("\r\n");
@@ -204,8 +210,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 break;
             case ANT_SET_ROLE:
                 PRINTS("ANT_SET_ROLE\r\n");
-                self.discovery_role = antcmd->param.role;
-                return _set_discovery_mode(self.discovery_role);
+                return _set_discovery_mode(antcmd->param.role);
         }
     }
 }
