@@ -5,7 +5,7 @@
 
 /**
  *
- * ANT Air Protocol Constraints
+ * HLO ANT Air Protocol Constraints v0.1
  * 1. MetaData is always sent as page:0
  * 2. page count > 0
  * 3. crc32 is computed on receive of every meta page

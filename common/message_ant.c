@@ -9,18 +9,6 @@
 #define NUM_ANT_CHANNELS 8
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
 
-typedef struct{
-    union{
-        struct{
-
-        }peripheral_info;
-        struct{
-
-        }central_info;
-        uint8_t buf[8];
-    }
-}ANT_AirPacket_t;
-
 
 static struct{
     MSG_Base_t base;
@@ -164,7 +152,6 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     if(*channel == ANT_DISCOVERY_CHANNEL){
         *((uint16_t*)message) = (uint16_t)0x5354;
         message[7]++;
-//        PRINT_HEX(message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
         ret = sd_ant_broadcast_message_tx(0,sizeof(message), message);
         PRINTS("Ret = ");
         PRINT_HEX(&ret, 2);
