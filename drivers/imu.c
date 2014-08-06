@@ -16,6 +16,7 @@
 #include "sensor_data.h"
 #include "message_base.h"
 #include "timedfifo.h"
+#include "message_ant.h"
 
 #include <watchdog.h>
 
@@ -934,6 +935,10 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 						TF_SetCurrent((tf_unit_t)aggregate);
 						PRINTS("NEW MAX: ");
 						PRINT_HEX(&aggregate, sizeof(aggregate));
+					}
+					{
+						uint8_t role = 1;
+						MSG_SEND(parent, ANT, ANT_SET_ROLE, &role, 1);
 					}
 				}
 				break;
