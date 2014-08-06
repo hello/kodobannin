@@ -52,4 +52,4 @@ struct morpheus_data_response
 void morpheus_ble_services_init(void);
 void morpheus_ble_evt_handler(ble_evt_t* ble_evt);
 void morpheus_ble_advertising_init(void);
-void morpheus_ble_load_modules(void);
+void morpheus_load_modules(void);

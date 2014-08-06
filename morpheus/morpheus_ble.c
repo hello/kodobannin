@@ -37,8 +37,7 @@ _data_send_finished()
 	PRINTS("DONE!");
 }
 
-static void
-_command_write_handler(ble_gatts_evt_write_t* event)
+static void _command_write_handler(ble_gatts_evt_write_t* event)
 {
 /*
  *    struct pill_command* command = (struct pill_command*)event->data;
@@ -77,6 +76,17 @@ _command_write_handler(ble_gatts_evt_write_t* event)
  *        }
  *    };
  */
+
+	struct morpheus_command* command = (struct morpheus_command*)event->data;
+	switch(command->command)
+	{
+		case MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
+			hble_advertising_start(true);
+			break;
+		case MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+			hble_advertising_start(false);
+			break;
+	}
 }
 
 
@@ -98,10 +108,12 @@ void morpheus_ble_services_init(void)
     }
 }
 
-void
-morpheus_ble_load_modules(void){
+void morpheus_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
+    	central->loadmod(MSG_App_Base(central));
+
+#ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
 			SERIAL_RX_PIN,
 			SERIAL_TX_PIN,
@@ -112,9 +124,10 @@ morpheus_ble_load_modules(void){
 			UART_BAUDRATE_BAUDRATE_Baud38400
 		};
 
-		central->loadmod(MSG_App_Base(central));
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
+#endif
 
+#ifdef PLATFORM_HAS_SSPI
 		spi_slave_config_t spi_params = {
 			//miso
 			SSPI_MISO,
@@ -130,10 +143,17 @@ morpheus_ble_load_modules(void){
 			0x55,
 		};
 		central->loadmod(MSG_SSPI_Base(&spi_params,central));
+#endif
+
+#ifdef ANT_ENABLE
 		central->loadmod(MSG_ANT_Base(central));
+#endif
 		//MSG_Base_BufferTest();
 		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
+
+#ifdef ANT_ENABLE
 		MSG_SEND(central, ANT, ANT_SET_ROLE, 0,1);
+#endif
     }else{
         PRINTS("FAIL");
     }
