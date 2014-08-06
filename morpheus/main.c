@@ -14,27 +14,26 @@
 #include <spi.h>
 #include <spi_nor.h>
 #include <util.h>
-#include <imu.h>
+
+#include "platform.h"
+
 #include <pwm.h>
 #include <hrs.h>
 #include <watchdog.h>
-#include <hlo_fs.h>
 #include <nrf_sdm.h>
 #include <softdevice_handler.h>
 #include <twi_master.h>
 
 #include "app.h"
 #include "hble.h"
-#include "platform.h"
-#include "hlo_ble_alpha0.h"
-#include "hlo_ble_demo.h"
+
+
 #include "git_description.h"
 #include "morpheus_ble.h"
-#include "sensor_data.h"
-#include "util.h"
 
-void
-_start()
+
+
+void _start()
 {
 
     {
@@ -58,7 +57,6 @@ _start()
 
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
-
 
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];

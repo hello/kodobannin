@@ -5,7 +5,7 @@ all: b m
 
 # apps & platforms
 
-TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test morpheus_test
+TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
 APPS = bootloader morpheus pill $(TEST_APPS)
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
@@ -71,8 +71,6 @@ BUILD_DIR = build
 
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
-	#$(wildcard ble/*.c) \
-	#$(wildcard ble/services/*.c) \
 	$(wildcard micro-ecc/*.c) \
 
 NRF_SRCS = \
@@ -100,18 +98,17 @@ NRF_SRCS = \
 SRCS = $(HELLO_SRCS) $(NRF_SRCS)
 
 INCS =  ./ \
-	./ble \
-	./ble/services \
-	./drivers \
-	./common \
-	./micro-ecc \
 	./nRF51_SDK/nrf51422/Include \
-	./nRF51_SDK/nrf51422/Include/app_common \
-	./nRF51_SDK/nrf51422/Include/gcc \
-	./nRF51_SDK/nrf51422/Include/ble \
-	./nRF51_SDK/nrf51422/Include/ble/ble_services/ \
 	./nRF51_SDK/nrf51422/Include/sd_common/ \
 	./nRF51_SDK/nrf51422/Include/s310/ \
+	./nRF51_SDK/nrf51422/Include/ble \
+	./nRF51_SDK/nrf51422/Include/ble/ble_services/ \
+	./nRF51_SDK/nrf51422/Include/app_common \
+	./nRF51_SDK/nrf51422/Include/gcc \
+	./common \
+	./drivers \
+	./micro-ecc \
+	
 
 
 # SoftDevice

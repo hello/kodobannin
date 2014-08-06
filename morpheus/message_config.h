@@ -2,6 +2,7 @@
 /*
  * Here define the modules used
  */
+
 #define ANT_ENABLE
 
 #define MSG_BASE_SHARED_POOL_SIZE 12
@@ -29,4 +30,3 @@ void ant_handler(void* event_data, uint16_t event_size);
 #endif
 
 #define MSG_CENTRAL_MODULE_NUM  (MOD_END)
-

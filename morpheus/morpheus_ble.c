@@ -8,16 +8,15 @@
 #include <ble_srv_common.h>
 #include <ble_advdata.h>
 
-#include "sensor_data.h"
-#include "rtc.h"
-#include "hlo_ble.h"
+#include "platform.h"
+
 #include "hlo_ble_time.h"
 #include "util.h"
 #include "message_app.h"
 #include "message_sspi.h"
 #include "message_uart.h"
 #include "message_ant.h"
-#include "platform.h"
+
 #include "nrf.h"
 #include "morpheus_ble.h"
 
@@ -25,21 +24,19 @@ extern uint8_t hello_type;
 
 static uint16_t _morpheus_service_handle;
 static MSG_Central_t * central; 
-//static uint8_t _daily_data[1440];
 
-static uint8_t _imu_realtime_stream_data[12];
-
-static void
-_unhandled_msg_event(void* event_data, uint16_t event_size){
+static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
 }
+
 
 static void
 _data_send_finished()
 {
 	PRINTS("DONE!");
 }
+
 static void
 _command_write_handler(ble_gatts_evt_write_t* event)
 {
@@ -82,21 +79,8 @@ _command_write_handler(ble_gatts_evt_write_t* event)
  */
 }
 
-static void
-_data_ack_handler(ble_gatts_evt_write_t* event)
-{
-    PRINTS("_data_ack_handler()\r\n");
-}
 
-void
-pill_ble_evt_handler(ble_evt_t* ble_evt)
-{
-    DEBUG("Pill BLE event handler: ", ble_evt->header.evt_id);
-    // sd_ble_gatts_rw_authorize_reply
-}
-
-void
-morpheus_ble_services_init(void)
+void morpheus_ble_services_init(void)
 {
 
     {
@@ -109,8 +93,7 @@ morpheus_ble_services_init(void)
 
         hlo_ble_char_write_request_add(0xDEED, &_command_write_handler, sizeof(struct morpheus_command));
         hlo_ble_char_notify_add(0xD00D);
-        hlo_ble_char_notify_add(0xFEED);
-        hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct morpheus_data_response));
+        
         hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
     }
 }
@@ -155,13 +138,12 @@ morpheus_ble_load_modules(void){
         PRINTS("FAIL");
     }
 }
+
 void morpheus_ble_advertising_init(void){
 	ble_advdata_t advdata;
 	ble_advdata_t scanrsp;
 	uint8_t       flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE; //BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
 
-
-	
 	ble_uuid_t morpheus_service_uuid = {
 		.type = hello_type,
 		.uuid = BLE_UUID_MORPHEUS_SVC 
@@ -169,6 +151,7 @@ void morpheus_ble_advertising_init(void){
 
 	// YOUR_JOB: Use UUIDs for service(s) used in your application.
 	ble_uuid_t adv_uuids[] = {morpheus_service_uuid};
+
 	// Build and set advertising data
 	memset(&advdata, 0, sizeof(advdata));
 	advdata.name_type = BLE_ADVDATA_FULL_NAME;

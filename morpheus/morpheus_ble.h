@@ -3,33 +3,38 @@
 #pragma once
 
 #include "hlo_ble_time.h"
+#include "morpheus_gatt.h"
 
 enum {
-    BLE_UUID_MORPHEUS_SVC = 0xEEE0,
+    BLE_UUID_MORPHEUS_SVC = 0xEEE1,
 };
 
 enum morpheus_command_type {
-    MORPHEUS_COMMAND_STOP_ACCELEROMETER = 0,
-    MORPHEUS_COMMAND_START_ACCELEROMETER,
-    MORPHEUS_COMMAND_CALIBRATE,
-    MORPHEUS_COMMAND_DISCONNECT,
-    MORPHEUS_COMMAND_SEND_DATA,
+    MORPHEUS_COMMAND_SET_TIME = 0,
     MORPHEUS_COMMAND_GET_TIME,
-    MORPHEUS_COMMAND_SET_TIME,
+    MORPHEUS_COMMAND_SET_WIFI_ENDPOINT,
+    MORPHEUS_COMMAND_GET_WIFI_ENDPOINT,
+    MORPHEUS_COMMAND_SET_ALARMS,
+    MORPHEUS_COMMAND_GET_ALARMS,
+    MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE,
+    MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE
+    
 } __attribute__((packed));
 
 struct morpheus_command
 {
     enum morpheus_command_type command;
     union {
-        struct hlo_ble_time set_time;
+        struct hlo_ble_packet payload;   // Now the command format is [command_type][optional: [seq#][optional:total][data] ]
     };
 } __attribute__((packed));
+
 
 enum morpheus_data_response_type {
     PILL_DATA_RESPONSE_ACK,
     PILL_DATA_RESPONSE_MISSING,
 } __attribute__((packed));
+
 
 struct morpheus_data_response
 {
@@ -42,6 +47,7 @@ struct morpheus_data_response
         };
     };
 } __attribute__((packed));
+
 
 void morpheus_ble_services_init(void);
 void morpheus_ble_evt_handler(ble_evt_t* ble_evt);

@@ -14,10 +14,11 @@
 #include <softdevice_handler.h>
 #include <ble_bondmngr.h>
 
+#include "util.h"
 #include "app.h"
 #include "hble.h"
-#include "util.h"
-#include "pill_gatt.h"
+
+#include "morpheus_gatt.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
@@ -30,6 +31,7 @@ static int8_t  _last_connected_central;
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
+
 #ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
@@ -155,7 +157,6 @@ void hble_bond_manager_init()
 }
 
 
-
 static void _on_conn_params_error(uint32_t nrf_error)
 {
     APP_ERROR_HANDLER(nrf_error);
@@ -192,6 +193,7 @@ void hble_advertising_start()
     adv_params.interval = APP_ADV_INTERVAL;
     adv_params.timeout = APP_ADV_TIMEOUT_IN_SECONDS;
     uint8_t flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+
 
 #ifdef BONDING_REQUIRED
 
@@ -239,7 +241,6 @@ void hble_advertising_start()
         flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just to make things clear
         app_initialized = true;
     }
-
 #endif
 
     _advertising_data_init(flags);

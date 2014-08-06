@@ -3,7 +3,7 @@
 #include <app_error.h>
 #include <string.h>
 
-#include "pill_gatt.h"
+#include "morpheus_gatt.h"
 #include "sha1.h"
 #include "util.h"
 
