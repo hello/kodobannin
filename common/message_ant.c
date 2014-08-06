@@ -1,8 +1,10 @@
 #include <ant_interface.h>
+#include <app_timer.h>
 #include <app_error.h>
 #include <ant_parameters.h>
 #include "message_ant.h"
 #include "util.h"
+#include "app.h"
 
 #define NUM_ANT_CHANNELS 8
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
@@ -23,9 +25,8 @@ typedef struct{
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
-    ANT_Channel_t channels[NUM_ANT_CHANNELS];//only 8 channels on 51422
     uint8_t discovery_role;
-
+    app_timer_id_t discovery_timeout;
 }self;
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
@@ -93,12 +94,13 @@ _set_discovery_mode(uint8_t role){
         .frequency = 66,
         .channel_type = CHANNEL_TYPE_SHARED_SLAVE,
         .network = 0};
+    app_timer_stop(self.discovery_timeout);
     _destroy_channel(0);
     switch(role){
         case 0:
             //central mode
             PRINTS("Slave\r\n");
-            phy.period = 546;
+            phy.period = 1092;
             _configure_channel(0, &phy);
             _connect(0, &id);
             break;
@@ -118,18 +120,34 @@ _set_discovery_mode(uint8_t role){
             }
             _configure_channel(0, &phy);
             _connect(0, &id);
+            {
+                uint32_t to = APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER);
+                app_timer_start(self.discovery_timeout,to, NULL);
+            }
             break;
         default:
             break;
     }
     return SUCCESS;
 }
+/**
+ * Handles the timeout of discovery_mode
+ */
+static void
+_discovery_timeout(void * ctx){
+    PRINTS("Good Night Sweet Prince\r\n");
+    _destroy_channel(0);
+}
+
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
-    PRINTS("Re-opening Channel ");
-    PRINT_HEX(channel, 1);
-    PRINTS("\r\n");
-    MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
+    PRINTS("Channel TO\r\n");
+    if(*channel == 0 && self.discovery_role == 0){
+        PRINTS("Re-opening Channel ");
+        PRINT_HEX(channel, 1);
+        PRINTS("\r\n");
+        MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
+    }
 }
 
 static void
@@ -197,8 +215,9 @@ _init(){
     uint32_t ret;
     uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
     ret = sd_ant_stack_reset();
+    ret += sd_ant_network_address_set(0,network_key);
+    ret += app_timer_create(&self.discovery_timeout, APP_TIMER_MODE_SINGLE_SHOT, _discovery_timeout);
     if(!ret){
-        sd_ant_network_address_set(0,network_key);
         return SUCCESS;
     }else{
         return FAIL;
@@ -221,6 +240,8 @@ void ant_handler(ant_evt_t * p_ant_evt){
     uint8_t event = p_ant_evt->event;
     uint8_t ant_channel = p_ant_evt->channel;
     uint32_t * event_message_buffer = p_ant_evt->evt_buffer;
+    PRINT_HEX(&event,1);
+    PRINTS("\r\n");
     switch(event){
         case EVENT_RX_FAIL:
             //PRINTS("FRX\r\n");
@@ -245,6 +266,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
         case EVENT_TRANSFER_TX_FAILED:
             break;
         case EVENT_CHANNEL_COLLISION:
+            PRINTS("XX\r\n");
             break;
         case EVENT_CHANNEL_CLOSED:
             _handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
