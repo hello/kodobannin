@@ -86,7 +86,8 @@ MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
         if(central){\
             obj->buf[0] = command;\
             memcpy(obj->buf+1, payload,len);\
-            central->dispatch((MSG_Address_t){0,0},(MSG_Address_t){recipient}, obj);\
+            central->dispatch((MSG_Address_t){0,0},(MSG_Address_t){recipient,0}, obj);\
+            /*central->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){UART, 1}, obj);*/\
         }\
         MSG_Base_ReleaseDataAtomic(obj);\
     }\

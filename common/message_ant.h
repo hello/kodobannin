@@ -8,7 +8,7 @@ typedef struct{
     uint8_t hlo_version_major;
     uint8_t hlo_version_minor;
     uint32_t UUID;//4
-    uint64_t monotonic_time;
+    uint32_t checksum;
 }ANT_DiscoveryProfile_t;
 
 typedef struct{
