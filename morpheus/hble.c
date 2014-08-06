@@ -209,10 +209,10 @@ void hble_advertising_start(bool pairing_mode)
             adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
             flags = BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED;
 
-            PRINTS("whitelist retrieved. Advertising in normal mode.\r\n");
+            PRINTS("whitelist retrieved. Advertising in pairing mode.\r\n");
         }else{
             flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just make it clear what we want to do.
-            PRINTS("NO whitelist retrieved. Advertising in pairing mode.\r\n");
+            PRINTS("NO whitelist retrieved. Advertising in normal mode.\r\n");
         }
         
     }
@@ -220,7 +220,7 @@ void hble_advertising_start(bool pairing_mode)
     {
         flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just to make things clear
         app_initialized = true;
-        PRINTS("Advertising in pairing mode.\r\n");
+        PRINTS("Advertising in normal mode.\r\n");
     }
 #endif
 
