@@ -2,6 +2,15 @@
 #include "message_base.h"
 
 typedef struct{
+    uint8_t hlo_hw_type;
+    uint8_t hlo_hw_revision;
+    uint8_t hlo_version_major;
+    uint8_t hlo_version_minor;
+    uint32_t UUID;//4
+    uint64_t monotonic_time;
+}ANT_DiscoveryProfile_t;
+
+typedef struct{
     uint8_t transmit_type;
     uint8_t device_type;
     uint16_t device_number;
@@ -27,12 +36,11 @@ typedef struct{
     enum{
         ANT_PING=0,
         ANT_SET_ROLE,//sets discovery role
+        ANT_SET_DISCOVERY_PROFILE
     }cmd;
     union{
         uint8_t role;
-        uint8_t unpair_channel_mask;
-        ANT_Channel_t cfg;
-        uint8_t ch;
+        ANT_DiscoveryProfile_t profile;
     }param;
 }MSG_ANTCommand_t;
 
