@@ -108,7 +108,7 @@ void morpheus_ble_services_init(void)
     }
 }
 
-void morpheus_ble_load_modules(void){
+void morpheus_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
     	central->loadmod(MSG_App_Base(central));
@@ -126,7 +126,7 @@ void morpheus_ble_load_modules(void){
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #endif
-		
+
 #ifdef PLATFORM_HAS_SSPI
 		spi_slave_config_t spi_params = {
 			//miso
