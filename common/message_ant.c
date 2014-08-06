@@ -27,6 +27,7 @@ static struct{
     MSG_Central_t * parent;
     uint8_t discovery_role;
     app_timer_id_t discovery_timeout;
+    ANT_DiscoveryProfile_t profile;
 }self;
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
@@ -203,6 +204,9 @@ _flush(void){
 }
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
+    if(!data){
+        return FAIL;
+    }
     if(dst.submodule == 0){
         MSG_ANTCommand_t * antcmd = data->buf;
         switch(antcmd->cmd){
@@ -213,6 +217,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case ANT_SET_ROLE:
                 PRINTS("ANT_SET_ROLE\r\n");
                 return _set_discovery_mode(antcmd->param.role);
+            case ANT_SET_DISCOVERY_PROFILE:
+                self.profile = antcmd->param.profile;
+                PRINTS("claiming profile");
         }
     }
 }
