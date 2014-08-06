@@ -14,7 +14,9 @@
 #include <spi.h>
 #include <spi_nor.h>
 #include <util.h>
-#include <imu.h>
+
+#include "platform.h"
+
 #include <pwm.h>
 #include <hrs.h>
 #include <watchdog.h>
@@ -72,11 +74,14 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
+	morpheus_load_modules();
+
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
     hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
-	morpheus_ble_load_modules();
-    PRINTS("ble_init() done.\r\n");
-
+#ifdef BONDING_REQUIRED   
+    hble_bond_manager_init();
+#endif
+    hble_params_init(device_name);
     hlo_ble_init();
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
@@ -84,10 +89,13 @@ _start()
 //    pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
 
+    ble_uuid_t service_uuid = {
+        .type = hello_type,
+        .uuid = BLE_UUID_MORPHEUS_SVC
+    };
 
-//	pill_ble_advertising_init();
- //   hble_advertising_start();
-    PRINTS("Advertising started.\r\n");
+    hble_advertising_init(service_uuid);
+    hble_advertising_start(false);
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

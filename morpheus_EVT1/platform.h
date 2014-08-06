@@ -2,6 +2,9 @@
 
 #pragma once
 
+#define ANT_ENABLE
+#define MSG_BASE_USE_BIG_POOL
+
 #define PLATFORM_HAS_SSPI
 
 /* CS and MOSI are inverted in EVT1*/

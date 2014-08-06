@@ -2,15 +2,15 @@
 /*
  * Here define the modules used
  */
-#define ANT_ENABLE
+#include "platform.h"
 
 #define MSG_BASE_SHARED_POOL_SIZE 12
 #define MSG_BASE_DATA_BUFFER_SIZE 24
 
-#define MSG_BASE_USE_BIG_POOL
+#ifdef MSG_BASE_USE_BIG_POOL
 #define MSG_BASE_SHARED_POOL_SIZE_BIG 6
 #define MSG_BASE_DATA_BUFFER_SIZE_BIG 256
-
+#endif
 
 typedef enum{
     CENTRAL = 0,
@@ -30,4 +30,3 @@ void ant_handler(ant_evt_t * p_ant_evt);
 #endif
 
 #define MSG_CENTRAL_MODULE_NUM  (MOD_END)
-
