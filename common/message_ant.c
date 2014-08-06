@@ -89,7 +89,7 @@ static MSG_Status
 _set_discovery_mode(uint8_t role){
     ANT_ChannelID_t id = {0};
     ANT_ChannelPHY_t phy = { 
-        .period = 3277,
+        .period = 32768,
         .frequency = 66,
         .channel_type = CHANNEL_TYPE_SHARED_SLAVE,
         .network = 0};
@@ -98,6 +98,7 @@ _set_discovery_mode(uint8_t role){
         case 0:
             //central mode
             PRINTS("Slave\r\n");
+            phy.period = 546;
             _configure_channel(0, &phy);
             _connect(0, &id);
             break;
@@ -106,11 +107,12 @@ _set_discovery_mode(uint8_t role){
             //configure shit here
             PRINTS("Master\r\n");
             phy.channel_type = CHANNEL_TYPE_SHARED_MASTER;
+            phy.period = 1092;
             //set up id
             {
                 //test only
                 //id.transmit_type = ANT_TRANS_TYPE_2_BYTE_SHARED_ADDRESS;
-                id.transmit_type = 0;
+                id.transmit_type = 3;
                 id.device_type = 1;
                 id.device_number = 0x5354;
             }
@@ -120,6 +122,7 @@ _set_discovery_mode(uint8_t role){
         default:
             break;
     }
+    return SUCCESS;
 }
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
@@ -134,7 +137,7 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     static uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {0,1,2,3,4,5,6,7};
     uint32_t ret;
     if(*channel == 0){
-        *((uint16_t*)message) = 0x5354;
+        *((uint16_t*)message) = (uint16_t)0x5354;
         message[7]++;
         PRINT_HEX(message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
         ret = sd_ant_broadcast_message_tx(0,ANT_STANDARD_DATA_PAYLOAD_SIZE, message);
@@ -192,10 +195,10 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 static MSG_Status
 _init(){
     uint32_t ret;
-    uint8_t network_key[8] = {0xE, 0x1, 0x1, 0x0,0xE,0x1,0x1,0x0};
+    uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
     ret = sd_ant_stack_reset();
     if(!ret){
-        sd_ant_network_address_set(1,network_key);
+        sd_ant_network_address_set(0,network_key);
         return SUCCESS;
     }else{
         return FAIL;
