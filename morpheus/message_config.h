@@ -2,8 +2,7 @@
 /*
  * Here define the modules used
  */
-
-#define ANT_ENABLE
+#include "platform.h"
 
 #define MSG_BASE_SHARED_POOL_SIZE 12
 #define MSG_BASE_DATA_BUFFER_SIZE 24
