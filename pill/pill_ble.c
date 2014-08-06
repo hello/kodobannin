@@ -136,6 +136,8 @@ pill_ble_services_init(void)
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
+		central->loadmod(MSG_App_Base(central));
+#ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
 			SERIAL_RX_PIN,
 			SERIAL_TX_PIN,
@@ -145,8 +147,6 @@ void pill_ble_load_modules(void){
 			0,
 			UART_BAUDRATE_BAUDRATE_Baud38400
 		};
-		central->loadmod(MSG_App_Base(central));
-#ifdef DEBUG_SERIAL
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #endif
 		central->loadmod(MSG_Time_Init(central));
