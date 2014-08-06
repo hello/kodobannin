@@ -2,13 +2,36 @@
 #include "message_base.h"
 
 #define ANT_DISCOVERY_CHANNEL 0
+
+/**
+ *
+ * ANT Air Protocol Constraints
+ * 1. MetaData is always sent as page:0
+ * 2. page count > 0
+ * 3. crc32 is computed on receive of every meta page
+ * 4. if meta page's crc changes, that means new message has arrived
+ * 
+ * 5. TX ends message by transmitting message N times (defined by user)
+ * 6. RX ends message by either completing checksum, or channel closes
+ *    - In case of master, receiving an invalid checksum will result in loss packet.  
+ *    - Further protocol are user defined
+ */
+typedef struct{
+    uint8_t page;
+    uint8_t page_count;
+    uint8_t src_mod;
+    uint8_t src_submod;
+    uint8_t dst_mod;
+    uint8_t dst_submod;
+    uint16_t checksum;
+}ANT_HeaderPacket_t;
+
 typedef struct{
     uint8_t hlo_hw_type;
     uint8_t hlo_hw_revision;
     uint8_t hlo_version_major;
     uint8_t hlo_version_minor;
     uint32_t UUID;//4
-    uint32_t checksum;
 }ANT_DiscoveryProfile_t;
 
 typedef struct{
