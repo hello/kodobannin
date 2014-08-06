@@ -20,7 +20,6 @@
 #include <pwm.h>
 #include <hrs.h>
 #include <watchdog.h>
-#include <hlo_fs.h>
 #include <nrf_sdm.h>
 #include <softdevice_handler.h>
 #include <twi_master.h>
@@ -28,8 +27,6 @@
 #include "app.h"
 #include "hble.h"
 #include "platform.h"
-#include "hlo_ble_alpha0.h"
-#include "hlo_ble_demo.h"
 #include "git_description.h"
 #include "morpheus_ble.h"
 #include "sensor_data.h"
@@ -74,7 +71,6 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-	morpheus_load_modules();
 
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
     hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
@@ -86,6 +82,9 @@ _start()
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 #endif
+
+	morpheus_load_modules();
+
 //    pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
 
