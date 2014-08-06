@@ -37,8 +37,7 @@ _data_send_finished()
 	PRINTS("DONE!");
 }
 
-static void
-_command_write_handler(ble_gatts_evt_write_t* event)
+static void _command_write_handler(ble_gatts_evt_write_t* event)
 {
 /*
  *    struct pill_command* command = (struct pill_command*)event->data;
@@ -77,6 +76,17 @@ _command_write_handler(ble_gatts_evt_write_t* event)
  *        }
  *    };
  */
+
+	struct morpheus_command* command = (struct morpheus_command*)event->data;
+	switch(command->command)
+	{
+		case MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
+			hble_advertising_start(true);
+			break;
+		case MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+			hble_advertising_start(false);
+			break;
+	}
 }
 
 
@@ -98,8 +108,7 @@ void morpheus_ble_services_init(void)
     }
 }
 
-void
-morpheus_ble_load_modules(void){
+void morpheus_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		app_uart_comm_params_t uart_params = {
