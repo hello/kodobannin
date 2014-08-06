@@ -14,9 +14,10 @@
 #include <softdevice_handler.h>
 #include <ble_bondmngr.h>
 
+#include "util.h"
 #include "app.h"
 #include "hble.h"
-#include "util.h"
+
 #include "morpheus_gatt.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
