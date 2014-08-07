@@ -9,6 +9,12 @@
 #define NUM_ANT_CHANNELS 8
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
 
+typedef struct{
+    MSG_Data_t * header;
+    MSG_Data_t * payload;
+    uint16_t idx;
+    uint16_t count;
+}ChannelContext_t;
 
 static struct{
     MSG_Base_t base;
@@ -16,6 +22,7 @@ static struct{
     uint8_t discovery_role;
     app_timer_id_t discovery_timeout;
     ANT_DiscoveryProfile_t profile;
+    ChannelContext_t channel_ctx[NUM_ANT_CHANNELS];
 }self;
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
@@ -144,18 +151,139 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
     }
 }
+static MSG_Data_t *
+_allocate_header(ANT_HeaderPacket_t * buf){
+    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(sizeof(ANT_HeaderPacket_t));
+    if(ret){
+        memcpy(ret->buf, buf, sizeof(ANT_HeaderPacket_t));
+    }
+    return ret;
+}
+static MSG_Data_t *
+_allocate_payload(ANT_HeaderPacket_t * buf){
+    uint32_t ret;
+    PRINTS("Pages: ");
+    PRINT_HEX(&buf->page_count, 1);
+    PRINTS("\r\n");
+    return MSG_Base_AllocateDataAtomic( 6 * buf->page_count );
+}
+static void INCREF
+_allocate_context(ChannelContext_t * ctx, ANT_HeaderPacket_t * header){
+    ctx->header = _allocate_header( header );
+    if(header){
+        ctx->payload = _allocate_payload( header );
+    }
+}
+static void DECREF
+_free_context(ChannelContext_t * ctx){
+    MSG_Base_ReleaseDataAtomic(ctx->header);
+    MSG_Base_ReleaseDataAtomic(ctx->payload);
+    ctx->header = NULL;
+    ctx->payload = NULL;
+}
+static void
+_assemble_payload(ChannelContext_t * ctx, ANT_PayloadPacket_t * packet){
+    //technically if checksum is xor, is possible to do incremental xor to 
+    //find out if the data is valid without doing it at the header packet
+    //but for simplicity's sake, lets just leave the optomizations later...
+    uint16_t offset = (packet->page - 1) * 6;
+    ctx->payload->buf[offset] = packet->payload[0];
+    ctx->payload->buf[offset + 1] = packet->payload[1];
+    ctx->payload->buf[offset + 2] = packet->payload[2];
+    ctx->payload->buf[offset + 3] = packet->payload[3];
+    ctx->payload->buf[offset + 4] = packet->payload[4];
+    ctx->payload->buf[offset + 5] = packet->payload[5];
+
+}
+static uint8_t
+_integrity_check(ChannelContext_t * ctx){
+    return 0;
+}
+static uint8_t
+_new_message_check(ChannelContext_t * ctx, ANT_HeaderPacket_t * packet){
+    ANT_HeaderPacket_t * cmp = (ANT_HeaderPacket_t*)ctx->header->buf;
+    if(cmp->checksum == packet->checksum){
+        return 0;
+    }else{
+        return 1;
+    }
+}
+static MSG_Data_t * 
+_assemble_rx(ChannelContext_t * ctx, uint8_t * buf, uint32_t buf_size){
+    MSG_Data_t * ret = NULL;
+    if(ctx->header){
+        //header already exist
+        if(buf[0] == 0){
+            uint8_t _message_complete = _integrity_check(ctx);
+            uint8_t _new_message = _new_message_check(ctx, (ANT_HeaderPacket_t *)buf);
+            if(_message_complete){
+                ret = ctx->payload;
+                MSG_Base_AcquireDataAtomic(ret);
+                _free_context(ctx);
+            }
+            if(_new_message){
+                _free_context(ctx);
+                _allocate_context(ctx, (ANT_HeaderPacket_t *)buf);
+            }
+        }else{
+            //payload packet
+            _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
+        }
+    }else{
+        //header does not exist
+        //payload packets are ignored for simplicity
+        if(buf[0] == 0){ 
+            _allocate_context(ctx, (ANT_HeaderPacket_t*)buf);
+        }
+    }
+    return ret;
+}
+static uint8_t DECREF
+_assemble_tx(ChannelContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
+    if(ctx->count == 0 && ctx->header && ctx->payload){
+        memcpy(out_buf, ctx->header->buf, 8);
+        _free_context(ctx);
+        //get next in line
+    }else if(ctx->count == 0){
+        return 0;
+    }else{
+        ANT_HeaderPacket_t * header = ctx->header->buf;
+        if(ctx->idx == 0){
+            memcpy(out_buf, header, sizeof(*header));
+        }else{
+            uint16_t offset = (ctx->idx - 1) * 6;
+            int i;
+            for(i = 0; i < 6; i++){
+                if( offset + i < ctx->payload->len ){
+                    out_buf[i] = ctx->payload->buf[offset+i];
+                }else{
+                    out_buf[i] = 0;
+                }
+            }
+        }
+        if(++ctx->idx > header->page_count){
+            ctx->idx = 0;
+            ctx->count--;
+        }
+    }
+    return 1;
+
+}
 
 static void
 _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
-    static uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {0,1,2,3,4,5,6,7};
+    uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {1,2,3,4,5,6,7,8};
     uint32_t ret;
     if(*channel == ANT_DISCOVERY_CHANNEL){
         *((uint16_t*)message) = (uint16_t)0x5354;
         message[7]++;
-        ret = sd_ant_broadcast_message_tx(0,sizeof(message), message);
-        PRINTS("Ret = ");
-        PRINT_HEX(&ret, 2);
+    }else{
+        ChannelContext_t * ctx = &self.channel_ctx[*channel];
+        if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
+            PRINTS("FIN\r\n");
+        }
     }
+    ret = sd_ant_broadcast_message_tx(0,sizeof(message), message);
 }
 static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
@@ -175,6 +303,14 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             PRINT_HEX(&transmit_type, sizeof(transmit_type));
         }
         //allocate channel, configure it as slave, then open...
+    }else{
+        //assemble context
+        ChannelContext_t * ctx = &self.channel_ctx[*channel];
+        MSG_Data_t * ret = _assemble_rx(ctx, buf, buf_size);
+        if(ret){
+            PRINTS("GOT A NEw MESSAGE OMFG\r\n");
+            MSG_Base_ReleaseDataAtomic(ret);
+        }
     }
     PRINTS("\r\n");
 }

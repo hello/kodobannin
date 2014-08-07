@@ -3,6 +3,13 @@
 
 #define ANT_DISCOVERY_CHANNEL 0
 
+//how often does each payload transmit
+#define ANT_DEFAULT_TRANSMIT_LIMIT 3
+
+//how often header packets are transmit between payload
+//there are always one at the begining and one at the end
+#define ANT_DEFAULT_HEADER_TRANSMIT_LIMIT 5
+
 /**
  *
  * HLO ANT Air Protocol Constraints v0.1
@@ -25,6 +32,12 @@ typedef struct{
     uint8_t dst_submod;
     uint16_t checksum;
 }ANT_HeaderPacket_t;
+
+typedef struct{
+    uint8_t page;//always starts at 1, 
+    uint8_t page_count;
+    uint8_t payload[6];//unused payload must be set to 0
+}ANT_PayloadPacket_t;
 
 typedef struct{
     uint8_t hlo_hw_type;
