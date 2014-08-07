@@ -22,8 +22,8 @@ static struct{
     MSG_Central_t * parent;
     uint8_t discovery_role;
     app_timer_id_t discovery_timeout;
-    ANT_DiscoveryProfile_t profile;
-    ChannelContext_t channel_ctx[NUM_ANT_CHANNELS];
+    ChannelContext_t tx_channel_ctx[NUM_ANT_CHANNELS];
+    ChannelContext_t rx_channel_ctx[NUM_ANT_CHANNELS];
 }self;
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
@@ -33,6 +33,12 @@ static char * name = "ANT";
  */
 static uint16_t _calc_checksum(MSG_Data_t * data);
 static MSG_Status _destroy_channel(uint8_t channel);
+/* Allocates header based on the payload */
+static MSG_Data_t * INCREF _allocate_header_tx(MSG_Data_t * payload);
+/* Allocates header based on receiving header packet */
+static MSG_Data_t * INCREF _allocate_header_rx(ANT_HeaderPacket_t * buf);
+/* Allocates payload based on receiving header packet */
+static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
 
 static MSG_Status
 _destroy_channel(uint8_t channel){
@@ -54,7 +60,7 @@ _get_channel_status(uint8_t channel){
     return ret;
 }
 static MSG_Data_t * INCREF
-_make_header_tx(MSG_Data_t * payload){
+_allocate_header_tx(MSG_Data_t * payload){
     MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(8);
     if(ret){
         ANT_HeaderPacket_t * header = ret->buf;
@@ -65,6 +71,14 @@ _make_header_tx(MSG_Data_t * payload){
         header->dst_mod = 0;
         header->dst_submod = 0;
         header->checksum = _calc_checksum(payload);
+    }
+    return ret;
+}
+static MSG_Data_t * INCREF
+_allocate_header_rx(ANT_HeaderPacket_t * buf){
+    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(sizeof(ANT_HeaderPacket_t));
+    if(ret){
+        memcpy(ret->buf, buf, sizeof(ANT_HeaderPacket_t));
     }
     return ret;
 }
@@ -82,6 +96,14 @@ _calc_checksum(MSG_Data_t * data){
     PRINTS("CS: ");
     PRINT_HEX(&ret,2);
     PRINTS("\r\n");
+}
+static MSG_Data_t *
+_allocate_payload_rx(ANT_HeaderPacket_t * buf){
+    uint32_t ret;
+    PRINTS("Pages: ");
+    PRINT_HEX(&buf->page_count, 1);
+    PRINTS("\r\n");
+    return MSG_Base_AllocateDataAtomic( 6 * buf->page_count );
 }
 static MSG_Status
 _connect(uint8_t channel, const ANT_ChannelID_t * id){
@@ -141,7 +163,7 @@ _set_discovery_mode(uint8_t role){
      //       phy.period = 1092;
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
             _connect(ANT_DISCOVERY_CHANNEL, &id);
-            _free_context(&self.channel_ctx[0]);
+            _free_context(&self.rx_channel_ctx[0]);
             break;
         case 1:
             //peripheral mode
@@ -165,11 +187,11 @@ _set_discovery_mode(uint8_t role){
             }
             {
                 //test only
-                _free_context(&self.channel_ctx[0]);
-                self.channel_ctx[0].payload = MSG_Base_AllocateStringAtomic("HelloWorld");
-                self.channel_ctx[0].header = _make_header_tx(self.channel_ctx[0].payload);
-                self.channel_ctx[0].idx = 0;
-                self.channel_ctx[0].count = 10;
+                _free_context(&self.tx_channel_ctx[0]);
+                self.tx_channel_ctx[0].payload = MSG_Base_AllocateStringAtomic("HelloWorld");
+                self.tx_channel_ctx[0].header = _allocate_header_tx(self.tx_channel_ctx[0].payload);
+                self.tx_channel_ctx[0].idx = 0;
+                self.tx_channel_ctx[0].count = 10;
             }
             break;
         default:
@@ -197,41 +219,20 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
     }
 }
-static MSG_Data_t * INCREF
-_allocate_header_rx(ANT_HeaderPacket_t * buf){
-    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(sizeof(ANT_HeaderPacket_t));
-    if(ret){
-        memcpy(ret->buf, buf, sizeof(ANT_HeaderPacket_t));
-    }
-    return ret;
-}
-static MSG_Data_t *
-_allocate_payload(ANT_HeaderPacket_t * buf){
-    uint32_t ret;
-    PRINTS("Pages: ");
-    PRINT_HEX(&buf->page_count, 1);
-    PRINTS("\r\n");
-    return MSG_Base_AllocateDataAtomic( 6 * buf->page_count );
-}
-static void INCREF
-_allocate_context(ChannelContext_t * ctx, ANT_HeaderPacket_t * header){
-    ctx->header = _allocate_header_rx( header );
-    if(header){
-        ctx->payload = _allocate_payload( header );
-    }
-}
 static void
 _assemble_payload(ChannelContext_t * ctx, ANT_PayloadPacket_t * packet){
     //technically if checksum is xor, is possible to do incremental xor to 
     //find out if the data is valid without doing it at the header packet
     //but for simplicity's sake, lets just leave the optomizations later...
     uint16_t offset = (packet->page - 1) * 6;
-    ctx->payload->buf[offset] = packet->payload[0];
-    ctx->payload->buf[offset + 1] = packet->payload[1];
-    ctx->payload->buf[offset + 2] = packet->payload[2];
-    ctx->payload->buf[offset + 3] = packet->payload[3];
-    ctx->payload->buf[offset + 4] = packet->payload[4];
-    ctx->payload->buf[offset + 5] = packet->payload[5];
+    if(ctx->payload){
+        ctx->payload->buf[offset] = packet->payload[0];
+        ctx->payload->buf[offset + 1] = packet->payload[1];
+        ctx->payload->buf[offset + 2] = packet->payload[2];
+        ctx->payload->buf[offset + 3] = packet->payload[3];
+        ctx->payload->buf[offset + 4] = packet->payload[4];
+        ctx->payload->buf[offset + 5] = packet->payload[5];
+    }
 
 }
 static uint8_t
@@ -254,38 +255,35 @@ _new_message_check(ChannelContext_t * ctx, ANT_HeaderPacket_t * packet){
     }
 }
 static MSG_Data_t * 
-_assemble_rx(ChannelContext_t * ctx, uint8_t * buf, uint32_t buf_size){
+_assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
     if(ctx->header){
         PRINTS("H");
-        //header already exist
         if(buf[0] == 0){
-            PRINTS("header");
             uint8_t _message_complete = _integrity_check(ctx);
             //uint8_t _new_message = _new_message_check(ctx, (ANT_HeaderPacket_t *)buf);
             if(_message_complete){
+                ANT_HeaderPacket_t * header = ctx->header->buf;
+                MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
+                MSG_Address_t dst = (MSG_Address_t){header->dst_mod, header->dst_submod};
+                //first dispatch to intended mod
+                self.parent->dispatch(src, dst, ctx->payload);
+                dst = (MSG_Address_t){UART, 1};
+                //then dispatch to uart for printout
+                self.parent->dispatch(src, dst, ctx->payload);
                 PRINTS("Complete\r\n");
-                ret = ctx->payload;
-                MSG_Base_AcquireDataAtomic(ret);
                 _free_context(ctx);
             }
-            /*
-             *if(_new_message){
-             *    PRINTS("A New Message was found\r\n");
-             *    _free_context(ctx);
-             *    _allocate_context(ctx, (ANT_HeaderPacket_t *)buf);
-             *}
-             */
         }else{
-            //payload packet
             _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
         }
     }else{
-        PRINTS("NH");
         //header does not exist
         //payload packets are ignored for simplicity
         if(buf[0] == 0){ 
-            _allocate_context(ctx, (ANT_HeaderPacket_t*)buf);
+            ANT_HeaderPacket_t * header = (ANT_HeaderPacket_t *)buf;
+            ctx->header = _allocate_header_rx(header);
+            ctx->payload = _allocate_payload_rx(header);
         }
     }
     return ret;
@@ -328,7 +326,7 @@ static void
 _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
     uint32_t ret;
-    ChannelContext_t * ctx = &self.channel_ctx[*channel];
+    ChannelContext_t * ctx = &self.tx_channel_ctx[*channel];
     if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
         PRINTS("FIN\r\n");
         _free_context(ctx);
@@ -355,8 +353,8 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             PRINT_HEX(&transmit_type, sizeof(transmit_type));
         }
     }
-    ChannelContext_t * ctx = &self.channel_ctx[*channel];
-    MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
+    ChannelContext_t * ctx = &self.rx_channel_ctx[*channel];
+    MSG_Data_t * ret = _assemble_rx(*channel, ctx, rx_payload, buf_size);
     if(ret){
         PRINTS("GOT A NEw MESSAGE OMFG\r\n");
         MSG_Base_ReleaseDataAtomic(ret);
@@ -395,6 +393,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 PRINTS("claiming profile");
                 return SUCCESS;
         }
+    }else{
+        uint8_t channel = dst.submodule - 1;
+
     }
 }
 
