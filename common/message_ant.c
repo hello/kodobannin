@@ -5,6 +5,7 @@
 #include "message_ant.h"
 #include "util.h"
 #include "app.h"
+#include "crc16.h"
 
 #define NUM_ANT_CHANNELS 8
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
@@ -76,15 +77,12 @@ _free_context(ChannelContext_t * ctx){
 }
 static uint16_t
 _calc_checksum(MSG_Data_t * data){
-    uint32_t i;
-    uint32_t xorcrc = 0;
-    for(i = 0; i < data->len; i++){
-        xorcrc += data->buf[i];
-    }
+    uint16_t ret;
+    ret = crc16_compute(data->buf, data->len, NULL);
     PRINTS("CS: ");
-    PRINT_HEX(&xorcrc,2);
+    PRINT_HEX(&ret,2);
     PRINTS("\r\n");
-    return (uint16_t)(xorcrc);
+    return ret;
 }
 static MSG_Status
 _connect(uint8_t channel, const ANT_ChannelID_t * id){
