@@ -82,7 +82,6 @@ _calc_checksum(MSG_Data_t * data){
     PRINTS("CS: ");
     PRINT_HEX(&ret,2);
     PRINTS("\r\n");
-    return ret;
 }
 static MSG_Status
 _connect(uint8_t channel, const ANT_ChannelID_t * id){
@@ -170,7 +169,7 @@ _set_discovery_mode(uint8_t role){
                 self.channel_ctx[0].payload = MSG_Base_AllocateStringAtomic("HelloWorld");
                 self.channel_ctx[0].header = _make_header_tx(self.channel_ctx[0].payload);
                 self.channel_ctx[0].idx = 0;
-                self.channel_ctx[0].count = 199;
+                self.channel_ctx[0].count = 10;
             }
             break;
         default:
@@ -327,22 +326,13 @@ _assemble_tx(ChannelContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
 
 static void
 _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
-    uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {1,2,3,4,5,6,7,8};
+    uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
     uint32_t ret;
-    if(*channel == ANT_DISCOVERY_CHANNEL){
-        /*
-         **((uint16_t*)message) = (uint16_t)0x5354;
-         *message[7]++;
-         */
-        ChannelContext_t * ctx = &self.channel_ctx[*channel];
-        if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
-            PRINTS("FIN\r\n");
-        }
-    }else{
-        ChannelContext_t * ctx = &self.channel_ctx[*channel];
-        if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
-            PRINTS("FIN\r\n");
-        }
+    ChannelContext_t * ctx = &self.channel_ctx[*channel];
+    if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
+        PRINTS("FIN\r\n");
+        _free_context(ctx);
+        _destroy_channel(*channel);
     }
     ret = sd_ant_broadcast_message_tx(0,sizeof(message), message);
 }
@@ -352,7 +342,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
     PRINT_HEX(rx_payload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
     if(*channel == ANT_DISCOVERY_CHANNEL){
-        //discovery mode channel
+        //sample code for discoverying id
         uint16_t dev_id;
         uint8_t dev_type;
         uint8_t transmit_type;
@@ -364,21 +354,12 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             PRINTS(" | ");
             PRINT_HEX(&transmit_type, sizeof(transmit_type));
         }
-        //allocate channel, configure it as slave, then open...
-        ChannelContext_t * ctx = &self.channel_ctx[*channel];
-        MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
-        if(ret){
-            PRINTS("GOT A NEw MESSAGE OMFG\r\n");
-            MSG_Base_ReleaseDataAtomic(ret);
-        }
-    }else{
-        //assemble context
-        ChannelContext_t * ctx = &self.channel_ctx[*channel];
-        MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
-        if(ret){
-            PRINTS("GOT A NEw MESSAGE OMFG\r\n");
-            MSG_Base_ReleaseDataAtomic(ret);
-        }
+    }
+    ChannelContext_t * ctx = &self.channel_ctx[*channel];
+    MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
+    if(ret){
+        PRINTS("GOT A NEw MESSAGE OMFG\r\n");
+        MSG_Base_ReleaseDataAtomic(ret);
     }
     PRINTS("\r\n");
 }
