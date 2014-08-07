@@ -27,6 +27,12 @@ static struct{
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
 
+/**
+ * Static declarations
+ */
+static uint16_t _calc_checksum(MSG_Data_t * data);
+static MSG_Status _destroy_channel(uint8_t channel);
+
 static MSG_Status
 _destroy_channel(uint8_t channel){
     //this destroys the channel regardless of what state its in
@@ -45,6 +51,40 @@ _get_channel_status(uint8_t channel){
     uint8_t ret;
     sd_ant_channel_status_get(channel, &ret);
     return ret;
+}
+static MSG_Data_t * INCREF
+_make_header_tx(MSG_Data_t * payload){
+    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(8);
+    if(ret){
+        ANT_HeaderPacket_t * header = ret->buf;
+        header->page  = 0;
+        header->page_count = payload->len / 6 + ( ((payload->len)%6)?1:0);
+        header->src_mod = 0;
+        header->src_submod = 0;
+        header->dst_mod = 0;
+        header->dst_submod = 0;
+        header->checksum = _calc_checksum(payload);
+    }
+    return ret;
+}
+static void DECREF
+_free_context(ChannelContext_t * ctx){
+    MSG_Base_ReleaseDataAtomic(ctx->header);
+    MSG_Base_ReleaseDataAtomic(ctx->payload);
+    ctx->header = NULL;
+    ctx->payload = NULL;
+}
+static uint16_t
+_calc_checksum(MSG_Data_t * data){
+    uint32_t i;
+    uint32_t xorcrc = 0;
+    for(i = 0; i < data->len; i++){
+        xorcrc += data->buf[i];
+    }
+    PRINTS("CS: ");
+    PRINT_HEX(&xorcrc,2);
+    PRINTS("\r\n");
+    return (uint16_t)(xorcrc);
 }
 static MSG_Status
 _connect(uint8_t channel, const ANT_ChannelID_t * id){
@@ -101,16 +141,17 @@ _set_discovery_mode(uint8_t role){
         case 0:
             //central mode
             PRINTS("SLAVE\r\n");
-            phy.period = 1092;
+     //       phy.period = 1092;
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
             _connect(ANT_DISCOVERY_CHANNEL, &id);
+            _free_context(&self.channel_ctx[0]);
             break;
         case 1:
             //peripheral mode
             //configure shit here
             PRINTS("MASTER\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
-            phy.period = 1092;
+      //      phy.period = 1092;
             //set up id
             {
                 //test only
@@ -122,8 +163,16 @@ _set_discovery_mode(uint8_t role){
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
             _connect(ANT_DISCOVERY_CHANNEL, &id);
             {
-                uint32_t to = APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER);
-                app_timer_start(self.discovery_timeout,to, NULL);
+            //    uint32_t to = APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER);
+             //   app_timer_start(self.discovery_timeout,to, NULL);
+            }
+            {
+                //test only
+                _free_context(&self.channel_ctx[0]);
+                self.channel_ctx[0].payload = MSG_Base_AllocateStringAtomic("HelloWorld");
+                self.channel_ctx[0].header = _make_header_tx(self.channel_ctx[0].payload);
+                self.channel_ctx[0].idx = 0;
+                self.channel_ctx[0].count = 199;
             }
             break;
         default:
@@ -151,8 +200,8 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
     }
 }
-static MSG_Data_t *
-_allocate_header(ANT_HeaderPacket_t * buf){
+static MSG_Data_t * INCREF
+_allocate_header_rx(ANT_HeaderPacket_t * buf){
     MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(sizeof(ANT_HeaderPacket_t));
     if(ret){
         memcpy(ret->buf, buf, sizeof(ANT_HeaderPacket_t));
@@ -169,17 +218,10 @@ _allocate_payload(ANT_HeaderPacket_t * buf){
 }
 static void INCREF
 _allocate_context(ChannelContext_t * ctx, ANT_HeaderPacket_t * header){
-    ctx->header = _allocate_header( header );
+    ctx->header = _allocate_header_rx( header );
     if(header){
         ctx->payload = _allocate_payload( header );
     }
-}
-static void DECREF
-_free_context(ChannelContext_t * ctx){
-    MSG_Base_ReleaseDataAtomic(ctx->header);
-    MSG_Base_ReleaseDataAtomic(ctx->payload);
-    ctx->header = NULL;
-    ctx->payload = NULL;
 }
 static void
 _assemble_payload(ChannelContext_t * ctx, ANT_PayloadPacket_t * packet){
@@ -197,6 +239,12 @@ _assemble_payload(ChannelContext_t * ctx, ANT_PayloadPacket_t * packet){
 }
 static uint8_t
 _integrity_check(ChannelContext_t * ctx){
+    if(ctx->header && ctx->payload){
+        ANT_HeaderPacket_t * cmp = ctx->header->buf;
+        if(_calc_checksum(ctx->payload) == cmp->checksum){
+            return 1;
+        }
+    }
     return 0;
 }
 static uint8_t
@@ -212,24 +260,31 @@ static MSG_Data_t *
 _assemble_rx(ChannelContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
     if(ctx->header){
+        PRINTS("H");
         //header already exist
         if(buf[0] == 0){
+            PRINTS("header");
             uint8_t _message_complete = _integrity_check(ctx);
-            uint8_t _new_message = _new_message_check(ctx, (ANT_HeaderPacket_t *)buf);
+            //uint8_t _new_message = _new_message_check(ctx, (ANT_HeaderPacket_t *)buf);
             if(_message_complete){
+                PRINTS("Complete\r\n");
                 ret = ctx->payload;
                 MSG_Base_AcquireDataAtomic(ret);
                 _free_context(ctx);
             }
-            if(_new_message){
-                _free_context(ctx);
-                _allocate_context(ctx, (ANT_HeaderPacket_t *)buf);
-            }
+            /*
+             *if(_new_message){
+             *    PRINTS("A New Message was found\r\n");
+             *    _free_context(ctx);
+             *    _allocate_context(ctx, (ANT_HeaderPacket_t *)buf);
+             *}
+             */
         }else{
             //payload packet
             _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
         }
     }else{
+        PRINTS("NH");
         //header does not exist
         //payload packets are ignored for simplicity
         if(buf[0] == 0){ 
@@ -253,11 +308,13 @@ _assemble_tx(ChannelContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
         }else{
             uint16_t offset = (ctx->idx - 1) * 6;
             int i;
+            out_buf[0] = ctx->idx;
+            out_buf[1] = header->page_count;
             for(i = 0; i < 6; i++){
                 if( offset + i < ctx->payload->len ){
-                    out_buf[i] = ctx->payload->buf[offset+i];
+                    out_buf[2+i] = ctx->payload->buf[offset+i];
                 }else{
-                    out_buf[i] = 0;
+                    out_buf[2+i] = 0;
                 }
             }
         }
@@ -275,8 +332,14 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {1,2,3,4,5,6,7,8};
     uint32_t ret;
     if(*channel == ANT_DISCOVERY_CHANNEL){
-        *((uint16_t*)message) = (uint16_t)0x5354;
-        message[7]++;
+        /*
+         **((uint16_t*)message) = (uint16_t)0x5354;
+         *message[7]++;
+         */
+        ChannelContext_t * ctx = &self.channel_ctx[*channel];
+        if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
+            PRINTS("FIN\r\n");
+        }
     }else{
         ChannelContext_t * ctx = &self.channel_ctx[*channel];
         if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
@@ -288,7 +351,8 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
 static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
-    PRINT_HEX(msg->ANT_MESSAGE_aucPayload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
+    uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
+    PRINT_HEX(rx_payload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
     if(*channel == ANT_DISCOVERY_CHANNEL){
         //discovery mode channel
         uint16_t dev_id;
@@ -303,10 +367,16 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             PRINT_HEX(&transmit_type, sizeof(transmit_type));
         }
         //allocate channel, configure it as slave, then open...
+        ChannelContext_t * ctx = &self.channel_ctx[*channel];
+        MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
+        if(ret){
+            PRINTS("GOT A NEw MESSAGE OMFG\r\n");
+            MSG_Base_ReleaseDataAtomic(ret);
+        }
     }else{
         //assemble context
         ChannelContext_t * ctx = &self.channel_ctx[*channel];
-        MSG_Data_t * ret = _assemble_rx(ctx, buf, buf_size);
+        MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
         if(ret){
             PRINTS("GOT A NEw MESSAGE OMFG\r\n");
             MSG_Base_ReleaseDataAtomic(ret);
@@ -331,7 +401,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         return FAIL;
     }
     if(dst.submodule == 0){
-        MSG_ANTCommand_t * antcmd = data->buf;
+        MSG_ANTCommand_t * antcmd = (MSG_ANTCommand_t*)data->buf;
         switch(antcmd->cmd){
             default:
             case ANT_PING:
@@ -339,10 +409,12 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 break;
             case ANT_SET_ROLE:
                 PRINTS("ANT_SET_ROLE\r\n");
+                PRINT_HEX(&antcmd->param.role, 1);
                 return _set_discovery_mode(antcmd->param.role);
             case ANT_SET_DISCOVERY_PROFILE:
-                self.profile = antcmd->param.profile;
+//                self.profile = antcmd->param.profile;
                 PRINTS("claiming profile");
+                return SUCCESS;
         }
     }
 }

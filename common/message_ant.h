@@ -77,7 +77,7 @@ typedef struct{
     }cmd;
     union{
         uint8_t role;
-        ANT_DiscoveryProfile_t profile;
+        //ANT_DiscoveryProfile_t profile;
     }param;
 }MSG_ANTCommand_t;
 
