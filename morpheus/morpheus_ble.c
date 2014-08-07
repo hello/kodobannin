@@ -1,5 +1,5 @@
 // vi:noet:sw=4 ts=4
-
+#include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -20,10 +20,22 @@
 #include "nrf.h"
 #include "morpheus_ble.h"
 
+#ifdef DEBUG_SERIAL
+#define PB_NO_ERRMSG
+#endif
+
+#include "pb_decode.h"
+#include "pb_encode.h"
+#include "morpheus_ble.pb.h"
+
 extern uint8_t hello_type;
 
 static uint16_t _morpheus_service_handle;
 static MSG_Central_t * central; 
+static uint8_t _protobuf_buffer[256];
+static uint8_t _end_seq;
+static uint8_t _seq_expected;
+static uint16_t _protobuf_len;
 
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
@@ -35,6 +47,95 @@ static void
 _data_send_finished()
 {
 	PRINTS("DONE!");
+}
+
+static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
+{
+	if(header_packet->sequence_number != 0)
+	{
+		PRINTS("Not the first packet\r\n");
+		APP_OK(0);
+	}
+
+	if(18 + (header_packet->header.packet_count - 1) * 19 <= sizeof(_protobuf_buffer))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+static void _on_packet_arrival(void* event_data, uint16_t event_size){
+	struct hlo_ble_packet* ble_packet = (struct hlo_ble_packet*)event_data;
+	if(ble_packet->sequence_number == 0)
+	{
+		_protobuf_len = event_size - 2;   // seq# + total#, 2 bytes
+		memcpy(_protobuf_buffer, ble_packet->header.data, event_size - 2);  // seq# + total#, 2 bytes
+		_end_seq = ble_packet->sequence_number + ble_packet->header.packet_count - 1;
+	}else{
+		memcpy(&_protobuf_buffer[_protobuf_len], ble_packet->body.data, event_size - 1);
+
+		// update the offset
+		_protobuf_len += event_size - 1;
+		if(ble_packet->sequence_number == _end_seq)
+		{
+			MorpheusCommand command;
+			pb_istream_t stream = pb_istream_from_buffer(_protobuf_buffer, _protobuf_len);
+	        bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
+	        
+	        if (!status)
+	        {
+	            PRINTS("Decoding protobuf failed, error: ");
+	            PRINTS(PB_GET_ERROR(&stream));
+	            PRINTS("\r\n");
+	            return;
+	        }
+
+			switch(command.type)
+			{
+				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
+					hble_advertising_start(true);
+					break;
+				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+					hble_advertising_start(false);
+					break;
+				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+					break;
+				default:
+					break;
+			}
+			
+
+		}
+	}
+	
+}
+
+
+static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
+{
+	struct hlo_ble_packet* ble_packet = (struct hlo_ble_packet*)event->data;
+	if(ble_packet->sequence_number != _seq_expected){
+		return;
+	}
+
+	if(ble_packet->sequence_number == 0)
+	{
+		if(!_is_valid_protobuf(ble_packet))
+		{
+			PRINTS("Protobuf toooooo large!\r\n");
+			return;
+		}
+	}
+
+	
+	_seq_expected = ble_packet->sequence_number + 1;
+
+	if(_end_seq < _seq_expected)
+	{
+		_seq_expected = 0;
+	}
+	app_sched_event_put(event->data, event->len, _on_packet_arrival);
 }
 
 static void _command_write_handler(ble_gatts_evt_write_t* event)
@@ -78,6 +179,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
  */
 
 	struct morpheus_command* command = (struct morpheus_command*)event->data;
+	
 	switch(command->command)
 	{
 		case MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
@@ -86,7 +188,24 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 		case MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
 			hble_advertising_start(false);
 			break;
+		case MORPHEUS_COMMAND_START_WIFISCAN:
+			
+			break;
+		case MORPHEUS_COMMAND_STOP_WIFISCAN:
+			
+			break;
+		default:
+			break;
 	}
+	
+
+}
+
+void morpheus_ble_transmission_layer_init()
+{
+	_seq_expected = 0;
+	_end_seq = 0;
+	_protobuf_len = 0;
 }
 
 
@@ -103,6 +222,11 @@ void morpheus_ble_services_init(void)
 
         hlo_ble_char_write_request_add(0xDEED, &_command_write_handler, sizeof(struct morpheus_command));
         hlo_ble_char_notify_add(0xD00D);
+
+        hlo_ble_char_write_request_add(0xBEEB, &_protobuf_command_write_handler, sizeof(struct hlo_ble_packet));
+        hlo_ble_char_notify_add(0xB00B);
+
+        hlo_ble_char_notify_add(0xFEE1);
         
         hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
     }

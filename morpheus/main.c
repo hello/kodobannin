@@ -73,14 +73,18 @@ void _start()
 	morpheus_load_modules();
 
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
+
     hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
+    morpheus_ble_transmission_layer_init();
+    
 #ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
 #endif
     hble_params_init(device_name);
     hlo_ble_init();
     morpheus_ble_services_init();
-    PRINTS("morpheus_ble_init() done\r\n");
+
+    PRINTS("morpheus ble init() done\r\n");
 
     ble_uuid_t service_uuid = {
         .type = hello_type,

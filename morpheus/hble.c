@@ -195,7 +195,7 @@ void hble_advertising_start(bool pairing_mode)
 
 #ifdef BONDING_REQUIRED
 
-    if(!pairing_mode)                
+    if(pairing_mode)                
     {
         uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_IND; 
         adv_params.type = adv_mode;
