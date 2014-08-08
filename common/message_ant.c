@@ -66,10 +66,14 @@ _allocate_header_tx(MSG_Data_t * payload){
         ANT_HeaderPacket_t * header = ret->buf;
         header->page  = 0;
         header->page_count = payload->len / 6 + ( ((payload->len)%6)?1:0);
-        header->src_mod = 0;
-        header->src_submod = 0;
-        header->dst_mod = 0;
-        header->dst_submod = 0;
+        /*
+         *header->src_mod = 0;
+         *header->src_submod = 0;
+         */
+        /*
+         *header->dst_mod = 0;
+         *header->dst_submod = 0;
+         */
         header->checksum = _calc_checksum(payload);
     }
     return ret;
@@ -191,7 +195,7 @@ _set_discovery_mode(uint8_t role){
                 self.tx_channel_ctx[0].payload = MSG_Base_AllocateStringAtomic("HelloWorld");
                 self.tx_channel_ctx[0].header = _allocate_header_tx(self.tx_channel_ctx[0].payload);
                 self.tx_channel_ctx[0].idx = 0;
-                self.tx_channel_ctx[0].count = 10;
+                self.tx_channel_ctx[0].count = 199;
             }
             break;
         default:
