@@ -176,7 +176,7 @@ _set_discovery_mode(uint8_t role){
         case 0:
             //central mode
             PRINTS("SLAVE\r\n");
-     //       phy.period = 1092;
+            phy.period = 1092;
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
             _connect(ANT_DISCOVERY_CHANNEL, &id);
             _free_context(&self.rx_channel_ctx[0]);
@@ -186,12 +186,11 @@ _set_discovery_mode(uint8_t role){
             //configure shit here
             PRINTS("MASTER\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
-      //      phy.period = 1092;
+            phy.period = 1092;
             //set up id
             {
                 //test only
-                //id.transmit_type = ANT_TRANS_TYPE_2_BYTE_SHARED_ADDRESS;
-                id.transmit_type = 3;
+                id.transmit_type = 0;
                 id.device_type = 1;
                 id.device_number = 0x5354;
             }
@@ -199,15 +198,7 @@ _set_discovery_mode(uint8_t role){
             _connect(ANT_DISCOVERY_CHANNEL, &id);
             {
             //    uint32_t to = APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER);
-             //   app_timer_start(self.discovery_timeout,to, NULL);
-            }
-            {
-                //test only
-                _free_context(&self.tx_channel_ctx[0]);
-                self.tx_channel_ctx[0].payload = MSG_Base_AllocateStringAtomic("HelloWorld");
-                self.tx_channel_ctx[0].header = _allocate_header_tx(self.tx_channel_ctx[0].payload);
-                self.tx_channel_ctx[0].idx = 0;
-                self.tx_channel_ctx[0].count = 199;
+            //   app_timer_start(self.discovery_timeout,to, NULL);
             }
             break;
         default:
@@ -289,6 +280,8 @@ _assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t bu
             dst = (MSG_Address_t){UART, 1};
             //then dispatch to uart for printout
             self.parent->dispatch(src, dst, ctx->payload);
+            ret = ctx->payload;
+            MSG_Base_AcquireDataAtomic(ret);
             _free_context(ctx);
         }else{
             //Repeated Message
@@ -332,7 +325,7 @@ _assemble_tx(ChannelContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
         }
         if(++ctx->idx > header->page_count){
             ctx->idx = 0;
-            //ctx->count--;
+            ctx->count--;
         }
     }
     return 1;
@@ -355,7 +348,7 @@ static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
-    PRINT_HEX(rx_payload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
+    //PRINT_HEX(rx_payload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
     if(*channel == ANT_DISCOVERY_CHANNEL){
         //sample code for discoverying id
         uint16_t dev_id;
@@ -376,7 +369,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         PRINTS("GOT A NEw MESSAGE OMFG\r\n");
         MSG_Base_ReleaseDataAtomic(ret);
     }
-    PRINTS("\r\n");
+    //PRINTS("\r\n");
 }
 
 
@@ -412,6 +405,25 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         }
     }else{
         uint8_t channel = dst.submodule - 1;
+        ChannelContext_t * ctx = &self.tx_channel_ctx[channel];
+        if(!ctx->header && !ctx->payload){
+            //channel is ready to transmit
+            ctx->payload = data;
+            ctx->header = _allocate_header_tx(ctx->payload);
+            ctx->count = 9;
+            if(ctx->header){
+                ANT_ChannelID_t id = {
+                    0,1,5354
+                };
+                MSG_Base_AcquireDataAtomic(data);
+                _connect(channel, &id);
+            }else{
+                PRINTS("Header Allocation Failed\r\n");
+                _free_context(ctx);
+            }
+        }else{
+            PRINTS("CH Busy\r\n");
+        }
 
     }
 }
@@ -446,8 +458,10 @@ void ant_handler(ant_evt_t * p_ant_evt){
     uint8_t event = p_ant_evt->event;
     uint8_t ant_channel = p_ant_evt->channel;
     uint32_t * event_message_buffer = p_ant_evt->evt_buffer;
-    PRINT_HEX(&event,1);
-    PRINTS("\r\n");
+    /*
+     *PRINT_HEX(&event,1);
+     *PRINTS("\r\n");
+     */
     switch(event){
         case EVENT_RX_FAIL:
             //PRINTS("FRX\r\n");
