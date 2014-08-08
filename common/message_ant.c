@@ -70,10 +70,9 @@ _allocate_header_tx(MSG_Data_t * payload){
          *header->src_mod = 0;
          *header->src_submod = 0;
          */
-        /*
-         *header->dst_mod = 0;
-         *header->dst_submod = 0;
-         */
+        header->dst_mod = 0;
+        header->dst_submod = 0;
+        header->size = payload->len;
         header->checksum = _calc_checksum(payload);
     }
     return ret;
