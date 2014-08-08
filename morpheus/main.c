@@ -76,7 +76,7 @@ void _start()
 
     hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
     morpheus_ble_transmission_layer_init();
-    
+
 #ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
 #endif
@@ -92,7 +92,7 @@ void _start()
     };
 
     hble_advertising_init(service_uuid);
-    hble_advertising_start(false);
+    hble_advertising_start();
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

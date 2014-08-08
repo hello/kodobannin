@@ -37,6 +37,8 @@ static uint8_t _end_seq;
 static uint8_t _seq_expected;
 static uint16_t _protobuf_len;
 
+static void _morpheus_switch_mode(void* event_data, uint16_t event_size);
+
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
@@ -94,10 +96,14 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 			switch(command.type)
 			{
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-					hble_advertising_start(true);
+					
+					hble_set_advertising_mode(true);
+					hlo_ble_notify(0xB00B, _protobuf_buffer, _protobuf_len, NULL);
 					break;
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-					hble_advertising_start(false);
+					
+					hble_set_advertising_mode(false);
+					hlo_ble_notify(0xB00B, _protobuf_buffer, _protobuf_len, NULL);
 					break;
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
 					break;
@@ -183,10 +189,12 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 	switch(command->command)
 	{
 		case MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-			hble_advertising_start(true);
+			hble_set_advertising_mode(true);
+			hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
 			break;
 		case MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-			hble_advertising_start(false);
+			hble_set_advertising_mode(false);
+			hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
 			break;
 		case MORPHEUS_COMMAND_START_WIFISCAN:
 			
@@ -199,6 +207,12 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 	}
 	
 
+}
+
+static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
+{
+	hble_advertising_start(true);
+	hlo_ble_notify(0xD00D, &((struct morpheus_command*)event_data)->command, event_size, NULL);
 }
 
 void morpheus_ble_transmission_layer_init()

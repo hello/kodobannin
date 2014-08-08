@@ -6,7 +6,7 @@
 #include "morpheus_gatt.h"
 
 enum {
-    BLE_UUID_MORPHEUS_SVC = 0xEEE1,
+    BLE_UUID_MORPHEUS_SVC = 0xFEE1,
 };
 
 enum morpheus_command_type {

@@ -24,7 +24,7 @@
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 static ble_gap_sec_params_t _sec_params;
 
-static bool app_initialized = false;
+static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
 static int8_t  _last_connected_central; 
@@ -35,7 +35,7 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 #ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
-    hble_advertising_start(true);
+    hble_advertising_start();
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
@@ -43,7 +43,10 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     //static ble_gap_evt_auth_status_t _auth_status;
 
     switch(ble_evt->header.evt_id) {
-    
+    case BLE_GAP_EVT_CONNECTED:
+    // When new connection comes in, always set it back to non-pairing mode.
+        hble_set_advertising_mode(false);
+        break;
     case BLE_GAP_EVT_DISCONNECTED:
         app_sched_event_put(NULL, 0, _on_disconnect);
         break;
@@ -54,7 +57,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
-            hble_advertising_start(true);
+            hble_advertising_start();
         }
         break;
     default:
@@ -131,6 +134,11 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 }
 
 
+void hble_set_advertising_mode(bool pairing_mode)
+{
+    _pairing_mode = pairing_mode;
+}
+
 /**@brief Function for the Bond Manager initialization.
  */
 void hble_bond_manager_init()
@@ -164,6 +172,11 @@ static void _advertising_data_init(uint8_t flags){
     ble_advdata_t advdata;
     ble_advdata_t scanrsp;
     ble_uuid_t adv_uuids[] = {_service_uuid};
+
+    PRINTS("Service UUID:");
+    PRINT_HEX(&_service_uuid.uuid, sizeof(_service_uuid.uuid));
+    PRINTS("\r\n");
+
     // Build and set advertising data
     memset(&advdata, 0, sizeof(advdata));
     advdata.name_type = BLE_ADVDATA_FULL_NAME;
@@ -182,7 +195,7 @@ void hble_advertising_init(ble_uuid_t service_uuid)
     _service_uuid = service_uuid;
 }
 
-void hble_advertising_start(bool pairing_mode)
+void hble_advertising_start()
 {
     ble_gap_adv_params_t adv_params = {};
     adv_params.type = BLE_GAP_ADV_TYPE_ADV_IND;
@@ -194,33 +207,42 @@ void hble_advertising_start(bool pairing_mode)
 
 
 #ifdef BONDING_REQUIRED
-
-    if(pairing_mode)                
+    // pairing mode means no whitelist.
+    if(!_pairing_mode)                
     {
         uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_IND; 
         adv_params.type = adv_mode;
         ble_gap_whitelist_t whitelist;
-        APP_OK(ble_bondmngr_whitelist_get(&whitelist));
+        //APP_OK(ble_bondmngr_whitelist_get(&whitelist));
+        uint32_t err_code = ble_bondmngr_whitelist_get(&whitelist);
         
-        
-        if (whitelist.addr_count != 0 || whitelist.irk_count != 0)
+        if(err_code == NRF_SUCCESS)
         {
-            adv_params.p_whitelist = &whitelist;
-            adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
-            flags = BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED;
+            if (whitelist.addr_count != 0 || whitelist.irk_count != 0)
+            {
+                adv_params.p_whitelist = &whitelist;
+                adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
+                flags = BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED;
 
-            PRINTS("whitelist retrieved. Advertising in pairing mode.\r\n");
+                PRINTS("whitelist retrieved. Advertising in normal mode.\r\n");
+            }else{
+                flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just make it clear what we want to do.
+                PRINTS("NO whitelist retrieved. Advertising in pairing mode.\r\n");
+            }
         }else{
-            flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just make it clear what we want to do.
-            PRINTS("NO whitelist retrieved. Advertising in normal mode.\r\n");
+            PRINTS("get whitelist error: ");
+            PRINT_HEX(&err_code, sizeof(err_code));
+            PRINTS("\r\n");
+            flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
         }
+
+        APP_OK(err_code);
         
     }
     else
     {
         flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just to make things clear
-        app_initialized = true;
-        PRINTS("Advertising in normal mode.\r\n");
+        PRINTS("Advertising in pairing mode.\r\n");
     }
 #endif
 
