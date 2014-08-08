@@ -103,11 +103,19 @@ _calc_checksum(MSG_Data_t * data){
 }
 static MSG_Data_t *
 _allocate_payload_rx(ANT_HeaderPacket_t * buf){
-    uint32_t ret;
+    MSG_Data_t * ret;
     PRINTS("Pages: ");
     PRINT_HEX(&buf->page_count, 1);
     PRINTS("\r\n");
-    return MSG_Base_AllocateDataAtomic( 6 * buf->page_count );
+    ret = MSG_Base_AllocateDataAtomic( 6 * buf->page_count );
+    if(ret){
+        //need to readjust checksum
+        uint16_t ss = ((uint8_t*)buf)[4] + ((uint8_t*)buf)[5] << 8;
+        PRINT_HEX(&ss, 2);
+        ret->len = ss;
+    }
+    return ret;
+    //return MSG_Base_AllocateDataAtomic( buf->size );
 }
 static MSG_Status
 _connect(uint8_t channel, const ANT_ChannelID_t * id){
