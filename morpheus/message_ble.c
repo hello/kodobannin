@@ -45,7 +45,7 @@ static MSG_Status _flush(void){
 }
 
 static void _on_hlo_notify_completed(const void* data_sent, void* tag){
-	MSG_Base_AcquireDataAtomic((MSG_Data_t*)tag);
+	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)tag);
 }
 
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
