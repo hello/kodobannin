@@ -290,10 +290,9 @@ _assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t bu
             dst = (MSG_Address_t){UART, 1};
             //then dispatch to uart for printout
             self.parent->dispatch(src, dst, ctx->payload);
-            PRINTS("Complete\r\n");
             _free_context(ctx);
         }else{
-            PRINTS("Repeated Message, Ignore \r\n");
+            //Repeated Message
         }
     }else if(buf[0] <= buf[1] && buf[1] > 0){
         if(ctx->header){
