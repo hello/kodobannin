@@ -20,7 +20,8 @@ enum {
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
- #define BONDING_REQUIRED
+#define BONDING_REQUIRED
+#define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D
 
 /*
  * BLE Connection Parameters

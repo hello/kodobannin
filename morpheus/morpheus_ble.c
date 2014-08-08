@@ -8,6 +8,7 @@
 #include <ble_srv_common.h>
 #include <ble_advdata.h>
 
+#include "app.h"
 #include "platform.h"
 
 #include "hlo_ble_time.h"
@@ -37,7 +38,8 @@ static uint8_t _end_seq;
 static uint8_t _seq_expected;
 static uint16_t _protobuf_len;
 
-static void _morpheus_switch_mode(void* event_data, uint16_t event_size);
+static void _morpheus_switch_mode(void*, uint16_t);
+static void _led_pairing_mode(void);
 
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
@@ -99,11 +101,13 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 					
 					hble_set_advertising_mode(true);
 					hlo_ble_notify(0xB00B, _protobuf_buffer, _protobuf_len, NULL);
+					_led_pairing_mode();
 					break;
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
 					
 					hble_set_advertising_mode(false);
 					hlo_ble_notify(0xB00B, _protobuf_buffer, _protobuf_len, NULL);
+					_led_pairing_mode();
 					break;
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
 					break;
@@ -146,55 +150,17 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 
 static void _command_write_handler(ble_gatts_evt_write_t* event)
 {
-/*
- *    struct pill_command* command = (struct pill_command*)event->data;
- *
- *    switch(command->command) {
- *    case PILL_COMMAND_STOP_ACCELEROMETER:
- *        imu_set_wom_callback(NULL);
- *        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
- *        break;
- *    case PILL_COMMAND_START_ACCELEROMETER:
- *        imu_set_wom_callback(_imu_wom_callback);
- *        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
- *        break;
- *    case PILL_COMMAND_CALIBRATE:
- *        imu_calibrate_zero();
- *        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
- *        break;
- *    case PILL_COMMAND_DISCONNECT:
- *        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
- *        break;
- *    case PILL_COMMAND_SEND_DATA:
- *        hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
- *        break;
- *    case PILL_COMMAND_GET_TIME:
- *            {
- *                uint64_t mtime;
- *                if(!MSG_Time_GetMonotonicTime(&mtime)){
- *                    hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, &mtime, sizeof(mtime), NULL);
- *                }
- *            }
- *            break;
- *    case PILL_COMMAND_SET_TIME:
- *        {
- *            MSG_SEND(central,TIME,TIME_SYNC,&command->set_time.bytes, sizeof(struct hlo_ble_time));
- *            break;
- *        }
- *    };
- */
-
 	struct morpheus_command* command = (struct morpheus_command*)event->data;
-	
+	bool pairing_mode = false;
 	switch(command->command)
 	{
 		case MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-			hble_set_advertising_mode(true);
-			hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+			pairing_mode = true;
+			app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
 			break;
 		case MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-			hble_set_advertising_mode(false);
-			hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+			pairing_mode = false;
+			app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
 			break;
 		case MORPHEUS_COMMAND_START_WIFISCAN:
 			
@@ -209,10 +175,39 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 
 }
 
+static void _led_pairing_mode(void)
+{
+	// TODO: Notify the led
+}
+
 static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 {
-	hble_advertising_start(true);
+	bool* mode = (bool*)event_data;
+	hble_set_advertising_mode(*mode);
+#ifdef PROTO_REPLY
+	uint8_t reply_proto_buffer[20];
+	MorpheusCommand command;
+	command.type = (*mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
+		MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
+	command.version = 0;
+	pb_ostream_t stream = pb_ostream_from_buffer(reply_proto_buffer, sizeof(reply_proto_buffer));
+	bool status = pb_encode(&stream, MorpheusCommand_fields, &command);
+    size_t protobuf_len = stream.bytes_written;
+    if(status)
+    {
+		hlo_ble_notify(0xD00D, reply_proto_buffer, protobuf_len, NULL);
+		_led_pairing_mode();
+	}else{
+		PRINTS("encode protobuf failed: ");
+		PRINTS(PB_GET_ERROR(&stream));
+		PRINTS("\r\n");
+	}
+
+#else
+	PRINTS("reply with raw memory layout\r\n");
 	hlo_ble_notify(0xD00D, &((struct morpheus_command*)event_data)->command, event_size, NULL);
+	_led_pairing_mode();
+#endif
 }
 
 void morpheus_ble_transmission_layer_init()

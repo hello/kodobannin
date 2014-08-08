@@ -28,7 +28,7 @@ struct morpheus_command
 {
     enum morpheus_command_type command;
     union {
-        struct hlo_ble_packet payload;   // Now the command format is [command_type][optional: [seq#][optional:total][data] ]
+        struct hlo_ble_time set_time;
     };
 } __attribute__((packed));
 
