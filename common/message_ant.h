@@ -23,6 +23,7 @@
  *    - In case of master, receiving an invalid checksum will result in loss packet.  
  *    - Further protocol are user defined
  */
+
 typedef struct{
     uint8_t page;
     uint8_t page_count;

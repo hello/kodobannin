@@ -25,5 +25,6 @@ typedef enum{
 #ifdef ANT_ENABLE
 #include <ant_stack_handler_types.h>
 void ant_handler(ant_evt_t * p_ant_evt);
+#define NUM_ANT_CHANNELS 2
 #endif
 

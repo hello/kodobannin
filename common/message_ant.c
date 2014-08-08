@@ -7,7 +7,6 @@
 #include "app.h"
 #include "crc16.h"
 
-#define NUM_ANT_CHANNELS 8
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
 
 typedef struct{
