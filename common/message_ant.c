@@ -110,9 +110,12 @@ _allocate_payload_rx(ANT_HeaderPacket_t * buf){
     ret = MSG_Base_AllocateDataAtomic( 6 * buf->page_count );
     if(ret){
         //need to readjust checksum
-        uint16_t ss = ((uint8_t*)buf)[4] + ((uint8_t*)buf)[5] << 8;
-        PRINT_HEX(&ss, 2);
+        //uint16_t ss = ((uint8_t*)buf)[4] + ((uint8_t*)buf)[5] << 8;
+        uint16_t ss = ((uint8_t*)buf)[5] << 8;
+        ss += ((uint8_t*)buf)[4];
         ret->len = ss;
+        PRINTS("OBJ LEN\r\n");
+        PRINT_HEX(&ret->len, 2);
     }
     return ret;
     //return MSG_Base_AllocateDataAtomic( buf->size );
@@ -245,6 +248,11 @@ _assemble_payload(ChannelContext_t * ctx, ANT_PayloadPacket_t * packet){
         ctx->payload->buf[offset + 4] = packet->payload[4];
         ctx->payload->buf[offset + 5] = packet->payload[5];
     }
+//    PRINT_HEX(&ctx->payload->buf, ctx->payload->len);
+    PRINTS("LEN: | ");
+    PRINT_HEX(&ctx->payload->len, sizeof(ctx->payload->len));
+    PRINTS(" |");
+    PRINTS("\r\n");
 
 }
 static uint8_t
@@ -327,7 +335,7 @@ _assemble_tx(ChannelContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
         }
         if(++ctx->idx > header->page_count){
             ctx->idx = 0;
-            ctx->count--;
+            //ctx->count--;
         }
     }
     return 1;
