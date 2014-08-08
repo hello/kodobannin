@@ -44,13 +44,16 @@ static MSG_Status _flush(void){
     return SUCCESS;
 }
 
+static void _on_hlo_notify_completed(const void* data_sent, void* tag){
+	MSG_Base_AcquireDataAtomic((MSG_Data_t*)tag);
+}
+
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
     if(dst.submodule == 0){
     	// If we send things more than 1 packet, we might get fucked here.
-    	memset(_buffer, 0, sizeof(_buffer));
-    	memcpy(_buffer, data, data->len);
+    	MSG_Base_AcquireDataAtomic(data);
 		// protobuf, dump the thing straight back?
-		hlo_ble_notify(0xB00B, _buffer, data->len, NULL);
+		hlo_ble_notify(0xB00B, data->buf, data->len, _on_hlo_notify_completed, data);
     }
 }
 

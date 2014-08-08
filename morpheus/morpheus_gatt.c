@@ -30,6 +30,7 @@ struct hlo_ble_notify_context {
 	uint8_t last_len; // You have it!
 
     hlo_ble_notify_callback callback;
+    void* callback_data;
 };
 
 static struct hlo_ble_notify_context _notify_context;
@@ -197,8 +198,7 @@ _dispatch_write(ble_evt_t *event) {
     DEBUG("Couldn't locate write handler for handle: ", handle);
 }
 
-static bool
-_dispatch_packet(struct hlo_ble_packet * t){
+static bool _dispatch_packet(struct hlo_ble_packet * t){
 	uint16_t mlen = (t->sequence_number == _notify_context.total - 1 ? _notify_context.last_len : 20);
 	ble_gatts_hvx_params_t hvx_params = {
 		.handle = _notify_context.characteristic_handle,
@@ -213,6 +213,10 @@ _dispatch_packet(struct hlo_ble_packet * t){
 	switch(err){
 		case NRF_SUCCESS:
 			PRINTS("@");
+			if(t->sequence_number == _notify_context.total - 1 && _notify_context.callback)
+			{
+				_notify_context.callback(_notify_context.orig, _notify_context.callback_data);
+			}
 			return true;
 			break;
 		default:
@@ -233,8 +237,7 @@ _rem(const uint8_t * src, const uint8_t * dest){
 }
 
 //this function is not reentrant!!111
-static struct hlo_ble_packet *
-_make_packet(void){
+static struct hlo_ble_packet * _make_packet(void){
 	static struct hlo_ble_packet packet;
 	if(_notify_context.current > _notify_context.end){
 		return NULL;
@@ -269,14 +272,14 @@ static inline uint8_t _last_packet_len(uint16_t length){
 	return length <= 18 ? (length + 2) : (remain == 0 ? 20 : remain + 1);
 }
 
-void
-hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback)
+void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback, void* tag)
 {
 	if(length == 0) return;
     _notify_context = (struct hlo_ble_notify_context) {
         .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
         .seq = 0,
         .callback = callback,
+        .callback_data = tag,
 		.orig = data,
 		.current = data,
 		.end = (data + length - 1),

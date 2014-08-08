@@ -45,7 +45,7 @@ struct morpheus_command
         struct hlo_ble_time set_time;
         struct wifi_endpoint scan_result;
         uint8_t device_id[6]; // this is the mac address
-    };
+    } __attribute__((packed));
 } __attribute__((packed));
 
 

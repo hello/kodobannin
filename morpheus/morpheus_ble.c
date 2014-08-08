@@ -95,12 +95,16 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 			switch(command.type)
 			{
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-					pairing_mode = true;
+				{
+					bool pairing_mode = true;
 					app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
+				}
 					break;
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-					pairing_mode = false;
+				{
+					bool pairing_mode = false;
 					app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
+				}
 					break;
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
 					break;
@@ -192,7 +196,7 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
     size_t protobuf_len = stream.bytes_written;
     if(status)
     {
-		hlo_ble_notify(0xB00B, reply_proto_buffer, protobuf_len, NULL);
+		hlo_ble_notify(0xB00B, reply_proto_buffer, protobuf_len, NULL, NULL);
 		_led_pairing_mode();
 	}else{
 		PRINTS("encode protobuf failed: ");
@@ -203,7 +207,7 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 #else
 	// raw memory layout, reply to 0xD00D
 	PRINTS("reply with raw memory layout\r\n");
-	hlo_ble_notify(0xD00D, &((struct morpheus_command*)event_data)->command, event_size, NULL);
+	hlo_ble_notify(0xD00D, &((struct morpheus_command*)event_data)->command, event_size, NULL, NULL);
 	_led_pairing_mode();
 #endif
 }
