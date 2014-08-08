@@ -267,15 +267,6 @@ _integrity_check(ChannelContext_t * ctx){
     }
     return 0;
 }
-static uint8_t
-_new_message_check(ChannelContext_t * ctx, ANT_HeaderPacket_t * packet){
-    ANT_HeaderPacket_t * cmp = (ANT_HeaderPacket_t*)ctx->header->buf;
-    if(cmp->checksum == packet->checksum){
-        return 0;
-    }else{
-        return 1;
-    }
-}
 static MSG_Data_t * 
 _assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
