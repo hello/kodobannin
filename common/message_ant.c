@@ -14,7 +14,10 @@ typedef struct{
     MSG_Data_t * header;
     MSG_Data_t * payload;
     uint16_t idx;
-    uint16_t count;
+    union{
+        uint16_t count;
+        uint16_t prev_crc;
+    };
 }ChannelContext_t;
 
 static struct{
@@ -109,8 +112,8 @@ _allocate_payload_rx(ANT_HeaderPacket_t * buf){
     PRINTS("\r\n");
     ret = MSG_Base_AllocateDataAtomic( 6 * buf->page_count );
     if(ret){
-        //need to readjust checksum
-        //uint16_t ss = ((uint8_t*)buf)[4] + ((uint8_t*)buf)[5] << 8;
+        //readjusting length of the data, previously
+        //allocated in multiples of page_size to make assembly easier
         uint16_t ss = ((uint8_t*)buf)[5] << 8;
         ss += ((uint8_t*)buf)[4];
         ret->len = ss;
@@ -118,7 +121,6 @@ _allocate_payload_rx(ANT_HeaderPacket_t * buf){
         PRINT_HEX(&ret->len, 2);
     }
     return ret;
-    //return MSG_Base_AllocateDataAtomic( buf->size );
 }
 static MSG_Status
 _connect(uint8_t channel, const ANT_ChannelID_t * id){
@@ -277,34 +279,40 @@ _new_message_check(ChannelContext_t * ctx, ANT_HeaderPacket_t * packet){
 static MSG_Data_t * 
 _assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
-    if(ctx->header){
+    if(buf[0] == 0 && buf[1] > 0){
+        //scenarios
+        //either header file is a new one
+        //or header file is the old one
+        uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
         PRINTS("H");
-        if(buf[0] == 0){
-            uint8_t _message_complete = _integrity_check(ctx);
-            //uint8_t _new_message = _new_message_check(ctx, (ANT_HeaderPacket_t *)buf);
-            if(_message_complete){
-                ANT_HeaderPacket_t * header = ctx->header->buf;
-                MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
-                MSG_Address_t dst = (MSG_Address_t){header->dst_mod, header->dst_submod};
-                //first dispatch to intended mod
-                self.parent->dispatch(src, dst, ctx->payload);
-                dst = (MSG_Address_t){UART, 1};
-                //then dispatch to uart for printout
-                self.parent->dispatch(src, dst, ctx->payload);
-                PRINTS("Complete\r\n");
-                _free_context(ctx);
-            }
-        }else{
-            _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
-        }
-    }else{
-        //header does not exist
-        //payload packets are ignored for simplicity
-        if(buf[0] == 0){ 
-            ANT_HeaderPacket_t * header = (ANT_HeaderPacket_t *)buf;
+        ANT_HeaderPacket_t * header = (ANT_HeaderPacket_t *)buf;
+        if(new_crc != ctx->prev_crc){
+            _free_context(ctx);
             ctx->header = _allocate_header_rx(header);
             ctx->payload = _allocate_payload_rx(header);
+            ctx->prev_crc = new_crc;
+        }else if(_integrity_check(ctx)){
+            MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
+            MSG_Address_t dst = (MSG_Address_t){header->dst_mod, header->dst_submod};
+            //first dispatch to intended mod
+            self.parent->dispatch(src, dst, ctx->payload);
+            dst = (MSG_Address_t){UART, 1};
+            //then dispatch to uart for printout
+            self.parent->dispatch(src, dst, ctx->payload);
+            PRINTS("Complete\r\n");
+            _free_context(ctx);
+        }else{
+            PRINTS("Repeated Message, Ignore \r\n");
         }
+    }else if(buf[0] <= buf[1] && buf[1] > 0){
+        if(ctx->header){
+            _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
+        }else{
+            //here in the future create a buffer based on pages
+        }
+    }else{
+        //unknown packet, just drop everything and possibly close channel
+        _free_context(ctx);
     }
     return ret;
 }
