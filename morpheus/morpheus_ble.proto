@@ -25,4 +25,5 @@ message MorpheusCommand {
 	required int32 version = 1;
 	required CommandType type = 2;
 	optional SelectedWifiEndPoint selectedWIFIEndPoint = 3;
+	optional bytes deviceId = 4;
 }

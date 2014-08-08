@@ -23,6 +23,10 @@ enum {
 #define BONDING_REQUIRED
 #define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D
 
+#ifdef DEBUG_SERIAL
+#define PB_NO_ERRMSG
+#endif
+
 /*
  * BLE Connection Parameters
  */

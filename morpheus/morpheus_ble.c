@@ -17,13 +17,10 @@
 #include "message_sspi.h"
 #include "message_uart.h"
 #include "message_ant.h"
+#include "message_ble.h"
 
 #include "nrf.h"
 #include "morpheus_ble.h"
-
-#ifdef DEBUG_SERIAL
-#define PB_NO_ERRMSG
-#endif
 
 #include "pb_decode.h"
 #include "pb_encode.h"
@@ -184,7 +181,9 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 {
 	bool* mode = (bool*)event_data;
 	hble_set_advertising_mode(*mode);
+
 #ifdef PROTO_REPLY
+	// reply to 0xB00B
 	uint8_t reply_proto_buffer[20];
 	MorpheusCommand command;
 	command.type = (*mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
@@ -195,7 +194,7 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
     size_t protobuf_len = stream.bytes_written;
     if(status)
     {
-		hlo_ble_notify(0xD00D, reply_proto_buffer, protobuf_len, NULL);
+		hlo_ble_notify(0xB00B, reply_proto_buffer, protobuf_len, NULL);
 		_led_pairing_mode();
 	}else{
 		PRINTS("encode protobuf failed: ");
@@ -204,6 +203,7 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 	}
 
 #else
+	// raw memory layout, reply to 0xD00D
 	PRINTS("reply with raw memory layout\r\n");
 	hlo_ble_notify(0xD00D, &((struct morpheus_command*)event_data)->command, event_size, NULL);
 	_led_pairing_mode();
@@ -277,7 +277,7 @@ void morpheus_load_modules(void){
 		};
 		central->loadmod(MSG_SSPI_Base(&spi_params,central));
 #endif
-
+		central->loadmod(MSG_BLE_Base(central));
 #ifdef ANT_ENABLE
 		central->loadmod(MSG_ANT_Base(central));
 #endif

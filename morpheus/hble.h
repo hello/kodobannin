@@ -1,4 +1,8 @@
 #pragma once
+#include <nrf_sdm.h>
+#include <nrf_soc.h>
+
+#include <ble.h>
 
 typedef void(*hble_evt_handler_t)(ble_evt_t* ble_evt);
 

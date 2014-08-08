@@ -21,14 +21,30 @@ enum morpheus_command_type {
     MORPHEUS_COMMAND_START_WIFISCAN,
     MORPHEUS_COMMAND_STOP_WIFISCAN,
     MORPHEUS_COMMAND_GET_DEVICE_ID,
+    MORPHEUS_COMMAND_SET_LED,
     
 } __attribute__((packed));
+
+struct wifi_endpoint {
+    uint8_t name_len;
+    uint8_t name[1];  // char pointer
+    uint8_t mac[6];
+} __attribute__((packed));
+
+struct selected_endpoint {
+    uint16_t password_len;
+    uint8_t mac[6];
+    uint8_t password[1]; // char pointer
+} __attribute__((packed));
+
 
 struct morpheus_command
 {
     enum morpheus_command_type command;
     union {
         struct hlo_ble_time set_time;
+        struct wifi_endpoint scan_result;
+        uint8_t device_id[6]; // this is the mac address
     };
 } __attribute__((packed));
 
