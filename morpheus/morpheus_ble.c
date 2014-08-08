@@ -95,16 +95,12 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 			switch(command.type)
 			{
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-					
-					hble_set_advertising_mode(true);
-					hlo_ble_notify(0xB00B, _protobuf_buffer, _protobuf_len, NULL);
-					_led_pairing_mode();
+					pairing_mode = true;
+					app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
 					break;
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-					
-					hble_set_advertising_mode(false);
-					hlo_ble_notify(0xB00B, _protobuf_buffer, _protobuf_len, NULL);
-					_led_pairing_mode();
+					pairing_mode = false;
+					app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
 					break;
 				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
 					break;
@@ -164,6 +160,8 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 			break;
 		case MORPHEUS_COMMAND_STOP_WIFISCAN:
 			
+			break;
+		case MORPHEUS_COMMAND_GET_DEVICE_ID:
 			break;
 		default:
 			break;
