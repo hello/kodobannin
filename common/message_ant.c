@@ -99,6 +99,7 @@ _calc_checksum(MSG_Data_t * data){
     PRINTS("CS: ");
     PRINT_HEX(&ret,2);
     PRINTS("\r\n");
+    return ret;
 }
 static MSG_Data_t *
 _allocate_payload_rx(ANT_HeaderPacket_t * buf){
