@@ -72,6 +72,7 @@ BUILD_DIR = build
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard micro-ecc/*.c) \
+	$(wildcard protobuf/*.c) \
 
 NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/templates/system_nrf51.c \
@@ -105,6 +106,7 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51422/Include/ble/ble_services/ \
 	./nRF51_SDK/nrf51422/Include/app_common \
 	./nRF51_SDK/nrf51422/Include/gcc \
+	./protobuf \
 	./common \
 	./drivers \
 	./micro-ecc \
