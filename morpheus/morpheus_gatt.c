@@ -29,8 +29,7 @@ struct hlo_ble_notify_context {
 	uint8_t *end;//end of the buffer to be sent
 	uint8_t last_len; // You have it!
 
-    hlo_ble_notify_callback callback;
-    void* callback_data;
+    struct hlo_ble_operation_callbacks callback_info;
 };
 
 static struct hlo_ble_notify_context _notify_context;
@@ -213,15 +212,22 @@ static bool _dispatch_packet(struct hlo_ble_packet * t){
 	switch(err){
 		case NRF_SUCCESS:
 			PRINTS("@");
-			if(t->sequence_number == _notify_context.total - 1 && _notify_context.callback)
+			if(t->sequence_number == _notify_context.total - 1)
 			{
-				_notify_context.callback(_notify_context.orig, _notify_context.callback_data);
+				if(_notify_context.callback_info.on_succeed)
+				{
+					_notify_context.callback_info.on_succeed(_notify_context.orig, _notify_context.callback_info.callback_data);
+				}
 			}
 			return true;
 			break;
 		default:
 		case BLE_ERROR_NO_TX_BUFFERS:
 			PRINTS("ERROR");
+			if(_notify_context.callback_info.on_failed)
+			{
+				_notify_context.callback_info.on_failed(_notify_context.callback_info.callback_data);
+			}
 			return false;
 			break;
 	}
@@ -272,14 +278,13 @@ static inline uint8_t _last_packet_len(uint16_t length){
 	return length <= 18 ? (length + 2) : (remain == 0 ? 20 : remain + 1);
 }
 
-void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback, void* tag)
+void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, const struct hlo_ble_operation_callbacks* callback_info)
 {
 	if(length == 0) return;
     _notify_context = (struct hlo_ble_notify_context) {
         .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
         .seq = 0,
-        .callback = callback,
-        .callback_data = tag,
+        .callback_info = callback_info == NULL ? (struct hlo_ble_operation_callbacks){} : (*callback_info),
 		.orig = data,
 		.current = data,
 		.end = (data + length - 1),

@@ -41,6 +41,7 @@ struct selected_endpoint {
 struct morpheus_command
 {
     enum morpheus_command_type command;
+    
     union {
         struct hlo_ble_time set_time;
         struct wifi_endpoint scan_result;
