@@ -81,6 +81,8 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 		if(ble_packet->sequence_number == _end_seq)
 		{
 			MorpheusCommand command;
+			memset(&command, 0, sizeof(command));
+
 			pb_istream_t stream = pb_istream_from_buffer(_protobuf_buffer, _protobuf_len);
 	        bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
 	        
@@ -179,6 +181,16 @@ static void _led_pairing_mode(void)
 	// TODO: Notify the led
 }
 
+static void _on_notify_completed(void* data, void* data_page)
+{
+	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+}
+
+static void _on_notify_failed(void* data_page)
+{
+	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+}
+
 static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 {
 	bool* mode = (bool*)event_data;
@@ -186,28 +198,34 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 
 #ifdef PROTO_REPLY
 	// reply to 0xB00B
-	uint8_t reply_proto_buffer[20];
+	MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(20);
 	MorpheusCommand command;
+	memset(&command, 0, sizeof(command));
+	memset(data_page->buf, 0, data_page->len);
+
 	command.type = (*mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
 		MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
 	command.version = 0;
-	pb_ostream_t stream = pb_ostream_from_buffer(reply_proto_buffer, sizeof(reply_proto_buffer));
+	pb_ostream_t stream = pb_ostream_from_buffer(data_page->buf, data_page->len);
 	bool status = pb_encode(&stream, MorpheusCommand_fields, &command);
-    size_t protobuf_len = stream.bytes_written;
+    
     if(status)
     {
-		hlo_ble_notify(0xB00B, reply_proto_buffer, protobuf_len, NULL, NULL);
+    	size_t protobuf_len = stream.bytes_written;
+		hlo_ble_notify(0xB00B, data_page->buf, protobuf_len, 
+			&(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, data_page});
 		_led_pairing_mode();
 	}else{
 		PRINTS("encode protobuf failed: ");
 		PRINTS(PB_GET_ERROR(&stream));
 		PRINTS("\r\n");
+		MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 	}
 
 #else
 	// raw memory layout, reply to 0xD00D
 	PRINTS("reply with raw memory layout\r\n");
-	hlo_ble_notify(0xD00D, &((struct morpheus_command*)event_data)->command, event_size, NULL, NULL);
+	hlo_ble_notify(0xD00D, &((struct morpheus_command*)event_data)->command, event_size, NULL);
 	_led_pairing_mode();
 #endif
 }
