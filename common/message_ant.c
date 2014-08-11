@@ -178,6 +178,7 @@ _set_discovery_mode(uint8_t role){
             PRINTS("SLAVE\r\n");
             phy.period = 1092;
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
+            sd_ant_channel_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
             _connect(ANT_DISCOVERY_CHANNEL, &id);
             _free_context(&self.rx_channel_ctx[0]);
             break;
@@ -219,11 +220,13 @@ _discovery_timeout(void * ctx){
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     PRINTS("Channel Close\r\n");
-    if(*channel == ANT_DISCOVERY_CHANNEL){
+    if(*channel == ANT_DISCOVERY_CHANNEL && self.discovery_role == 0){
         PRINTS("Re-opening Channel ");
         PRINT_HEX(channel, 1);
         PRINTS("\r\n");
         MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
+    }else if(*channel == ANT_DISCOVERY_CHANNEL){
+        self.discovery_role = 0xFF;
     }
     _free_context(&self.rx_channel_ctx[*channel]);
     _free_context(&self.tx_channel_ctx[*channel]);
@@ -398,7 +401,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 PRINT_HEX(&antcmd->param.role, 1);
                 return _set_discovery_mode(antcmd->param.role);
             case ANT_SET_DISCOVERY_PROFILE:
-//                self.profile = antcmd->param.profile;
                 PRINTS("claiming profile");
                 return SUCCESS;
         }
@@ -409,7 +411,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             //channel is ready to transmit
             ctx->payload = data;
             ctx->header = _allocate_header_tx(ctx->payload);
-            ctx->count = 9;
+            ctx->count = 6;
             if(ctx->header){
                 ANT_ChannelID_t id = {
                     0,1,5354
