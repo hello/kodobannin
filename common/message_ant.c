@@ -127,7 +127,9 @@ static MSG_Status
 _connect(uint8_t channel, const ANT_ChannelID_t * id){
     //needs at least assigned
     MSG_Status ret = FAIL;
-    if(_get_channel_status(channel)){
+    uint8_t inprogress;
+    sd_ant_channel_in_progress(&inprogress);
+    if(!inprogress){
         sd_ant_channel_close(channel);
         sd_ant_channel_id_set(channel, id->device_number, id->device_type, id->transmit_type);
         if(!sd_ant_channel_open(channel)){
