@@ -1,10 +1,11 @@
 // vi:noet:sw=4 ts=4
+#include <platform.h>
 
 #include <app_timer.h>
 #include <spi.h>
 #include <simple_uart.h>
 #include <util.h>
-#include <platform.h>
+
 #include <app_error.h>
 #include <nrf_delay.h>
 #include <nrf_gpio.h>
@@ -16,6 +17,7 @@
 #include "sensor_data.h"
 #include "message_base.h"
 #include "timedfifo.h"
+#include "pill_ble.h"
 
 #include <watchdog.h>
 
@@ -914,6 +916,13 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 				{
 					tf_unit_t values[3];
 					imu_accel_reg_read((uint8_t*)values);
+
+					int16_t* p_raw_xyz = get_raw_xzy_address();
+					p_raw_xyz[0] = values[0];
+					p_raw_xyz[1] = values[1];
+					p_raw_xyz[2] = values[2];
+
+					pill_ble_stream_data(p_raw_xyz, 6);
 
 #define KG_CONVERT_FACTOR	16   // Magic number: (0xFFFF / 4000)
 					//The range of accelerometer is +/-2G, the range of representation is 16bit in IMU

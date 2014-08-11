@@ -33,6 +33,7 @@ extern uint8_t hello_type;
 
 static uint16_t _pill_service_handle;
 static MSG_Central_t * central;
+static bool _should_stream = false;
 
 
 static void
@@ -54,6 +55,15 @@ static void _reply_time(void * p_event_data, uint16_t event_size)
 	if(current_time)
 	{
 		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, current_time, sizeof(struct hlo_ble_time), NULL);
+	}
+}
+
+
+void pill_ble_stream_data(const int16_t* raw_xyz, size_t len)
+{
+	if(_should_stream)
+	{
+		hlo_ble_notify(0xFEED, raw_xyz, len, NULL);
 	}
 }
 
@@ -94,6 +104,12 @@ _command_write_handler(ble_gatts_evt_write_t* event)
 			MSG_SEND(central,TIME,TIME_SYNC,&command->set_time.bytes, sizeof(struct hlo_ble_time));
             break;
         }
+    case PILL_COMMAND_START_ACCELEROMETER:
+    	_should_stream = true;
+    	break;
+    case PILL_COMMAND_STOP_ACCELEROMETER:
+    	_should_stream = false;
+    	break;
     };
 }
 
