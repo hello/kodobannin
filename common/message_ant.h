@@ -59,23 +59,30 @@ typedef struct{
     uint16_t period;
 }ANT_ChannelPHY_t;
 
+/**
+ * Discovery profile
+ * The Peripheral device will start by sending out the following information
+ * Then the central will echo the bonding PHY information, which the peripheral can
+ * either accept by opening a channel with that info, or rejct(not opening the channel)
+ * send this directly over DISCOVERY_CHANNEL
+ */
 typedef struct{
+    uint32_t hlo_identifier;
     uint8_t hlo_hw_type;
     uint8_t hlo_hw_revision;
     uint8_t hlo_version_major;
     uint8_t hlo_version_minor;
     uint32_t UUID;//4
+    ANT_ChannelPHY_t phy;
 }ANT_DiscoveryProfile_t;
 
 typedef struct{
     enum{
         ANT_PING=0,
         ANT_SET_ROLE,//sets discovery role
-        ANT_SET_DISCOVERY_PROFILE
     }cmd;
     union{
         uint8_t role;
-        //ANT_DiscoveryProfile_t profile;
     }param;
 }MSG_ANTCommand_t;
 
