@@ -300,11 +300,8 @@ _assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t bu
 }
 static uint8_t DECREF
 _assemble_tx(ChannelContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
-    if(ctx->count == 0 && ctx->header && ctx->payload){
+    if(ctx->count == 0){
         memcpy(out_buf, ctx->header->buf, 8);
-        _free_context(ctx);
-        //get next in line
-    }else if(ctx->count == 0){
         return 0;
     }else{
         ANT_HeaderPacket_t * header = ctx->header->buf;
