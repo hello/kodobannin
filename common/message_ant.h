@@ -39,13 +39,6 @@ typedef struct{
     uint8_t payload[6];//unused payload must be set to 0
 }ANT_PayloadPacket_t;
 
-typedef struct{
-    uint8_t hlo_hw_type;
-    uint8_t hlo_hw_revision;
-    uint8_t hlo_version_major;
-    uint8_t hlo_version_minor;
-    uint32_t UUID;//4
-}ANT_DiscoveryProfile_t;
 
 typedef struct{
     uint8_t transmit_type;
@@ -67,7 +60,12 @@ typedef struct{
 }ANT_ChannelPHY_t;
 
 typedef struct{
-}ANT_Channel_t;
+    uint8_t hlo_hw_type;
+    uint8_t hlo_hw_revision;
+    uint8_t hlo_version_major;
+    uint8_t hlo_version_minor;
+    uint32_t UUID;//4
+}ANT_DiscoveryProfile_t;
 
 typedef struct{
     enum{
