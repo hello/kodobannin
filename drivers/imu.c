@@ -19,6 +19,7 @@
 #include "message_ant.h"
 
 #include <watchdog.h>
+#include "antutil.h"
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -940,16 +941,17 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 						PRINTS("NEW MAX: ");
 						PRINT_HEX(&aggregate, sizeof(aggregate));
 					}
-					{
-						uint8_t role = 1;
-						MSG_SEND(parent, ANT, ANT_SET_ROLE, &role, 1);
-											
-					}
 					MSG_Data_t * d = MSG_Base_AllocateDataAtomic(3*sizeof(tf_unit_t));
 					if(d){
 						memcpy(d->buf, values, sizeof(values));
-						parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1},d);
+						parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,2},d);
 						MSG_Base_ReleaseDataAtomic(d);
+					}
+					MSG_Data_t * e = MSG_Base_AllocateDataAtomic(sizeof(ANT_DiscoveryProfile_t));
+					if(e){
+						SET_DISCOVERY_PROFILE(e);
+						parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1},e);
+						MSG_Base_ReleaseDataAtomic(e);
 					}
 				}
 				imu_clear_interrupt_status();
