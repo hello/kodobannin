@@ -41,6 +41,8 @@ static MSG_Data_t * INCREF _allocate_header_tx(MSG_Data_t * payload);
 static MSG_Data_t * INCREF _allocate_header_rx(ANT_HeaderPacket_t * buf);
 /* Allocates payload based on receiving header packet */
 static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
+/* Debug */
+static void _print_discovery(ANT_DiscoveryProfile_t * profile);
 
 static MSG_Status
 _destroy_channel(uint8_t channel){
@@ -156,6 +158,12 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec){
     }
     return ret;
 }
+static void _print_discovery(ANT_DiscoveryProfile_t * profile){
+    PRINTS("=DISCOVERED=\r\n");
+    PRINTS("UUID = ");
+    PRINT_HEX(&profile->UUID, 4);
+    PRINTS("\r\n");
+}
 
 static MSG_Status
 _set_discovery_mode(uint8_t role){
@@ -188,19 +196,7 @@ _set_discovery_mode(uint8_t role){
             PRINTS("MASTER\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
             phy.period = 1092;
-            //set up id
-            {
-                //test only
-                id.transmit_type = 0;
-                id.device_type = 1;
-                id.device_number = 0x5354;
-            }
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
-            _connect(ANT_DISCOVERY_CHANNEL, &id);
-            {
-            //    uint32_t to = APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER);
-            //   app_timer_start(self.discovery_timeout,to, NULL);
-            }
             break;
         default:
             break;
@@ -350,25 +346,25 @@ static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
-    //PRINT_HEX(rx_payload,ANT_STANDARD_DATA_PAYLOAD_SIZE);
-    if(*channel == ANT_DISCOVERY_CHANNEL){
-        //sample code for discoverying id
-        uint16_t dev_id;
-        uint8_t dev_type;
-        uint8_t transmit_type;
-        PRINTS(" CH: ");
-        if(!sd_ant_channel_id_get(*channel, &dev_id, &dev_type, &transmit_type)){
-            PRINT_HEX(&dev_id, sizeof(dev_id));
-            PRINTS(" | ");
-            PRINT_HEX(&dev_type, sizeof(dev_type));
-            PRINTS(" | ");
-            PRINT_HEX(&transmit_type, sizeof(transmit_type));
-        }
-    }
     ChannelContext_t * ctx = &self.rx_channel_ctx[*channel];
     MSG_Data_t * ret = _assemble_rx(*channel, ctx, rx_payload, buf_size);
     if(ret){
         PRINTS("GOT A NEw MESSAGE OMFG\r\n");
+        if(*channel == ANT_DISCOVERY_CHANNEL){
+            //Discovery message
+            uint16_t dev_id;
+            uint8_t dev_type;
+            uint8_t transmit_type;
+            PRINTS(" CH: ");
+            if(!sd_ant_channel_id_get(*channel, &dev_id, &dev_type, &transmit_type)){
+                PRINT_HEX(&dev_id, sizeof(dev_id));
+                PRINTS(" | ");
+                PRINT_HEX(&dev_type, sizeof(dev_type));
+                PRINTS(" | ");
+                PRINT_HEX(&transmit_type, sizeof(transmit_type));
+            }
+            _print_discovery((ANT_DiscoveryProfile_t *)ret->buf);
+        }
         MSG_Base_ReleaseDataAtomic(ret);
     }
     //PRINTS("\r\n");
@@ -400,9 +396,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 PRINTS("ANT_SET_ROLE\r\n");
                 PRINT_HEX(&antcmd->param.role, 1);
                 return _set_discovery_mode(antcmd->param.role);
-            case ANT_SET_DISCOVERY_PROFILE:
-                PRINTS("claiming profile");
-                return SUCCESS;
         }
     }else{
         uint8_t channel = dst.submodule - 1;
@@ -411,7 +404,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             //channel is ready to transmit
             ctx->payload = data;
             ctx->header = _allocate_header_tx(ctx->payload);
-            ctx->count = 6;
+            ctx->count = channel == ANT_DISCOVERY_CHANNEL?99:6;
             if(ctx->header){
                 ANT_ChannelID_t id = {
                     0,1,5354
@@ -468,7 +461,6 @@ void ant_handler(ant_evt_t * p_ant_evt){
             //PRINTS("FRX\r\n");
             break;
         case EVENT_RX:
-            PRINTS("RX\r\n");
             _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
@@ -481,7 +473,6 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("RFFAIL\r\n");
             break;
         case EVENT_TX:
-            //PRINTS("TX\r\n");
             _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_TRANSFER_TX_FAILED:
