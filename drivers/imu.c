@@ -734,37 +734,41 @@ _imu_wom_process(void* context)
 static void
 _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-    uint8_t interrupt_status = imu_clear_interrupt_status();
+	/*
+     *uint8_t interrupt_status = imu_clear_interrupt_status();
+	 */
 
     bool known_interrupt = false;
 
-    if((interrupt_status & INT_STS_WOM_INT) && _settings.wom_callback) {
-        known_interrupt = true;
-
-        PRINTS("IMU IRQ: motion detected.\r\n");
-
-        if(!_start_motion_time) {
-            (void) app_timer_cnt_get(&_start_motion_time);
-        }
-        (void) app_timer_cnt_get(&_last_motion_time);
-
-        imu_activate();
-
-        // The _wom_timer below may already be running, but the nRF
-        // documentation for app_timer_start() specifically says "When
-        // calling this method on a timer which is already running, the
-        // second start operation will be ignored." So we're OK here.
-        APP_OK(app_timer_start(_wom_timer, IMU_COLLECTION_INTERVAL, NULL));
-    }
-
-    if((interrupt_status & INT_STS_RAW_READY) && _settings.data_ready_callback) {
-        known_interrupt = true;
-        _settings.data_ready_callback(imu_fifo_bytes_available());
-    }
-
-    if(!known_interrupt) {
-       // DEBUG("IMU IRQ unknown interrupt: ", interrupt_status);
-    }
+/*
+ *    if((interrupt_status & INT_STS_WOM_INT) && _settings.wom_callback) {
+ *        known_interrupt = true;
+ *
+ *        PRINTS("IMU IRQ: motion detected.\r\n");
+ *
+ *        if(!_start_motion_time) {
+ *            (void) app_timer_cnt_get(&_start_motion_time);
+ *        }
+ *        (void) app_timer_cnt_get(&_last_motion_time);
+ *
+ *        imu_activate();
+ *
+ *        // The _wom_timer below may already be running, but the nRF
+ *        // documentation for app_timer_start() specifically says "When
+ *        // calling this method on a timer which is already running, the
+ *        // second start operation will be ignored." So we're OK here.
+ *        APP_OK(app_timer_start(_wom_timer, IMU_COLLECTION_INTERVAL, NULL));
+ *    }
+ *
+ *    if((interrupt_status & INT_STS_RAW_READY) && _settings.data_ready_callback) {
+ *        known_interrupt = true;
+ *        _settings.data_ready_callback(imu_fifo_bytes_available());
+ *    }
+ *
+ *    if(!known_interrupt) {
+ *       // DEBUG("IMU IRQ unknown interrupt: ", interrupt_status);
+ *    }
+ */
 	MSG_PING(parent,IMU,IMU_READ_XYZ);
 
 }
@@ -945,8 +949,10 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 					if(d){
 						memcpy(d->buf, values, sizeof(values));
 						parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1},d);
+						MSG_Base_ReleaseDataAtomic(d);
 					}
 				}
+				imu_clear_interrupt_status();
 				break;
 		}
 		MSG_Base_ReleaseDataAtomic(data);
