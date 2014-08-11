@@ -22,7 +22,6 @@
 #include <watchdog.h>
 #include <nrf_sdm.h>
 #include <softdevice_handler.h>
-#include <twi_master.h>
 
 #include "app.h"
 #include "hble.h"

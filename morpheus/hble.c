@@ -12,7 +12,7 @@
 #include <nrf_soc.h>
 #include <pstorage.h>
 #include <softdevice_handler.h>
-#include <ble_bondmngr.h>
+#include "morpheus_ble_bondmngr.h"
 
 #include "util.h"
 #include "app.h"
