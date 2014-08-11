@@ -225,6 +225,8 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         PRINTS("\r\n");
         MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
     }
+    _free_context(&self.rx_channel_ctx[*channel]);
+    _free_context(&self.tx_channel_ctx[*channel]);
 }
 static void
 _assemble_payload(ChannelContext_t * ctx, ANT_PayloadPacket_t * packet){
@@ -336,7 +338,7 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ChannelContext_t * ctx = &self.tx_channel_ctx[*channel];
     if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
         PRINTS("FIN\r\n");
-        _free_context(ctx);
+        //_free_context(ctx);
         _destroy_channel(*channel);
     }
     ret = sd_ant_broadcast_message_tx(0,sizeof(message), message);
