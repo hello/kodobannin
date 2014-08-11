@@ -220,6 +220,8 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         PRINTS("Re-opening Channel ");
         PRINT_HEX(channel, 1);
         PRINTS("\r\n");
+        //accept discovery even if its new
+        self.rx_channel_ctx[*channel].prev_crc = 0x00;
         MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
     }else if(*channel == ANT_DISCOVERY_CHANNEL){
         self.discovery_role = 0xFF;
@@ -473,6 +475,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("RFFAIL\r\n");
             break;
         case EVENT_TX:
+            PRINTS("T");
             _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_TRANSFER_TX_FAILED:
