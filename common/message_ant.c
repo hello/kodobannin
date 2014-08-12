@@ -12,7 +12,13 @@
 typedef struct{
     MSG_Data_t * header;
     MSG_Data_t * payload;
-    uint16_t idx;
+    union{
+        uint16_t idx;
+        struct{
+            uint8_t network;
+            uint8_t type;
+        }phy;
+    };
     union{
         uint16_t count;
         uint16_t prev_crc;
@@ -34,6 +40,10 @@ static char * name = "ANT";
  * Static declarations
  */
 static uint16_t _calc_checksum(MSG_Data_t * data);
+/**
+ * can't find in api, so just store in rx ctx
+ */
+static uint8_t _get_channel_type(uint8_t channel);
 static MSG_Status _destroy_channel(uint8_t channel);
 /* Allocates header based on the payload */
 static MSG_Data_t * INCREF _allocate_header_tx(MSG_Data_t * payload);
@@ -50,6 +60,10 @@ _destroy_channel(uint8_t channel){
     sd_ant_channel_close(channel);
     sd_ant_channel_unassign(channel);
     return SUCCESS;
+}
+static
+uint8_t _get_channel_type(uint8_t channel){
+    return self.rx_channel_ctx[channel].phy.type;
 }
 /*
  *#define STATUS_UNASSIGNED_CHANNEL                  ((uint8_t)0x00) ///< Indicates channel has not been assigned.
@@ -157,6 +171,8 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec){
         ret += sd_ant_channel_assign(channel, spec->channel_type, spec->network, 0);
         ret += sd_ant_channel_radio_freq_set(channel, spec->frequency);
         ret += sd_ant_channel_period_set(channel, spec->period);
+        self.rx_channel_ctx[channel].phy.network = spec->network;
+        self.rx_channel_ctx[channel].phy.type = spec->channel_type;
     }
     return ret;
 }
@@ -406,6 +422,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         ChannelContext_t * ctx = &self.tx_channel_ctx[channel];
         if(!ctx->header && !ctx->payload){
             //channel is ready to transmit
+            MSG_Base_AcquireDataAtomic(data);
             ctx->payload = data;
             ctx->header = _allocate_header_tx(ctx->payload);
             ctx->count = channel == ANT_DISCOVERY_CHANNEL?99:6;
@@ -413,7 +430,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 ANT_ChannelID_t id = {
                     0,1,5354
                 };
-                MSG_Base_AcquireDataAtomic(data);
                 _connect(channel, &id);
             }else{
                 PRINTS("Header Allocation Failed\r\n");
@@ -456,16 +472,16 @@ void ant_handler(ant_evt_t * p_ant_evt){
     uint8_t event = p_ant_evt->event;
     uint8_t ant_channel = p_ant_evt->channel;
     uint32_t * event_message_buffer = p_ant_evt->evt_buffer;
-    /*
-     *PRINT_HEX(&event,1);
-     *PRINTS("\r\n");
-     */
     switch(event){
         case EVENT_RX_FAIL:
             //PRINTS("FRX\r\n");
             break;
         case EVENT_RX:
             _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            if(_get_channel_type(ant_channel) == CHANNEL_TYPE_SLAVE ||
+                    _get_channel_type(ant_channel) == CHANNEL_TYPE_SHARED_SLAVE){
+                _handle_tx(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            }
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
             PRINTS("RXTO\r\n");
@@ -477,7 +493,6 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("RFFAIL\r\n");
             break;
         case EVENT_TX:
-            PRINTS("T");
             _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_TRANSFER_TX_FAILED:
@@ -489,6 +504,9 @@ void ant_handler(ant_evt_t * p_ant_evt){
             _handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         default:
+            {
+                PRINT_HEX(&event,1);
+            }
             break;
     }
 
