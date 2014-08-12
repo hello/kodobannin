@@ -203,6 +203,7 @@ _set_discovery_mode(uint8_t role){
             phy.period = 1092;
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
             sd_ant_channel_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
+            sd_ant_channel_low_priority_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
             _connect(ANT_DISCOVERY_CHANNEL, &id);
             _free_context(&self.rx_channel_ctx[0]);
             break;
@@ -237,11 +238,11 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         PRINT_HEX(channel, 1);
         PRINTS("\r\n");
         //accept discovery even if its new
-        self.rx_channel_ctx[*channel].prev_crc = 0x00;
         MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
     }else if(*channel == ANT_DISCOVERY_CHANNEL){
         self.discovery_role = 0xFF;
     }
+    self.rx_channel_ctx[ant_channel].prev_crc = 0x00;
     _free_context(&self.rx_channel_ctx[*channel]);
     _free_context(&self.tx_channel_ctx[*channel]);
 }
@@ -353,12 +354,15 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
     uint32_t ret;
     ChannelContext_t * ctx = &self.tx_channel_ctx[*channel];
+    if(!ctx->header){
+        return;
+    }
     if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
         PRINTS("FIN\r\n");
         //_free_context(ctx);
         _destroy_channel(*channel);
     }
-    ret = sd_ant_broadcast_message_tx(0,sizeof(message), message);
+    ret = sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
 }
 static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
@@ -382,6 +386,10 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                 PRINT_HEX(&transmit_type, sizeof(transmit_type));
             }
             _print_discovery((ANT_DiscoveryProfile_t *)ret->buf);
+            //here we echo back the message
+            self.parent->dispatch( (MSG_Address_t){ANT,*channel+1},
+                                    (MSG_Address_t){ANT, ANT_DISCOVERY_CHANNEL+1},
+                                    ret);
         }
         MSG_Base_ReleaseDataAtomic(ret);
     }
