@@ -149,10 +149,10 @@ void morpheus_load_modules(void){
 		central->loadmod(MSG_ANT_Base(central));
 #endif
 		//MSG_Base_BufferTest();
-		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
+		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);
 		{
 			uint8_t role = 0;
-			MSG_SEND(central, ANT, ANT_SET_ROLE, &role,1);
+			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,1);
 		}
     }else{
         PRINTS("FAIL");
