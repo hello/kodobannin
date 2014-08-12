@@ -5,7 +5,7 @@
 #define SET_DISCOVERY_PROFILE(pb) do{\
     if(pb){\
         ANT_DiscoveryProfile_t * profile = (ANT_DiscoveryProfile_t*)pb->buf;\
-        profile->UUID = NRF_FICR->DEVICEID;\
+        profile->UUID = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];\
         profile->hlo_identifier = ANT_UNIQ_ID;\
         profile->hlo_hw_type = ANT_HW_TYPE;\
         profile->hlo_hw_revision = ANT_HW_REVISION;\
