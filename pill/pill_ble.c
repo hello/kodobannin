@@ -67,18 +67,23 @@ void pill_ble_stream_data(const int16_t* raw_xyz, size_t len)
 	}
 }
 
+static void _calibrate_imu(void * p_event_data, uint16_t event_size)
+{
+#ifdef PLATFORM_HAS_IMU
+        imu_calibrate_zero();
+#endif
+        struct pill_command* command = (struct pill_command*)p_event_data;
+        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+}
 
-static void
-_command_write_handler(ble_gatts_evt_write_t* event)
+
+static void _command_write_handler(ble_gatts_evt_write_t* event)
 {
     struct pill_command* command = (struct pill_command*)event->data;
 
     switch(command->command) {
     case PILL_COMMAND_CALIBRATE:
-#ifdef PLATFORM_HAS_IMU
-        imu_calibrate_zero();
-#endif
-        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+    	app_sched_event_put(command, event->len, _calibrate_imu);
         break;
     case PILL_COMMAND_DISCONNECT:
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
@@ -105,10 +110,12 @@ _command_write_handler(ble_gatts_evt_write_t* event)
             break;
         }
     case PILL_COMMAND_START_ACCELEROMETER:
+    	PRINTS("Streamming started\r\n");
     	_should_stream = true;
     	break;
     case PILL_COMMAND_STOP_ACCELEROMETER:
     	_should_stream = false;
+    	PRINTS("Streamming stopped\r\n");
     	break;
     };
 }

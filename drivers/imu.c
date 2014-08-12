@@ -732,10 +732,9 @@ _imu_wom_process(void* context)
     PRINTS("Deactivating IMU.\r\n");
 }
 
-static void
-_imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
+static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-    uint8_t interrupt_status = imu_clear_interrupt_status();
+    /*uint8_t interrupt_status = imu_clear_interrupt_status();
 
     bool known_interrupt = false;
 
@@ -765,8 +764,13 @@ _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to
 
     if(!known_interrupt) {
        // DEBUG("IMU IRQ unknown interrupt: ", interrupt_status);
-    }
-	MSG_PING(parent,IMU,IMU_READ_XYZ);
+    }*/
+
+	uint8_t interrupt_status = imu_clear_interrupt_status();
+	if(interrupt_status & INT_STS_WOM_INT)
+	{
+		MSG_PING(parent,IMU,IMU_READ_XYZ);
+	}
 
 }
 
@@ -834,8 +838,7 @@ imu_printf_data_ready_callback_fifo(uint16_t fifo_bytes_available)
     }
 }
 
-void
-imu_calibrate_zero()
+void imu_calibrate_zero()
 {
     imu_data_ready_callback_t active_data_ready_callback = _settings.data_ready_callback;
     imu_set_data_ready_callback(NULL);
@@ -845,23 +848,61 @@ imu_calibrate_zero()
     enum imu_accel_range active_accel_range = _settings.accel_range;
     imu_set_accel_range(IMU_ACCEL_RANGE_2G);
 
-    union int16_bits instantaneous_values[3];
-    imu_accel_reg_read(instantaneous_values[0].bytes);
-    DEBUG("Instantaneous: ", instantaneous_values);
-
     union uint16_bits offset_values[3];
-    _register_read(MPU_REG_XA_OFFS_H, &offset_values[0].bytes[1]);
+
+    union int16_bits instantaneous_values[3];
+    int64_t average_readings[3];
+
+    memset(average_readings, 0 , sizeof(average_readings));
+    memset(instantaneous_values, 0, sizeof(instantaneous_values));
+
+    uint16_t measure_time = 1000;
+
+    for(uint16_t i = 0; i < measure_time; i++)  // measure 10000 times
+    {
+    	imu_accel_reg_read(instantaneous_values[0].bytes);
+    	average_readings[0] += instantaneous_values[0].value;
+    	average_readings[1] += instantaneous_values[1].value;
+    	average_readings[2] += instantaneous_values[2].value;
+	}
+
+	instantaneous_values[0].value = average_readings[0] / measure_time;
+	instantaneous_values[1].value = average_readings[1] / measure_time;
+	instantaneous_values[2].value = average_readings[2] / measure_time;
+
+	_register_read(MPU_REG_XA_OFFS_H, &offset_values[0].bytes[1]);
     _register_read(MPU_REG_XA_OFFS_L, &offset_values[0].bytes[0]);
     _register_read(MPU_REG_YA_OFFS_H, &offset_values[1].bytes[1]);
     _register_read(MPU_REG_YA_OFFS_L, &offset_values[1].bytes[0]);
     _register_read(MPU_REG_ZA_OFFS_H, &offset_values[2].bytes[1]);
     _register_read(MPU_REG_ZA_OFFS_L, &offset_values[2].bytes[0]);
+
+    //offset_values[0].value = offset_values[0].value << 1;
+    //offset_values[1].value = offset_values[1].value << 1;
+    //offset_values[2].value = offset_values[2].value << 1;
     DEBUG("Old offsets: ", offset_values);
+    PRINTS("\r\n");
+
+    PRINTS("Current accelemeter reading: ");
+    PRINTS("X = ");
+    PRINT_HEX(&instantaneous_values[0].value, sizeof(instantaneous_values[0].value));
+    PRINTS(",");
+    PRINTS("Y = ");
+    PRINT_HEX(&instantaneous_values[1].value, sizeof(instantaneous_values[1].value));
+    PRINTS(",");
+    PRINTS("Z = ");
+    PRINT_HEX(&instantaneous_values[2].value, sizeof(instantaneous_values[2].value));
+    PRINTS(".\r\n");
+
     // printf("Old offsets: %d %d %d\r\n", offset_values[0].value, offset_values[1].value, offset_values[2].value);
 
-    offset_values[0].value = 0 - (instantaneous_values[0].value >> 3);
-    offset_values[1].value = 0 - (instantaneous_values[1].value >> 3);
-    offset_values[2].value = 0x800 - (instantaneous_values[2].value >> 3);
+    //offset_values[0].value = 0 - (instantaneous_values[0].value >> 3);
+    //offset_values[1].value = 0 - (instantaneous_values[1].value >> 3);
+    //offset_values[2].value = 0x800 - (instantaneous_values[2].value >> 3);
+
+    offset_values[0].value -= (instantaneous_values[0].value << 1);
+    offset_values[1].value -= (instantaneous_values[1].value << 1);
+    offset_values[2].value -= (instantaneous_values[2].value << 1);
 
     // for(unsigned i = 0; i < 3; i++){
     //     offset_values[i].value -= (instantaneous_values[i].value >> 3);
@@ -869,6 +910,7 @@ imu_calibrate_zero()
     // }
     // offset_values[2].value += 0x800;
     DEBUG("New offsets: ", offset_values);
+    PRINTS("\r\n");
 
 	_register_write(MPU_REG_XA_OFFS_H, offset_values[0].bytes[1]);
     _register_write(MPU_REG_XA_OFFS_L, offset_values[0].bytes[0]);
@@ -903,8 +945,7 @@ _flush(void){
     return SUCCESS;
 }
 
-static MSG_Status
-_send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
+static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 	if(data){
 		MSG_Base_AcquireDataAtomic(data);
 		MSG_IMUCommand_t * cmd = data->buf;
@@ -916,6 +957,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 				{
 					tf_unit_t values[3];
 					imu_accel_reg_read((uint8_t*)values);
+					//uint8_t interrupt_status = imu_clear_interrupt_status();
 
 					int16_t* p_raw_xyz = get_raw_xzy_address();
 					p_raw_xyz[0] = values[0];
@@ -970,9 +1012,26 @@ imu_init_base(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_
 	return &base;
 
 }
-
-int32_t
-imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
+
+
+static void _imu_reset()
+{
+	PRINTS("IMU reset\r\n");
+	_register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
+
+	nrf_delay_ms(100);
+
+	//_register_write(MPU_REG_PWR_MGMT_1, 0);
+
+	// Reset buffers
+	_register_write(MPU_REG_SIG_RST, 0xFF);
+	_register_write(MPU_REG_USER_CTL, USR_CTL_SIG_RST);
+
+	nrf_delay_ms(100);
+}
+
+
+int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
 {
  	int32_t err;
 
@@ -986,10 +1045,7 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
 	// page 43
 
 	// Reset chip
-	PRINTS("IMU reset\r\n");
-	_register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
-
-	nrf_delay_ms(100);
+	_imu_reset();
 
 	_register_write(MPU_REG_PWR_MGMT_1, 0);
 
@@ -1001,11 +1057,6 @@ imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mos
 		DEBUG("Invalid MPU-6500 ID found. Expected 0x70, got 0x", whoami_value);
 		APP_ASSERT(0);
 	}
-
-	// Reset buffers
-	_register_write(MPU_REG_SIG_RST, 0xFF);
-
-	nrf_delay_ms(100);
 
 	// Init interrupts
 	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
