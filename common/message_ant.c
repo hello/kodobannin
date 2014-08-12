@@ -6,6 +6,7 @@
 #include "util.h"
 #include "app.h"
 #include "crc16.h"
+#include "antutil.h"
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
 
@@ -387,6 +388,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             }
             _print_discovery((ANT_DiscoveryProfile_t *)ret->buf);
             //here we echo back the message
+            SET_DISCOVERY_PROFILE(ret);
             self.parent->dispatch( (MSG_Address_t){ANT,*channel+1},
                                     (MSG_Address_t){ANT, ANT_DISCOVERY_CHANNEL+1},
                                     ret);
@@ -431,7 +433,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             MSG_Base_AcquireDataAtomic(data);
             ctx->payload = data;
             ctx->header = _allocate_header_tx(ctx->payload);
-            ctx->count = channel == ANT_DISCOVERY_CHANNEL?99:6;
+            ctx->count = 6;
             if(ctx->header){
                 ANT_ChannelID_t id = {
                     0,1,5354
