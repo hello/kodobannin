@@ -40,10 +40,11 @@ typedef struct{
 }ANT_PayloadPacket_t;
 
 
+/* Do not modify member arrangement */
 typedef struct{
-    uint8_t transmit_type;
-    uint8_t device_type;
     uint16_t device_number;
+    uint8_t device_type;
+    uint8_t transmit_type;
 }ANT_ChannelID_t;
 
 typedef struct{
