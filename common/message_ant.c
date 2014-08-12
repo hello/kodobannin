@@ -30,7 +30,6 @@ static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     uint8_t discovery_role;
-    app_timer_id_t discovery_timeout;
     ChannelContext_t tx_channel_ctx[NUM_ANT_CHANNELS];
     ChannelContext_t rx_channel_ctx[NUM_ANT_CHANNELS];
 }self;
@@ -191,7 +190,6 @@ _set_discovery_mode(uint8_t role){
         .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0};
     if(role != self.discovery_role){
-        app_timer_stop(self.discovery_timeout);
         _destroy_channel(ANT_DISCOVERY_CHANNEL);
         self.discovery_role = role;
     }else if(_get_channel_status(ANT_DISCOVERY_CHANNEL)>1){
@@ -220,15 +218,6 @@ _set_discovery_mode(uint8_t role){
             break;
     }
     return SUCCESS;
-}
-/**
- * Handles the timeout of discovery_mode
- */
-static void
-_discovery_timeout(void * ctx){
-    PRINTS("Good Night Sweet Prince\r\n");
-    self.discovery_role = 0xFF;
-    _destroy_channel(ANT_DISCOVERY_CHANNEL);
 }
 
 static void
@@ -455,7 +444,6 @@ _init(){
     uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
     ret = sd_ant_stack_reset();
     ret += sd_ant_network_address_set(0,network_key);
-    ret += app_timer_create(&self.discovery_timeout, APP_TIMER_MODE_SINGLE_SHOT, _discovery_timeout);
     if(!ret){
         return SUCCESS;
     }else{
