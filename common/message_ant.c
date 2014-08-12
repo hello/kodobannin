@@ -9,6 +9,10 @@
 #include "antutil.h"
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
+enum{
+    ANT_DISCOVERY_CENTRAL = 0,
+    ANT_DISCOVERY_PERIPHERAL
+}ANT_DISCOVERY_ROLE;
 
 typedef struct{
     MSG_Data_t * header;
@@ -196,7 +200,7 @@ _set_discovery_mode(uint8_t role){
         return SUCCESS;
     }
     switch(role){
-        case 0:
+        case ANT_DISCOVERY_CENTRAL:
             //central mode
             PRINTS("SLAVE\r\n");
             phy.period = 1092;
@@ -206,7 +210,7 @@ _set_discovery_mode(uint8_t role){
             _connect(ANT_DISCOVERY_CHANNEL, &id);
             _free_context(&self.rx_channel_ctx[0]);
             break;
-        case 1:
+        case ANT_DISCOVERY_PERIPHERAL:
             //peripheral mode
             //configure shit here
             PRINTS("MASTER\r\n");
@@ -223,7 +227,7 @@ _set_discovery_mode(uint8_t role){
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     PRINTS("Channel Close\r\n");
-    if(*channel == ANT_DISCOVERY_CHANNEL && self.discovery_role == 0){
+    if(*channel == ANT_DISCOVERY_CHANNEL && self.discovery_role == ANT_DISCOVERY_CENTRAL){
         PRINTS("Re-opening Channel ");
         PRINT_HEX(channel, 1);
         PRINTS("\r\n");
