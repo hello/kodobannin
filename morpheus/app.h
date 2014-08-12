@@ -29,7 +29,7 @@ enum {
 #define ANT_SW_MINOR        0x02
 #define ANT_PREFER_FREQ     0x11
 #define ANT_PREFER_PERIOD   3277
-#define ANT_PREFER_NETWORK  0x10
+#define ANT_PREFER_NETWORK  0x0
 #define ANT_PREFER_CHTYPE   0x00
 
  #define BONDING_REQUIRED
