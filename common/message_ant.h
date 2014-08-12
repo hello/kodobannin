@@ -77,12 +77,20 @@ typedef struct{
 }ANT_DiscoveryProfile_t;
 
 typedef struct{
+    ANT_ChannelPHY_t phy;
+    ANT_ChannelID_t id;
+}ANT_Channel_Settings_t;
+
+typedef struct{
     enum{
         ANT_PING=0,
         ANT_SET_ROLE,//sets discovery role
+        ANT_CREATE_CHANNEL,
+        ANT_END_CMD
     }cmd;
     union{
         uint8_t role;
+        ANT_Channel_Settings_t settings;
     }param;
 }MSG_ANTCommand_t;
 
