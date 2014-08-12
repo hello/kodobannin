@@ -242,7 +242,7 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     }else if(*channel == ANT_DISCOVERY_CHANNEL){
         self.discovery_role = 0xFF;
     }
-    self.rx_channel_ctx[ant_channel].prev_crc = 0x00;
+    self.rx_channel_ctx[*channel].prev_crc = 0x00;
     _free_context(&self.rx_channel_ctx[*channel]);
     _free_context(&self.tx_channel_ctx[*channel]);
 }
