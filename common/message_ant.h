@@ -27,8 +27,8 @@
 typedef struct{
     uint8_t page;
     uint8_t page_count;
-    uint8_t dst_mod;
-    uint8_t dst_submod;
+    uint8_t reserved0;
+    uint8_t reserved1;
     uint16_t size;
     uint16_t checksum;
 }ANT_HeaderPacket_t;

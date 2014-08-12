@@ -294,13 +294,6 @@ _assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t bu
             ctx->payload = _allocate_payload_rx(header);
             ctx->prev_crc = new_crc;
         }else if(_integrity_check(ctx)){
-            MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
-            MSG_Address_t dst = (MSG_Address_t){header->dst_mod, header->dst_submod};
-            //first dispatch to intended mod
-            self.parent->dispatch(src, dst, ctx->payload);
-            dst = (MSG_Address_t){UART, 1};
-            //then dispatch to uart for printout
-            self.parent->dispatch(src, dst, ctx->payload);
             ret = ctx->payload;
             MSG_Base_AcquireDataAtomic(ret);
             _free_context(ctx);
@@ -393,6 +386,12 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                                     (MSG_Address_t){ANT, ANT_DISCOVERY_CHANNEL+1},
                                     ret);
         }
+        {
+            MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
+            MSG_Address_t dst = (MSG_Address_t){UART, 1};
+            //then dispatch to uart for printout
+            self.parent->dispatch(src, dst, ret);
+        }
         MSG_Base_ReleaseDataAtomic(ret);
     }
     //PRINTS("\r\n");
@@ -422,7 +421,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 break;
             case ANT_SET_ROLE:
                 PRINTS("ANT_SET_ROLE\r\n");
-                PRINT_HEX(&antcmd->param.role, 1);
+                PRINT_HEX(&antcmd->param.role, 0x1);
                 return _set_discovery_mode(antcmd->param.role);
         }
     }else{
