@@ -55,14 +55,54 @@ static MSG_Data_t * INCREF _allocate_header_tx(MSG_Data_t * payload);
 static MSG_Data_t * INCREF _allocate_header_rx(ANT_HeaderPacket_t * buf);
 /* Allocates payload based on receiving header packet */
 static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
+/* Returns status of the channel */
+static uint8_t _get_channel_status(uint8_t channel);
 /* Debug */
 static void _print_discovery(ANT_DiscoveryProfile_t * profile);
+/* Entry point to handle receiving of discovery packet */
+static void _handle_discovery(uint8_t channel, MSG_Data_t * obj);
+/* Finds inverse of the channel type eg master -> slave */
+static uint8_t _match_channel_type(uint8_t remote);
+/* Finds an unassigned Channel */
+static uint8_t _find_unassigned_channel(void);
 
+static uint8_t
+_match_channel_type(uint8_t remote){
+    switch(remote){
+        case CHANNEL_TYPE_SLAVE:
+            return CHANNEL_TYPE_MASTER;
+        case CHANNEL_TYPE_MASTER:
+            return CHANNEL_TYPE_SLAVE;
+        case CHANNEL_TYPE_SHARED_SLAVE:
+            return CHANNEL_TYPE_SHARED_MASTER;
+        case CHANNEL_TYPE_SHARED_MASTER:
+            return CHANNEL_TYPE_SHARED_SLAVE;
+        case CHANNEL_TYPE_SLAVE_RX_ONLY:
+            return CHANNEL_TYPE_MASTER_TX_ONLY;
+        case CHANNEL_TYPE_MASTER_TX_ONLY:
+            return CHANNEL_TYPE_SLAVE_RX_ONLY;
+        default:
+            return 0xFF;
+    }
+}
+
+static uint8_t
+_find_unassigned_channel(void){
+    uint8_t ret = 0xFF;
+    uint8_t i;
+    for(i = 0; i < NUM_ANT_CHANNELS; i++){
+        if( _get_channel_status(i) == STATUS_UNASSIGNED_CHANNEL){
+            ret = i;
+            break;
+        }
+    }
+    return ret;
+}
 static MSG_Status
 _destroy_channel(uint8_t channel){
     //this destroys the channel regardless of what state its in
     sd_ant_channel_close(channel);
-    sd_ant_channel_unassign(channel);
+    //sd_ant_channel_unassign(channel);
     return SUCCESS;
 }
 static
@@ -165,7 +205,7 @@ _disconnect(uint8_t channel){
 
 static MSG_Status
 _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec){
-    MSG_Status ret = SUCCESS;
+    uint32_t ret = 0;
     if(_get_channel_status(channel)){
         ret = _destroy_channel(channel);
     }
@@ -183,6 +223,78 @@ static void _print_discovery(ANT_DiscoveryProfile_t * profile){
     PRINTS("UUID = ");
     PRINT_HEX(&profile->UUID, 4);
     PRINTS("\r\n");
+}
+static void
+_handle_discovery(uint8_t channel, MSG_Data_t * obj){
+    ANT_DiscoveryProfile_t * profile = (ANT_DiscoveryProfile_t*)obj->buf;
+    //Discovery message
+    uint16_t dev_id;
+    uint8_t dev_type, transmit_type, freq, ch_type;
+    {
+        uint32_t self_uuid = GET_UUID_32();
+        sd_ant_channel_id_get(channel, &dev_id, &dev_type, &transmit_type);
+        DERIVE_RF_FREQ(freq,self_uuid, profile->UUID); 
+        ch_type = _match_channel_type(profile->phy.channel_type);
+    }
+    _print_discovery(profile);
+    switch(self.discovery_role){
+        case ANT_DISCOVERY_CENTRAL:
+            //if allowed to pair, we then echo back.
+            //the master's prefer network prioritizes over slave
+            SET_DISCOVERY_PROFILE(obj);
+            self.parent->dispatch( (MSG_Address_t){ANT,channel+1},
+                                    (MSG_Address_t){ANT, ANT_DISCOVERY_CHANNEL+1},
+                                    obj);
+            break;
+        case ANT_DISCOVERY_PERIPHERAL:
+            {
+                uint8_t role = 0xFF;
+                MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
+            }
+            break;
+        default:
+            return;
+    }
+    //both open channel
+    {
+        /*
+         *PRINTS(" CH: ");
+         *PRINTS("DEVID = ");
+         *PRINT_HEX(&dev_id, 2);
+         *PRINTS("\r\n");
+         *PRINTS("FREQ = ");
+         *PRINT_HEX(&freq, 1);
+         *PRINTS("\r\n");
+         *PRINTS("CHTYPE = ");
+         *PRINT_HEX(&ch_type, 1);
+         *PRINTS("\r\n");
+         *PRINTS("FREQ = ");
+         *PRINT_HEX(&freq, 2);
+         *PRINTS("\r\n");
+         *PRINTS("NETWORK = ");
+         *PRINT_HEX(&profile->phy.network, 1);
+         *PRINTS("\r\n");
+         *PRINTS("Period = ");
+         *PRINT_HEX(&profile->phy.period, 2);
+         *PRINTS("\r\n");
+         */
+        ANT_Channel_Settings_t new_channel = {
+            .phy = (ANT_ChannelPHY_t){
+                .channel_type = ch_type,
+                .frequency = freq,
+                .network = profile->phy.network,
+                .period = profile->phy.period,
+            },
+            .id = (ANT_ChannelID_t){
+                .transmit_type = transmit_type,
+                .device_type = dev_type,
+                .device_number = dev_id,
+            }
+        };
+        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_CHANNEL, &new_channel, sizeof(new_channel));
+    }
+
+
 }
 
 static MSG_Status
@@ -226,7 +338,9 @@ _set_discovery_mode(uint8_t role){
 
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
-    PRINTS("Channel Close\r\n");
+    PRINTS("Channel Close: ");
+    PRINT_HEX(channel, 1);
+    PRINTS("\r\n");
     if(*channel == ANT_DISCOVERY_CHANNEL && self.discovery_role == ANT_DISCOVERY_CENTRAL){
         PRINTS("Re-opening Channel ");
         PRINT_HEX(channel, 1);
@@ -360,25 +474,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     if(ret){
         PRINTS("GOT A NEw MESSAGE OMFG\r\n");
         if(*channel == ANT_DISCOVERY_CHANNEL){
-            //Discovery message
-            uint16_t dev_id;
-            uint8_t dev_type;
-            uint8_t transmit_type;
-            PRINTS(" CH: ");
-            if(!sd_ant_channel_id_get(*channel, &dev_id, &dev_type, &transmit_type)){
-                PRINT_HEX(&dev_id, sizeof(dev_id));
-                PRINTS(" | ");
-                PRINT_HEX(&dev_type, sizeof(dev_type));
-                PRINTS(" | ");
-                PRINT_HEX(&transmit_type, sizeof(transmit_type));
-            }
-            _print_discovery((ANT_DiscoveryProfile_t *)ret->buf);
-            //here we echo back the message
-            //in production mode, this needs to be user authorized
-            SET_DISCOVERY_PROFILE(ret);
-            self.parent->dispatch( (MSG_Address_t){ANT,*channel+1},
-                                    (MSG_Address_t){ANT, ANT_DISCOVERY_CHANNEL+1},
-                                    ret);
+            _handle_discovery(*channel, ret );
         }
         {
             MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
@@ -417,6 +513,19 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 PRINTS("ANT_SET_ROLE\r\n");
                 PRINT_HEX(&antcmd->param.role, 0x1);
                 return _set_discovery_mode(antcmd->param.role);
+            case ANT_CREATE_CHANNEL:
+                {
+                    PRINTS("Create Channel\r\n");
+                    uint8_t ch = _find_unassigned_channel();
+                    if(ch < NUM_ANT_CHANNELS){
+                        uint32_t ret;
+                        PRINTS("CH = ");
+                        PRINT_HEX(&ch, 1);
+                        ret = _configure_channel(ch, &antcmd->param.settings.phy);
+                        ret = _connect(ch, &antcmd->param.settings.id);
+                    }
+                }
+                break;
         }
     }else{
         uint8_t channel = dst.submodule - 1;
@@ -477,6 +586,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             //PRINTS("FRX\r\n");
             break;
         case EVENT_RX:
+            PRINTS("R");
             _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             if(_get_channel_type(ant_channel) == CHANNEL_TYPE_SLAVE ||
                     _get_channel_type(ant_channel) == CHANNEL_TYPE_SHARED_SLAVE){
@@ -493,6 +603,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("RFFAIL\r\n");
             break;
         case EVENT_TX:
+            PRINTS("T");
             _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_TRANSFER_TX_FAILED:
