@@ -91,7 +91,7 @@ _command_write_handler(ble_gatts_evt_write_t* event)
             break;
     case PILL_COMMAND_SET_TIME:
         {
-			MSG_SEND(central,TIME,TIME_SYNC,&command->set_time.bytes, sizeof(struct hlo_ble_time));
+			MSG_SEND_CMD(central,TIME,MSG_TimeCommand_t, TIME_SYNC, &command->set_time.bytes, sizeof(struct hlo_ble_time));
             break;
         }
     };
@@ -156,11 +156,11 @@ void pill_ble_load_modules(void){
 #ifdef ANT_ENABLE
 		central->loadmod(MSG_ANT_Base(central));
 #endif
-		MSG_SEND(central, TIME, TIME_SET_1S_RESOLUTION,NULL,0);
-		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
+		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
+		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 		{
 			uint8_t role = 1;
-			MSG_SEND(central, ANT, ANT_SET_ROLE, &role,1);
+			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
 		}
     }else{
         PRINTS("FAIL");

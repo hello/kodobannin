@@ -239,7 +239,7 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         PRINT_HEX(channel, 1);
         PRINTS("\r\n");
         //accept discovery even if its new
-        MSG_SEND(self.parent,ANT,ANT_SET_ROLE,&self.discovery_role,1);
+        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &self.discovery_role, 1);
     }else if(*channel == ANT_DISCOVERY_CHANNEL){
         self.discovery_role = 0xFF;
     }
