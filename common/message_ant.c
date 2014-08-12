@@ -88,8 +88,8 @@ _allocate_header_tx(MSG_Data_t * payload){
          *header->src_mod = 0;
          *header->src_submod = 0;
          */
-        header->dst_mod = 0;
-        header->dst_submod = 0;
+        header->reserved0 = 0;
+        header->reserved1 = 0;
         header->size = payload->len;
         header->checksum = _calc_checksum(payload);
     }
@@ -370,6 +370,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             }
             _print_discovery((ANT_DiscoveryProfile_t *)ret->buf);
             //here we echo back the message
+            //in production mode, this needs to be user authorized
             SET_DISCOVERY_PROFILE(ret);
             self.parent->dispatch( (MSG_Address_t){ANT,*channel+1},
                                     (MSG_Address_t){ANT, ANT_DISCOVERY_CHANNEL+1},
