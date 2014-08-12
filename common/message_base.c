@@ -13,6 +13,19 @@ static struct{
 #endif
 }self;
 
+uint32_t MSG_Base_FreeCount(void){
+    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
+    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
+    uint8_t * p = self.pool;
+    uint32_t ret = 0;
+    for(int i = 0; i < step_limit; i++){
+        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
+        if(tmp->ref == 0){
+            ret++;
+        }
+    }
+    return ret;
+}
 MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     MSG_Data_t * ret = NULL;
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);

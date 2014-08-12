@@ -26,14 +26,14 @@
 
 #include "app.h"
 #include "hble.h"
-
-
+#include "platform.h"
 #include "git_description.h"
 #include "morpheus_ble.h"
+#include "sensor_data.h"
+#include "util.h"
 
-
-
-void _start()
+void
+_start()
 {
 
     {
@@ -58,6 +58,7 @@ void _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
+
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
 
@@ -70,7 +71,6 @@ void _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-	morpheus_load_modules();
 
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
     hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
@@ -79,8 +79,14 @@ void _start()
 #endif
     hble_params_init(device_name);
     hlo_ble_init();
-    morpheus_ble_services_init();
-    PRINTS("morpheus_ble_init() done\r\n");
+#ifdef ANT_ENABLE
+    APP_OK(softdevice_ant_evt_handler_set(ant_handler));
+#endif
+
+	morpheus_load_modules();
+
+//    pill_ble_services_init();
+    PRINTS("pill_ble_init() done\r\n");
 
     ble_uuid_t service_uuid = {
         .type = hello_type,
@@ -92,9 +98,6 @@ void _start()
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
-#ifdef ANT_ENABLE
-        app_sched_event_put(NULL, 0, ant_handler);
-#endif
         app_sched_execute();
     }
 }
