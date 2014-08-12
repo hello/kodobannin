@@ -91,7 +91,7 @@ _find_unassigned_channel(void){
     uint8_t ret = 0xFF;
     uint8_t i;
     for(i = 0; i < NUM_ANT_CHANNELS; i++){
-        if( _get_channel_status(i) == STATUS_UNASSIGNED_CHANNEL){
+        if( i != ANT_DISCOVERY_CHANNEL && _get_channel_status(i) == STATUS_UNASSIGNED_CHANNEL){
             ret = i;
             break;
         }
