@@ -17,9 +17,19 @@
 #include "sensor_data.h"
 #include "message_base.h"
 #include "timedfifo.h"
-#include "pill_ble.h"
+
+#ifdef ANT_ENABLE
+#include "message_ant.h"
+#include "antutil.h"
+#endif
 
 #include <watchdog.h>
+
+
+// Magic number: (0xFFFF / 4000)
+//The range of accelerometer is +/-2G, the range of representation is 16bit in IMU
+// And we want 3 digit precision, so it is 0xFFFF / 4000 = 16.38375
+#define KG_CONVERT_FACTOR	16
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -588,7 +598,7 @@ void imu_wom_disable()
 	_register_write(MPU_REG_INT_EN, interrupt_enable & ~INT_EN_WOM);
 }
 
-void imu_low_power_mode()
+void imu_enter_low_power_mode()
 {
     _register_write(MPU_REG_INT_EN, 0);
 	_register_write(MPU_REG_FIFO_EN, 0);
@@ -710,50 +720,72 @@ static void _imu_wom_process(void* context)
     };
     header.checksum = memsum(&header, sizeof(header));
 
+    /*
     if(_settings.wom_callback) {
         _settings.wom_callback(&header);
     }
+    */
 
     _start_motion_time = 0;
 
-    imu_low_power_mode();
+    imu_enter_low_power_mode();
 
     PRINTS("Deactivating IMU.\r\n");
 }
 
+static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
+{
+	MSG_Data_t * message_data = MSG_Base_AllocateDataAtomic(len);
+	if(message_data){
+		memcpy(message_data->buf, values, len);
+		parent->dispatch((MSG_Address_t){0, 0},(MSG_Address_t){ANT, 2}, message_data);
+		MSG_Base_ReleaseDataAtomic(message_data);
+	}
+
+	/* do not advertise if has at least one bond */
+	if(MSG_ANT_BondCount() == 0){
+		// let's save one variable in the stack.
+
+		message_data = MSG_Base_AllocateDataAtomic(sizeof(ANT_DiscoveryProfile_t));
+		if(message_data){
+			SET_DISCOVERY_PROFILE(message_data);
+			parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1}, message_data);
+			MSG_Base_ReleaseDataAtomic(message_data);
+		}
+	}else{
+		uint8_t ret = MSG_ANT_BondCount();
+		PRINTS("bonds = ");
+		PRINT_HEX(&ret, 1);
+	}
+}
+
+static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
+{
+	int16_t values[3];
+	memcpy(raw_xyz, values, len);
+
+	values[0] /= KG_CONVERT_FACTOR;
+	values[1] /= KG_CONVERT_FACTOR;
+	values[2] /= KG_CONVERT_FACTOR;
+
+	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
+	int32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
+	if( aggregate > INT16_MAX){
+		aggregate = INT16_MAX;
+	}
+
+	//TF_SetCurrent((uint16_t)values[0]);
+	
+	if(TF_GetCurrent() < aggregate ){
+		TF_SetCurrent((tf_unit_t)aggregate);
+		PRINTS("NEW MAX: ");
+		PRINT_HEX(&aggregate, sizeof(aggregate));
+	}
+}
+
+
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-    /*uint8_t interrupt_status = imu_clear_interrupt_status();
-
-    bool known_interrupt = false;
-
-    if((interrupt_status & INT_STS_WOM_INT) && _settings.wom_callback) {
-        known_interrupt = true;
-
-        PRINTS("IMU IRQ: motion detected.\r\n");
-
-        if(!_start_motion_time) {
-            (void) app_timer_cnt_get(&_start_motion_time);
-        }
-        (void) app_timer_cnt_get(&_last_motion_time);
-
-        imu_activate();
-
-        // The _wom_timer below may already be running, but the nRF
-        // documentation for app_timer_start() specifically says "When
-        // calling this method on a timer which is already running, the
-        // second start operation will be ignored." So we're OK here.
-        APP_OK(app_timer_start(_wom_timer, IMU_COLLECTION_INTERVAL, NULL));
-    }
-
-    if((interrupt_status & INT_STS_RAW_READY) && _settings.data_ready_callback) {
-        known_interrupt = true;
-        _settings.data_ready_callback(imu_fifo_bytes_available());
-    }
-
-    if(!known_interrupt) {
-       // DEBUG("IMU IRQ unknown interrupt: ", interrupt_status);
-    }*/
 
 	uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(interrupt_status & INT_STS_WOM_INT)
@@ -967,38 +999,17 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 				break;
 			case IMU_READ_XYZ:
 				{
-					tf_unit_t values[3];
+					int16_t values[3];
 					imu_accel_reg_read((uint8_t*)values);
 					//uint8_t interrupt_status = imu_clear_interrupt_status();
 
-					int16_t* p_raw_xyz = get_raw_xzy_address();
-					p_raw_xyz[0] = values[0];
-					p_raw_xyz[1] = values[1];
-					p_raw_xyz[2] = values[2];
-
-					pill_ble_stream_data(p_raw_xyz, 6);
-
-#define KG_CONVERT_FACTOR	16   // Magic number: (0xFFFF / 4000)
-					//The range of accelerometer is +/-2G, the range of representation is 16bit in IMU
-					// And we want 3 digit precision, so it is 0xFFFF / 4000 = 16.38375
-					values[0] /= KG_CONVERT_FACTOR;
-					values[1] /= KG_CONVERT_FACTOR;
-					values[2] /= KG_CONVERT_FACTOR;
-
-					//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
-					int32_t aggregate = values[0]*values[0] + values[1]*values[1] + values[2]*values[2];
-					if( aggregate > INT16_MAX){
-						aggregate = INT16_MAX;
+					if(_settings.wom_callback){
+						_settings.wom_callback(values, sizeof(values));
 					}
 
-					//TF_SetCurrent((uint16_t)values[0]);
-					
-					if(TF_GetCurrent() < aggregate ){
-						TF_SetCurrent((tf_unit_t)aggregate);
-						PRINTS("NEW MAX: ");
-						PRINT_HEX(&aggregate, sizeof(aggregate));
-					}
 				}
+
+
 				break;
 		}
 		MSG_Base_ReleaseDataAtomic(data);
@@ -1017,7 +1028,7 @@ imu_init_base(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_
         base.send = _send;
         base.type = IMU;
         base.typestr = name;
-		if(!imu_init(channel,mode,miso,mosi,sclk,nCS)){
+		if(!imu_init_low_power(channel,mode,miso,mosi,sclk,nCS)){
 			initialized = 1;
 		}
 	}
@@ -1057,7 +1068,7 @@ static inline void _config_imu_interrputs()
 }
 
 
-int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
+int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
 {
  	int32_t err;
 
@@ -1073,8 +1084,6 @@ int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uin
 	// Reset chip
 	_imu_reset();
 
-	//_register_write(MPU_REG_PWR_MGMT_1, 0);
-
 	// Check for valid Chip ID
 	uint8_t whoami_value;
 	_register_read(MPU_REG_WHO_AM_I, &whoami_value);
@@ -1089,7 +1098,7 @@ int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uin
 	_reset_accel_range();
     _disable_i2c();
 
-    imu_low_power_mode();
+    imu_enter_low_power_mode();
 
     nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
     //APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_wom_process));

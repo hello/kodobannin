@@ -72,6 +72,9 @@ BUILD_DIR = build
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard micro-ecc/*.c) \
+	$(wildcard protobuf/*.c) \
+
+USE_SDK_BONDMNGR = 0
 
 NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/templates/system_nrf51.c \
@@ -81,7 +84,6 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
     nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
-    nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \
@@ -95,6 +97,10 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
 	nRF51_SDK/nrf51422/Source/spi_slave/spi_slave.c \
 
+ifeq ($(USE_SDK_BONDMNGR), 1)
+	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
+endif
+
 SRCS = $(HELLO_SRCS) $(NRF_SRCS)
 
 INCS =  ./ \
@@ -105,6 +111,7 @@ INCS =  ./ \
 	./nRF51_SDK/nrf51422/Include/ble/ble_services/ \
 	./nRF51_SDK/nrf51422/Include/app_common \
 	./nRF51_SDK/nrf51422/Include/gcc \
+	./protobuf \
 	./common \
 	./drivers \
 	./micro-ecc \

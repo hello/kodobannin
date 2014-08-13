@@ -75,8 +75,9 @@ void _start()
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
     
-    //hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_50_PPM, true);
+//    hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
+    //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
 
  #ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
@@ -98,19 +99,14 @@ void _start()
 
     PRINTS("ble_init() done.\r\n");
 
-#if 0
-    APP_OK(sd_ant_stack_reset());
-    PRINTS("ANT initialized.\r\n");
+#ifdef ANT_ENABLE
+    APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 #endif
     hble_advertising_start();
-    
     PRINTS("INIT DONE.\r\n");
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
-#ifdef ANT_ENABLE
-        app_sched_event_put(NULL, 0, ant_handler);
-#endif
         app_sched_execute();
     }
 }

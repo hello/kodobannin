@@ -19,7 +19,18 @@ enum {
 #define BLE_MODEL_NUM         "EVT1"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
-
+/*
+ * ANT Discovery Types
+ */
+#define ANT_UNIQ_ID         BLE_ORG_UNIQUE_ID
+#define ANT_HW_TYPE         0x10
+#define ANT_HW_REVISION     0x00
+#define ANT_SW_MAJOR        0x00
+#define ANT_SW_MINOR        0x02
+#define ANT_PREFER_FREQ     0x11
+#define ANT_PREFER_PERIOD   3277
+#define ANT_PREFER_NETWORK  0x0
+#define ANT_PREFER_CHTYPE   0x10
 //#define BONDING_REQUIRED
 #define IN_MEMORY_BONDING
 
