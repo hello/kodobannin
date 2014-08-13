@@ -40,10 +40,11 @@ typedef struct{
 }ANT_PayloadPacket_t;
 
 
+/* Do not modify member arrangement */
 typedef struct{
-    uint8_t transmit_type;
-    uint8_t device_type;
     uint16_t device_number;
+    uint8_t device_type;
+    uint8_t transmit_type;
 }ANT_ChannelID_t;
 
 typedef struct{
@@ -95,3 +96,5 @@ typedef struct{
 }MSG_ANTCommand_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent);
+/* returns the number of connected devices */
+uint8_t MSG_ANT_BondCount(void);

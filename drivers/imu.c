@@ -947,12 +947,20 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 						parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,2},d);
 						MSG_Base_ReleaseDataAtomic(d);
 					}
-					MSG_Data_t * e = MSG_Base_AllocateDataAtomic(sizeof(ANT_DiscoveryProfile_t));
-					if(e){
-						SET_DISCOVERY_PROFILE(e);
-						parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1},e);
-						MSG_Base_ReleaseDataAtomic(e);
+					/* do not advertise if has at least one bond */
+					if(MSG_ANT_BondCount() == 0){
+						MSG_Data_t * e = MSG_Base_AllocateDataAtomic(sizeof(ANT_DiscoveryProfile_t));
+						if(e){
+							SET_DISCOVERY_PROFILE(e);
+							parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1},e);
+							MSG_Base_ReleaseDataAtomic(e);
+						}
+					}else{
+						uint8_t ret = MSG_ANT_BondCount();
+						PRINTS("bonds = ");
+						PRINT_HEX(&ret, 1);
 					}
+
 				}
 				imu_clear_interrupt_status();
 				break;
