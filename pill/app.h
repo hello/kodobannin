@@ -32,7 +32,7 @@ enum {
 #define ANT_PREFER_NETWORK  0x0
 #define ANT_PREFER_CHTYPE   0x10
 //#define BONDING_REQUIRED
-#define IN_MEMORY_BONDING
+
 
 /*
  * BLE Connection Parameters

@@ -2,6 +2,8 @@
 
 #pragma once
 #include "platform.h"
+#include <ble.h>
+
 #include "hlo_ble_time.h"
 
 enum {

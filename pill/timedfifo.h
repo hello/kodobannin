@@ -32,3 +32,4 @@ void TF_TickOneSecond(const struct hlo_ble_time * init_time);
 tf_unit_t TF_GetCurrent(void);
 void TF_SetCurrent(tf_unit_t val);
 tf_data_t * TF_GetAll(void);
+int16_t* get_raw_xzy_address();
