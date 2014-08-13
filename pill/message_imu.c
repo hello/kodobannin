@@ -1023,23 +1023,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
     return SUCCESS;
 }
 
-MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
-{
-	if(!initialized){
-		parent = central;
-        base.init = _init;
-        base.destroy = _destroy;
-        base.flush = _flush;
-        base.send = _send;
-        base.type = IMU;
-        base.typestr = name;
-		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS)){
-			initialized = 1;
-		}
-	}
-	return &base;
 
-}
 
 
 static inline void _imu_reset()
@@ -1073,7 +1057,7 @@ static inline void _config_imu_interrputs()
 }
 
 
-int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
+static int32_t _imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
 {
  	int32_t err;
 
@@ -1119,7 +1103,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t
 }
 
 
-int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
+static int32_t _imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
 {
  	int32_t err;
 
@@ -1197,4 +1181,23 @@ int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t mi
 	PRINTS("IMU: initialization done.\r\n");
 
 	return err;
+}
+
+
+MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
+{
+	if(!initialized){
+		parent = central;
+        base.init = _init;
+        base.destroy = _destroy;
+        base.flush = _flush;
+        base.send = _send;
+        base.type = IMU;
+        base.typestr = name;
+		if(!_imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS)){
+			initialized = 1;
+		}
+	}
+	return &base;
+
 }
