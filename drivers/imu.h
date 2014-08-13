@@ -18,9 +18,9 @@ typedef void(*imu_wom_callback_t)(struct sensor_data_header* header);
 
 struct imu_settings {
 	uint16_t wom_threshold; // in microgravities
-    enum imu_hz inactive_sample_rate;
+    enum imu_hz low_power_mode_sampling_rate;
     enum imu_sensor_set active_sensors;
-	enum imu_hz active_sample_rate;
+	enum imu_hz normal_mode_sampling_rate;
 	enum imu_accel_range accel_range;
     enum imu_gyro_range gyro_range;
     unsigned ticks_to_fill_fifo;
@@ -50,7 +50,7 @@ MSG_Base_t * imu_init_base(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t
 
 uint16_t imu_accel_reg_read(uint8_t *buf);
 uint16_t imu_read_regs(uint8_t *buf);
-void imu_set_sample_rate(enum imu_hz hz);
+void imu_set_active_sample_rate(enum imu_hz hz);
 
 void imu_set_accel_range(enum imu_accel_range range);
 void imu_set_gyro_range(enum imu_gyro_range range);
@@ -68,9 +68,9 @@ void imu_fifo_clear();
 bool imu_is_active();
 
 /// Activate the IMU by waking it up from sleep mode.
-void imu_activate();
+void imu_normal_mode();
 /// Deactivate the IMU by putting it into sleep mode. This also clears the the IMU interrupt.
-void imu_deactivate();
+void imu_low_power_mode();
 uint8_t imu_clear_interrupt_status();
 void imu_wom_disable();
 

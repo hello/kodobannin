@@ -40,8 +40,8 @@ static MSG_Base_t base;
 
 static struct imu_settings _settings = {
 	.wom_threshold = 15,
-	.inactive_sample_rate = IMU_HZ_15_63,
-    .active_sample_rate = IMU_HZ_15_63,
+	.low_power_mode_sampling_rate = IMU_HZ_15_63,  //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50
+    .normal_mode_sampling_rate = IMU_HZ_15_63, //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
     .accel_range = IMU_ACCEL_RANGE_2G,
 	.gyro_range = IMU_GYRO_RANGE_2000_DPS,
@@ -52,8 +52,7 @@ static struct imu_settings _settings = {
     .wom_callback = NULL,
 };
 
-static inline void
-_register_read(MPU_Register_t register_address, uint8_t* const out_value)
+static inline void _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 {
 	uint8_t buf[2] = { SPI_Read(register_address), 0};
 	int32_t ret;
@@ -62,8 +61,7 @@ _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 	BOOL_OK(ret == 1);
 }
 
-static inline void
-_register_write(MPU_Register_t register_address, uint8_t value)
+static inline void _register_write(MPU_Register_t register_address, uint8_t value)
 {
 	uint8_t buf[2] = { SPI_Write(register_address), value };
 	int32_t ret;
@@ -72,8 +70,7 @@ _register_write(MPU_Register_t register_address, uint8_t value)
 	BOOL_OK(ret == 2);
 }
 
-unsigned
-imu_get_sampling_interval(enum imu_hz hz)
+unsigned imu_get_sampling_interval(enum imu_hz hz)
 {
     // The following line is a fast way to convert an enum imu_hz sample rate
     // to the number of milliseconds that sample rate uses between
@@ -115,8 +112,7 @@ imu_get_sampling_interval(enum imu_hz hz)
 	return (unsigned)4096U >> (unsigned)hz;
 }
 
-uint16_t
-imu_fifo_bytes_available() {
+uint16_t imu_fifo_bytes_available() {
 	union uint16_bits fifo_count;
 
 	_register_read(MPU_REG_FIFO_CNT_HI, &fifo_count.bytes[1]);
@@ -125,8 +121,7 @@ imu_fifo_bytes_available() {
 	return fifo_count.value;
 }
 
-uint16_t
-imu_accel_reg_read(uint8_t *buf) {
+uint16_t imu_accel_reg_read(uint8_t *buf) {
 	_register_read(MPU_REG_ACC_X_LO, buf++);
 	_register_read(MPU_REG_ACC_X_HI, buf++);
 	_register_read(MPU_REG_ACC_Y_LO, buf++);
@@ -137,8 +132,7 @@ imu_accel_reg_read(uint8_t *buf) {
 	return 6;
 }
 
-uint16_t
-imu_read_regs(uint8_t *buf) {
+uint16_t imu_read_regs(uint8_t *buf) {
 	_register_read(MPU_REG_ACC_X_LO, buf++);
 	_register_read(MPU_REG_ACC_X_HI, buf++);
 	_register_read(MPU_REG_ACC_Y_LO, buf++);
@@ -156,8 +150,7 @@ imu_read_regs(uint8_t *buf) {
 	return 12;
 }
 
-static
-void _reset_sensors()
+static void _reset_normal_mode_sensors()
 {
     uint8_t fifo_register, power_management_2_register;
     _register_read(MPU_REG_FIFO_EN, &fifo_register);
@@ -179,21 +172,18 @@ void _reset_sensors()
     _register_write(MPU_REG_FIFO_EN, fifo_register);
 }
 
-static void
-_reset_accel_range()
+static inline void _reset_accel_range()
 {
 	_register_write(MPU_REG_ACC_CFG, _settings.accel_range << ACCEL_CFG_SCALE_OFFSET);
 }
 
-void
-imu_set_accel_range(enum imu_accel_range range)
+void imu_set_accel_range(enum imu_accel_range range)
 {
 	_settings.accel_range = range;
     _reset_accel_range();
 }
 
-static void
-_reset_gyro_range()
+static inline void _reset_gyro_range()
 {
 	_register_write(MPU_REG_GYRO_CFG, _settings.gyro_range << GYRO_CFG_SCALE_OFFSET);
 }
@@ -205,7 +195,7 @@ imu_set_gyro_range(enum imu_gyro_range range)
 	_reset_gyro_range();
 }
 
-uint8_t imu_clear_interrupt_status()
+inline uint8_t imu_clear_interrupt_status()
 {
     // Oddly, you clear the interrupt status register by _reading_ it,
     // not writing to it. Read that again for impact.
@@ -230,7 +220,7 @@ void imu_set_sensors(enum imu_sensor_set sensors)
 
     _settings.active_sensors = sensors;
 
-    _reset_sensors();
+    _reset_normal_mode_sensors();
 
 	DEBUG("IMU: sensors set to ", sensors);
 }
@@ -259,19 +249,19 @@ void imu_set_wom_callback(imu_wom_callback_t callback)
 {
     _settings.wom_callback = callback;
 
+    /*
     if(callback) {
         imu_deactivate();
     }
+    */
 }
 
-void
-imu_get_settings(struct imu_settings *settings)
+inline void imu_get_settings(struct imu_settings *settings)
 {
 	*settings = _settings;
 }
 
-uint16_t
-imu_fifo_read(uint16_t count, uint8_t *buf) {
+uint16_t imu_fifo_read(uint16_t count, uint8_t *buf) {
 	uint16_t avail;
 	uint8_t data[1] = {SPI_Read(MPU_REG_FIFO)};
 
@@ -290,8 +280,7 @@ imu_fifo_read(uint16_t count, uint8_t *buf) {
 	return count;
 }
 
-void
-imu_fifo_clear()
+inline void imu_fifo_clear()
 {
 	// [TODO]: This will overflow the stack!
 
@@ -433,8 +422,7 @@ static void _self_test()
 	DEBUG("Self-test responses: ", self_test_responses);
 }
 
-static void
-_imu_set_low_pass_filter(enum imu_hz hz)
+static void _imu_set_low_pass_filter(enum imu_hz hz)
 {
 	// [TODO]: register constants here should be enums
 	uint8_t gyro_config;
@@ -494,8 +482,7 @@ _imu_set_low_pass_filter(enum imu_hz hz)
     _register_write(MPU_REG_ACC_CFG2, accel_config2);
 }
 
-static void
-_reset_ticks_to_fill_fifo()
+static void _reset_ticks_to_fill_fifo()
 {
     uint32_t samples_to_fill_fifo;
     switch(_settings.active_sensors) {
@@ -507,7 +494,7 @@ _reset_ticks_to_fill_fifo()
         break;
     }
 
-    unsigned ms = imu_get_sampling_interval(_settings.active_sample_rate);
+    unsigned ms = imu_get_sampling_interval(_settings.normal_mode_sampling_rate);
     uint32_t ticks_per_sample = 32 /* floor(32768/1024.0) */ * ms;
 
     _settings.ticks_to_fill_fifo = ticks_per_sample * samples_to_fill_fifo;
@@ -517,8 +504,7 @@ _reset_ticks_to_fill_fifo()
     _settings.ticks_to_fifo_watermark = _settings.ticks_to_fill_fifo - 3000;
 }
 
-static void
-_reset_active_sample_rate()
+static void _reset_normal_mode_sampling_rate()
 {
 	// The logic here is largely copied from mpu_set_sample_rate() in
 	// inv_mpu.c. Using their source code to get things working seems
@@ -527,33 +513,31 @@ _reset_active_sample_rate()
 	uint8_t divider;
     _register_read(MPU_REG_SAMPLE_RATE_DIVIDER, &divider);
 
-	uint8_t interval = imu_get_sampling_interval(_settings.active_sample_rate);
+	uint8_t interval = imu_get_sampling_interval(_settings.normal_mode_sampling_rate);
 	if(divider == interval-1) {
 		return;
 	}
 
     _register_write(MPU_REG_SAMPLE_RATE_DIVIDER, interval-1);
 
-	_imu_set_low_pass_filter(_settings.active_sample_rate);
+	_imu_set_low_pass_filter(_settings.normal_mode_sampling_rate);
 	_reset_ticks_to_fill_fifo();
 }
 
-void
-imu_set_sample_rate(enum imu_hz hz)
+void imu_set_normal_mode_sampling_rate(enum imu_hz hz)
 {
-	if(_settings.active_sample_rate == hz) {
+	if(_settings.normal_mode_sampling_rate == hz) {
 		return;
 	}
 
-    _settings.active_sample_rate = hz;
+    _settings.normal_mode_sampling_rate = hz;
 
-    _reset_active_sample_rate();
+    _reset_normal_mode_sampling_rate();
 
 	DEBUG("IMU: sample rate changed to enum imu_hz ", hz);
 }
 
-void
-imu_activate()
+void imu_normal_mode()
 {
 	if(_settings.active) {
 		return;
@@ -568,7 +552,7 @@ imu_activate()
 	_register_write(MPU_REG_PWR_MGMT_1, power_management_1 & ~PWR_MGMT_1_CYCLE);
 
     _reset_sensors();
-	_reset_active_sample_rate();
+	_reset_normal_mode_sampling_rate();
 
 	_settings.active = true;
 
@@ -579,14 +563,12 @@ imu_activate()
     // nrf_delay_ms(30);
 }
 
-bool
-imu_is_active()
+inline bool imu_is_active()
 {
 	return _settings.active;
 }
 
-static inline void
-_reset_wom_threshold()
+static inline void _reset_wom_threshold()
 {
     _register_write(MPU_REG_WOM_THR, _settings.wom_threshold >> 2);
 }
@@ -606,14 +588,9 @@ void imu_wom_disable()
 	_register_write(MPU_REG_INT_EN, interrupt_enable & ~INT_EN_WOM);
 }
 
-void imu_deactivate()
+void imu_low_power_mode()
 {
-	if(!_settings.active) {
-		return;
-	}
-
     _register_write(MPU_REG_INT_EN, 0);
-
 	_register_write(MPU_REG_FIFO_EN, 0);
 
     uint8_t user_control;
@@ -625,10 +602,23 @@ void imu_deactivate()
     // Figure 8 (page 29) of MPU-6500 v2.0.pdf.
 
     _register_write(MPU_REG_PWR_MGMT_2, PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
-    _imu_set_low_pass_filter(_settings.inactive_sample_rate);
+    //_imu_set_low_pass_filter(_settings.low_power_mode_sampling_rate);
+
+    /*
+	uint8_t config_register;
+	_register_read(MPU_REG_CONFIG, &config_register);
+	config_register &= ~CONFIG_LPF_B_MASK;
+	*/
+
+	uint8_t accel_config2;
+
+	_register_read(MPU_REG_ACC_CFG2, &accel_config2);
+	_register_write(MPU_REG_ACC_CFG2, accel_config2 /*| CONFIG_LPF_B_MASK*/ | ACCEL_CFG2_FCHOICE_1);
+	
+
     _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
     _reset_wom_threshold();
-    _register_write(MPU_REG_ACCEL_ODR, (uint8_t)_settings.inactive_sample_rate);
+    _register_write(MPU_REG_ACCEL_ODR, (uint8_t)_settings.low_power_mode_sampling_rate);
 
 	{
         // We have to delay a certain amount of time _after_ setting
@@ -647,7 +637,7 @@ void imu_deactivate()
 
         _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE|PWR_MGMT_1_PD_PTAT);
 
-        unsigned delay = imu_get_sampling_interval(_settings.inactive_sample_rate) + (12 - (unsigned)_settings.inactive_sample_rate);
+        unsigned delay = imu_get_sampling_interval(_settings.low_power_mode_sampling_rate) + (12 - (unsigned)_settings.low_power_mode_sampling_rate);
         nrf_delay_ms(delay);
 
         imu_clear_interrupt_status();
@@ -677,9 +667,8 @@ static void _low_power_setup()
     _register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_CYCLE);
     _register_write(MPU_REG_INT_EN, INT_EN_WOM);
 }
-
-static void
-_imu_wom_process(void* context)
+
+static void _imu_wom_process(void* context)
 {
     uint32_t err;
 
@@ -727,7 +716,7 @@ _imu_wom_process(void* context)
 
     _start_motion_time = 0;
 
-    imu_deactivate();
+    imu_low_power_mode();
 
     PRINTS("Deactivating IMU.\r\n");
 }
@@ -770,6 +759,20 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
 	if(interrupt_status & INT_STS_WOM_INT)
 	{
 		MSG_PING(parent,IMU,IMU_READ_XYZ);
+
+		/*
+		tf_unit_t values[3];
+		imu_accel_reg_read((uint8_t*)values);
+		imu_clear_interrupt_status();
+		//uint8_t interrupt_status = imu_clear_interrupt_status();
+
+		int16_t* p_raw_xyz = get_raw_xzy_address();
+		p_raw_xyz[0] = values[0];
+		p_raw_xyz[1] = values[1];
+		p_raw_xyz[2] = values[2];
+
+		app_sched_event_put(p_raw_xyz, 6, pill_ble_stream_data);
+		*/
 	}
 
 }
@@ -845,14 +848,12 @@ void imu_calibrate_zero()
     imu_wom_callback_t active_wom_callback = _settings.wom_callback;
     imu_set_wom_callback(NULL);
 
-    enum imu_accel_range active_accel_range = _settings.accel_range;
-    imu_set_accel_range(IMU_ACCEL_RANGE_2G);
-
     union uint16_bits offset_values[3];
 
     union int16_bits instantaneous_values[3];
     int64_t average_readings[3];
 
+	memset(offset_values, 0, sizeof(offset_values));
     memset(average_readings, 0 , sizeof(average_readings));
     memset(instantaneous_values, 0, sizeof(instantaneous_values));
 
@@ -870,20 +871,9 @@ void imu_calibrate_zero()
 	instantaneous_values[1].value = average_readings[1] / measure_time;
 	instantaneous_values[2].value = average_readings[2] / measure_time;
 
-	_register_read(MPU_REG_XA_OFFS_H, &offset_values[0].bytes[1]);
-    _register_read(MPU_REG_XA_OFFS_L, &offset_values[0].bytes[0]);
-    _register_read(MPU_REG_YA_OFFS_H, &offset_values[1].bytes[1]);
-    _register_read(MPU_REG_YA_OFFS_L, &offset_values[1].bytes[0]);
-    _register_read(MPU_REG_ZA_OFFS_H, &offset_values[2].bytes[1]);
-    _register_read(MPU_REG_ZA_OFFS_L, &offset_values[2].bytes[0]);
+	//imu_accel_reg_read(instantaneous_values[0].bytes);
 
-    //offset_values[0].value = offset_values[0].value << 1;
-    //offset_values[1].value = offset_values[1].value << 1;
-    //offset_values[2].value = offset_values[2].value << 1;
-    DEBUG("Old offsets: ", offset_values);
-    PRINTS("\r\n");
-
-    PRINTS("Current accelemeter reading: ");
+	PRINTS("Current accelemeter reading: ");
     PRINTS("X = ");
     PRINT_HEX(&instantaneous_values[0].value, sizeof(instantaneous_values[0].value));
     PRINTS(",");
@@ -894,15 +884,31 @@ void imu_calibrate_zero()
     PRINT_HEX(&instantaneous_values[2].value, sizeof(instantaneous_values[2].value));
     PRINTS(".\r\n");
 
+
+	_register_read(MPU_REG_XA_OFFS_H, &offset_values[0].bytes[1]);
+    _register_read(MPU_REG_XA_OFFS_L, &offset_values[0].bytes[0]);
+    _register_read(MPU_REG_YA_OFFS_H, &offset_values[1].bytes[1]);
+    _register_read(MPU_REG_YA_OFFS_L, &offset_values[1].bytes[0]);
+    _register_read(MPU_REG_ZA_OFFS_H, &offset_values[2].bytes[1]);
+    _register_read(MPU_REG_ZA_OFFS_L, &offset_values[2].bytes[0]);
+
+    offset_values[0].value = (offset_values[0].value >> 1);
+    offset_values[1].value = (offset_values[1].value >> 1);
+    offset_values[2].value = (offset_values[2].value >> 1);
+    DEBUG("Old offsets: ", offset_values);
+    PRINTS("\r\n");
+
+    
+
     // printf("Old offsets: %d %d %d\r\n", offset_values[0].value, offset_values[1].value, offset_values[2].value);
 
     //offset_values[0].value = 0 - (instantaneous_values[0].value >> 3);
     //offset_values[1].value = 0 - (instantaneous_values[1].value >> 3);
     //offset_values[2].value = 0x800 - (instantaneous_values[2].value >> 3);
 
-    offset_values[0].value -= (instantaneous_values[0].value << 1);
-    offset_values[1].value -= (instantaneous_values[1].value << 1);
-    offset_values[2].value -= (instantaneous_values[2].value << 1);
+    offset_values[0].value -= instantaneous_values[0].value;
+    offset_values[1].value -= instantaneous_values[1].value;
+    offset_values[2].value -= instantaneous_values[2].value;
 
     // for(unsigned i = 0; i < 3; i++){
     //     offset_values[i].value -= (instantaneous_values[i].value >> 3);
@@ -911,6 +917,10 @@ void imu_calibrate_zero()
     // offset_values[2].value += 0x800;
     DEBUG("New offsets: ", offset_values);
     PRINTS("\r\n");
+
+    offset_values[0].value = (offset_values[0].value << 1);
+    offset_values[1].value = (offset_values[1].value << 1);
+    offset_values[2].value = (offset_values[2].value << 1);
 
 	_register_write(MPU_REG_XA_OFFS_H, offset_values[0].bytes[1]);
     _register_write(MPU_REG_XA_OFFS_L, offset_values[0].bytes[0]);
@@ -921,11 +931,13 @@ void imu_calibrate_zero()
 
     uint8_t user_control;
     _register_read(MPU_REG_USER_CTL, &user_control);
-    user_control |= USR_CTL_FIFO_RST;
-    _register_write(MPU_REG_USER_CTL, user_control);
-    imu_fifo_clear();
 
-    imu_set_accel_range(active_accel_range);
+    if(user_control & USR_CTL_FIFO_EN)
+    {
+    	user_control |= USR_CTL_FIFO_RST;
+	}
+    _register_write(MPU_REG_USER_CTL, user_control);
+    
     imu_set_data_ready_callback(active_data_ready_callback);
     imu_set_wom_callback(active_wom_callback);
 }
@@ -1014,7 +1026,7 @@ imu_init_base(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_
 }
 
 
-static void _imu_reset()
+static inline void _imu_reset()
 {
 	PRINTS("IMU reset\r\n");
 	_register_write(MPU_REG_PWR_MGMT_1, PWR_MGMT_1_RESET);
@@ -1030,8 +1042,70 @@ static void _imu_reset()
 	nrf_delay_ms(100);
 }
 
+static inline void _disable_i2c()
+{
+	uint8_t user_control;
+	_register_read(MPU_REG_USER_CTL, &user_control);
+	user_control |= USR_CTL_I2C_DIS;
+	_register_write(MPU_REG_USER_CTL, user_control);
+}
+
+
+static inline void _config_imu_interrputs()
+{
+	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
+}
+
 
 int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
+{
+ 	int32_t err;
+
+	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
+	if (err != 0) {
+		PRINTS("Could not configure SPI bus for IMU\r\n");
+		return err;
+	}
+
+	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
+	// page 43
+
+	// Reset chip
+	_imu_reset();
+
+	//_register_write(MPU_REG_PWR_MGMT_1, 0);
+
+	// Check for valid Chip ID
+	uint8_t whoami_value;
+	_register_read(MPU_REG_WHO_AM_I, &whoami_value);
+
+	if (whoami_value != CHIP_ID) {
+		DEBUG("Invalid MPU-6500 ID found. Expected 0x70, got 0x", whoami_value);
+		APP_ASSERT(0);
+	}
+
+	// Init interrupts
+	_config_imu_interrputs();
+	_reset_accel_range();
+    _disable_i2c();
+
+    imu_low_power_mode();
+
+    nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
+    //APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_wom_process));
+    APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
+    APP_OK(app_gpiote_user_enable(_gpiote_user));
+
+    imu_clear_interrupt_status();
+	//imu_calibrate_zero();
+
+	PRINTS("IMU: initialization done.\r\n");
+
+	return err;
+}
+
+
+int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS)
 {
  	int32_t err;
 
@@ -1094,9 +1168,9 @@ int32_t imu_init(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uin
 	// Set up wake-on-motion stuff
 
     _reset_sensors();
-    _reset_active_sample_rate();
+    _reset_normal_mode_sampling_rate();
 
-    imu_deactivate();
+    //imu_deactivate();
 
     nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
     //APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _imu_wom_process));
