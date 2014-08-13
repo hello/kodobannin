@@ -48,21 +48,32 @@ static uint16_t _calc_checksum(MSG_Data_t * data);
  * can't find in api, so just store in rx ctx
  */
 static uint8_t _get_channel_type(uint8_t channel);
+/*
+ * Closes the channel, context are freed at channel closure callback
+ */
 static MSG_Status _destroy_channel(uint8_t channel);
+
 /* Allocates header based on the payload */
 static MSG_Data_t * INCREF _allocate_header_tx(MSG_Data_t * payload);
+
 /* Allocates header based on receiving header packet */
 static MSG_Data_t * INCREF _allocate_header_rx(ANT_HeaderPacket_t * buf);
+
 /* Allocates payload based on receiving header packet */
 static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
+
 /* Returns status of the channel */
 static uint8_t _get_channel_status(uint8_t channel);
+
 /* Debug */
 static void _print_discovery(ANT_DiscoveryProfile_t * profile);
+
 /* Entry point to handle receiving of discovery packet */
 static void _handle_discovery(uint8_t channel, MSG_Data_t * obj);
+
 /* Finds inverse of the channel type eg master -> slave */
 static uint8_t _match_channel_type(uint8_t remote);
+
 /* Finds an unassigned Channel */
 static uint8_t _find_unassigned_channel(void);
 
