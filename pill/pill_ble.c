@@ -12,7 +12,7 @@
 
 #ifdef PLATFORM_HAS_IMU
 
-#include "imu.h"
+#include "message_imu.h"
 #include "imu_data.h"
 #include "sensor_data.h"
 
@@ -23,18 +23,23 @@
 #include "util.h"
 #include "message_app.h"
 #include "message_uart.h"
+
+#ifdef ANT_ENABLE
 #include "message_ant.h"
+#endif
+
 #include "message_time.h"
 #include "platform.h"
 #include "nrf.h"
 #include "timedfifo.h"
+
+
 
 extern uint8_t hello_type;
 
 static uint16_t _pill_service_handle;
 static MSG_Central_t * central;
 static bool _should_stream = false;
-
 
 static void
 _unhandled_msg_event(void* event_data, uint16_t event_size){
@@ -59,13 +64,16 @@ static void _reply_time(void * p_event_data, uint16_t event_size)
 }
 
 
-void pill_ble_stream_data(const int16_t* raw_xyz, size_t len)
+static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
 {
 	if(_should_stream)
 	{
 		hlo_ble_notify(0xFEED, raw_xyz, len, NULL);
 	}
+	
 }
+
+
 
 static void _calibrate_imu(void * p_event_data, uint16_t event_size)
 {
@@ -174,17 +182,21 @@ void pill_ble_load_modules(void){
 #endif
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
-		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
-#endif		
+		central->loadmod(MSG_IMU_Init(central));
+		imu_set_wom_callback(_on_motion_data_arrival);
+#endif
+
 #ifdef ANT_ENABLE
 		central->loadmod(MSG_ANT_Base(central));
 #endif
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
+#ifdef ANT_ENABLE
 		{
 			uint8_t role = 1;
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
 		}
+#endif
     }else{
         PRINTS("FAIL");
     }

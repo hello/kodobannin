@@ -59,4 +59,3 @@ void pill_ble_services_init(void);
 void pill_ble_evt_handler(ble_evt_t* ble_evt);
 void pill_ble_advertising_init(void);
 void pill_ble_load_modules(void);
-void pill_ble_stream_data(const int16_t* raw_xyz, size_t len);

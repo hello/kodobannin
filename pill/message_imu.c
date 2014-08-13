@@ -12,7 +12,7 @@
 #include <string.h>
 #include <app_gpiote.h>
 
-#include "imu.h"
+#include "message_imu.h"
 #include "mpu_6500_registers.h"
 #include "sensor_data.h"
 #include "message_base.h"
@@ -30,6 +30,8 @@
 //The range of accelerometer is +/-2G, the range of representation is 16bit in IMU
 // And we want 3 digit precision, so it is 0xFFFF / 4000 = 16.38375
 #define KG_CONVERT_FACTOR	16
+
+static uint8_t imu_clear_interrupt_status();
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -205,7 +207,7 @@ imu_set_gyro_range(enum imu_gyro_range range)
 	_reset_gyro_range();
 }
 
-inline uint8_t imu_clear_interrupt_status()
+static inline uint8_t imu_clear_interrupt_status()
 {
     // Oddly, you clear the interrupt status register by _reading_ it,
     // not writing to it. Read that again for impact.
@@ -1008,7 +1010,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 					}
 
 					_aggregate_motion_data(values, sizeof(values));
-					_aggregate_motion_data(values, sizeof(values));
+					_dispatch_motion_data_via_ant(values, sizeof(values));
 
 				}
 
@@ -1021,8 +1023,8 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
     return SUCCESS;
 }
 
-MSG_Base_t *
-imu_init_base(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS, MSG_Central_t * central){
+MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
+{
 	if(!initialized){
 		parent = central;
         base.init = _init;
@@ -1031,7 +1033,7 @@ imu_init_base(enum SPI_Channel channel, enum SPI_Mode mode, uint8_t miso, uint8_
         base.send = _send;
         base.type = IMU;
         base.typestr = name;
-		if(!imu_init_low_power(channel,mode,miso,mosi,sclk,nCS)){
+		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS)){
 			initialized = 1;
 		}
 	}
