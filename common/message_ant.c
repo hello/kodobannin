@@ -636,3 +636,14 @@ void ant_handler(ant_evt_t * p_ant_evt){
     }
 
 }
+uint8_t MSG_ANT_BondCount(void){
+    uint8_t i, ret = 0;
+    for(i = 0; i < NUM_ANT_CHANNELS; i++){
+        if(i != ANT_DISCOVERY_CHANNEL){
+            if(_get_channel_status(i) > 0){
+                ret++;
+            }
+        }
+    }
+    return ret;
+}

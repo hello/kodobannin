@@ -96,3 +96,5 @@ typedef struct{
 }MSG_ANTCommand_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent);
+/* returns the number of connected devices */
+uint8_t MSG_ANT_BondCount(void);
