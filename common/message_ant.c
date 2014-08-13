@@ -378,7 +378,13 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         //accept discovery even if its new
         MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &self.discovery_role, 1);
     }else if(*channel == ANT_DISCOVERY_CHANNEL){
+        //discovery timesout to prevent power loss
         self.discovery_role = 0xFF;
+    }else{
+        uint8_t type = self.rx_channel_ctx[*channel].phy.type;
+        if(type == CHANNEL_TYPE_SLAVE || type == CHANNEL_TYPE_SHARED_SLAVE || type == CHANNEL_TYPE_SLAVE_RX_ONLY){
+            _connect(*channel);
+        }
     }
     self.rx_channel_ctx[*channel].prev_crc = 0x00;
     _free_context(&self.rx_channel_ctx[*channel]);
@@ -562,6 +568,8 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                         PRINT_HEX(&ch, 1);
                         _free_context(&self.rx_channel_ctx[ch]);
                         _free_context(&self.tx_channel_ctx[ch]);
+                        sd_ant_channel_low_priority_rx_search_timeout_set(ch, 0xFF);
+                        sd_ant_channel_rx_search_timeout_set(ch, 0xFF);
                         ret = _configure_channel(ch, &antcmd->param.settings.phy, &antcmd->param.settings.id);
                         ret = _connect(ch);
                     }
