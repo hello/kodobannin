@@ -243,7 +243,7 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_Cha
         self.rx_channel_ctx[channel].phy.type = spec->channel_type;
         ret += sd_ant_channel_id_set(channel, id->device_number, id->device_type, id->transmit_type);
     }
-    return ret;
+    return ret?FAIL:SUCCESS;
 }
 static void _print_discovery(ANT_DiscoveryProfile_t * profile){
     PRINTS("=DISCOVERED=\r\n");
