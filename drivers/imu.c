@@ -1008,7 +1008,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 					}
 
 					_aggregate_motion_data(values, sizeof(values));
-					_aggregate_motion_data(values, sizeof(values));
+					_dispatch_motion_data_via_ant(values, sizeof(values));
 
 				}
 
