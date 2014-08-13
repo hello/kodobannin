@@ -328,7 +328,7 @@ static MSG_Status
 _set_discovery_mode(uint8_t role){
     ANT_ChannelID_t id = {0};
     ANT_ChannelPHY_t phy = { 
-        .period = 32768,
+        .period = 596, //scanning at 55 Hz to avoid colision when connected
         .frequency = 66,
         .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0};
@@ -342,7 +342,6 @@ _set_discovery_mode(uint8_t role){
         case ANT_DISCOVERY_CENTRAL:
             //central mode
             PRINTS("SLAVE\r\n");
-            phy.period = 546;
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id);
             sd_ant_channel_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
             sd_ant_channel_low_priority_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
@@ -354,7 +353,6 @@ _set_discovery_mode(uint8_t role){
             //configure shit here
             PRINTS("MASTER\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
-            phy.period = 1092;
             id.device_number = GET_UUID_16();
             id.device_type = ANT_HW_TYPE;
             id.transmit_type = 0;
