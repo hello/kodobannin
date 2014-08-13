@@ -17,7 +17,11 @@
 #include <spi.h>
 #include <spi_nor.h>
 #include <util.h>
-#include <imu.h>
+
+#ifdef PLATFORM_HAS_IMU
+#include "message_imu.h"
+#endif
+
 #include <pwm.h>
 #include <hrs.h>
 #include <watchdog.h>
