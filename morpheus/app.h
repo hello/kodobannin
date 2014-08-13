@@ -32,7 +32,12 @@ enum {
 #define ANT_PREFER_NETWORK  0x0
 #define ANT_PREFER_CHTYPE   0x00
 
- #define BONDING_REQUIRED
+#define BONDING_REQUIRED
+#define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D
+
+#ifdef DEBUG_SERIAL
+#define PB_NO_ERRMSG
+#endif
 
 /*
  * BLE Connection Parameters
