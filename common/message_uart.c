@@ -15,6 +15,24 @@ static struct{
 }self;
 static char * name = "UART";
 
+static void
+_printblocking(const uint8_t * d, uint32_t len, int hex_enable){
+    int i;
+    if(self.initialized){
+        for(i = 0; i < len; i++){
+            if(hex_enable){
+                while(app_uart_put(hex[0xF&(d[i]>>4)]) != SUCCESS){
+                }
+                while(app_uart_put(hex[ 0xF&d[i] ] ) != SUCCESS){
+                }
+            }else{
+                while(app_uart_put(d[i]) != SUCCESS){
+                }
+            }
+        }
+    }
+
+}
 
 static MSG_Status
 _destroy(void){
@@ -25,13 +43,18 @@ _flush(void){
     return SUCCESS;
 }
 static MSG_Status
-_send(MSG_ModuleType src, MSG_Data_t * data){
+_send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(data){
-        MSG_Base_AcquireDataAtomic(data);
-        for(int i = 0; i < data->len; i++){
-            app_uart_put(data->buf[i]);
+        if(dst.submodule == 0){
+            //meta command
+        }else{
+            //only 1 connection
+            MSG_Base_AcquireDataAtomic(data);
+            _printblocking("\r\n<data>",8, 0);
+            _printblocking(data->buf,data->len,1);
+            _printblocking("</data>\r\n",9, 0);
+            MSG_Base_ReleaseDataAtomic(data);
         }
-        MSG_Base_ReleaseDataAtomic(data);
     }
     return SUCCESS;
 }

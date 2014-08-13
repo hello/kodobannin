@@ -25,14 +25,12 @@
 
 #include "app.h"
 #include "hble.h"
-
-
+#include "platform.h"
 #include "git_description.h"
 #include "morpheus_ble.h"
 
-
-
-void _start()
+void
+_start()
 {
 
     {
@@ -69,10 +67,8 @@ void _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
-	morpheus_load_modules();
 
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
-
     hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
     morpheus_ble_transmission_layer_init();
 
@@ -81,7 +77,9 @@ void _start()
 #endif
     hble_params_init(device_name);
     hlo_ble_init();
-    morpheus_ble_services_init();
+#ifdef ANT_ENABLE
+    APP_OK(softdevice_ant_evt_handler_set(ant_handler));
+#endif
 
     PRINTS("morpheus ble init() done\r\n");
 
@@ -95,9 +93,6 @@ void _start()
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
-#ifdef ANT_ENABLE
-        app_sched_event_put(NULL, 0, ant_handler);
-#endif
         app_sched_execute();
     }
 }
