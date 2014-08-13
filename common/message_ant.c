@@ -328,6 +328,9 @@ _set_discovery_mode(uint8_t role){
             PRINTS("MASTER\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
             phy.period = 1092;
+            id.device_number = GET_UUID_16();
+            id.device_type = ANT_HW_TYPE;
+            id.transmit_type = 0;
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id);
             break;
         default:
