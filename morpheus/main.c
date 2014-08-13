@@ -81,7 +81,7 @@ _start()
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 #endif
 
-    PRINTS("morpheus ble init() done\r\n");
+	morpheus_load_modules();
 
     ble_uuid_t service_uuid = {
         .type = hello_type,
