@@ -77,6 +77,9 @@ static uint8_t _match_channel_type(uint8_t remote);
 /* Finds an unassigned Channel */
 static uint8_t _find_unassigned_channel(void);
 
+/* Finds channel with matching id */
+static uint8_t _match_channel(const ANT_ChannelID_t * id);
+
 static uint8_t
 _match_channel_type(uint8_t remote){
     switch(remote){
@@ -95,6 +98,19 @@ _match_channel_type(uint8_t remote){
         default:
             return 0xFF;
     }
+}
+static uint8_t
+_match_channel(const ANT_ChannelID_t * id){
+    uint16_t dev_id;
+    uint8_t type, xmit, i;
+    for(i = 0; i < NUM_ANT_CHANNELS; i++){
+        if(!sd_ant_channel_id_get(i,&dev_id, &type, &xmit)){
+            if(i != ANT_DISCOVERY_CHANNEL && dev_id == id->device_number){
+                return i;
+            }
+        }
+    }
+    return 0xFF;
 }
 
 static uint8_t
@@ -533,6 +549,12 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case ANT_CREATE_CHANNEL:
                 {
                     PRINTS("Create Channel\r\n");
+                    uint8_t och = _match_channel(&antcmd->param.settings.id);
+                    if(och < NUM_ANT_CHANNELS){
+                        //Channel already establshed
+                        PRINTS("Channel Already Established\r\n");
+                        return SUCCESS;
+                    }
                     uint8_t ch = _find_unassigned_channel();
                     if(ch < NUM_ANT_CHANNELS){
                         uint32_t ret;
