@@ -27,7 +27,7 @@
 #define BLE_BONDMNGR_CCCD_COUNT            4
 
 /**@brief Maximum number of bonded centrals. */
-#define BLE_BONDMNGR_MAX_BONDED_CENTRALS   6
+#define BLE_BONDMNGR_MAX_BONDED_CENTRALS   4
 
 #endif // BLE_BONDMNGR_CFG_H__
 
