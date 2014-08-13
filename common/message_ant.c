@@ -182,13 +182,12 @@ _allocate_payload_rx(ANT_HeaderPacket_t * buf){
     return ret;
 }
 static MSG_Status
-_connect(uint8_t channel, const ANT_ChannelID_t * id){
+_connect(uint8_t channel){
     //needs at least assigned
     MSG_Status ret = FAIL;
     uint8_t inprogress;
     uint8_t pending;
     sd_ant_channel_status_get(channel, &inprogress);
-    sd_ant_channel_id_set(channel, id->device_number, id->device_type, id->transmit_type);
     if(!sd_ant_channel_open(channel)){
         ret = SUCCESS;
     }
@@ -204,7 +203,7 @@ _disconnect(uint8_t channel){
 }
 
 static MSG_Status
-_configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec){
+_configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_ChannelID_t * id){
     uint32_t ret = 0;
     if(_get_channel_status(channel)){
         ret = _destroy_channel(channel);
@@ -215,6 +214,7 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec){
         ret += sd_ant_channel_period_set(channel, spec->period);
         self.rx_channel_ctx[channel].phy.network = spec->network;
         self.rx_channel_ctx[channel].phy.type = spec->channel_type;
+        ret += sd_ant_channel_id_set(channel, id->device_number, id->device_type, id->transmit_type);
     }
     return ret;
 }
@@ -316,10 +316,10 @@ _set_discovery_mode(uint8_t role){
             //central mode
             PRINTS("SLAVE\r\n");
             phy.period = 1092;
-            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
+            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id);
             sd_ant_channel_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
             sd_ant_channel_low_priority_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
-            _connect(ANT_DISCOVERY_CHANNEL, &id);
+            _connect(ANT_DISCOVERY_CHANNEL);
             _free_context(&self.rx_channel_ctx[0]);
             break;
         case ANT_DISCOVERY_PERIPHERAL:
@@ -328,7 +328,7 @@ _set_discovery_mode(uint8_t role){
             PRINTS("MASTER\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
             phy.period = 1092;
-            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy);
+            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id);
             break;
         default:
             break;
@@ -521,14 +521,22 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                         uint32_t ret;
                         PRINTS("CH = ");
                         PRINT_HEX(&ch, 1);
-                        ret = _configure_channel(ch, &antcmd->param.settings.phy);
-                        ret = _connect(ch, &antcmd->param.settings.id);
+                        _free_context(&self.rx_channel_ctx[ch]);
+                        _free_context(&self.tx_channel_ctx[ch]);
+                        ret = _configure_channel(ch, &antcmd->param.settings.phy, &antcmd->param.settings.id);
+                        ret = _connect(ch);
                     }
                 }
                 break;
         }
     }else{
+        PRINTS("SENDING TO CH: ");
+        PRINT_HEX(&dst.submodule, 1);
         uint8_t channel = dst.submodule - 1;
+        if(_get_channel_status(channel) == STATUS_UNASSIGNED_CHANNEL){
+            PRINTS("CH not configured\r\n");
+            return FAIL;
+        }
         ChannelContext_t * ctx = &self.tx_channel_ctx[channel];
         if(!ctx->header && !ctx->payload){
             //channel is ready to transmit
@@ -537,10 +545,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             ctx->header = _allocate_header_tx(ctx->payload);
             ctx->count = 6;
             if(ctx->header){
-                ANT_ChannelID_t id = {
-                    0,1,5354
-                };
-                _connect(channel, &id);
+                _connect(channel);
             }else{
                 PRINTS("Header Allocation Failed\r\n");
                 _free_context(ctx);
@@ -550,6 +555,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         }
 
     }
+    return SUCCESS;
 }
 
 static MSG_Status
@@ -558,6 +564,8 @@ _init(){
     uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
     ret = sd_ant_stack_reset();
     ret += sd_ant_network_address_set(0,network_key);
+    /* Exclude list, don't scan for canceled devices */
+    //ret += sd_ant_id_list_config(ANT_DISCOVERY_CHANNEL, 4, 1);
     if(!ret){
         return SUCCESS;
     }else{
