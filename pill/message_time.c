@@ -11,6 +11,7 @@ static struct{
     struct hlo_ble_time ble_time;
     MSG_Central_t * central;
     app_timer_id_t timer_id;
+    MSG_Data_t * user_cb;
 }self;
 
 static char * name = "TIME";
@@ -35,6 +36,13 @@ _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;
     TF_TickOneSecond(&self.ble_time);
+    if(self.user_cb){
+        MSG_TimeCB_t * cb = &((MSG_TimeCommand_t*)(self.user_cb->buf))->param.wakeup_cb;
+        if(cb->cb(&self.ble_time,1000,cb->ctx)){
+            MSG_Base_ReleaseDataAtomic(self.user_cb);
+            self.user_cb = NULL;
+        }
+    }
 }
 
 static MSG_Status
@@ -64,6 +72,16 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 app_timer_stop(self.timer_id);
                 app_timer_start(self.timer_id, ticks, NULL);
                 break;
+            case TIME_SET_5S_RESOLUTION:
+                PRINTS("PERIODIC 1S");
+                ticks = APP_TIMER_TICKS(5000,APP_TIMER_PRESCALER);
+                app_timer_stop(self.timer_id);
+                app_timer_start(self.timer_id, ticks, NULL);
+                break;
+            case TIME_SET_WAKEUP_CB:
+                MSG_Base_AcquireDataAtomic(data);
+                MSG_Base_ReleaseDataAtomic(self.user_cb);
+                self.user_cb = data;
         }
 
         MSG_Base_ReleaseDataAtomic(data);
