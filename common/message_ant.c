@@ -454,16 +454,19 @@ _assemble_tx(ChannelContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
 }
 
 static void
-_handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
+_handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size, uint8_t is_slave){
     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
     uint32_t ret;
     ChannelContext_t * ctx = &self.tx_channel_ctx[*channel];
-    if(!ctx->header){
-        return;
-    }
-    if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
+    if(!ctx->header || !ctx->payload){
+        if(is_slave){
+            return;
+        }else{
+            _destroy_channel(*channel);
+            return;
+        }
+    }else if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
         PRINTS("FIN\r\n");
-        //_free_context(ctx);
         _destroy_channel(*channel);
     }
     ret = sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
@@ -601,7 +604,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             if(_get_channel_type(ant_channel) == CHANNEL_TYPE_SLAVE ||
                     _get_channel_type(ant_channel) == CHANNEL_TYPE_SHARED_SLAVE){
-                _handle_tx(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+                _handle_tx(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE, 1);
             }
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
@@ -615,7 +618,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             break;
         case EVENT_TX:
             PRINTS("T");
-            _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE, 0);
             break;
         case EVENT_TRANSFER_TX_FAILED:
             break;
