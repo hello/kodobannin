@@ -574,9 +574,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 break;
         }
     }else{
-        PRINTS("SENDING TO CH: ");
-        PRINT_HEX(&dst.submodule, 1);
         uint8_t channel = dst.submodule - 1;
+        PRINTS("SENDING TO CH: ");
+        PRINT_HEX(&channel, 1);
         if(_get_channel_status(channel) == STATUS_UNASSIGNED_CHANNEL){
             PRINTS("CH not configured\r\n");
             return FAIL;
