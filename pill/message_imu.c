@@ -19,10 +19,9 @@
 #include "message_base.h"
 #include "timedfifo.h"
 
-#ifdef ANT_ENABLE
+
 #include "message_ant.h"
 #include "antutil.h"
-#endif
 
 #include <watchdog.h>
 
