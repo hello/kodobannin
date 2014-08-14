@@ -1,8 +1,5 @@
 // vi:noet:sw=4 ts=4
 
-#ifdef ANT_STACK_SUPPORT_REQD
-#include <ant_interface.h>
-#endif
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
@@ -17,31 +14,24 @@
 #include <spi.h>
 #include <spi_nor.h>
 #include <util.h>
-//#include <imu.h>
+
+#include "platform.h"
+
 #include <pwm.h>
 #include <hrs.h>
 #include <watchdog.h>
-//#include <hlo_fs.h>
 #include <nrf_sdm.h>
 #include <softdevice_handler.h>
-//#include <twi_master.h>
 
 #include "app.h"
-#include "platform.h"
-
-#include "pill_gatt.h"
 #include "hble.h"
-
+#include "platform.h"
 #include "git_description.h"
-#include "pill_ble.h"
-#include "sensor_data.h"
-#include "util.h"
-
+#include "morpheus_ble.h"
 
 void
 _start()
 {
-    //BOOL_OK(twi_master_init());
 
     {
         enum {
@@ -78,36 +68,28 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
 
-    //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
-    
-    //hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
+    //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
+    morpheus_ble_transmission_layer_init();
 
-    
+#ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
+#endif
     hble_params_init(device_name);
-    pill_ble_load_modules();  // MUST load brefore everything else is initialized.
-
     hlo_ble_init();
-    pill_ble_services_init();
-    PRINTS("pill_ble_init() done\r\n");
+#ifdef ANT_ENABLE
+    APP_OK(softdevice_ant_evt_handler_set(ant_handler));
+#endif
+
+    PRINTS("morpheus ble init() done\r\n");
 
     ble_uuid_t service_uuid = {
         .type = hello_type,
-        .uuid = BLE_UUID_PILL_SVC
+        .uuid = BLE_UUID_MORPHEUS_SVC
     };
 
     hble_advertising_init(service_uuid);
-
-    PRINTS("ble_init() done.\r\n");
-
-#if 0
-    APP_OK(sd_ant_stack_reset());
-    PRINTS("ANT initialized.\r\n");
-#endif
     hble_advertising_start();
-    
-    PRINTS("INIT DONE.\r\n");
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

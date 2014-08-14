@@ -12,26 +12,29 @@
 #include <nrf_soc.h>
 #include <pstorage.h>
 #include <softdevice_handler.h>
-#include <ble_bondmngr.h>
+#include "morpheus_ble_bondmngr.h"
 
+#include "util.h"
 #include "app.h"
 #include "hble.h"
-#include "util.h"
-#include "pill_gatt.h"
+
+#include "morpheus_gatt.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 static ble_gap_sec_params_t _sec_params;
 
-static bool no_advertising = false;
+static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
 static int8_t  _last_connected_central; 
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
-    //APP_OK(ble_bondmngr_bonded_centrals_store());
-    ble_bondmngr_bonded_centrals_store();
+
+#ifdef BONDING_REQUIRED
+    APP_OK(ble_bondmngr_bonded_centrals_store());
+#endif
     hble_advertising_start();
 }
 
@@ -40,7 +43,10 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     //static ble_gap_evt_auth_status_t _auth_status;
 
     switch(ble_evt->header.evt_id) {
-    
+    case BLE_GAP_EVT_CONNECTED:
+    // When new connection comes in, always set it back to non-pairing mode.
+        hble_set_advertising_mode(false);
+        break;
     case BLE_GAP_EVT_DISCONNECTED:
         app_sched_event_put(NULL, 0, _on_disconnect);
         break;
@@ -49,10 +55,8 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
                                        BLE_GAP_SEC_STATUS_SUCCESS,
                                        &_sec_params));
         break;
-
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
-            // APP_OK(sd_power_system_off());
             hble_advertising_start();
         }
         break;
@@ -66,7 +70,11 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 
 static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 {
+
+#ifdef BONDING_REQUIRED
     ble_bondmngr_on_ble_evt(p_ble_evt);
+#endif
+
     ble_conn_params_on_ble_evt(p_ble_evt);
     hlo_ble_on_ble_evt(p_ble_evt);
     
@@ -77,7 +85,13 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 
 static void _on_sys_evt(uint32_t sys_evt)
 {
+    PRINTS("_on_sys_evt: ");
+    PRINT_HEX(&sys_evt, sizeof(sys_evt));
+    PRINTS("\r\n");
+
+#ifdef BONDING_REQUIRED
     pstorage_sys_event_handler(sys_evt);
+#endif
 
 }
 
@@ -101,6 +115,10 @@ static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
  */
 static void _bond_manager_error_handler(uint32_t nrf_error)
 {
+    PRINTS("_bond_manager_error_handler, err: ");
+    PRINT_HEX(&nrf_error, sizeof(nrf_error));
+    PRINTS("\r\n");
+
     APP_ERROR_HANDLER(nrf_error);
 }
 
@@ -116,13 +134,18 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 }
 
 
+void hble_set_advertising_mode(bool pairing_mode)
+{
+    _pairing_mode = pairing_mode;
+}
+
 /**@brief Function for the Bond Manager initialization.
  */
 void hble_bond_manager_init()
 {
-    uint32_t            err_code;
+
     ble_bondmngr_init_t bond_init_data;
-    bool                bonds_delete;
+    bool bonds_delete = false;
 
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
@@ -133,12 +156,11 @@ void hble_bond_manager_init()
     // Initialize the Bond Manager.
     bond_init_data.evt_handler             = _bond_evt_handler;
     bond_init_data.error_handler           = _bond_manager_error_handler;
-    bond_init_data.bonds_delete            = true;
+    bond_init_data.bonds_delete            = bonds_delete;
 
     APP_OK(ble_bondmngr_init(&bond_init_data));
     //PRINTS("bond manager init.\r\n");
 }
-
 
 
 static void _on_conn_params_error(uint32_t nrf_error)
@@ -150,6 +172,11 @@ static void _advertising_data_init(uint8_t flags){
     ble_advdata_t advdata;
     ble_advdata_t scanrsp;
     ble_uuid_t adv_uuids[] = {_service_uuid};
+
+    PRINTS("Service UUID:");
+    PRINT_HEX(&_service_uuid.uuid, sizeof(_service_uuid.uuid));
+    PRINTS("\r\n");
+
     // Build and set advertising data
     memset(&advdata, 0, sizeof(advdata));
     advdata.name_type = BLE_ADVDATA_FULL_NAME;
@@ -176,58 +203,51 @@ void hble_advertising_start()
     adv_params.fp = BLE_GAP_ADV_FP_ANY;
     adv_params.interval = APP_ADV_INTERVAL;
     adv_params.timeout = APP_ADV_TIMEOUT_IN_SECONDS;
+    uint8_t flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
-    if(no_advertising)                
+
+#ifdef BONDING_REQUIRED
+    // pairing mode means no whitelist.
+    if(!_pairing_mode)                
     {
-        ble_gap_addr_t peer_address;
-        //APP_OK(ble_bondmngr_central_addr_get(_last_connected_central, &peer_address));
-        uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_IND; //(err_code == NRF_SUCCESS ? BLE_GAP_ADV_TYPE_ADV_DIRECT_IND : BLE_GAP_ADV_TYPE_ADV_IND);
-        adv_params.type        = adv_mode;
-
-        switch(adv_mode)
-        {
-            case BLE_GAP_ADV_TYPE_ADV_DIRECT_IND:
-                
-                adv_params.timeout     = 0;
-                adv_params.p_peer_addr = &peer_address;
-                break;
-
-            case BLE_GAP_ADV_TYPE_ADV_IND:
-                {
-                    
-                    ble_gap_whitelist_t whitelist;
-                    APP_OK(ble_bondmngr_whitelist_get(&whitelist));
-                    
-
-                    if (whitelist.addr_count != 0 || whitelist.irk_count != 0)
-                    {
-                        adv_params.p_whitelist = &whitelist;
-                        adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
-                        PRINTS("whitelist retrieved.\r\n");
-                    }else{
-                    
-                        PRINTS("NO whitelist retrieved.\r\n");
-                    }
-                    
-                    //if(_whitelist.addr_count != 0 || _whitelist.irk_count != 0)
-                    //{
-                    //    adv_params.p_whitelist = &_whitelist;
-                    //    adv_params.fp          = BLE_GAP_ADV_FP_FILTER_CONNREQ;
-                    //}
-                    
-                }
-                break;
-        }
+        uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_IND; 
+        adv_params.type = adv_mode;
+        ble_gap_whitelist_t whitelist;
+        //APP_OK(ble_bondmngr_whitelist_get(&whitelist));
+        uint32_t err_code = ble_bondmngr_whitelist_get(&whitelist);
         
-        _advertising_data_init(BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED);
-        APP_OK(sd_ble_gap_adv_start(&adv_params));
+        if(err_code == NRF_SUCCESS)
+        {
+            if (whitelist.addr_count != 0 || whitelist.irk_count != 0)
+            {
+                adv_params.p_whitelist = &whitelist;
+                adv_params.fp          = BLE_GAP_ADV_FP_FILTER_BOTH;
+                flags = BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED;
+
+                PRINTS("whitelist retrieved. Advertising in normal mode.\r\n");
+            }else{
+                flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just make it clear what we want to do.
+                PRINTS("NO whitelist retrieved. Advertising in pairing mode.\r\n");
+            }
+        }else{
+            PRINTS("get whitelist error: ");
+            PRINT_HEX(&err_code, sizeof(err_code));
+            PRINTS("\r\n");
+            flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+        }
+
+        APP_OK(err_code);
+        
     }
     else
     {
-        _advertising_data_init(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
-        APP_OK(sd_ble_gap_adv_start(&adv_params));
-        no_advertising = true;
+        flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just to make things clear
+        PRINTS("Advertising in pairing mode.\r\n");
     }
+#endif
+
+    _advertising_data_init(flags);
+    APP_OK(sd_ble_gap_adv_start(&adv_params));
 
     PRINTS("Advertising started.\r\n");
 }
@@ -263,6 +283,7 @@ void hble_params_init(char* device_name)
         gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
         APP_OK(sd_ble_gap_ppcp_set(&gap_conn_params));
+        APP_OK(sd_ble_gap_tx_power_set(TX_POWER_LEVEL));
     }
 
     // initialize advertising parameters

@@ -6,6 +6,8 @@ static struct{
     uint16_t current_idx;
 }self;
 
+static int16_t _raw_xyz[3];
+
 void TF_Initialize(const struct hlo_ble_time * init_time){
     memset(&self.data, 0, sizeof(self.data));
     self.data.length = sizeof(self.data);
@@ -39,4 +41,9 @@ inline void TF_SetCurrent(tf_unit_t val){
 
 inline tf_data_t * TF_GetAll(void){
     return &self.data;
+}
+
+inline int16_t* get_raw_xzy_address()
+{
+    return _raw_xyz;
 }

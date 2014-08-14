@@ -17,7 +17,11 @@
 #include <spi.h>
 #include <spi_nor.h>
 #include <util.h>
-#include <imu.h>
+
+#ifdef PLATFORM_HAS_IMU
+#include "message_imu.h"
+#endif
+
 #include <pwm.h>
 #include <hrs.h>
 #include <watchdog.h>
@@ -74,16 +78,19 @@ void _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
 
+    
+//    hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
-    
-    //hble_stack_init(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
-    hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_250_PPM, true);
 
-    
+#ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
+#endif
+    
     hble_params_init(device_name);
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
+#ifdef BLE_ENABLE
     hlo_ble_init();
     pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
@@ -96,13 +103,12 @@ void _start()
     hble_advertising_init(service_uuid);
 
     PRINTS("ble_init() done.\r\n");
-
-#if 0
-    APP_OK(sd_ant_stack_reset());
-    PRINTS("ANT initialized.\r\n");
+#endif
+    
+#ifdef ANT_ENABLE
+    APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 #endif
     hble_advertising_start();
-    
     PRINTS("INIT DONE.\r\n");
 
     for(;;) {

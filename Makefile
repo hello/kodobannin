@@ -5,7 +5,7 @@ all: b m
 
 # apps & platforms
 
-TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test morpheus_test pill_test
+TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
 APPS = bootloader morpheus pill $(TEST_APPS)
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
@@ -71,9 +71,9 @@ BUILD_DIR = build
 
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
-	#$(wildcard ble/*.c) \
-	#$(wildcard ble/services/*.c) \
-	$(wildcard micro-ecc/*.c) \
+	$(wildcard protobuf/*.c) \
+
+USE_SDK_BONDMNGR = 0
 
 NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/templates/system_nrf51.c \
@@ -83,7 +83,6 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
     nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
-    nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \
@@ -95,22 +94,29 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/pstorage.c \
 	nRF51_SDK/nrf51422/Source/nrf_nvmc/nrf_nvmc.c \
 	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
+	nRF51_SDK/nrf51422/Source/spi_slave/spi_slave.c \
 
-SRCS = $(HELLO_SRCS) $(NRF_SRCS)
+DRIVER_SRCS = \
+	drivers/imu.c \
+
+ifeq ($(USE_SDK_BONDMNGR), 1)
+	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
+endif
+
+SRCS = $(HELLO_SRCS) $(NRF_SRCS) $(DRIVER_SRCS)
 
 INCS =  ./ \
-	./ble \
-	./ble/services \
-	./drivers \
-	./common \
-	./micro-ecc \
 	./nRF51_SDK/nrf51422/Include \
-	./nRF51_SDK/nrf51422/Include/app_common \
-	./nRF51_SDK/nrf51422/Include/gcc \
-	./nRF51_SDK/nrf51422/Include/ble \
-	./nRF51_SDK/nrf51422/Include/ble/ble_services/ \
 	./nRF51_SDK/nrf51422/Include/sd_common/ \
 	./nRF51_SDK/nrf51422/Include/s310/ \
+	./nRF51_SDK/nrf51422/Include/ble \
+	./nRF51_SDK/nrf51422/Include/ble/ble_services/ \
+	./nRF51_SDK/nrf51422/Include/app_common \
+	./nRF51_SDK/nrf51422/Include/gcc \
+	./protobuf \
+	./common \
+	./drivers \
+	
 
 
 # SoftDevice

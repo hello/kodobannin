@@ -12,28 +12,34 @@
 
 #ifdef PLATFORM_HAS_IMU
 
-#include "imu.h"
+#include "message_imu.h"
 #include "imu_data.h"
 #include "sensor_data.h"
 
 #endif
 
-#include "rtc.h"
 #include "pill_gatt.h"
 
 #include "util.h"
 #include "message_app.h"
 #include "message_uart.h"
+
+#ifdef ANT_ENABLE
+#include "message_ant.h"
+#endif
+
 #include "message_time.h"
 #include "platform.h"
 #include "nrf.h"
 #include "timedfifo.h"
 
+
+
 extern uint8_t hello_type;
 
 static uint16_t _pill_service_handle;
 static MSG_Central_t * central;
-
+static bool _should_stream = false;
 
 static void
 _unhandled_msg_event(void* event_data, uint16_t event_size){
@@ -48,19 +54,44 @@ _data_send_finished()
 	PRINTS("DONE!");
 }
 
+static void _reply_time(void * p_event_data, uint16_t event_size)
+{
+	struct hlo_ble_time* current_time = get_time();
+	if(current_time)
+	{
+		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, current_time, sizeof(struct hlo_ble_time), NULL);
+	}
+}
 
 
-static void
-_command_write_handler(ble_gatts_evt_write_t* event)
+static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
+{
+	if(_should_stream)
+	{
+		hlo_ble_notify(0xFEED, raw_xyz, len, NULL);
+	}
+	
+}
+
+
+
+static void _calibrate_imu(void * p_event_data, uint16_t event_size)
+{
+#ifdef PLATFORM_HAS_IMU
+        imu_calibrate_zero();
+#endif
+        struct pill_command* command = (struct pill_command*)p_event_data;
+        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+}
+
+
+static void _command_write_handler(ble_gatts_evt_write_t* event)
 {
     struct pill_command* command = (struct pill_command*)event->data;
 
     switch(command->command) {
     case PILL_COMMAND_CALIBRATE:
-#ifdef PLATFORM_HAS_IMU
-        imu_calibrate_zero();
-#endif
-        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
+    	app_sched_event_put(command, event->len, _calibrate_imu);
         break;
     case PILL_COMMAND_DISCONNECT:
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
@@ -70,21 +101,32 @@ _command_write_handler(ble_gatts_evt_write_t* event)
 		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
-			{
+			/*{
 				uint64_t mtime;
 				if(!MSG_Time_GetMonotonicTime(&mtime)){
     				hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, &mtime, sizeof(mtime), NULL);
 				}
-			}
+			}*/
 			/*if(!MSG_Time_GetTime(&_current_time)){
     			hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, _current_time.bytes, sizeof(_current_time), NULL);
 			}*/
+			app_sched_event_put(NULL, 0, _reply_time);
             break;
     case PILL_COMMAND_SET_TIME:
         {
-			MSG_SEND(central,TIME,TIME_SYNC,&command->set_time.bytes, sizeof(struct hlo_ble_time));
+			MSG_SEND_CMD(central,TIME,MSG_TimeCommand_t, TIME_SYNC, &command->set_time.bytes, sizeof(struct hlo_ble_time));
             break;
         }
+    case PILL_COMMAND_START_ACCELEROMETER:
+    	PRINTS("Streamming started\r\n");
+    	_should_stream = true;
+    	imu_set_wom_callback(_on_motion_data_arrival);
+    	break;
+    case PILL_COMMAND_STOP_ACCELEROMETER:
+    	_should_stream = false;
+    	imu_set_wom_callback(NULL);
+    	PRINTS("Streamming stopped\r\n");
+    	break;
     };
 }
 
@@ -96,7 +138,9 @@ _data_ack_handler(ble_gatts_evt_write_t* event)
 
 void pill_ble_evt_handler(ble_evt_t* ble_evt)
 {
-    DEBUG("Pill BLE event handler: ", ble_evt->header.evt_id);
+    PRINTS("Pill BLE event handler: ");
+    PRINT_HEX(ble_evt->header.evt_id, sizeof(ble_evt->header.evt_id));
+    PRINTS("\r\n");
     // sd_ble_gatts_rw_authorize_reply
 }
 
@@ -125,6 +169,8 @@ pill_ble_services_init(void)
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
+		central->loadmod(MSG_App_Base(central));
+#ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
 			SERIAL_RX_PIN,
 			SERIAL_TX_PIN,
@@ -134,17 +180,24 @@ void pill_ble_load_modules(void){
 			0,
 			UART_BAUDRATE_BAUDRATE_Baud38400
 		};
-		central->loadmod(MSG_App_Base(central));
-#ifdef DEBUG_SERIAL
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #endif
 		central->loadmod(MSG_Time_Init(central));
-
 #ifdef PLATFORM_HAS_IMU
-		central->loadmod(imu_init_base(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,central));
-#endif		
-		MSG_SEND(central, TIME, TIME_SET_1S_RESOLUTION,NULL,0);
-		MSG_SEND(central, CENTRAL, APP_LSMOD,NULL,0);
+		central->loadmod(MSG_IMU_Init(central));
+#endif
+
+#ifdef ANT_ENABLE
+		central->loadmod(MSG_ANT_Base(central));
+#endif
+		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
+		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
+#ifdef ANT_ENABLE
+		{
+			uint8_t role = 1;
+			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
+		}
+#endif
     }else{
         PRINTS("FAIL");
     }

@@ -13,16 +13,17 @@ static struct{
 static name = "CENTRAL";
 
 typedef struct{
-    MSG_ModuleType src;
-    MSG_ModuleType dst;
+    MSG_Address_t src;
+    MSG_Address_t dst;
     MSG_Data_t * data;
 }future_event;
 
 static void
 _future_event_handler(void* event_data, uint16_t event_size){
     future_event * evt = event_data;
-    if(evt->dst < MSG_CENTRAL_MODULE_NUM && self.mods[evt->dst]){
-        self.mods[evt->dst]->send(evt->src, evt->data);
+    uint8_t dst_idx = (uint8_t)evt->dst.module;
+    if(dst_idx < MSG_CENTRAL_MODULE_NUM && self.mods[dst_idx]){
+        self.mods[dst_idx]->send(evt->src,evt->dst, evt->data);
     }else{
         if(self.unknown_handler){
             self.unknown_handler(evt, sizeof(*evt));
@@ -33,7 +34,7 @@ _future_event_handler(void* event_data, uint16_t event_size){
     }
 }
 static MSG_Status
-_dispatch (MSG_ModuleType src, MSG_ModuleType dst, MSG_Data_t * data){
+_dispatch (MSG_Address_t src, MSG_Address_t  dst, MSG_Data_t * data){
     if(data){
         MSG_Base_AcquireDataAtomic(data);
     }
@@ -102,7 +103,7 @@ _flush(void){
     return SUCCESS;
 }
 static MSG_Status
-_send(MSG_ModuleType src, MSG_Data_t * data){
+_send(MSG_Address_t src,MSG_Address_t dst, MSG_Data_t * data){
     if(data){
         MSG_Base_AcquireDataAtomic(data);
         MSG_AppCommand_t * tmp = data->buf;
