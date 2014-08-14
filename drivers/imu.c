@@ -447,8 +447,9 @@ void imu_enter_low_power_mode(enum imu_hz sampling_rate, uint16_t wom_threshold)
 	_register_write(MPU_REG_FIFO_EN, 0);
 
     uint8_t user_control;
-    _register_read(MPU_REG_USER_CTL, &user_control);
-    _register_write(MPU_REG_USER_CTL, user_control & ~USR_CTL_FIFO_EN);
+    //_register_read(MPU_REG_USER_CTL, &user_control);
+    //_register_write(MPU_REG_USER_CTL, user_control & ~USR_CTL_FIFO_EN);
+    _register_write(MPU_REG_USER_CTL, 0);
 
     _register_write(MPU_REG_PWR_MGMT_1, 0);
 
@@ -635,7 +636,8 @@ static inline void _disable_i2c()
 {
 	uint8_t user_control;
 	_register_read(MPU_REG_USER_CTL, &user_control);
-	user_control |= USR_CTL_I2C_DIS;
+	user_control &= ~USR_CTL_I2C_EN;  // Disable I2C
+	user_control |= USR_CTL_I2C_DIS;  // SPI ONLY mode
 	_register_write(MPU_REG_USER_CTL, user_control);
 }
 
