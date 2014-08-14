@@ -27,8 +27,26 @@
  * 0 - 124
  * if _ret falls into ANT+ channel, increase it by 1
  **/
+/*
+ *#define DERIVE_RF_FREQ( _ret, _uuidhost, _uuidclient ) do{\
+ *    _ret = (uint8_t)((_uuidhost ^ _uuidclient) % 125);\
+ *    if( _ret == ANTPLUS_RF_FREQ || _ret == 66 ){\
+ *        _ret += 1;\
+ *    }}while(0)
+ */
+/* Due to ANT can not simultaneous search, we simply use one frequency */
 #define DERIVE_RF_FREQ( _ret, _uuidhost, _uuidclient ) do{\
-    _ret = (uint8_t)((_uuidhost ^ _uuidclient) % 125);\
-    if( _ret == ANTPLUS_RF_FREQ || _ret == 66 ){\
-        _ret += 1;\
-    }}while(0)
+    _ret = ANT_PREFER_FREQ;\
+    }while(0)
+
+#define BIAS_RF_PERIOD( _center, _uuidhost, _uuidclient ) do{\
+    uint32_t center = _center; \
+    uint16_t bias = (_uuidhost ^ _uuidclient) % 16;\
+    if( bias > 8 ){\
+        center += (bias - 8);\
+    }else{\
+        center -= (bias);\
+    }\
+    if(center > 0xFFFF) center = 0xFFFF;\
+    _center = (uint16_t)center;\
+}while(0)

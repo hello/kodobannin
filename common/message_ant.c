@@ -255,12 +255,13 @@ static void
 _handle_discovery(uint8_t channel, MSG_Data_t * obj){
     ANT_DiscoveryProfile_t * profile = (ANT_DiscoveryProfile_t*)obj->buf;
     //Discovery message
-    uint16_t dev_id;
+    uint16_t dev_id, period = ANT_PREFER_PERIOD;
     uint8_t dev_type, transmit_type, freq, ch_type;
     {
         uint32_t self_uuid = GET_UUID_32();
         sd_ant_channel_id_get(channel, &dev_id, &dev_type, &transmit_type);
         DERIVE_RF_FREQ(freq,self_uuid, profile->UUID); 
+        BIAS_RF_PERIOD(period, self_uuid, profile->UUID);
         ch_type = _match_channel_type(profile->phy.channel_type);
     }
     _print_discovery(profile);
@@ -310,7 +311,7 @@ _handle_discovery(uint8_t channel, MSG_Data_t * obj){
                 .channel_type = ch_type,
                 .frequency = freq,
                 .network = profile->phy.network,
-                .period = profile->phy.period,
+                .period = period,
             },
             .id = (ANT_ChannelID_t){
                 .transmit_type = transmit_type,
@@ -344,7 +345,7 @@ _set_discovery_mode(uint8_t role){
             PRINTS("SLAVE\r\n");
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id);
             sd_ant_channel_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
-            sd_ant_channel_low_priority_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
+            sd_ant_channel_low_priority_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 2);
             _connect(ANT_DISCOVERY_CHANNEL);
             _free_context(&self.rx_channel_ctx[0]);
             break;
