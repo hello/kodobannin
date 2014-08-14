@@ -120,9 +120,11 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     case PILL_COMMAND_START_ACCELEROMETER:
     	PRINTS("Streamming started\r\n");
     	_should_stream = true;
+    	imu_set_wom_callback(_on_motion_data_arrival);
     	break;
     case PILL_COMMAND_STOP_ACCELEROMETER:
     	_should_stream = false;
+    	imu_set_wom_callback(NULL);
     	PRINTS("Streamming stopped\r\n");
     	break;
     };
@@ -183,7 +185,6 @@ void pill_ble_load_modules(void){
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(MSG_IMU_Init(central));
-		imu_set_wom_callback(_on_motion_data_arrival);
 #endif
 
 #ifdef ANT_ENABLE
