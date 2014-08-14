@@ -50,7 +50,7 @@ static MSG_Base_t base;
 
 
 static struct imu_settings _settings = {
-	.wom_threshold = 15,
+	.wom_threshold = 100,
 	.low_power_mode_sampling_rate = IMU_HZ_15_63,  //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50
     .normal_mode_sampling_rate = IMU_HZ_15_63, //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
@@ -360,8 +360,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 					}
 
 					_aggregate_motion_data(values, sizeof(values));
+#ifdef ANT_ENABLE
 					_dispatch_motion_data_via_ant(values, sizeof(values));
-
+#endif
 				}
 
 

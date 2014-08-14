@@ -83,13 +83,14 @@ void _start()
     hble_stack_init(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     //hble_stack_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true);
 
- #ifdef BONDING_REQUIRED   
+#ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
 #endif
     
     hble_params_init(device_name);
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
+#ifdef BLE_ENABLE
     hlo_ble_init();
     pill_ble_services_init();
     PRINTS("pill_ble_init() done\r\n");
@@ -102,7 +103,8 @@ void _start()
     hble_advertising_init(service_uuid);
 
     PRINTS("ble_init() done.\r\n");
-
+#endif
+    
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 #endif
