@@ -345,7 +345,7 @@ _set_discovery_mode(uint8_t role){
             PRINTS("SLAVE\r\n");
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id);
             sd_ant_channel_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
-            sd_ant_channel_low_priority_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 2);
+            sd_ant_channel_low_priority_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
             _connect(ANT_DISCOVERY_CHANNEL);
             _free_context(&self.rx_channel_ctx[0]);
             break;
@@ -567,8 +567,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                         PRINT_HEX(&ch, 1);
                         _free_context(&self.rx_channel_ctx[ch]);
                         _free_context(&self.tx_channel_ctx[ch]);
-                        sd_ant_channel_low_priority_rx_search_timeout_set(ch, 0xFF);
-                        sd_ant_channel_rx_search_timeout_set(ch, 0xFF);
                         ret = _configure_channel(ch, &antcmd->param.settings.phy, &antcmd->param.settings.id);
                         ret = _connect(ch);
                     }
@@ -651,7 +649,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("RXTO\r\n");
             break;
         case EVENT_RX_FAIL_GO_TO_SEARCH:
-            self.rx_channel_ctx[ant_channel].prev_crc = 0x00;
+            _destroy_channel(ant_channel);
             PRINTS("RXFTS\r\n");
             break;
         case EVENT_TRANSFER_RX_FAILED:
