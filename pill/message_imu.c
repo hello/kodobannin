@@ -789,9 +789,6 @@ static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
 
-	uint8_t interrupt_status = imu_clear_interrupt_status();
-	if(interrupt_status & INT_STS_WOM_INT)
-	{
 		MSG_PING(parent,IMU,IMU_READ_XYZ);
 
 		/*
@@ -807,7 +804,6 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
 
 		app_sched_event_put(p_raw_xyz, 6, pill_ble_stream_data);
 		*/
-	}
 
 }
 
@@ -1011,6 +1007,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 
 					_aggregate_motion_data(values, sizeof(values));
 					_dispatch_motion_data_via_ant(values, sizeof(values));
+					imu_clear_interrupt_status();
 
 				}
 
