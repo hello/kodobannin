@@ -247,14 +247,8 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_Cha
 }
 static void
 _assemble_rx_central(uint8_t channel, const uint8_t * obj, const ANT_ChannelID_t * id){
-    PRINTS("Found ID = ");
+    PRINTS("ID = ");
     PRINT_HEX(&(id->device_number), 2);
-    switch(self.discovery_role){
-        case ANT_DISCOVERY_CENTRAL:
-            break;
-        default:
-            return;
-    }
 }
 
 static MSG_Status
