@@ -25,26 +25,17 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <stdio.h>
-
-#include <inttypes.h>
+#include "battery_config.h"
 #include "nordic_common.h"
 #include "nrf.h"
 #include "app_error.h"
 #include "nrf_gpio.h"
 #include "nrf51_bitfields.h"
 #include "softdevice_handler.h"
-#include "ble_bas.h"
-//#include "main.h"
 #include "battery.h"
 #include "app_util.h"
 
-#include "util.h"
-#include "platform.h"
 
-#define ADC_REF_VOLTAGE_IN_MILLIVOLTS        1200                                      /**< Reference voltage (in milli volts) used by ADC while doing conversion. */
-#define ADC_PRE_SCALING_COMPENSATION         3.2                                        /**< The ADC is configured to use VDD with 1/3 prescaling as input. And hence the result of conversion is to be multiplied by 3 to get the actual value of the battery voltage.*/
-#define DIODE_FWD_VOLT_DROP_MILLIVOLTS       270                                       /**< Typical forward voltage drop of the diode (Part no: SD103ATW-7-F) that is connected in series with the voltage supply. This is the voltage drop when the forward current is 1mA. Source: Data sheet of 'SURFACE MOUNT SCHOTTKY BARRIER DIODE ARRAY' available at www.diodes.com. */
 
 /**@brief Macro to convert the result of ADC conversion in millivolts.
  *
@@ -55,72 +46,64 @@
         ((((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS) / 255) * ADC_PRE_SCALING_COMPENSATION)
 //#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)     ((((ADC_REF_VOLTAGE_IN_MILLIVOLTS)))
 
+
+static batter_measure_callback_t _battery_measure_callback;
+
 /**@brief Function for handling the ADC interrupt.
  * @details  This function will fetch the conversion result from the ADC, convert the value into
  *           percentage and send it to peer.
  */
 void ADC_IRQHandler(void)
 {
+    if (NRF_ADC->EVENTS_END != 0)
     {
-        uint32_t    battery_milvolt;
-        uint8_t     adc_result;
-        uint16_t    batt_lvl_in_milli_volts;
-        float       batt_lvl_float;
-        uint8_t     percentage_batt_lvl;
-
         NRF_ADC->EVENTS_END     = 0;
-        adc_result              = NRF_ADC->RESULT;
+        uint8_t adc_result      = NRF_ADC->RESULT;
         NRF_ADC->TASKS_STOP     = 1;
 
-        battery_milvolt = adc_result;
-        batt_lvl_in_milli_volts = (uint16_t)ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
-        percentage_batt_lvl     = battery_level_in_percent(batt_lvl_in_milli_volts);
+        uint32_t battery_milvolt = adc_result;
+        uint16_t batt_lvl_in_milli_volts = (uint16_t)ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
+        uint8_t percentage_batt_lvl     = battery_level_in_percent(batt_lvl_in_milli_volts);
 
+        /*
         PRINTS("adc_result:");
         PRINT_HEX(&adc_result, sizeof(adc_result));
         PRINTS("\r\n");
-       
-//PRINT_HEX(&fifo_bytes_available, sizeof(fifo_bytes_available));
-
 
         PRINTS("batt_lvl_in_milli_volts:");
-        printf("battery=%",batt_lvl_float);
         PRINT_HEX(&batt_lvl_in_milli_volts, sizeof(batt_lvl_in_milli_volts));
         PRINTS("\r\n");
 
         PRINTS("percentage_batt_lvl:");
         PRINT_HEX(&percentage_batt_lvl, sizeof(percentage_batt_lvl));
         PRINTS("\r\n");
+        */
 
-
-        //err_code = ble_bas_battery_level_update(&bas, percentage_batt_lvl);
-        /*if (
-            (err_code != NRF_SUCCESS)
-            &&
-            (err_code != NRF_ERROR_INVALID_STATE)
-            &&
-            (err_code != BLE_ERROR_NO_TX_BUFFERS)
-            &&
-            (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-        )
+        if(_battery_measure_callback)  // I assume there is no race condition here.
         {
-            APP_ERROR_HANDLER(err_code);
-        }*/
+            _battery_measure_callback(batt_lvl_in_milli_volts, percentage_batt_lvl);
+        }
     }
+    
 }
 
 
-void battery_start(void)
+void start_battery_measurement(batter_measure_callback_t callback)
 {
+    if(callback)
+    {
+        _battery_measure_callback = callback;
+    }
+
     uint32_t err_code;
 
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
-    NRF_ADC->CONFIG     = (ADC_CONFIG_RES_8bit                        << ADC_CONFIG_RES_Pos)     |
+    NRF_ADC->CONFIG     = (ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos)     |
                           (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos)  |
-                          (ADC_CONFIG_REFSEL_VBG                    << ADC_CONFIG_REFSEL_Pos)  |
-                          (ADC_CONFIG_PSEL_AnalogInput6                   << ADC_CONFIG_PSEL_Pos)    |
-                          (ADC_CONFIG_EXTREFSEL_None                  << ADC_CONFIG_EXTREFSEL_Pos);
+                          (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos)  |
+                          (ADC_CONFIG_PSEL_AnalogInput6 << ADC_CONFIG_PSEL_Pos)    |
+                          (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
   // NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
     NRF_ADC->EVENTS_END = 0;
     NRF_ADC->ENABLE     = ADC_ENABLE_ENABLE_Enabled;
