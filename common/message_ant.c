@@ -7,6 +7,7 @@
 #include "app.h"
 #include "crc16.h"
 #include "antutil.h"
+#include "ant_devices.h"
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
 enum{
@@ -15,29 +16,38 @@ enum{
 }ANT_DISCOVERY_ROLE;
 
 typedef struct{
-    MSG_Data_t * header;
+    ANT_HeaderPacket_t header;
     MSG_Data_t * payload;
     union{
+        //tx
         uint16_t idx;
+        //rx
         struct{
             uint8_t network;
             uint8_t type;
         }phy;
     };
     union{
+        //tx
         uint16_t count;
+        //rx
         uint16_t prev_crc;
     };
 }ConnectionContext_t;
+
+typedef struct{
+    ANT_ChannelID_t id;
+    ConnectionContext_t rx_ctx;
+    ConnectionContext_t tx_ctx;
+}ANT_Session_t;
 
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     uint8_t discovery_role;
-    ConnectionContext_t tx_channel_ctx[NUM_ANT_CHANNELS];
-    ConnectionContext_t rx_channel_ctx[NUM_ANT_CHANNELS];
-    uint8_t discovery_message[8];
+    ANT_Session_t sessions[2];
 }self;
+
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
 
@@ -45,17 +55,10 @@ static char * name = "ANT";
  * Static declarations
  */
 static uint16_t _calc_checksum(MSG_Data_t * data);
-/**
- * can't find in api, so just store in rx ctx
- */
-static uint8_t _get_channel_type(uint8_t channel);
 /*
  * Closes the channel, context are freed at channel closure callback
  */
 static MSG_Status _destroy_channel(uint8_t channel);
-
-/* Allocates header based on the payload */
-static MSG_Data_t * INCREF _allocate_header_tx(MSG_Data_t * payload);
 
 /* Allocates payload based on receiving header packet */
 static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
@@ -74,6 +77,9 @@ static uint8_t _match_channel(const ANT_ChannelID_t * id);
 
 /* for rx mode only, finds connection context by device number */
 static ConnectionContext_t * _get_rx_ctx(const ANT_ChannelID_t * id);
+
+/* for tx mode, finds context for tx */
+static ConnectionContext_t * _get_tx_ctx(const ANT_ChannelID_t * id);
 
 static uint8_t
 _match_channel_type(uint8_t remote){
@@ -94,6 +100,11 @@ _match_channel_type(uint8_t remote){
             return 0xFF;
     }
 }
+//searches current session for the id and fetches the tx context
+static ConnectionContext_t * _get_tx_ctx(const ANT_ChannelID_t * id){
+
+}
+//searches current session for id and fetches rx context
 static ConnectionContext_t * _get_rx_ctx(const ANT_ChannelID_t * id){
     static ConnectionContext_t test;
     return &test;
@@ -131,10 +142,6 @@ _destroy_channel(uint8_t channel){
     //sd_ant_channel_unassign(channel);
     return SUCCESS;
 }
-static
-uint8_t _get_channel_type(uint8_t channel){
-    return self.rx_channel_ctx[channel].phy.type;
-}
 /*
  *#define STATUS_UNASSIGNED_CHANNEL                  ((uint8_t)0x00) ///< Indicates channel has not been assigned.
  *#define STATUS_ASSIGNED_CHANNEL                    ((uint8_t)0x01) ///< Indicates channel has been assigned.
@@ -147,29 +154,9 @@ _get_channel_status(uint8_t channel){
     sd_ant_channel_status_get(channel, &ret);
     return ret;
 }
-static MSG_Data_t * INCREF
-_allocate_header_tx(MSG_Data_t * payload){
-    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(8);
-    if(ret){
-        ANT_HeaderPacket_t * header = ret->buf;
-        header->page  = 0;
-        header->page_count = payload->len / 6 + ( ((payload->len)%6)?1:0);
-        /*
-         *header->src_mod = 0;
-         *header->src_submod = 0;
-         */
-        header->reserved0 = 0;
-        header->reserved1 = 0;
-        header->size = payload->len;
-        header->checksum = _calc_checksum(payload);
-    }
-    return ret;
-}
 static void DECREF
 _free_context(ConnectionContext_t * ctx){
-    MSG_Base_ReleaseDataAtomic(ctx->header);
     MSG_Base_ReleaseDataAtomic(ctx->payload);
-    ctx->header = NULL;
     ctx->payload = NULL;
 }
 static uint16_t
@@ -230,8 +217,6 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_Cha
         ret += sd_ant_channel_assign(channel, spec->channel_type, spec->network, ext_fields);
         ret += sd_ant_channel_radio_freq_set(channel, spec->frequency);
         ret += sd_ant_channel_period_set(channel, spec->period);
-        self.rx_channel_ctx[channel].phy.network = spec->network;
-        self.rx_channel_ctx[channel].phy.type = spec->channel_type;
         ret += sd_ant_channel_id_set(channel, id->device_number, id->device_type, id->transmit_type);
         ret += sd_ant_channel_low_priority_rx_search_timeout_set(channel, 0xFF);
         ret += sd_ant_channel_rx_search_timeout_set(channel, 0);
@@ -262,9 +247,12 @@ _set_discovery_mode(uint8_t role){
             PRINTS("PERIPHERAL\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
             id.device_number = GET_UUID_16();
-            id.device_type = ANT_HW_TYPE;
+            //this needs to be updated externally
+            id.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT;
             id.transmit_type = 0;
-            phy.frequency = 32768;
+            phy.frequency = 66;
+            phy.period = 1092;
+            APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id, 0);
             _connect(ANT_DISCOVERY_CHANNEL);
             break;
@@ -276,25 +264,6 @@ _set_discovery_mode(uint8_t role){
 
 static void
 _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
-    PRINTS("Channel Close: ");
-    PRINT_HEX(channel, 1);
-    PRINTS("\r\n");
-    if(*channel == ANT_DISCOVERY_CHANNEL && self.discovery_role == ANT_DISCOVERY_CENTRAL){
-        PRINTS("Re-opening Channel ");
-        PRINT_HEX(channel, 1);
-        PRINTS("\r\n");
-        //accept discovery even if its new
-        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &self.discovery_role, 1);
-    }else if(*channel == ANT_DISCOVERY_CHANNEL){
-    }else{
-        uint8_t type = self.rx_channel_ctx[*channel].phy.type;
-        if(type == CHANNEL_TYPE_SLAVE || type == CHANNEL_TYPE_SHARED_SLAVE || type == CHANNEL_TYPE_SLAVE_RX_ONLY){
-            _connect(*channel);
-        }
-    }
-    self.rx_channel_ctx[*channel].prev_crc = 0x00;
-    _free_context(&self.rx_channel_ctx[*channel]);
-    _free_context(&self.tx_channel_ctx[*channel]);
 }
 static void
 _assemble_payload(ConnectionContext_t * ctx, ANT_PayloadPacket_t * packet){
@@ -319,9 +288,8 @@ _assemble_payload(ConnectionContext_t * ctx, ANT_PayloadPacket_t * packet){
 }
 static uint8_t
 _integrity_check(ConnectionContext_t * ctx){
-    if(ctx->header && ctx->payload){
-        ANT_HeaderPacket_t * cmp = ctx->header->buf;
-        if(_calc_checksum(ctx->payload) == cmp->checksum){
+    if(ctx->payload){
+        if(_calc_checksum(ctx->payload) == ctx->header.checksum){
             return 1;
         }
     }
@@ -350,12 +318,12 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
             //Repeated Message
         }
     }else if(buf[0] <= buf[1] && buf[1] > 0){
-        if(ctx->header){
+        if(ctx->payload){
             _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
         }else{
-            //here in the future create a buffer based on pages
+            //mock header
         }
-    }else{
+    }else if(buf[0] == buf[1] && buf[1] == 0){
         //Discovery packet
         PRINTS("Discovery Packet\r\n");
     }
@@ -363,9 +331,9 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
 }
 static uint8_t DECREF
 _assemble_tx(ConnectionContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
-    ANT_HeaderPacket_t * header = ctx->header->buf;
+    ANT_HeaderPacket_t * header = &ctx->header;
     if(ctx->count == 0){
-        memcpy(out_buf, ctx->header->buf, 8);
+        memcpy(out_buf, &ctx->header, 8);
         return 0;
     }else{
         if(ctx->idx == 0){
@@ -393,22 +361,10 @@ _assemble_tx(ConnectionContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
 }
 
 static void
-_handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size, uint8_t is_slave){
+_handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
     uint32_t ret;
-    ConnectionContext_t * ctx = &self.tx_channel_ctx[*channel];
-    if(!ctx->header || !ctx->payload){
-        if(is_slave){
-            return;
-        }else{
-            _destroy_channel(*channel);
-            return;
-        }
-    }else if(!_assemble_tx(ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE)){
-        PRINTS("FIN\r\n");
-        _destroy_channel(*channel);
-    }
-    ret = sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
+   // ret = sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
 }
 static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
@@ -439,7 +395,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         }
     }
     //handle
-    {
+    if(ctx){
         MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
         if(ret){
             PRINTS("GOT A NEw MESSAGE OMFG\r\n");
@@ -491,42 +447,12 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                     }
                     uint8_t ch = _find_unassigned_channel();
                     if(ch < NUM_ANT_CHANNELS){
-                        uint32_t ret;
-                        PRINTS("CH = ");
-                        PRINT_HEX(&ch, 1);
-                        _free_context(&self.rx_channel_ctx[ch]);
-                        _free_context(&self.tx_channel_ctx[ch]);
-                        ret = _configure_channel(ch, &antcmd->param.settings.phy, &antcmd->param.settings.id);
-                        ret = _connect(ch);
                     }
                 }
                 break;
         }
     }else{
         uint8_t channel = dst.submodule - 1;
-        PRINTS("SENDING TO CH: ");
-        PRINT_HEX(&channel, 1);
-        if(_get_channel_status(channel) == STATUS_UNASSIGNED_CHANNEL){
-            PRINTS("CH not configured\r\n");
-            return FAIL;
-        }
-        ConnectionContext_t * ctx = &self.tx_channel_ctx[channel];
-        if(!ctx->header && !ctx->payload){
-            //channel is ready to transmit
-            MSG_Base_AcquireDataAtomic(data);
-            ctx->payload = data;
-            ctx->header = _allocate_header_tx(ctx->payload);
-            ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
-            if(ctx->header){
-                _connect(channel);
-            }else{
-                PRINTS("Header Allocation Failed\r\n");
-                _free_context(ctx);
-            }
-        }else{
-            PRINTS("CH Busy\r\n");
-        }
-
     }
     return SUCCESS;
 }
@@ -569,16 +495,17 @@ void ant_handler(ant_evt_t * p_ant_evt){
         case EVENT_RX:
             PRINTS("R");
             _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
-            if(_get_channel_type(ant_channel) == CHANNEL_TYPE_SLAVE ||
-                    _get_channel_type(ant_channel) == CHANNEL_TYPE_SHARED_SLAVE){
-                _handle_tx(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE, 1);
-            }
+            /*
+             *if(_get_channel_type(ant_channel) == CHANNEL_TYPE_SLAVE ||
+             *        _get_channel_type(ant_channel) == CHANNEL_TYPE_SHARED_SLAVE){
+             *    _handle_tx(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE, 1);
+             *}
+             */
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
             PRINTS("RXTO\r\n");
             break;
         case EVENT_RX_FAIL_GO_TO_SEARCH:
-            self.rx_channel_ctx[ant_channel].prev_crc = 0x00;
             PRINTS("RXFTS\r\n");
             break;
         case EVENT_TRANSFER_RX_FAILED:
@@ -586,7 +513,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             break;
         case EVENT_TX:
             PRINTS("T");
-            _handle_tx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE, 0);
+            _handle_tx(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_TRANSFER_TX_FAILED:
             break;
@@ -594,11 +521,13 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("XX\r\n");
             break;
         case EVENT_CHANNEL_CLOSED:
-            _handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            //_handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         default:
             {
+                PRINTS("UE:");
                 PRINT_HEX(&event,1);
+                PRINTS("\\");
             }
             break;
     }
