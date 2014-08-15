@@ -66,9 +66,6 @@ static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
 /* Returns status of the channel */
 static uint8_t _get_channel_status(uint8_t channel);
 
-/* Entry point to handle receiving as central*/
-static void _assemble_rx_central(uint8_t channel, const uint8_t * message, const ANT_ChannelID_t * id);
-
 /* Finds inverse of the channel type eg master -> slave */
 static uint8_t _match_channel_type(uint8_t remote);
 
@@ -252,19 +249,6 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_Cha
     }
     return ret?FAIL:SUCCESS;
 }
-static void
-_assemble_rx_central(uint8_t channel, const uint8_t * obj, const ANT_ChannelID_t * id){
-    PRINTS("ID = ");
-    PRINT_HEX(&(id->device_number), 2);
-    if( obj[0] == obj[1] and obj[1] == 0 ){
-        ANT_DiscoveryProfile_t * profile = (ANT_DiscoveryProfile_t * obj);
-        PRINTS("Do tings with profile");
-    }else{
-        ConnectionContext_t * ctx = _get_rx_ctx(id);
-        if(ctx){
-        }
-    }
-}
 
 static MSG_Status
 _set_discovery_mode(uint8_t role){
@@ -443,23 +427,32 @@ static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
-    ConnectionContext_t * ctx = &self.rx_channel_ctx[*channel];
+    ANT_ChannelID_t id = {0};
+    ConnectionContext_t * ctx = 0;
+
     if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
         EXT_MESG_BF ext = msg->ANT_MESSAGE_sExtMesgBF;
         uint8_t * extbytes = msg->ANT_MESSAGE_aucExtData;
-        /*
-         *PRINT_HEX(extbytes, buf_size);
-         *PRINTS("\r\n");
-         */
         if(ext.ucExtMesgBF & MSG_EXT_ID_MASK){
-            ANT_ChannelID_t id = (ANT_ChannelID_t){
+            id = (ANT_ChannelID_t){
                 .device_number = *((uint16_t*)extbytes),
                 .device_type = extbytes[4],
                 .transmit_type = extbytes[3],
             };
-            _assemble_rx_central(*channel, rx_payload, &id);
+            ctx = _get_rx_ctx(id);
+        }else{
+            return;
         }
     }else{
+        ANT_ChannelID_t id = {0};
+        if(!sd_ant_channel_id_get(*channel, &id.device_number, &id.device_type, &id.transmit_type)){
+            ctx = _get_rx_ctx(id);
+        }else{
+            return;
+        }
+    }
+    //handle
+    {
         MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
         if(ret){
             PRINTS("GOT A NEw MESSAGE OMFG\r\n");
