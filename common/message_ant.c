@@ -36,6 +36,7 @@ static struct{
     uint8_t discovery_role;
     ChannelContext_t tx_channel_ctx[NUM_ANT_CHANNELS];
     ChannelContext_t rx_channel_ctx[NUM_ANT_CHANNELS];
+    uint8_t discovery_message[8];
 }self;
 static char * name = "ANT";
 #define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
