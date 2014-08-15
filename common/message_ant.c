@@ -591,7 +591,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("RXTO\r\n");
             break;
         case EVENT_RX_FAIL_GO_TO_SEARCH:
-            _destroy_channel(ant_channel);
+            self.rx_channel_ctx[ant_channel].prev_crc = 0x00;
             PRINTS("RXFTS\r\n");
             break;
         case EVENT_TRANSFER_RX_FAILED:
