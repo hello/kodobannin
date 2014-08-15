@@ -297,8 +297,6 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         //accept discovery even if its new
         MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &self.discovery_role, 1);
     }else if(*channel == ANT_DISCOVERY_CHANNEL){
-        //discovery timesout to prevent power loss
-        self.discovery_role = 0xFF;
     }else{
         uint8_t type = self.rx_channel_ctx[*channel].phy.type;
         if(type == CHANNEL_TYPE_SLAVE || type == CHANNEL_TYPE_SHARED_SLAVE || type == CHANNEL_TYPE_SLAVE_RX_ONLY){
