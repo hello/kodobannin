@@ -231,134 +231,66 @@ _disconnect(uint8_t channel){
 }
 
 static MSG_Status
-_configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_ChannelID_t * id){
+_configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_ChannelID_t * id, uint8_t  ext_fields){
     uint32_t ret = 0;
     if(_get_channel_status(channel)){
         ret = _destroy_channel(channel);
     }
     if(!ret){
-        ret += sd_ant_channel_assign(channel, spec->channel_type, spec->network, 0);
+        ret += sd_ant_channel_assign(channel, spec->channel_type, spec->network, ext_fields);
         ret += sd_ant_channel_radio_freq_set(channel, spec->frequency);
         ret += sd_ant_channel_period_set(channel, spec->period);
         self.rx_channel_ctx[channel].phy.network = spec->network;
         self.rx_channel_ctx[channel].phy.type = spec->channel_type;
         ret += sd_ant_channel_id_set(channel, id->device_number, id->device_type, id->transmit_type);
+        ret += sd_ant_channel_low_priority_rx_search_timeout_set(channel, 0xFF);
+        ret += sd_ant_channel_rx_search_timeout_set(channel, 0);
     }
     return ret?FAIL:SUCCESS;
 }
-static void _print_discovery(ANT_DiscoveryProfile_t * profile){
-    PRINTS("=DISCOVERED=\r\n");
-    PRINTS("UUID = ");
-    PRINT_HEX(&profile->UUID, 4);
-    PRINTS("\r\n");
-}
 static void
-_handle_discovery(uint8_t channel, MSG_Data_t * obj){
-    ANT_DiscoveryProfile_t * profile = (ANT_DiscoveryProfile_t*)obj->buf;
-    //Discovery message
-    uint16_t dev_id, period = ANT_PREFER_PERIOD;
-    uint8_t dev_type, transmit_type, freq, ch_type;
-    {
-        uint32_t self_uuid = GET_UUID_32();
-        sd_ant_channel_id_get(channel, &dev_id, &dev_type, &transmit_type);
-        DERIVE_RF_FREQ(freq,self_uuid, profile->UUID); 
-        BIAS_RF_PERIOD(period, self_uuid, profile->UUID);
-        ch_type = _match_channel_type(profile->phy.channel_type);
-    }
-    _print_discovery(profile);
+_handle_discovery(uint8_t channel, uint8_t * obj, uint8_t * dev_id){
+    PRINTS("ID Found = ");
+    PRINT_HEX(dev_id, 2);
+    PRINTS("\r\n");
     switch(self.discovery_role){
         case ANT_DISCOVERY_CENTRAL:
-            //if allowed to pair, we then echo back.
-            //the master's prefer network prioritizes over slave
-            SET_DISCOVERY_PROFILE(obj);
-            self.parent->dispatch( (MSG_Address_t){ANT,channel+1},
-                                    (MSG_Address_t){ANT, ANT_DISCOVERY_CHANNEL+1},
-                                    obj);
             break;
         case ANT_DISCOVERY_PERIPHERAL:
-            {
-                uint8_t role = 0xFF;
-                MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
-            }
             break;
         default:
             return;
     }
-    //both open channel
-    {
-        /*
-         *PRINTS(" CH: ");
-         *PRINTS("DEVID = ");
-         *PRINT_HEX(&dev_id, 2);
-         *PRINTS("\r\n");
-         *PRINTS("FREQ = ");
-         *PRINT_HEX(&freq, 1);
-         *PRINTS("\r\n");
-         *PRINTS("CHTYPE = ");
-         *PRINT_HEX(&ch_type, 1);
-         *PRINTS("\r\n");
-         *PRINTS("FREQ = ");
-         *PRINT_HEX(&freq, 2);
-         *PRINTS("\r\n");
-         *PRINTS("NETWORK = ");
-         *PRINT_HEX(&profile->phy.network, 1);
-         *PRINTS("\r\n");
-         *PRINTS("Period = ");
-         *PRINT_HEX(&profile->phy.period, 2);
-         *PRINTS("\r\n");
-         */
-        ANT_Channel_Settings_t new_channel = {
-            .phy = (ANT_ChannelPHY_t){
-                .channel_type = ch_type,
-                .frequency = freq,
-                .network = profile->phy.network,
-                .period = period,
-            },
-            .id = (ANT_ChannelID_t){
-                .transmit_type = transmit_type,
-                .device_type = dev_type,
-                .device_number = dev_id,
-            }
-        };
-        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_CHANNEL, &new_channel, sizeof(new_channel));
-    }
-
-
 }
 
 static MSG_Status
 _set_discovery_mode(uint8_t role){
     ANT_ChannelID_t id = {0};
     ANT_ChannelPHY_t phy = { 
-        .period = 596, //scanning at 55 Hz to avoid colision when connected
+        .period = 273,
         .frequency = 66,
         .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0};
-    if(role != self.discovery_role){
-        _destroy_channel(ANT_DISCOVERY_CHANNEL);
-        self.discovery_role = role;
-    }else if(_get_channel_status(ANT_DISCOVERY_CHANNEL)>1){
-        return SUCCESS;
-    }
     switch(role){
         case ANT_DISCOVERY_CENTRAL:
             //central mode
-            PRINTS("SLAVE\r\n");
-            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id);
-            sd_ant_channel_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
-            sd_ant_channel_low_priority_rx_search_timeout_set(ANT_DISCOVERY_CHANNEL, 1);
-            _connect(ANT_DISCOVERY_CHANNEL);
-            _free_context(&self.rx_channel_ctx[0]);
+            PRINTS("CENTRAL\r\n");
+            //close all channels
+            APP_OK(_configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id, 0));
+            APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
+            sd_ant_rx_scan_mode_start(0);
             break;
         case ANT_DISCOVERY_PERIPHERAL:
             //peripheral mode
             //configure shit here
-            PRINTS("MASTER\r\n");
+            PRINTS("PERIPHERAL\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
             id.device_number = GET_UUID_16();
             id.device_type = ANT_HW_TYPE;
             id.transmit_type = 0;
-            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id);
+            phy.frequency = 32768;
+            _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id, 0);
+            _connect(ANT_DISCOVERY_CHANNEL);
             break;
         default:
             break;
