@@ -66,11 +66,8 @@ static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
 /* Returns status of the channel */
 static uint8_t _get_channel_status(uint8_t channel);
 
-/* Debug */
-static void _print_discovery(ANT_DiscoveryProfile_t * profile);
-
 /* Entry point to handle receiving of discovery packet */
-static void _handle_discovery(uint8_t channel, MSG_Data_t * obj);
+static void _handle_discovery(uint8_t channel, const uint8_t * message, const ANT_ChannelID_t * id);
 
 /* Finds inverse of the channel type eg master -> slave */
 static uint8_t _match_channel_type(uint8_t remote);
@@ -249,10 +246,9 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_Cha
     return ret?FAIL:SUCCESS;
 }
 static void
-_handle_discovery(uint8_t channel, uint8_t * obj, uint8_t * dev_id){
-    PRINTS("ID Found = ");
-    PRINT_HEX(dev_id, 2);
-    PRINTS("\r\n");
+_handle_discovery(uint8_t channel, const uint8_t * obj, const ANT_ChannelID_t * id){
+    PRINTS("Found ID = ");
+    PRINT_HEX(&(id->device_number), 2);
     switch(self.discovery_role){
         case ANT_DISCOVERY_CENTRAL:
             break;
@@ -441,12 +437,25 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
     ChannelContext_t * ctx = &self.rx_channel_ctx[*channel];
+    if(*channel == ANT_DISCOVERY_CHANNEL){
+        EXT_MESG_BF ext = msg->ANT_MESSAGE_sExtMesgBF;
+        uint8_t * extbytes = msg->ANT_MESSAGE_aucExtData;
+        /*
+         *PRINT_HEX(extbytes, buf_size);
+         *PRINTS("\r\n");
+         */
+        if(ext.ucExtMesgBF & MSG_EXT_ID_MASK){
+            ANT_ChannelID_t id = (ANT_ChannelID_t){
+                .device_number = *((uint16_t*)extbytes),
+                .device_type = extbytes[4],
+                .transmit_type = extbytes[3],
+            };
+            _handle_discovery(*channel, rx_payload, &id);
+        }
+    }
     MSG_Data_t * ret = _assemble_rx(*channel, ctx, rx_payload, buf_size);
     if(ret){
         PRINTS("GOT A NEw MESSAGE OMFG\r\n");
-        if(*channel == ANT_DISCOVERY_CHANNEL){
-            _handle_discovery(*channel, ret );
-        }
         {
             MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
             MSG_Address_t dst = (MSG_Address_t){UART, 1};
