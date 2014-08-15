@@ -127,6 +127,11 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     	imu_set_wom_callback(NULL);
     	PRINTS("Streamming stopped\r\n");
     	break;
+	case PILL_COMMAND_GET_BATTERY_LEVEL:
+#ifdef DEBUG_BATT_LVL
+		hble_update_battery_level();
+#endif
+		break;
     };
 }
 
@@ -147,21 +152,19 @@ void pill_ble_evt_handler(ble_evt_t* ble_evt)
 void
 pill_ble_services_init(void)
 {
+    ble_uuid_t pill_service_uuid = {
+        .type = hello_type,
+        .uuid = BLE_UUID_PILL_SVC,
+    };
 
-    {
-        ble_uuid_t pill_service_uuid = {
-            .type = hello_type,
-            .uuid = BLE_UUID_PILL_SVC,
-        };
+    APP_OK(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &pill_service_uuid, &_pill_service_handle));
 
-        APP_OK(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &pill_service_uuid, &_pill_service_handle));
-
-        hlo_ble_char_write_request_add(0xDEED, &_command_write_handler, sizeof(struct pill_command));
-        hlo_ble_char_notify_add(0xD00D);
-        hlo_ble_char_notify_add(0xFEED);
-        hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
-        hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
-    }
+    hlo_ble_char_write_request_add(0xDEED, &_command_write_handler, sizeof(struct pill_command));
+    hlo_ble_char_notify_add(0xD00D);
+    hlo_ble_char_notify_add(0xFEED);
+    hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
+    hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
+    
 
 }
 
@@ -201,33 +204,4 @@ void pill_ble_load_modules(void){
     }else{
         PRINTS("FAIL");
     }
-}
-
-void pill_ble_advertising_init(void){
-	ble_advdata_t advdata;
-	ble_advdata_t scanrsp;
-	uint8_t       flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE; //BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
-
-
-	
-	ble_uuid_t pill_service_uuid = {
-		.type = hello_type,
-		.uuid = BLE_UUID_PILL_SVC
-	};
-
-	// YOUR_JOB: Use UUIDs for service(s) used in your application.
-	ble_uuid_t adv_uuids[] = {pill_service_uuid};
-	// Build and set advertising data
-	memset(&advdata, 0, sizeof(advdata));
-	advdata.name_type = BLE_ADVDATA_FULL_NAME;
-	advdata.include_appearance = true;
-	advdata.flags.size = sizeof(flags);
-	advdata.flags.p_data = &flags;
-	
-
-
-	memset(&scanrsp, 0, sizeof(scanrsp));
-	scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
-	scanrsp.uuids_complete.p_uuids  = adv_uuids;
-	APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }

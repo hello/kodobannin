@@ -49,7 +49,7 @@ static MSG_Base_t base;
 
 
 static struct imu_settings _settings = {
-	.wom_threshold = 15,
+	.wom_threshold = 100,
 	.low_power_mode_sampling_rate = IMU_HZ_15_63,  //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50
     .normal_mode_sampling_rate = IMU_HZ_15_63, //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,

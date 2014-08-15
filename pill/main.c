@@ -22,8 +22,6 @@
 #include "message_imu.h"
 #endif
 
-#include <pwm.h>
-#include <hrs.h>
 #include <watchdog.h>
 //#include <hlo_fs.h>
 #include <nrf_sdm.h>
@@ -104,7 +102,9 @@ void _start()
 
     PRINTS("ble_init() done.\r\n");
 #endif
-    
+
+    hble_update_battery_level();
+
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 #endif

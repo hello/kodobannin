@@ -18,6 +18,7 @@ enum pill_command_type {
     PILL_COMMAND_SEND_DATA,
     PILL_COMMAND_GET_TIME,
     PILL_COMMAND_SET_TIME,
+    PILL_COMMAND_GET_BATTERY_LEVEL,
 } __attribute__((packed));
 
 struct pill_command
@@ -57,5 +58,4 @@ struct pill_data_response
 
 void pill_ble_services_init(void);
 void pill_ble_evt_handler(ble_evt_t* ble_evt);
-void pill_ble_advertising_init(void);
 void pill_ble_load_modules(void);

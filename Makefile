@@ -88,6 +88,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_services/ble_srv_common.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_services/ble_dis.c \
+	nRF51_SDK/nrf51422/Source/ble/ble_services/ble_bas.c \
 	nRF51_SDK/nrf51422/Source/nrf_delay/nrf_delay.c \
 	nRF51_SDK/nrf51422/Source/app_common/app_scheduler.c \
 	nRF51_SDK/nrf51422/Source/app_common/app_gpiote.c \
@@ -97,7 +98,8 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/spi_slave/spi_slave.c \
 
 DRIVER_SRCS = \
-	drivers/imu.c \
+	$(wildcard drivers/imu.c) \
+	$(wildcard drivers/battery.c) \
 
 ifeq ($(USE_SDK_BONDMNGR), 1)
 	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
