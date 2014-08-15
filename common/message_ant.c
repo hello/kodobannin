@@ -66,7 +66,7 @@ static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
 /* Returns status of the channel */
 static uint8_t _get_channel_status(uint8_t channel);
 
-/* Entry point to handle receiving of discovery packet */
+/* Entry point to handle receiving as central*/
 static void _assemble_rx_central(uint8_t channel, const uint8_t * message, const ANT_ChannelID_t * id);
 
 /* Finds inverse of the channel type eg master -> slave */
@@ -251,8 +251,6 @@ _assemble_rx_central(uint8_t channel, const uint8_t * obj, const ANT_ChannelID_t
     PRINT_HEX(&(id->device_number), 2);
     switch(self.discovery_role){
         case ANT_DISCOVERY_CENTRAL:
-            break;
-        case ANT_DISCOVERY_PERIPHERAL:
             break;
         default:
             return;
