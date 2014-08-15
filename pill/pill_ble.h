@@ -18,6 +18,7 @@ enum pill_command_type {
     PILL_COMMAND_SEND_DATA,
     PILL_COMMAND_GET_TIME,
     PILL_COMMAND_SET_TIME,
+    PILL_COMMAND_GET_BATTERY_LEVEL,
 } __attribute__((packed));
 
 struct pill_command

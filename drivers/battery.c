@@ -33,7 +33,6 @@
 #include "nrf51_bitfields.h"
 #include "softdevice_handler.h"
 #include "battery.h"
-#include "app_util.h"
 
 
 
@@ -49,6 +48,38 @@
 
 static batter_measure_callback_t _battery_measure_callback;
 
+static inline uint8_t _battery_level_in_percent(const uint16_t mvolts)
+{
+    uint8_t battery_level;
+
+    if (mvolts >= 3170)
+    {
+        battery_level = 100;
+    }
+    else if (mvolts > 3065)
+    {
+        battery_level = 100 - ((3170 - mvolts) * 58) / 100;
+    }
+    else if (mvolts > 2875)
+    {
+        battery_level = 42 - ((3065 - mvolts) * 24) / 160;
+    }
+    else if (mvolts > 2462)
+    {
+        battery_level = 18 - ((2875 - mvolts) * 12) / 300;
+    }
+    else if (mvolts > 2129)
+    {
+        battery_level = 6 - ((2462 - mvolts) * 6) / 340;
+    }
+    else
+    {
+        battery_level = 0;
+    }
+
+    return battery_level;
+}
+
 /**@brief Function for handling the ADC interrupt.
  * @details  This function will fetch the conversion result from the ADC, convert the value into
  *           percentage and send it to peer.
@@ -62,8 +93,8 @@ void ADC_IRQHandler(void)
         NRF_ADC->TASKS_STOP     = 1;
 
         uint32_t battery_milvolt = adc_result;
-        uint16_t batt_lvl_in_milli_volts = (uint16_t)ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
-        uint8_t percentage_batt_lvl     = battery_level_in_percent(batt_lvl_in_milli_volts);
+        uint32_t batt_lvl_in_micro_volts = ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
+        uint8_t percentage_batt_lvl     = _battery_level_in_percent(batt_lvl_in_micro_volts / 1000);
 
         /*
         PRINTS("adc_result:");
@@ -81,7 +112,7 @@ void ADC_IRQHandler(void)
 
         if(_battery_measure_callback)  // I assume there is no race condition here.
         {
-            _battery_measure_callback(batt_lvl_in_milli_volts, percentage_batt_lvl);
+            _battery_measure_callback(batt_lvl_in_micro_volts, percentage_batt_lvl);
         }
     }
     
