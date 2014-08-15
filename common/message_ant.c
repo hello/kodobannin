@@ -527,7 +527,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             MSG_Base_AcquireDataAtomic(data);
             ctx->payload = data;
             ctx->header = _allocate_header_tx(ctx->payload);
-            ctx->count = 6;
+            ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
             if(ctx->header){
                 _connect(channel);
             }else{
