@@ -78,6 +78,9 @@ static uint8_t _find_unassigned_channel(void);
 /* Finds channel with matching id */
 static uint8_t _match_channel(const ANT_ChannelID_t * id);
 
+/* for rx mode only, finds connection context by device number */
+static ConnectionContext_t * get_rx_ctx(const ANT_ChannelID_t * id);
+
 static uint8_t
 _match_channel_type(uint8_t remote){
     switch(remote){
@@ -96,6 +99,10 @@ _match_channel_type(uint8_t remote){
         default:
             return 0xFF;
     }
+}
+static ConnectionContext_t * get_rx_ctx(const ANT_ChannelID_t * id){
+    static ConnectionContext_t test;
+    return test;
 }
 static uint8_t
 _match_channel(const ANT_ChannelID_t * id){
@@ -249,6 +256,14 @@ static void
 _assemble_rx_central(uint8_t channel, const uint8_t * obj, const ANT_ChannelID_t * id){
     PRINTS("ID = ");
     PRINT_HEX(&(id->device_number), 2);
+    if( obj[0] == obj[1] and obj[1] == 0 ){
+        ANT_DiscoveryProfile_t * profile = (ANT_DiscoveryProfile_t * obj);
+        PRINTS("Do tings with profile");
+    }else{
+        ConnectionContext_t * ctx = _get_rx_ctx(id);
+        if(ctx){
+        }
+    }
 }
 
 static MSG_Status
@@ -342,7 +357,7 @@ _integrity_check(ConnectionContext_t * ctx){
     return 0;
 }
 static MSG_Data_t * 
-_assemble_rx(uint8_t channel, ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
+_assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
     if(buf[0] == 0 && buf[1] > 0){
         //scenarios
@@ -445,7 +460,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             _assemble_rx_central(*channel, rx_payload, &id);
         }
     }else{
-        MSG_Data_t * ret = _assemble_rx(*channel, ctx, rx_payload, buf_size);
+        MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
         if(ret){
             PRINTS("GOT A NEw MESSAGE OMFG\r\n");
             {
