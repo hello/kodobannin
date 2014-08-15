@@ -437,7 +437,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
     ChannelContext_t * ctx = &self.rx_channel_ctx[*channel];
-    if(*channel == ANT_DISCOVERY_CHANNEL){
+    if(*channel == ANT_DISCOVERY_CHANNEL && self.discovery_role == ANT_DISCOVERY_CENTRAL){
         EXT_MESG_BF ext = msg->ANT_MESSAGE_sExtMesgBF;
         uint8_t * extbytes = msg->ANT_MESSAGE_aucExtData;
         /*
