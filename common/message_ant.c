@@ -76,7 +76,7 @@ static uint8_t _find_unassigned_channel(void);
 static uint8_t _match_channel(const ANT_ChannelID_t * id);
 
 /* for rx mode only, finds connection context by device number */
-static ConnectionContext_t * get_rx_ctx(const ANT_ChannelID_t * id);
+static ConnectionContext_t * _get_rx_ctx(const ANT_ChannelID_t * id);
 
 static uint8_t
 _match_channel_type(uint8_t remote){
@@ -97,9 +97,9 @@ _match_channel_type(uint8_t remote){
             return 0xFF;
     }
 }
-static ConnectionContext_t * get_rx_ctx(const ANT_ChannelID_t * id){
+static ConnectionContext_t * _get_rx_ctx(const ANT_ChannelID_t * id){
     static ConnectionContext_t test;
-    return test;
+    return &test;
 }
 static uint8_t
 _match_channel(const ANT_ChannelID_t * id){
@@ -369,8 +369,8 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
             //here in the future create a buffer based on pages
         }
     }else{
-        //unknown packet, just drop everything and possibly close channel
-        _free_context(ctx);
+        //Discovery packet
+        PRINTS("Discovery Packet\r\n");
     }
     return ret;
 }
@@ -439,14 +439,14 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                 .device_type = extbytes[4],
                 .transmit_type = extbytes[3],
             };
-            ctx = _get_rx_ctx(id);
+            ctx = _get_rx_ctx(&id);
         }else{
             return;
         }
     }else{
         ANT_ChannelID_t id = {0};
         if(!sd_ant_channel_id_get(*channel, &id.device_number, &id.device_type, &id.transmit_type)){
-            ctx = _get_rx_ctx(id);
+            ctx = _get_rx_ctx(&id);
         }else{
             return;
         }
