@@ -301,7 +301,9 @@ void hble_stack_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler)
 
 void hble_update_battery_level()
 {
+#ifdef BATTERY_SERVICE_ENABLE
     start_battery_measurement(_on_battery_level_measured);
+#endif
 }
 
 void hble_params_init(char* device_name)
