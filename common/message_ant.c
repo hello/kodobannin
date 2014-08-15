@@ -28,14 +28,14 @@ typedef struct{
         uint16_t count;
         uint16_t prev_crc;
     };
-}ChannelContext_t;
+}ConnectionContext_t;
 
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     uint8_t discovery_role;
-    ChannelContext_t tx_channel_ctx[NUM_ANT_CHANNELS];
-    ChannelContext_t rx_channel_ctx[NUM_ANT_CHANNELS];
+    ConnectionContext_t tx_channel_ctx[NUM_ANT_CHANNELS];
+    ConnectionContext_t rx_channel_ctx[NUM_ANT_CHANNELS];
     uint8_t discovery_message[8];
 }self;
 static char * name = "ANT";
@@ -173,7 +173,7 @@ _allocate_header_rx(ANT_HeaderPacket_t * buf){
     return ret;
 }
 static void DECREF
-_free_context(ChannelContext_t * ctx){
+_free_context(ConnectionContext_t * ctx){
     MSG_Base_ReleaseDataAtomic(ctx->header);
     MSG_Base_ReleaseDataAtomic(ctx->payload);
     ctx->header = NULL;
@@ -319,7 +319,7 @@ _handle_channel_closure(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     _free_context(&self.tx_channel_ctx[*channel]);
 }
 static void
-_assemble_payload(ChannelContext_t * ctx, ANT_PayloadPacket_t * packet){
+_assemble_payload(ConnectionContext_t * ctx, ANT_PayloadPacket_t * packet){
     //technically if checksum is xor, is possible to do incremental xor to 
     //find out if the data is valid without doing it at the header packet
     //but for simplicity's sake, lets just leave the optomizations later...
@@ -340,7 +340,7 @@ _assemble_payload(ChannelContext_t * ctx, ANT_PayloadPacket_t * packet){
 
 }
 static uint8_t
-_integrity_check(ChannelContext_t * ctx){
+_integrity_check(ConnectionContext_t * ctx){
     if(ctx->header && ctx->payload){
         ANT_HeaderPacket_t * cmp = ctx->header->buf;
         if(_calc_checksum(ctx->payload) == cmp->checksum){
@@ -350,7 +350,7 @@ _integrity_check(ChannelContext_t * ctx){
     return 0;
 }
 static MSG_Data_t * 
-_assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t buf_size){
+_assemble_rx(uint8_t channel, ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
     if(buf[0] == 0 && buf[1] > 0){
         //scenarios
@@ -384,7 +384,7 @@ _assemble_rx(uint8_t channel, ChannelContext_t * ctx, uint8_t * buf, uint32_t bu
     return ret;
 }
 static uint8_t DECREF
-_assemble_tx(ChannelContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
+_assemble_tx(ConnectionContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
     ANT_HeaderPacket_t * header = ctx->header->buf;
     if(ctx->count == 0){
         memcpy(out_buf, ctx->header->buf, 8);
@@ -418,7 +418,7 @@ static void
 _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size, uint8_t is_slave){
     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
     uint32_t ret;
-    ChannelContext_t * ctx = &self.tx_channel_ctx[*channel];
+    ConnectionContext_t * ctx = &self.tx_channel_ctx[*channel];
     if(!ctx->header || !ctx->payload){
         if(is_slave){
             return;
@@ -436,8 +436,8 @@ static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)buf;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
-    ChannelContext_t * ctx = &self.rx_channel_ctx[*channel];
-    if(*channel == ANT_DISCOVERY_CHANNEL && self.discovery_role == ANT_DISCOVERY_CENTRAL){
+    ConnectionContext_t * ctx = &self.rx_channel_ctx[*channel];
+    if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
         EXT_MESG_BF ext = msg->ANT_MESSAGE_sExtMesgBF;
         uint8_t * extbytes = msg->ANT_MESSAGE_aucExtData;
         /*
@@ -523,7 +523,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             PRINTS("CH not configured\r\n");
             return FAIL;
         }
-        ChannelContext_t * ctx = &self.tx_channel_ctx[channel];
+        ConnectionContext_t * ctx = &self.tx_channel_ctx[channel];
         if(!ctx->header && !ctx->payload){
             //channel is ready to transmit
             MSG_Base_AcquireDataAtomic(data);
