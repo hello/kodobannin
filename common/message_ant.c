@@ -57,9 +57,6 @@ static MSG_Status _destroy_channel(uint8_t channel);
 /* Allocates header based on the payload */
 static MSG_Data_t * INCREF _allocate_header_tx(MSG_Data_t * payload);
 
-/* Allocates header based on receiving header packet */
-static MSG_Data_t * INCREF _allocate_header_rx(ANT_HeaderPacket_t * buf);
-
 /* Allocates payload based on receiving header packet */
 static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
 
@@ -165,14 +162,6 @@ _allocate_header_tx(MSG_Data_t * payload){
         header->reserved1 = 0;
         header->size = payload->len;
         header->checksum = _calc_checksum(payload);
-    }
-    return ret;
-}
-static MSG_Data_t * INCREF
-_allocate_header_rx(ANT_HeaderPacket_t * buf){
-    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(sizeof(ANT_HeaderPacket_t));
-    if(ret){
-        memcpy(ret->buf, buf, sizeof(ANT_HeaderPacket_t));
     }
     return ret;
 }
@@ -350,7 +339,7 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
         ANT_HeaderPacket_t * header = (ANT_HeaderPacket_t *)buf;
         if(new_crc != ctx->prev_crc){
             _free_context(ctx);
-            ctx->header = _allocate_header_rx(header);
+            ctx->header = *header;
             ctx->payload = _allocate_payload_rx(header);
             ctx->prev_crc = new_crc;
         }else if(_integrity_check(ctx)){
