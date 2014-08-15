@@ -295,37 +295,33 @@ _integrity_check(ConnectionContext_t * ctx){
     }
     return 0;
 }
+/**
+ * Assembles the pyload portion
+ */
 static MSG_Data_t * 
 _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
     if(buf[0] == 0 && buf[1] > 0){
-        //scenarios
-        //either header file is a new one
-        //or header file is the old one
+        //standard header
+        ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
         uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
-        PRINTS("H");
-        ANT_HeaderPacket_t * header = (ANT_HeaderPacket_t *)buf;
-        if(new_crc != ctx->prev_crc){
-            _free_context(ctx);
-            ctx->header = *header;
-            ctx->payload = _allocate_payload_rx(header);
-            ctx->prev_crc = new_crc;
-        }else if(_integrity_check(ctx)){
+        if(_integrity_check(ctx)){
             ret = ctx->payload;
             MSG_Base_AcquireDataAtomic(ret);
             _free_context(ctx);
-        }else{
-            //Repeated Message
+        }
+        if(ctx->header.checksum != new_crc){
+            _free_context(ctx);
+            ctx->header = *new_header;
+            ctx->payload = _allocate_payload_rx(&ctx->header);
         }
     }else if(buf[0] <= buf[1] && buf[1] > 0){
+        //payload
         if(ctx->payload){
             _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
-        }else{
-            //mock header
         }
-    }else if(buf[0] == buf[1] && buf[1] == 0){
-        //Discovery packet
-        PRINTS("Discovery Packet\r\n");
+    }else{
+        //Unknown
     }
     return ret;
 }
@@ -382,18 +378,24 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                 .device_type = extbytes[4],
                 .transmit_type = extbytes[3],
             };
-            ctx = _get_rx_ctx(&id);
         }else{
+            //error
+            PRINTS("RX Error\r\n");
             return;
         }
     }else{
-        ANT_ChannelID_t id = {0};
-        if(!sd_ant_channel_id_get(*channel, &id.device_number, &id.device_type, &id.transmit_type)){
-            ctx = _get_rx_ctx(&id);
-        }else{
+        if(sd_ant_channel_id_get(*channel, &id.device_number, &id.device_type, &id.transmit_type)){
+            //error
+            PRINTS("RX Error\r\n");
             return;
         }
     }
+    if(rx_payload[0] == rx_payload[1] && rx_payload[1] == 0){
+        PRINTS("Discovery Packet\r\n");
+        //handle discovery with id
+        return;
+    }
+    ctx = _get_rx_ctx(&id);
     //handle
     if(ctx){
         MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
