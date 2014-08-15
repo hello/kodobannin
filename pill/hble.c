@@ -284,13 +284,8 @@ void hble_advertising_start()
     PRINTS("Advertising started.\r\n");
 }
 
-void hble_stack_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler)
+void hble_stack_init()
 {
-    uint32_t err_code;
-
-    // Initialize the SoftDevice handler module.
-    SOFTDEVICE_HANDLER_INIT(clock_source, use_scheduler);
-
     // Register with the SoftDevice handler module for BLE events.
     APP_OK(softdevice_ble_evt_handler_set(_ble_evt_dispatch));
 
