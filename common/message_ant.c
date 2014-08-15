@@ -67,7 +67,7 @@ static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
 static uint8_t _get_channel_status(uint8_t channel);
 
 /* Entry point to handle receiving of discovery packet */
-static void _handle_discovery(uint8_t channel, const uint8_t * message, const ANT_ChannelID_t * id);
+static void _assemble_rx_central(uint8_t channel, const uint8_t * message, const ANT_ChannelID_t * id);
 
 /* Finds inverse of the channel type eg master -> slave */
 static uint8_t _match_channel_type(uint8_t remote);
@@ -246,7 +246,7 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_Cha
     return ret?FAIL:SUCCESS;
 }
 static void
-_handle_discovery(uint8_t channel, const uint8_t * obj, const ANT_ChannelID_t * id){
+_assemble_rx_central(uint8_t channel, const uint8_t * obj, const ANT_ChannelID_t * id){
     PRINTS("Found ID = ");
     PRINT_HEX(&(id->device_number), 2);
     switch(self.discovery_role){
@@ -450,21 +450,21 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                 .device_type = extbytes[4],
                 .transmit_type = extbytes[3],
             };
-            _handle_discovery(*channel, rx_payload, &id);
+            _assemble_rx_central(*channel, rx_payload, &id);
+        }
+    }else{
+        MSG_Data_t * ret = _assemble_rx(*channel, ctx, rx_payload, buf_size);
+        if(ret){
+            PRINTS("GOT A NEw MESSAGE OMFG\r\n");
+            {
+                MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
+                MSG_Address_t dst = (MSG_Address_t){UART, 1};
+                //then dispatch to uart for printout
+                self.parent->dispatch(src, dst, ret);
+            }
+            MSG_Base_ReleaseDataAtomic(ret);
         }
     }
-    MSG_Data_t * ret = _assemble_rx(*channel, ctx, rx_payload, buf_size);
-    if(ret){
-        PRINTS("GOT A NEw MESSAGE OMFG\r\n");
-        {
-            MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
-            MSG_Address_t dst = (MSG_Address_t){UART, 1};
-            //then dispatch to uart for printout
-            self.parent->dispatch(src, dst, ret);
-        }
-        MSG_Base_ReleaseDataAtomic(ret);
-    }
-    //PRINTS("\r\n");
 }
 
 
