@@ -41,6 +41,13 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
     hble_advertising_start();
 }
 
+
+static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
+{
+    nrf_delay_ms(100);
+    hble_advertising_start();
+}
+
 static void _on_ble_evt(ble_evt_t* ble_evt)
 {
     //static ble_gap_evt_auth_status_t _auth_status;
@@ -57,9 +64,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
-            // APP_OK(sd_power_system_off());
-            nrf_delay_ms(100);
-            hble_advertising_start();
+            app_sched_event_put(NULL, 0, _on_advertise_timeout);
         }
         break;
     default:
