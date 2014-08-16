@@ -10,6 +10,7 @@
 #include "ant_devices.h"
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
+#define ANT_SESSION_NUM 2
 enum{
     ANT_DISCOVERY_CENTRAL = 0,
     ANT_DISCOVERY_PERIPHERAL
@@ -45,7 +46,7 @@ static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     uint8_t discovery_role;
-    ANT_Session_t sessions[2];
+    ANT_Session_t sessions[ANT_SESSION_NUM];
 }self;
 
 static char * name = "ANT";
