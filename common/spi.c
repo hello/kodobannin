@@ -9,6 +9,17 @@
 
 #define TIMEOUT_COUNTER          0x3000UL
 
+inline void spi_disable(SPI_Context* obj) {
+    obj->spi_hw->ENABLE = (SPI_ENABLE_ENABLE_Disabled << SPI_ENABLE_ENABLE_Pos);
+    nrf_gpio_cfg_input(obj->spi_hw->PSELMISO, NRF_GPIO_PIN_PULLDOWN);
+}
+
+inline void spi_enable(SPI_Context *obj) {
+    nrf_gpio_cfg_input(obj->spi_hw->PSELMISO, NRF_GPIO_PIN_NOPULL);
+    obj->spi_hw->ENABLE = (SPI_ENABLE_ENABLE_Enabled << SPI_ENABLE_ENABLE_Pos);
+}
+
+
 int32_t
 spi_init(enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS, SPI_Context *ctx) {
 	int32_t ret = -1;

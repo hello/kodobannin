@@ -185,7 +185,7 @@ void pill_ble_load_modules(void){
 		};
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #endif
-		central->loadmod(MSG_Time_Init(central));
+		//central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(MSG_IMU_Init(central));
 #endif
@@ -193,8 +193,8 @@ void pill_ble_load_modules(void){
 #ifdef ANT_ENABLE
 		central->loadmod(MSG_ANT_Base(central));
 #endif
-		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
-		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
+		//MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
+		//MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 #ifdef ANT_ENABLE
 		{
 			uint8_t role = 1;

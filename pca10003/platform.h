@@ -8,7 +8,7 @@
 #include <nrf51_bitfields.h>
 
 //#define ANT_ENABLE
-//#define BLE_ENABLE
+#define BLE_ENABLE
 
 #define PLATFORM_HAS_SERIAL
 enum {
