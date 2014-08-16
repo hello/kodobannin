@@ -243,7 +243,6 @@ _set_discovery_mode(uint8_t role){
         case ANT_DISCOVERY_CENTRAL:
             //central mode
             PRINTS("CENTRAL\r\n");
-            //close all channels
             APP_OK(_configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id, 0));
             APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
             sd_ant_rx_scan_mode_start(0);
