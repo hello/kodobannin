@@ -79,7 +79,8 @@ typedef struct{
     enum{
         ANT_PING=0,
         ANT_SET_ROLE,//sets discovery role
-        ANT_CREATE_CHANNEL,
+        ANT_CREATE_SESSION,
+        ANT_ADVERTISE,
         ANT_END_CMD
     }cmd;
     union{
