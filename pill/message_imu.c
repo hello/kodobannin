@@ -737,27 +737,12 @@ static void _imu_wom_process(void* context)
 
 static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 {
+	/* do not advertise if has at least one bond */
 	MSG_Data_t * message_data = MSG_Base_AllocateDataAtomic(len);
 	if(message_data){
 		memcpy(message_data->buf, values, len);
-		parent->dispatch((MSG_Address_t){0, 0},(MSG_Address_t){ANT, 2}, message_data);
+		parent->dispatch((MSG_Address_t){0, 0},(MSG_Address_t){ANT, 1}, message_data);
 		MSG_Base_ReleaseDataAtomic(message_data);
-	}
-
-	/* do not advertise if has at least one bond */
-	if(MSG_ANT_BondCount() == 0){
-		// let's save one variable in the stack.
-
-		message_data = MSG_Base_AllocateDataAtomic(sizeof(ANT_DiscoveryProfile_t));
-		if(message_data){
-			SET_DISCOVERY_PROFILE(message_data);
-			parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1}, message_data);
-			MSG_Base_ReleaseDataAtomic(message_data);
-		}
-	}else{
-		uint8_t ret = MSG_ANT_BondCount();
-		PRINTS("bonds = ");
-		PRINT_HEX(&ret, 1);
 	}
 }
 
