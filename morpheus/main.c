@@ -89,7 +89,7 @@ _start()
     };
 
     hble_advertising_init(service_uuid);
-    hble_advertising_start();
+    //hble_advertising_start();
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

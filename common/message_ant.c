@@ -253,9 +253,7 @@ _set_discovery_mode(uint8_t role){
             //configure shit here
             PRINTS("PERIPHERAL\r\n");
             phy.channel_type = CHANNEL_TYPE_MASTER;
-            //id.device_number = GET_UUID_16();
-            id.device_number = 0x1234;
-            //this needs to be updated externally
+            id.device_number = GET_UUID_16();
             id.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT;
             id.transmit_type = 0;
             phy.frequency = 66;
