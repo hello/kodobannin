@@ -51,7 +51,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case TIME_SYNC:
                 PRINTS("SETTIME = ");
                 self.ble_time.monotonic_time = tmp->param.ble_time.monotonic_time;
-                TF_Initialize(&tmp->param.ble_time);
+                //TF_Initialize(&tmp->param.ble_time);
                 PRINT_HEX(&tmp->param.ble_time, sizeof(tmp->param.ble_time));
                 break;
             case TIME_STOP_PERIODIC:

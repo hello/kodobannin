@@ -7,6 +7,9 @@
 #include <nrf51.h>
 #include <nrf51_bitfields.h>
 
+//#define ANT_ENABLE
+//#define BLE_ENABLE
+
 #define PLATFORM_HAS_SERIAL
 enum {
     // serial (UART)
@@ -17,4 +20,12 @@ enum {
     // LEDs
     GPIO_HRS_PWM_G1 = 18,
     GPIO_HRS_PWM_G2 = 19,
+};
+
+enum {
+    IMU_SPI_MOSI = 12,
+    IMU_SPI_MISO = 10,
+    IMU_SPI_SCLK = 14,
+    IMU_SPI_nCS = 16,
+    IMU_INT = 8,
 };

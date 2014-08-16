@@ -21,7 +21,10 @@
 #include "hble.h"
 #include "util.h"
 #include "pill_gatt.h"
+
+#ifdef BATTERY_SERVICE_ENABLE
 #include "battery.h"
+#endif
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
