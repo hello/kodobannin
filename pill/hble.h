@@ -7,3 +7,4 @@ void hble_stack_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler);
 void hble_params_init(char* device_name);
 void hble_advertising_init(ble_uuid_t service_uuid);
 void hble_advertising_start();
+void hble_update_battery_level();

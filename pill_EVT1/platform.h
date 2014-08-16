@@ -3,6 +3,10 @@
 #pragma once
 
 #define ANT_ENABLE
+#define BLE_ENABLE
+#define BATTERY_SERVICE_ENABLE
+#define DEBUG_BATT_LVL
+
 #define PLATFORM_HAS_IMU
 
 enum {
