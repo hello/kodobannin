@@ -50,7 +50,6 @@ static struct{
 }self;
 
 static char * name = "ANT";
-#define CHANNEL_NUM_CHECK(ch) (ch < NUM_ANT_CHANNELS)
 
 /**
  * Static declarations
@@ -71,10 +70,7 @@ static uint8_t _get_channel_status(uint8_t channel);
 static uint8_t _match_channel_type(uint8_t remote);
 
 /* Finds an unassigned Channel */
-static uint8_t _find_unassigned_channel(void);
-
-/* Finds channel with matching id */
-static uint8_t _match_channel(const ANT_ChannelID_t * id);
+static ANT_Session_t * _find_unassigned_session(void);
 
 /* Finds session by id */
 static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id);
@@ -110,32 +106,14 @@ static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id){
     return NULL;
 
 }
-static uint8_t
-_match_channel(const ANT_ChannelID_t * id){
-    uint16_t dev_id;
-    uint8_t type, xmit, i, cmp;
-    if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
-        cmp == 0;
-    }else{
-        cmp = 0xFF;
-    }
-    for(i = 0; i < NUM_ANT_CHANNELS; i++){
-        if(!sd_ant_channel_id_get(i,&dev_id, &type, &xmit)){
-            if(i != cmp && dev_id == id->device_number){
-                return i;
-            }
-        }
-    }
-    return 0xFF;
-}
 
-static uint8_t
-_find_unassigned_channel(void){
-    uint8_t ret = 0xFF;
-    uint8_t i;
-    for(i = 0; i < NUM_ANT_CHANNELS; i++){
-        if( i != ANT_DISCOVERY_CHANNEL && _get_channel_status(i) == STATUS_UNASSIGNED_CHANNEL){
-            ret = i;
+static ANT_Session_t *
+_find_unassigned_session(void){
+    ANT_Session_t * ret = NULL;
+    int i;
+    for(i = 0; i < ANT_SESSION_NUM; i++){
+        if(self.sessions[i].id.device_number == 0){
+            ret = &self.sessions[i];
             break;
         }
     }
@@ -481,17 +459,22 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 //since scanning in central mode, rx does not map directly to channels
                 //sessions become virtual channels
                 {
-                    PRINTS("Create Channel\r\n");
-                    uint8_t och = _match_channel(&antcmd->param.settings.id);
-                    if(och < NUM_ANT_CHANNELS){
-                        //Channel already establshed
-                        PRINTS("Channel Already Established\r\n");
-                        return SUCCESS;
-                    }
-                    uint8_t ch = _find_unassigned_channel();
-                    if(ch < ANT_SESSION_NUM){
-                        //configure and open
-                        _configure_channel(ch,&antcmd->param.settings.phy, &antcmd->param.settings.id, 0);
+                    ANT_Session_t * s = _find_unassigned_session();
+                    PRINTS("Create Session\r\n");
+                    switch(self.discovery_role){
+                        case ANT_DISCOVERY_CENTRAL:
+                            if(s){
+                                s->id = antcmd->param.session_info;
+                            }else{
+                                PRINTS("Out of sessions");
+                            }
+                            break;
+                        case ANT_DISCOVERY_PERIPHERAL:
+                            PRINTS("Already configured as peripheral, sending as channel 0");
+                            break;
+                        default:
+                            PRINTS("Need to define a role first!\r\n");
+                            break;
                     }
                 }
                 break;
