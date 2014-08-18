@@ -78,7 +78,7 @@ typedef struct{
 typedef struct{
     enum{
         ANT_PING=0,
-        ANT_SET_ROLE,//sets discovery role
+        ANT_SET_ROLE,//sets device role
         ANT_CREATE_SESSION,
         ANT_ADVERTISE,
         ANT_END_CMD
@@ -86,6 +86,7 @@ typedef struct{
     union{
         uint8_t role;
         ANT_Channel_Settings_t settings;
+        ANT_ChannelID_t session_info;
     }param;
 }MSG_ANTCommand_t;
 
