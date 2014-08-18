@@ -1,7 +1,11 @@
+#ifdef ANT_STACK_SUPPORT_REQD  // This is a temp fix because we need to compile on 51822 S110
+
 #include <ant_interface.h>
+#include <ant_parameters.h>
+
 #include <app_timer.h>
 #include <app_error.h>
-#include <ant_parameters.h>
+
 #include "message_ant.h"
 #include "util.h"
 #include "app.h"
@@ -647,3 +651,4 @@ uint8_t MSG_ANT_BondCount(void){
     }
     return ret;
 }
+#endif

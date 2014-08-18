@@ -37,6 +37,20 @@ spi_init(enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, 
 
 	ctx->cs_gpio = nCS;
 
+    // imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS,
+
+/*
+    nrf_gpio_cfg_output(SPI_PSELSCK1);
+    nrf_gpio_cfg_output(SPI_PSELMOSI1);
+    nrf_gpio_cfg_input(SPI_PSELMISO1, NRF_GPIO_PIN_NOPULL);
+    nrf_gpio_cfg_output(SPI_PSELSS1);
+
+    spi_base_address->PSELSCK  = SPI_PSELSCK1;
+    spi_base_address->PSELMOSI = SPI_PSELMOSI1;
+    spi_base_address->PSELMISO = SPI_PSELMISO1;
+    nrf_gpio_pin_set(SPI_PSELSS1);
+*/
+    
     //configure GPIOs
     nrf_gpio_cfg_output(mosi);
     nrf_gpio_cfg_output(sclk);

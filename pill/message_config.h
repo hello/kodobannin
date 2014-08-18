@@ -1,7 +1,10 @@
 #pragma once
 
 #include "platform.h"
+
+#ifdef ANT_STACK_SUPPORT_REQD
 #include <ant_stack_handler_types.h>
+#endif
 
 /*
  * Here define the modules used
@@ -29,8 +32,9 @@ typedef enum{
     SSPI
 }MSG_ModuleType;
 
-
+#ifdef ANT_STACK_SUPPORT_REQD
 void ant_handler(ant_evt_t * p_ant_evt);
-#define NUM_ANT_CHANNELS 2
 
+#define NUM_ANT_CHANNELS 2
+#endif
 

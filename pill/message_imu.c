@@ -19,9 +19,10 @@
 #include "message_base.h"
 #include "timedfifo.h"
 
-
+#ifdef ANT_ENABLE
 #include "message_ant.h"
 #include "antutil.h"
+#endif
 
 #include <watchdog.h>
 
@@ -192,6 +193,7 @@ static void _imu_wom_process(void* context)
 
 static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 {
+#ifdef ANT_ENABLE
 	MSG_Data_t * message_data = MSG_Base_AllocateDataAtomic(len);
 	if(message_data){
 		memcpy(message_data->buf, values, len);
@@ -214,22 +216,21 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 		PRINTS("bonds = ");
 		PRINT_HEX(&ret, 1);
 	}
+#endif
 }
 
 static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
 	int16_t values[3];
-	memcpy(raw_xyz, values, len);
-
-	values[0] /= KG_CONVERT_FACTOR;
-	values[1] /= KG_CONVERT_FACTOR;
-	values[2] /= KG_CONVERT_FACTOR;
+	memcpy(values, raw_xyz, len);
 
 	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
 	int32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
 	if( aggregate > INT16_MAX){
 		aggregate = INT16_MAX;
 	}
+
+    aggregate = aggregate >> 16;
 
 	//TF_SetCurrent((uint16_t)values[0]);
 	
