@@ -62,20 +62,13 @@ typedef struct{
 
 /**
  * Discovery profile
- * The Peripheral device will start by sending out the following information
- * Then the central will echo the bonding PHY information, which the peripheral can
- * either accept by opening a channel with that info, or rejct(not opening the channel)
- * send this directly over DISCOVERY_CHANNEL
+ * Discovery profiles are single page data packets
+ * They are not assembled by the central, but rather are used as information for pairing
  */
 typedef struct{
-    uint32_t hlo_identifier;
-    uint8_t hlo_hw_type;
-    uint8_t hlo_hw_revision;
-    uint8_t hlo_version_major;
-    uint8_t hlo_version_minor;
-    uint32_t UUID;//4
-    ANT_ChannelPHY_t phy;
+    uint8_t reserved[8];
 }ANT_DiscoveryProfile_t;
+
 
 typedef struct{
     ANT_ChannelPHY_t phy;
@@ -85,13 +78,15 @@ typedef struct{
 typedef struct{
     enum{
         ANT_PING=0,
-        ANT_SET_ROLE,//sets discovery role
-        ANT_CREATE_CHANNEL,
+        ANT_SET_ROLE,//sets device role
+        ANT_CREATE_SESSION,
+        ANT_ADVERTISE,
         ANT_END_CMD
     }cmd;
     union{
         uint8_t role;
         ANT_Channel_Settings_t settings;
+        ANT_ChannelID_t session_info;
     }param;
 }MSG_ANTCommand_t;
 

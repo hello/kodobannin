@@ -9,26 +9,13 @@
 
 #define SET_DISCOVERY_PROFILE(pb) do{\
     if(pb){\
-        ANT_DiscoveryProfile_t * profile = (ANT_DiscoveryProfile_t*)pb->buf;\
-        profile->UUID = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];\
-        profile->hlo_identifier = ANT_UNIQ_ID;\
-        profile->hlo_hw_type = ANT_HW_TYPE;\
-        profile->hlo_hw_revision = ANT_HW_REVISION;\
-        profile->hlo_version_major = ANT_SW_MAJOR;\
-        profile->hlo_version_minor = ANT_SW_MINOR;\
-        profile->phy.channel_type = ANT_PREFER_CHTYPE;\
-        profile->phy.frequency = ANT_PREFER_FREQ;\
-        profile->phy.network = ANT_PREFER_NETWORK;\
-        profile->phy.period = ANT_PREFER_PERIOD;\
     }\
 }while(0)
 
-/**
- * 0 - 124
- * if _ret falls into ANT+ channel, increase it by 1
- **/
-#define DERIVE_RF_FREQ( _ret, _uuidhost, _uuidclient ) do{\
-    _ret = (uint8_t)((_uuidhost ^ _uuidclient) % 125);\
-    if( _ret == ANTPLUS_RF_FREQ || _ret == 66 ){\
-        _ret += 1;\
-    }}while(0)
+#define BIAS_RF_PERIOD( _base, _uuid32 ) do{\
+    uint32_t base = _base; \
+    uint16_t bias = (_uuid32) % 16;\
+    base += bias; \
+    if(base > 0xFFFF) base = 0xFFFF;\
+    _base = (uint16_t)base;\
+}while(0)

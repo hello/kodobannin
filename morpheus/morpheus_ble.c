@@ -26,6 +26,8 @@
 #include "pb_encode.h"
 #include "morpheus_ble.pb.h"
 
+#include "ant_devices.h"
+
 extern uint8_t hello_type;
 
 static uint16_t _morpheus_service_handle;
@@ -306,6 +308,14 @@ void morpheus_load_modules(void){
 		{
 			uint8_t role = 0;
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,1);
+		}
+		{
+			ANT_ChannelID_t id = {
+				.device_number = 0x7E1A,
+				.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
+				.transmit_type = 0
+			};
+			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
 		}
     }else{
         PRINTS("FAIL");
