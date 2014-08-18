@@ -44,7 +44,7 @@ void _start()
 
     {
         enum {
-            SCHED_QUEUE_SIZE = 20,
+            SCHED_QUEUE_SIZE = 32,
             SCHED_MAX_EVENT_DATA_SIZE = MAX(APP_TIMER_SCHED_EVT_SIZE, BLE_STACK_HANDLER_SCHED_EVT_SIZE),
         };
 

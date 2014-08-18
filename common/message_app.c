@@ -39,9 +39,18 @@ _dispatch (MSG_Address_t src, MSG_Address_t  dst, MSG_Data_t * data){
         MSG_Base_AcquireDataAtomic(data);
     }
     {
+        uint32_t err;
         future_event tmp = {src, dst, data};
-        app_sched_event_put(&tmp, sizeof(tmp), _future_event_handler);
-        return SUCCESS;
+        err = app_sched_event_put(&tmp, sizeof(tmp), _future_event_handler);
+        err = MSG_Base_FreeCount();
+        PRINTS("OC: ");
+        PRINT_HEX(&err, 4);
+        PRINTS("\r\n");
+        if(!err){
+            return SUCCESS;
+        }else{
+            return FAIL;
+        }
     }
 }
 static MSG_Status
