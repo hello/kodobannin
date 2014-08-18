@@ -205,7 +205,7 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
 	int16_t values[3];
-	memcpy(raw_xyz, values, len);
+	memcpy(values, raw_xyz, len);
 
 	values[0] /= KG_CONVERT_FACTOR;
 	values[1] /= KG_CONVERT_FACTOR;
