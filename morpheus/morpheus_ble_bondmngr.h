@@ -191,7 +191,7 @@ typedef struct
  *
  * @return     NRF_SUCCESS on successful initialization, otherwise an error code.
  */
-uint32_t ble_bondmngr_init(ble_bondmngr_init_t * p_init);
+uint32_t morpheus_ble_bondmngr_init(ble_bondmngr_init_t * p_init);
 
 /**@brief Function for handling all events from the BLE stack that relate to this module.
  *
@@ -201,7 +201,7 @@ uint32_t ble_bondmngr_init(ble_bondmngr_init_t * p_init);
  *             NRF_ERROR_NO_MEM if the maximum number of bonded centrals has been reached.
  *             Other error codes in other situations.
  */
-void ble_bondmngr_on_ble_evt(ble_evt_t * p_ble_evt);
+void morpheus_ble_bondmngr_on_ble_evt(ble_evt_t * p_ble_evt);
 
 /**@brief Function for storing the bonded centrals data including bonding info and System Attributes into
  *          flash memory.
@@ -217,7 +217,7 @@ void ble_bondmngr_on_ble_evt(ble_evt_t * p_ble_evt);
  *
  * @return  NRF_SUCCESS on success, an error_code otherwise.
  */
-uint32_t ble_bondmngr_bonded_centrals_store(void);
+uint32_t morpheus_ble_bondmngr_bonded_centrals_store(void);
 
 /**@brief Function for deleting the bonded central database from flash.
  *
@@ -226,7 +226,7 @@ uint32_t ble_bondmngr_bonded_centrals_store(void);
  *
  * @return  NRF_SUCCESS on success, an error_code otherwise.
  */
-uint32_t ble_bondmngr_bonded_centrals_delete(void);
+uint32_t morpheus_ble_bondmngr_bonded_centrals_delete(void);
 
 /**@brief Function for getting the whitelist containing all currently bonded centrals.
  *
@@ -237,7 +237,7 @@ uint32_t ble_bondmngr_bonded_centrals_delete(void);
  *
  * @return      NRF_SUCCESS on success, an error_code otherwise.
  */
-uint32_t ble_bondmngr_whitelist_get(ble_gap_whitelist_t * p_whitelist);
+uint32_t morpheus_ble_bondmngr_whitelist_get(ble_gap_whitelist_t * p_whitelist);
 
 /**@brief Function for getting the central's address corresponding to a given central_handle.
  *
@@ -248,7 +248,7 @@ uint32_t ble_bondmngr_whitelist_get(ble_gap_whitelist_t * p_whitelist);
  * @param[out]  p_central_addr  Pointer to the central's address which can be used for
  *                             directed advertising.
  */
-uint32_t ble_bondmngr_central_addr_get(int8_t central_handle, ble_gap_addr_t * p_central_addr);
+uint32_t morpheus_ble_bondmngr_central_addr_get(int8_t central_handle, ble_gap_addr_t * p_central_addr);
 
 /**@brief Function for storing the System Attributes of a newly connected central.
  *
@@ -265,7 +265,7 @@ uint32_t ble_bondmngr_central_addr_get(int8_t central_handle, ble_gap_addr_t * p
  *          NRF_ERROR_INVALID_STATE is returned if the System Attributes of the current central is
  *          already present in the flash because it is a previously known central.
  */
-uint32_t ble_bondmngr_sys_attr_store(void);
+uint32_t morpheus_ble_bondmngr_sys_attr_store(void);
 
 /**@brief Function for fetching the identifiers of known centrals.
  *
@@ -290,7 +290,7 @@ uint32_t ble_bondmngr_sys_attr_store(void);
  *                  p_central_ids provided is not enough to fit in all the central identifiers in the
  *                  database.
  */
-uint32_t ble_bondmngr_central_ids_get(uint16_t * p_central_ids, uint16_t * p_length);
+uint32_t morpheus_ble_bondmngr_central_ids_get(uint16_t * p_central_ids, uint16_t * p_length);
 
 /**@brief Function for deleting a single central from the database.
  * @details     This function deletes the Bonding Information and System Attributes of a single
@@ -311,7 +311,7 @@ uint32_t ble_bondmngr_central_ids_get(uint16_t * p_central_ids, uint16_t * p_len
  *              NRF_ERROR_NOT_FOUND if the central with the given identifier is not found in the
  *              database.
  */
-uint32_t ble_bondmngr_bonded_central_delete(uint16_t central_id);
+uint32_t morpheus_ble_bondmngr_bonded_central_delete(uint16_t central_id);
 
 /**@brief Function to verify encryption status link with bonded central is encrypted or not.
  * @details     This function provides status of encrption of the link with a bonded central.
@@ -329,7 +329,7 @@ uint32_t ble_bondmngr_bonded_central_delete(uint16_t central_id);
  * @return      NRF_SUCCESS on success.
  *              NRF_ERROR_INVALID_STATE is returned if the bond manager was not initialized.
  */
-uint32_t ble_bondmngr_is_link_encrypted(bool * status);
+uint32_t morpheus_ble_bondmngr_is_link_encrypted(bool * status);
 
 /** @} */
 

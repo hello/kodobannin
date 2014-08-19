@@ -1148,7 +1148,7 @@ static void on_sec_param_request(ble_gap_evt_sec_params_request_t * p_sec_update
 }
 
 
-void ble_bondmngr_on_ble_evt(ble_evt_t * p_ble_evt)
+void morpheus_ble_bondmngr_on_ble_evt(ble_evt_t * p_ble_evt)
 {
     if (!m_is_bondmngr_initialized)
     {
@@ -1196,7 +1196,7 @@ void ble_bondmngr_on_ble_evt(ble_evt_t * p_ble_evt)
 }
 
 
-uint32_t ble_bondmngr_bonded_centrals_store(void)
+uint32_t morpheus_ble_bondmngr_bonded_centrals_store(void)
 {
     uint32_t err_code;
     int      i;
@@ -1286,7 +1286,7 @@ uint32_t ble_bondmngr_bonded_centrals_store(void)
 }
 
 
-uint32_t ble_bondmngr_sys_attr_store(void)
+uint32_t morpheus_ble_bondmngr_sys_attr_store(void)
 {
     uint32_t err_code;
 
@@ -1325,7 +1325,7 @@ uint32_t ble_bondmngr_sys_attr_store(void)
 }
 
 
-uint32_t ble_bondmngr_bonded_centrals_delete(void)
+uint32_t morpheus_ble_bondmngr_bonded_centrals_delete(void)
 {
     VERIFY_MODULE_INITIALIZED();
 
@@ -1339,7 +1339,7 @@ uint32_t ble_bondmngr_bonded_centrals_delete(void)
 }
 
 
-uint32_t ble_bondmngr_central_addr_get(int8_t central_handle, ble_gap_addr_t * p_central_addr)
+uint32_t morpheus_ble_bondmngr_central_addr_get(int8_t central_handle, ble_gap_addr_t * p_central_addr)
 {
     if (
         (central_handle == INVALID_CENTRAL_HANDLE) ||
@@ -1360,7 +1360,7 @@ uint32_t ble_bondmngr_central_addr_get(int8_t central_handle, ble_gap_addr_t * p
 }
 
 
-uint32_t ble_bondmngr_whitelist_get(ble_gap_whitelist_t * p_whitelist)
+uint32_t morpheus_ble_bondmngr_whitelist_get(ble_gap_whitelist_t * p_whitelist)
 {
     static ble_gap_addr_t * s_addr[MAX_NUM_CENTRAL_WHITE_LIST];
     static ble_gap_irk_t  * s_irk[MAX_NUM_CENTRAL_WHITE_LIST];
@@ -1398,7 +1398,7 @@ static void bm_pstorage_cb_handler(pstorage_handle_t * handle,
 }
 
 
-uint32_t ble_bondmngr_init(ble_bondmngr_init_t * p_init)
+uint32_t morpheus_ble_bondmngr_init(ble_bondmngr_init_t * p_init)
 {
     pstorage_module_param_t param;
     uint32_t err_code;
@@ -1481,7 +1481,7 @@ uint32_t ble_bondmngr_init(ble_bondmngr_init_t * p_init)
 }
 
 
-uint32_t ble_bondmngr_central_ids_get(uint16_t * p_central_ids, uint16_t * p_length)
+uint32_t morpheus_ble_bondmngr_central_ids_get(uint16_t * p_central_ids, uint16_t * p_length)
 {
     VERIFY_MODULE_INITIALIZED();
 
@@ -1512,7 +1512,7 @@ uint32_t ble_bondmngr_central_ids_get(uint16_t * p_central_ids, uint16_t * p_len
 }
 
 
-uint32_t ble_bondmngr_bonded_central_delete(uint16_t central_id)
+uint32_t morpheus_ble_bondmngr_bonded_central_delete(uint16_t central_id)
 {
     VERIFY_MODULE_INITIALIZED();
 
@@ -1594,7 +1594,7 @@ uint32_t ble_bondmngr_bonded_central_delete(uint16_t central_id)
 }
 
 
-uint32_t ble_bondmngr_is_link_encrypted (bool * status)
+uint32_t morpheus_ble_bondmngr_is_link_encrypted (bool * status)
 {
     VERIFY_MODULE_INITIALIZED();
 
