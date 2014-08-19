@@ -150,17 +150,11 @@ static uint16_t
 _calc_checksum(MSG_Data_t * data){
     uint16_t ret;
     ret = crc16_compute(data->buf, data->len, NULL);
-    PRINTS("CS: ");
-    PRINT_HEX(&ret,2);
-    PRINTS("\r\n");
     return ret;
 }
 static MSG_Data_t *
 _allocate_payload_rx(ANT_HeaderPacket_t * buf){
     MSG_Data_t * ret;
-    PRINTS("Pages: ");
-    PRINT_HEX(&buf->page_count, 1);
-    PRINTS("\r\n");
     ret = MSG_Base_AllocateDataAtomic( 6 * buf->page_count );
     if(ret){
         //readjusting length of the data, previously
@@ -168,8 +162,6 @@ _allocate_payload_rx(ANT_HeaderPacket_t * buf){
         uint16_t ss = ((uint8_t*)buf)[5] << 8;
         ss += ((uint8_t*)buf)[4];
         ret->len = ss;
-        PRINTS("OBJ LEN\r\n");
-        PRINT_HEX(&ret->len, 2);
     }
     return ret;
 }
@@ -265,12 +257,6 @@ _assemble_payload(ConnectionContext_t * ctx, ANT_PayloadPacket_t * packet){
         ctx->payload->buf[offset + 4] = packet->payload[4];
         ctx->payload->buf[offset + 5] = packet->payload[5];
     }
-//    PRINT_HEX(&ctx->payload->buf, ctx->payload->len);
-    PRINTS("LEN: | ");
-    PRINT_HEX(&ctx->payload->len, sizeof(ctx->payload->len));
-    PRINTS(" |");
-    PRINTS("\r\n");
-
 }
 static uint8_t
 _integrity_check(ConnectionContext_t * ctx){
@@ -349,19 +335,16 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
         //central, only channels 1-7 are tx
         //channel 1-7 maps to index 0-6
-        PRINTS("C");
         uint8_t idx = *channel - 1;
         if(idx < ANT_SESSION_NUM){
             ret = _assemble_tx(&self.sessions[idx].tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
-        }
-        if(!ret){
-            _free_context(&self.sessions[*channel].tx_ctx);
-            _destroy_channel(*channel);
+            if(ret == 0){
+                _free_context(&self.sessions[*(channel)-1].tx_ctx);
+            }
         }
     }else{
         //periperal, all channels are tx
         //channels 0-7 mapes to index 0-7
-        PRINTS("P");
         if(*channel < ANT_SESSION_NUM){
             ret = _assemble_tx(&self.sessions[*channel].tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
         }
@@ -406,19 +389,17 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     }
     if(rx_payload[0] == rx_payload[1] && rx_payload[1] == 0){
         PRINTS("Discovery Packet\r\n");
-        //handle discovery with id
         return;
     }
     session = _get_session_by_id(&id);
     //handle
-    PRINTS("MSG FROM ID = ");
-    PRINT_HEX(&id.device_number, 2);
-    PRINTS("\r\n");
     if(session){
         ConnectionContext_t * ctx = &session->rx_ctx;
         MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
         if(ret){
-            PRINTS("GOT A NEw MESSAGE OMFG\r\n");
+            PRINTS("MSG FROM ID = ");
+            PRINT_HEX(&id.device_number, 2);
+            PRINTS("\r\n");
             {
                 MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
                 MSG_Address_t dst = (MSG_Address_t){UART, 1};
