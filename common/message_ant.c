@@ -169,10 +169,12 @@ static MSG_Status
 _connect(uint8_t channel){
     //needs at least assigned
     MSG_Status ret = FAIL;
+    uint32_t status;
     uint8_t inprogress;
     uint8_t pending;
     sd_ant_channel_status_get(channel, &inprogress);
-    if(!sd_ant_channel_open(channel)){
+    status = sd_ant_channel_open(channel);
+    if( !status ){
         ret = SUCCESS;
     }
     return ret;
