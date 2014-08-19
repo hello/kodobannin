@@ -68,14 +68,15 @@ _dequeue_tx(void){
     }
 #endif
     self.queued_tx = NULL;
-    //return ret;
+    return ret;
     //this function pops the tx queue for spi, for now, simply returns a new buffer with test code
-    return MSG_Base_AllocateStringAtomic(TEST_STR);
+    //return MSG_Base_AllocateStringAtomic(TEST_STR);
 }
 static uint32_t
 _queue_tx(MSG_Data_t * o){
     if(self.queued_tx){
         //we are forced to drop since something shouldn't be here
+        PRINTS("Dropped Old Data\r\n");
         MSG_Base_ReleaseDataAtomic(self.queued_tx);
     }
     self.queued_tx = o;
@@ -127,7 +128,7 @@ _handle_transaction(){
             break;
         case WRITE_TX_CTX:
             PRINTS("@WRITE TX LEN\r\n");
-            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg,self.dummy->buf, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
+            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy->buf, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
             self.transaction.state = WRITE_TX_BUF;
             break;
         case WAIT_READ_RX_BUF:
@@ -189,13 +190,18 @@ _flush(void){
 }
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
-    if(dst.submodule == 0){
-        //command for this module
+    if(data){
+        if(dst.submodule == 0){
+            //command for this module
 
-    }else if(dst.submodule == 1){
-        //send to sspi slave
-    }else{
-        return FAIL;
+        }else if(dst.submodule == 1){
+            //send to sspi slave
+
+            MSG_Base_AcquireDataAtomic(data);
+            _queue_tx(data);
+        }else{
+            return FAIL;
+        }
     }
     return SUCCESS;
 }
