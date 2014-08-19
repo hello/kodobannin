@@ -555,7 +555,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             //PRINTS("FRX\r\n");
             break;
         case EVENT_RX:
-            PRINTS("$R$");
+            PRINTS("R");
             _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
