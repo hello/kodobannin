@@ -21,6 +21,7 @@
 
 #include "nrf.h"
 #include "morpheus_ble.h"
+#include "message_ble.h"
 
 #include "pb_decode.h"
 #include "pb_encode.h"
@@ -32,7 +33,7 @@ extern uint8_t hello_type;
 
 static uint16_t _morpheus_service_handle;
 static MSG_Central_t * central; 
-static uint8_t _protobuf_buffer[256];
+static uint8_t _protobuf_buffer[100];
 static uint8_t _end_seq;
 static uint8_t _seq_expected;
 static uint16_t _protobuf_len;
@@ -45,12 +46,6 @@ static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	
 }
 
-
-static void
-_data_send_finished()
-{
-	PRINTS("DONE!");
-}
 
 static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
 {
@@ -114,6 +109,12 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 			}
 				break;
 			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
+			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
+				if(route_data_to_cc3200(&command, _protobuf_len) == FAIL)
+				{
+					PRINTS("Pass data to CC3200 failed, no enough memory.\r\n");
+				}
 				break;
 			default:
 				break;
