@@ -106,12 +106,13 @@ _initialize_transaction(){
         case REG_READ_FROM_SSPI:
             PRINTS("WRITE TO MASTER\r\n");
             //prepare buffer here
-            self.transaction.context_reg.length = 8; //get from tx queue;
             self.transaction.payload = _dequeue_tx();
             if(self.transaction.payload){
                 //change to payload address
+                self.transaction.context_reg.length = self.transaction.payload->len; //get from tx queue;
                 self.transaction.context_reg.address = (MSG_Address_t){0,0}; 
             }else{
+                self.transaction.context_reg.length = 0; //get from tx queue;
                 self.transaction.context_reg.address = (MSG_Address_t){0,0};
             }
             self.transaction.state = WRITE_TX_CTX;
