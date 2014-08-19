@@ -358,12 +358,6 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
 
     }
     sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
-    /*
-     *if(!ret){
-     *    //close channel
-     *    _destroy_channel(*channel);
-     *}
-     */
 }
 static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
