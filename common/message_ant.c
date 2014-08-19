@@ -406,6 +406,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                 self.parent->dispatch(src, dst, ret);
                 if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
                     self.parent->dispatch(src, (MSG_Address_t){ANT,1}, ret);
+                    self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, ret);
                 }
             }
             MSG_Base_ReleaseDataAtomic(ret);
