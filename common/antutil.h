@@ -12,9 +12,9 @@
     }\
 }while(0)
 
-#define BIAS_RF_PERIOD( _base, _uuid32 ) do{\
+#define BIAS_RF_PERIOD( _base, _uuid16 ) do{\
     uint32_t base = _base; \
-    uint16_t bias = (_uuid32) % 16;\
+    uint16_t bias = (_uuid16) % 16;\
     base += bias; \
     if(base > 0xFFFF) base = 0xFFFF;\
     _base = (uint16_t)base;\
