@@ -89,3 +89,7 @@ int32_t spi_command(const SPI_Context *ctx, const uint32_t cmd_len, const uint8_
  * @returns <0 on error, 0 on success
  */
 int32_t spi_destroy(const SPI_Context *ctx);
+
+void spi_disable(SPI_Context* obj);
+
+void spi_enable(SPI_Context *obj);

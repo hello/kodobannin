@@ -30,12 +30,23 @@ static void _on_hlo_notify_failed(void* tag){
 }
 
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
-    if(dst.submodule == 0){
+    if(dst.submodule == 0 && src.module == SSPI && src.submodule == 1){
     	// If we send things more than 1 packet, we might get fucked here.
     	MSG_Base_AcquireDataAtomic(data);
 		// protobuf, dump the thing straight back?
 		hlo_ble_notify(0xB00B, data->buf, data->len, 
             &(struct hlo_ble_operation_callbacks){_on_hlo_notify_completed, _on_hlo_notify_failed, data});
+    }
+}
+
+MSG_Status route_data_to_cc3200(const MSG_Data_t* data){
+    
+    if(data){
+        self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data);
+        
+        return SUCCESS;
+    }else{
+        return FAIL;
     }
 }
 

@@ -58,3 +58,5 @@ void imu_calibrate_zero();
 
 void imu_reset();
 uint8_t imu_clear_interrupt_status();
+
+void imu_spi_enable();

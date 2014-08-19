@@ -21,7 +21,10 @@
 #include "hble.h"
 #include "util.h"
 #include "pill_gatt.h"
+
+#ifdef HAS_BATTERY_SERVICE
 #include "battery.h"
+#endif
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
@@ -284,13 +287,8 @@ void hble_advertising_start()
     PRINTS("Advertising started.\r\n");
 }
 
-void hble_stack_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler)
+void hble_stack_init()
 {
-    uint32_t err_code;
-
-    // Initialize the SoftDevice handler module.
-    SOFTDEVICE_HANDLER_INIT(clock_source, use_scheduler);
-
     // Register with the SoftDevice handler module for BLE events.
     APP_OK(softdevice_ble_evt_handler_set(_ble_evt_dispatch));
 
@@ -301,7 +299,7 @@ void hble_stack_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler)
 
 void hble_update_battery_level()
 {
-#ifdef BATTERY_SERVICE_ENABLE
+#ifdef HAS_BATTERY_SERVICE
     start_battery_measurement(_on_battery_level_measured);
 #endif
 }

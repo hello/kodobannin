@@ -19,7 +19,7 @@
 #include "message_base.h"
 #include "timedfifo.h"
 
-#ifdef ANT_ENABLE
+#ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
 #include "antutil.h"
 #endif
@@ -50,7 +50,7 @@ static MSG_Base_t base;
 
 
 static struct imu_settings _settings = {
-	.wom_threshold = 100,
+	.wom_threshold = 35,
 	.low_power_mode_sampling_rate = IMU_HZ_15_63,  //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50
     .normal_mode_sampling_rate = IMU_HZ_15_63, //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
@@ -193,6 +193,7 @@ static void _imu_wom_process(void* context)
 
 static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 {
+#ifdef ANT_STACK_SUPPORT_REQD
 	/* do not advertise if has at least one bond */
 	MSG_Data_t * message_data = MSG_Base_AllocateDataAtomic(len);
 	if(message_data){
@@ -200,6 +201,24 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 		parent->dispatch((MSG_Address_t){0, 0},(MSG_Address_t){ANT, 1}, message_data);
 		MSG_Base_ReleaseDataAtomic(message_data);
 	}
+
+
+	/* do not advertise if has at least one bond */
+	if(MSG_ANT_BondCount() == 0){
+		// let's save one variable in the stack.
+
+		message_data = MSG_Base_AllocateDataAtomic(sizeof(ANT_DiscoveryProfile_t));
+		if(message_data){
+			SET_DISCOVERY_PROFILE(message_data);
+			parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1}, message_data);
+			MSG_Base_ReleaseDataAtomic(message_data);
+		}
+	}else{
+		uint8_t ret = MSG_ANT_BondCount();
+		PRINTS("bonds = ");
+		PRINT_HEX(&ret, 1);
+	}
+#endif
 }
 
 static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
@@ -207,15 +226,13 @@ static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 	int16_t values[3];
 	memcpy(values, raw_xyz, len);
 
-	values[0] /= KG_CONVERT_FACTOR;
-	values[1] /= KG_CONVERT_FACTOR;
-	values[2] /= KG_CONVERT_FACTOR;
-
 	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
 	int32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
 	if( aggregate > INT16_MAX){
 		aggregate = INT16_MAX;
 	}
+
+    aggregate = aggregate >> 16;
 
 	//TF_SetCurrent((uint16_t)values[0]);
 	
@@ -345,7 +362,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 					}
 
 					_aggregate_motion_data(values, sizeof(values));
-#ifdef ANT_ENABLE
+#ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
 					_dispatch_motion_data_via_ant(values, sizeof(values));
 #endif
 				}

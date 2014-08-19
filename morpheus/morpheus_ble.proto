@@ -1,6 +1,6 @@
 message WifiEndPoint {
 	optional string name = 1;
-	optional bytes mac = 2;
+	required bytes mac = 2;
 }
 
 message SelectedWifiEndPoint {
