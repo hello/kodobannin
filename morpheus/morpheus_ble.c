@@ -161,6 +161,8 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 		PRINT_HEX(&_seq_expected, sizeof(_seq_expected));
 		PRINTS("\r\n");
 
+		_seq_expected = 0;  // Reset the transmission and abort.
+
 		return;
 	}
 
@@ -169,6 +171,7 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 		if(!_is_valid_protobuf(ble_packet))
 		{
 			PRINTS("Protobuf toooooo large!\r\n");
+			_seq_expected = 0;
 			return;
 		}
 	}
@@ -184,7 +187,12 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 	PRINTS("expected seq# ");
 	PRINT_HEX(&_seq_expected, sizeof(_seq_expected));
 	PRINTS("\r\n");
-	app_sched_event_put(event->data, event->len, _on_packet_arrival);
+	uint32_t err_code = app_sched_event_put(event->data, event->len, _on_packet_arrival);
+	if(NRF_SUCCESS != err_code)
+	{
+		PRINTS("Scheduler error, transmission abort.\r\n");
+		_seq_expected = 0;
+	}
 }
 
 static void _command_write_handler(ble_gatts_evt_write_t* event)
