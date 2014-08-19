@@ -70,7 +70,7 @@ static uint8_t _get_channel_status(uint8_t channel);
 static uint8_t _match_channel_type(uint8_t remote);
 
 /* Finds an unassigned Channel */
-static ANT_Session_t * _find_unassigned_session(void);
+static ANT_Session_t * _find_unassigned_session(uint8_t * out_channel);
 
 /* Finds session by id */
 static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id);
@@ -108,12 +108,15 @@ static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id){
 }
 
 static ANT_Session_t *
-_find_unassigned_session(void){
+_find_unassigned_session(uint8_t * out_channel){
     ANT_Session_t * ret = NULL;
-    int i;
+    uint8_t i;
     for(i = 0; i < ANT_SESSION_NUM; i++){
         if(self.sessions[i].id.device_number == 0){
             ret = &self.sessions[i];
+            if(out_channel){
+                *out_channel = i;
+            }
             break;
         }
     }
