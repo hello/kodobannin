@@ -12,3 +12,4 @@ void hble_params_init(char* device_name);
 void hble_advertising_init(ble_uuid_t service_uuid);
 void hble_advertising_start();
 void hble_set_advertising_mode(bool pairing_mode);
+void hble_erase_other_bonded_central();

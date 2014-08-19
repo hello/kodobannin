@@ -21,6 +21,7 @@ message MorpheusCommand {
 	    MORPHEUS_COMMAND_START_WIFISCAN = 8;
 	    MORPHEUS_COMMAND_STOP_WIFISCAN = 9;
 	    MORPHEUS_COMMAND_GET_DEVICE_ID = 10;
+	    MORPHEUS_COMMAND_EREASE_PAIRED_USER = 11;
 	}
 	required int32 version = 1;
 	required CommandType type = 2;
