@@ -647,6 +647,16 @@ static inline void _config_imu_interrputs()
 	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
 }
 
+inline void imu_spi_enable()
+{
+	spi_enable(&_spi_context);
+}
+
+
+inline void imu_spi_disable()
+{
+	spi_disable(&_spi_context);
+}
 
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 			uint8_t miso, uint8_t mosi, uint8_t sclk, 

@@ -80,53 +80,66 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 
 		// update the offset
 		_protobuf_len += event_size - 1;
-		if(ble_packet->sequence_number == _end_seq)
-		{
-			MorpheusCommand command;
-			memset(&command, 0, sizeof(command));
-
-			pb_istream_t stream = pb_istream_from_buffer(_protobuf_buffer, _protobuf_len);
-	        bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
-	        
-	        if (!status)
-	        {
-	            PRINTS("Decoding protobuf failed, error: ");
-	            PRINTS(PB_GET_ERROR(&stream));
-	            PRINTS("\r\n");
-	            return;
-	        }
-
-			switch(command.type)
-			{
-				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-				{
-					bool pairing_mode = true;
-					app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
-				}
-					break;
-				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-				{
-					bool pairing_mode = false;
-					app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
-				}
-					break;
-				case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
-					break;
-				default:
-					break;
-			}
-			
-
-		}
 	}
+
+
+	if(ble_packet->sequence_number == _end_seq)
+	{
+		MorpheusCommand command;
+		memset(&command, 0, sizeof(command));
+
+		pb_istream_t stream = pb_istream_from_buffer(_protobuf_buffer, _protobuf_len);
+        bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
+        
+        if (!status)
+        {
+            PRINTS("Decoding protobuf failed, error: ");
+            PRINTS(PB_GET_ERROR(&stream));
+            PRINTS("\r\n");
+            return;
+        }
+
+		switch(command.type)
+		{
+			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
+			{
+				bool pairing_mode = true;
+				app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
+			}
+				break;
+			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+			{
+				bool pairing_mode = false;
+				app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
+			}
+				break;
+			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+				break;
+			default:
+				break;
+		}
+
+		_seq_expected = 0;
+		
+
+	}
+	
 	
 }
 
 
 static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 {
+	PRINTS("Protobuf received\r\n");
+
 	struct hlo_ble_packet* ble_packet = (struct hlo_ble_packet*)event->data;
 	if(ble_packet->sequence_number != _seq_expected){
+		PRINTS("Unexpected sequence number:");
+		PRINT_HEX(&ble_packet->sequence_number, sizeof(ble_packet->sequence_number));
+		PRINTS(", expected: ");
+		PRINT_HEX(&_seq_expected, sizeof(_seq_expected));
+		PRINTS("\r\n");
+
 		return;
 	}
 
@@ -146,6 +159,10 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 	{
 		_seq_expected = 0;
 	}
+
+	PRINTS("expected seq# ");
+	PRINT_HEX(&_seq_expected, sizeof(_seq_expected));
+	PRINTS("\r\n");
 	app_sched_event_put(event->data, event->len, _on_packet_arrival);
 }
 
