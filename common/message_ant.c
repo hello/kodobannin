@@ -411,7 +411,11 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             MSG_Base_ReleaseDataAtomic(ret);
         }
     }else{
-        PRINTS("Session Not Found");
+        if(rx_payload[0] == 0){
+            PRINTS("Found Unknown ID = ");
+            PRINT_HEX(&id.device_number, 2);
+            PRINTS("\r\n");
+        }
     }
 }
 
