@@ -26,24 +26,20 @@ static SPI_Context _spi_context;
 
 static inline void _register_read(MPU_Register_t register_address, uint8_t* const out_value)
 {
-	imu_spi_enable();
 	uint8_t buf[2] = { SPI_Read(register_address), 0};
 	int32_t ret;
 
 	ret = spi_xfer(&_spi_context, 1, buf, 1, out_value);
 	BOOL_OK(ret == 1);
-	imu_spi_disable();
 }
 
 static inline void _register_write(MPU_Register_t register_address, uint8_t value)
 {
-	imu_spi_enable();
 	uint8_t buf[2] = { SPI_Write(register_address), value };
 	int32_t ret;
 
 	ret = spi_xfer(&_spi_context, 2, buf, 0, NULL);
 	BOOL_OK(ret == 2);
-	imu_spi_disable();
 }
 
 unsigned imu_get_sampling_interval(enum imu_hz hz)

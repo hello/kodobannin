@@ -22,7 +22,7 @@
 #include "util.h"
 #include "pill_gatt.h"
 
-#ifdef BATTERY_SERVICE_ENABLE
+#ifdef HAS_BATTERY_SERVICE
 #include "battery.h"
 #endif
 
@@ -299,7 +299,7 @@ void hble_stack_init()
 
 void hble_update_battery_level()
 {
-#ifdef BATTERY_SERVICE_ENABLE
+#ifdef HAS_BATTERY_SERVICE
     start_battery_measurement(_on_battery_level_measured);
 #endif
 }
