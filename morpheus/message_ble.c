@@ -30,7 +30,7 @@ static void _on_hlo_notify_failed(void* tag){
 }
 
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
-    if(dst.submodule == 0){
+    if(dst.submodule == 0 && src.module == SSPI && src.submodule == 1){
     	// If we send things more than 1 packet, we might get fucked here.
     	MSG_Base_AcquireDataAtomic(data);
 		// protobuf, dump the thing straight back?
