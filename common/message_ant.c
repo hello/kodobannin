@@ -288,6 +288,7 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
             _free_context(ctx);
             ctx->header = *new_header;
             ctx->payload = _allocate_payload_rx(&ctx->header);
+        }else{
         }
     }else if(buf[0] <= buf[1] && buf[1] > 0){
         //payload
@@ -357,10 +358,12 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
 
     }
     sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
-    if(!ret){
-        //close channel
-        _destroy_channel(*channel);
-    }
+    /*
+     *if(!ret){
+     *    //close channel
+     *    _destroy_channel(*channel);
+     *}
+     */
 }
 static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
