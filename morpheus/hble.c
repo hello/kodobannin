@@ -7,6 +7,8 @@
 #include <ble.h>
 #include <ble_advdata.h>
 #include <ble_conn_params.h>
+#include <ble_bas.h>
+#include <ble_dis.h>
 #include <ble_hci.h>
 #include <nrf_sdm.h>
 #include <nrf_soc.h>
@@ -33,8 +35,15 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
 
 #ifdef BONDING_REQUIRED
-    APP_OK(ble_bondmngr_bonded_centrals_store());
+    APP_OK(morpheus_ble_bondmngr_bonded_centrals_store());
 #endif
+    nrf_delay_ms(100);
+    hble_advertising_start();
+}
+
+static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
+{
+    nrf_delay_ms(100);  // Due to nRF51 release note
     hble_advertising_start();
 }
 
@@ -57,7 +66,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
-            hble_advertising_start();
+            app_sched_event_put(NULL, 0, _on_advertise_timeout);
         }
         break;
     default:
@@ -72,7 +81,7 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 {
 
 #ifdef BONDING_REQUIRED
-    ble_bondmngr_on_ble_evt(p_ble_evt);
+    morpheus_ble_bondmngr_on_ble_evt(p_ble_evt);
 #endif
 
     ble_conn_params_on_ble_evt(p_ble_evt);
@@ -158,7 +167,7 @@ void hble_bond_manager_init()
     bond_init_data.error_handler           = _bond_manager_error_handler;
     bond_init_data.bonds_delete            = bonds_delete;
 
-    APP_OK(ble_bondmngr_init(&bond_init_data));
+    APP_OK(morpheus_ble_bondmngr_init(&bond_init_data));
     //PRINTS("bond manager init.\r\n");
 }
 
@@ -214,7 +223,7 @@ void hble_advertising_start()
         adv_params.type = adv_mode;
         ble_gap_whitelist_t whitelist;
         //APP_OK(ble_bondmngr_whitelist_get(&whitelist));
-        uint32_t err_code = ble_bondmngr_whitelist_get(&whitelist);
+        uint32_t err_code = morpheus_ble_bondmngr_whitelist_get(&whitelist);
         
         if(err_code == NRF_SUCCESS)
         {
@@ -252,12 +261,8 @@ void hble_advertising_start()
     PRINTS("Advertising started.\r\n");
 }
 
-void hble_stack_init(nrf_clock_lfclksrc_t clock_source, bool use_scheduler)
+void hble_stack_init()
 {
-    uint32_t err_code;
-
-    // Initialize the SoftDevice handler module.
-    SOFTDEVICE_HANDLER_INIT(clock_source, use_scheduler);
 
     // Register with the SoftDevice handler module for BLE events.
     APP_OK(softdevice_ble_evt_handler_set(_ble_evt_dispatch));
@@ -286,21 +291,74 @@ void hble_params_init(char* device_name)
         APP_OK(sd_ble_gap_tx_power_set(TX_POWER_LEVEL));
     }
 
-    // initialize advertising parameters
+    //Device Info
     {
-        ble_uuid_t adv_uuids[] = {{BLE_UUID_BATTERY_SERVICE, BLE_UUID_TYPE_BLE}};
-        uint8_t flags = BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
+        ble_dis_init_t dis_init;
+        memset(&dis_init, 0, sizeof(dis_init));
 
-        ble_advdata_t advdata = {};
-        advdata.name_type = BLE_ADVDATA_FULL_NAME;
-        advdata.include_appearance = true;
-        advdata.flags.size = sizeof(flags);
-        advdata.flags.p_data = &flags;
-        advdata.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
-        advdata.uuids_complete.p_uuids = adv_uuids;
+        ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
+        ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
 
-        APP_OK(ble_advdata_set(&advdata, NULL));
+        size_t device_id_len = sizeof(NRF_FICR->DEVICEID);
+        size_t device_id_uint_len = sizeof(NRF_FICR->DEVICEID[0]);
+        size_t hex_device_id_len = device_id_len * device_id_uint_len * 2 + (device_id_len - 1) + 1;  // xxxxxxxx-xxxxxxxx-...
+        char hex_device_id[hex_device_id_len];
+        char device_id[device_id_len * device_id_uint_len];
+
+        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len * device_id_uint_len);
+        memset(hex_device_id, 0, hex_device_id_len);
+        const char* hex_table = "0123456789ABCDEF";
+        
+        size_t index = 0;
+        for(size_t i = 0; i < device_id_len; i++)
+        {
+            //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
+            for(size_t len = 0; len < device_id_uint_len; len++)
+            {
+                uint8_t num = device_id[i * device_id_uint_len + (device_id_uint_len - len - 1)];
+                
+                uint8_t ret = num / 16;
+                uint8_t remain = num % 16;
+
+                hex_device_id[index++] = hex_table[ret];
+                hex_device_id[index++] = hex_table[remain];
+
+                if(i < device_id_len - 1 && len == device_id_uint_len - 1)
+                {
+                    hex_device_id[index++] = '-';
+                }
+            }
+
+            
+        }
+
+        ble_srv_ascii_to_utf8(&dis_init.serial_num_str, hex_device_id);
+        
+
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&dis_init.dis_attr_md.read_perm);
+        BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&dis_init.dis_attr_md.write_perm);
+
+        APP_OK(ble_dis_init(&dis_init));
     }
+
+#ifdef HAS_BATTERY_SERVICE
+    //Battery level service
+    {
+        ble_bas_init_t bas_init;
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&bas_init.battery_level_char_attr_md.cccd_write_perm);
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&bas_init.battery_level_char_attr_md.read_perm);
+        BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&bas_init.battery_level_char_attr_md.write_perm);
+
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&bas_init.battery_level_report_read_perm);
+
+        bas_init.evt_handler          = NULL;
+        bas_init.support_notification = true;
+        bas_init.p_report_ref         = NULL;
+        bas_init.initial_batt_level   = 100;
+
+        APP_OK(ble_bas_init(&_ble_bas, &bas_init));
+    }
+#endif
 
     // Connection parameters.
     {
