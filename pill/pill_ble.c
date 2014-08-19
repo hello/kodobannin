@@ -26,6 +26,8 @@
 
 #ifdef ANT_ENABLE
 #include "message_ant.h"
+#include "ant_devices.h"
+#include "antutil.h"
 #endif
 
 #include "message_time.h"
@@ -198,6 +200,14 @@ void pill_ble_load_modules(void){
 		{
 			uint8_t role = 1;
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
+		}
+		{
+			ANT_ChannelID_t id = {
+				.device_number = GET_UUID_16(),
+				.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
+				.transmit_type = 0
+			};
+			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
 		}
 		{
 /*
