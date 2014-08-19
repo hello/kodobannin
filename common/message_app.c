@@ -42,13 +42,14 @@ _dispatch (MSG_Address_t src, MSG_Address_t  dst, MSG_Data_t * data){
         uint32_t err;
         future_event tmp = {src, dst, data};
         err = app_sched_event_put(&tmp, sizeof(tmp), _future_event_handler);
-        err = MSG_Base_FreeCount();
-        PRINTS("OC: ");
-        PRINT_HEX(&err, 4);
-        PRINTS("\r\n");
+        uint16_t free_count = MSG_Base_FreeCount();
+        
         if(!err){
             return SUCCESS;
         }else{
+            PRINTS("OC: ");
+            PRINT_HEX(&err, 4);
+            PRINTS("\r\n");
             return FAIL;
         }
     }
