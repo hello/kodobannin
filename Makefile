@@ -181,7 +181,7 @@ $(BUILD_DIR)/git_description.o: $(BUILD_DIR)/git_description.c | $(CC)
 
 
 # compile flags
-DEBUG = 0
+DEBUG = 1
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
