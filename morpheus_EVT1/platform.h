@@ -2,6 +2,7 @@
 
 #pragma once
 
+#define BLE_ENABLE
 #define ANT_ENABLE
 #define MSG_BASE_USE_BIG_POOL
 

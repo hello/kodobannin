@@ -39,12 +39,11 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
     }
 }
 
-MSG_Status route_data_to_cc3200(const void* data, size_t len){
-    MSG_Data_t * message_data = MSG_Base_AllocateDataAtomic(len);
-    if(message_data){
-        memcpy(message_data->buf, data, len);
-        self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, message_data);
-        MSG_Base_ReleaseDataAtomic(message_data);
+MSG_Status route_data_to_cc3200(const MSG_Data_t* data){
+    
+    if(data){
+        self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data);
+        
         return SUCCESS;
     }else{
         return FAIL;
