@@ -410,6 +410,9 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                 MSG_Address_t dst = (MSG_Address_t){UART, 1};
                 //then dispatch to uart for printout
                 self.parent->dispatch(src, dst, ret);
+                if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
+                    self.parent->dispatch(src, (MSG_Address_t){ANT,1}, ret);
+                }
             }
             MSG_Base_ReleaseDataAtomic(ret);
         }
@@ -448,18 +451,34 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 //since scanning in central mode, rx does not map directly to channels
                 //sessions become virtual channels
                 {
-                    ANT_Session_t * s = _find_unassigned_session();
+                    uint8_t out_channel;
+                    ANT_Session_t * s = _find_unassigned_session(&out_channel);
                     PRINTS("Create Session\r\n");
                     switch(self.discovery_role){
                         case ANT_DISCOVERY_CENTRAL:
                             if(s){
                                 s->id = antcmd->param.session_info;
+                                {
+                                    uint16_t ret ;
+                                    ANT_ChannelPHY_t phy = {
+                                        .frequency = 66,
+                                        .period = 1092,
+                                        .channel_type = CHANNEL_TYPE_SLAVE,
+                                        .network = 0
+                                    };
+                                    PRINTS("Creating Session ID = ");
+                                    PRINT_HEX(&s->id.device_number, 2);
+                                    ret = _configure_channel(out_channel+1, &phy, &s->id,0);
+                                }
                             }else{
                                 PRINTS("Out of sessions");
                             }
                             break;
                         case ANT_DISCOVERY_PERIPHERAL:
-                            PRINTS("Already configured as peripheral, sending as channel 0");
+                            PRINTS("Assign ID");
+                            if(s){
+                                s->id = antcmd->param.session_info;
+                            }
                             break;
                         default:
                             PRINTS("Need to define a role first!\r\n");
@@ -470,30 +489,32 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         }
     }else{
         uint8_t channel = dst.submodule - 1;
-        if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
-            if(channel == 0){
-                PRINTS("Can not send over discovery 0");
-            }
-        }else{
-            if(channel < ANT_SESSION_NUM){
-                ANT_Session_t * session = &self.sessions[channel];
-                if(session->tx_ctx.payload){
-                    PRINTS("Channel In Use\r\n");
+        if(channel < ANT_SESSION_NUM){
+            ANT_Session_t * session = &self.sessions[channel];
+            if(session->tx_ctx.payload){
+                PRINTS("Channel In Use\r\n");
+            }else{
+                PRINTS("Sending...\r\n");
+                session->tx_ctx.payload = data;
+                MSG_Base_AcquireDataAtomic(data);
+                session->tx_ctx.header.size = data->len;
+                session->tx_ctx.header.checksum = _calc_checksum(data);
+                session->tx_ctx.header.page = 0;
+                session->tx_ctx.header.page_count = data->len/6 + (((data->len)%6)?1:0);
+                session->tx_ctx.count = 3;
+                session->tx_ctx.idx = 0;
+                if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
+                    uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
+                    _assemble_tx(&session->tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
+                    sd_ant_broadcast_message_tx(channel+1,sizeof(message), message);
                 }else{
-                    PRINTS("Sending...\r\n");
-                    session->tx_ctx.payload = data;
-                    MSG_Base_AcquireDataAtomic(data);
-                    session->tx_ctx.header.size = data->len;
-                    session->tx_ctx.header.checksum = _calc_checksum(data);
-                    session->tx_ctx.header.page = 0;
-                    session->tx_ctx.header.page_count = data->len/6 + (((data->len)%6)?1:0);
-                    session->tx_ctx.count = 3;
-                    session->tx_ctx.idx = 0;
                     _connect(channel);
                 }
             }
-
+        }else{
+            PRINTS("CHANNEL ERROR");
         }
+
     }
     return SUCCESS;
 }
@@ -534,7 +555,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             //PRINTS("FRX\r\n");
             break;
         case EVENT_RX:
-            PRINTS("R");
+            PRINTS("$R$");
             _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
