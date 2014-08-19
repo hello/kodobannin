@@ -209,25 +209,6 @@ void pill_ble_load_modules(void){
 			};
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
 		}
-		{
-/*
- *            ANT_Channel_Settings_t s = (ANT_Channel_Settings_t){
- *                .phy = (ANT_ChannelPHY_t){
- *                    .channel_type = 0x10,
- *                    .frequency = 66,
- *                    .network = 0,
- *                    .period = 1092
- *                },
- *                .id = (ANT_ChannelID_t){
- *                    .device_number = 0xABCD,
- *                    .device_type = 0x11,
- *                    .transmit_type = 0
- *
- *                }
- *            };
- *            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &s, sizeof(s));
- */
-		}
 #endif
     }else{
         PRINTS("FAIL");
