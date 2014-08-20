@@ -323,7 +323,7 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
 static uint8_t DECREF
 _assemble_tx(ConnectionContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
     ANT_HeaderPacket_t * header = &ctx->header;
-    if(ctx->count == 0){
+    if(!ctx->payload || ctx->count == 0){
         memcpy(out_buf, &ctx->header, 8);
         return 0;
     }else{
