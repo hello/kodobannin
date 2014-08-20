@@ -44,6 +44,7 @@ typedef struct{
     ANT_ChannelID_t id;
     ConnectionContext_t rx_ctx;
     ConnectionContext_t tx_ctx;
+    MSG_Queue_t * tx_queue;
 }ANT_Session_t;
 
 static struct{
@@ -478,9 +479,17 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                             }
                             break;
                         case ANT_DISCOVERY_PERIPHERAL:
-                            PRINTS("Assign ID");
                             if(s){
+                                PRINTS("Assign ID\r\n");
                                 s->id = antcmd->param.session_info;
+                                PRINTS("Assign Queue\r\n");
+                                MSG_Data_t * q = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
+                                if(q){
+                                    s->tx_queue = MSG_Base_InitQueue(q->buf, q->len);
+                                    PRINTS("Queue Init OK");
+                                }else{
+                                    PRINTS("Can't load data");
+                                }
                             }
                             break;
                         default:
