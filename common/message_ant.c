@@ -356,29 +356,31 @@ static void
 _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
     uint32_t ret;
+    ANT_Session_t * session = NULL;
     if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
         //central, only channels 1-7 are tx
         //channel 1-7 maps to index 0-6
         uint8_t idx = *channel - 1;
         if(idx < ANT_SESSION_NUM){
-            ret = _assemble_tx(&self.sessions[idx].tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
-            if(ret == 0){
-                _free_context(&self.sessions[*(channel)-1].tx_ctx);
-            }
+            session = &self.sessions[idx];
         }
     }else{
         //periperal, all channels are tx
         //channels 0-7 mapes to index 0-7
         if(*channel < ANT_SESSION_NUM){
-            ret = _assemble_tx(&self.sessions[*channel].tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
+            session = &self.sessions[*channel];
         }
-        if(!ret){
-            _free_context(&self.sessions[*channel].tx_ctx);
-            _destroy_channel(*channel);
-        }
-
     }
-    sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
+    if(session){
+        uint32_t ret = _assemble_tx(&session->tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
+        if(ret == 0){
+            _free_context(&session->tx_ctx);
+            if(self.discovery_role == ANT_DISCOVERY_PERIPHERAL){
+                _destroy_channel(*channel);
+            }
+        }
+        sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
+    }
 }
 static void
 _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
