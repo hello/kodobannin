@@ -45,8 +45,8 @@ static struct{
     /*
      * Only one queue_tx right now
      */
-    MSG_Data_t * current_tx;
     MSG_Data_t * dummy;
+    MSG_Queue_t * tx_queue;
 }self;
 
 static char * name = "SSPI";
@@ -60,33 +60,32 @@ _reset(void){
 }
 static MSG_Data_t *
 _dequeue_tx(void){
-    MSG_Data_t * ret = self.current_tx;
+    MSG_Data_t * ret = MSG_Base_DequeueAtomic(self.tx_queue);
 #ifdef PLATFORM_HAS_SSPI
     if(SSPI_INT != 0){
         nrf_gpio_cfg_output(SSPI_INT);
         nrf_gpio_pin_write(SSPI_INT, 0);
     }
 #endif
-    self.current_tx = NULL;
     return ret;
     //this function pops the tx queue for spi, for now, simply returns a new buffer with test code
     //return MSG_Base_AllocateStringAtomic(TEST_STR);
 }
 static uint32_t
 _queue_tx(MSG_Data_t * o){
-    if(self.current_tx){
+    if(SUCCESS == MSG_Base_QueueAtomic(self.tx_queue, o)){
+        PRINTS("Queued SPI Out\r\n");
+    }else{
         //we are forced to drop since something shouldn't be here
         PRINTS("Dropped Old Data\r\n");
-        MSG_Base_ReleaseDataAtomic(self.current_tx);
+        return 1;
     }
-    self.current_tx = o;
 #ifdef PLATFORM_HAS_SSPI
     if(SSPI_INT != 0){
         nrf_gpio_cfg_output(SSPI_INT);
         nrf_gpio_pin_write(SSPI_INT, 1);
     }
 #endif
-    
     return 0;
 
 }
@@ -197,9 +196,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 
         }else if(dst.submodule == 1){
             //send to sspi slave
-
-            MSG_Base_AcquireDataAtomic(data);
-            _queue_tx(data);
+            if(0 == _queue_tx(data)){
+                MSG_Base_AcquireDataAtomic(data);
+            }
         }else{
             return FAIL;
         }
@@ -253,6 +252,12 @@ _init(){
 #endif
     self.dummy = MSG_Base_AllocateDataAtomic(230);
     self.current_state = _reset();
+    {
+        MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
+        if(tmp){
+            self.tx_queue = MSG_Base_InitQueue(tmp->buf, tmp->len);
+        }
+    }
     return SUCCESS;
 
 }
