@@ -87,9 +87,9 @@ MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str){
 MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
     if(d){
         CRITICAL_REGION_ENTER();
-        d->ref++;
-        PRINTS("+");
+        incref(d);
         CRITICAL_REGION_EXIT();
+        PRINTS("+");
         return SUCCESS;
     }
     return FAIL;
