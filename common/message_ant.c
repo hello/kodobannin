@@ -524,10 +524,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             ANT_Session_t * session = &self.sessions[channel];
             if(SUCCESS == MSG_Base_QueueAtomic(session->tx_queue, data)){
                 MSG_Base_AcquireDataAtomic(data);
-                PRINTS("Queue OK\r\n");
-                PRINTS("E = ");
-                PRINT_HEX(&session->tx_queue->elements,1);
-                PRINTS("\r\n");
                 PRINTS("Sending...\r\n");
                 if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
                     //FIXME should handle central gracefully
@@ -538,7 +534,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                     _connect(channel);
                 }
             }else{
-                PRINTS("Queue FAIL\r\n");
+                PRINTS("Queue Full\r\n");
             }
         }else{
             PRINTS("CHANNEL ERROR");
