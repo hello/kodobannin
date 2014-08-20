@@ -11,6 +11,3 @@
 [submodule "tools/JLink_MacOSX_V474"]
 	path = tools/JLink_MacOSX_V474
 	url = https://github.com/hello/JLink_MacOSX_V474
-[submodule "uthash"]
-	path = uthash
-	url = https://github.com/troydhanson/uthash.git
