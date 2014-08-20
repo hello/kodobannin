@@ -62,7 +62,7 @@ static MSG_Data_t *
 _dequeue_tx(void){
     MSG_Data_t * ret = MSG_Base_DequeueAtomic(self.tx_queue);
 #ifdef PLATFORM_HAS_SSPI
-    if(SSPI_INT != 0){
+    if(self.tx_queue->elements && SSPI_INT != 0){
         nrf_gpio_cfg_output(SSPI_INT);
         nrf_gpio_pin_write(SSPI_INT, 0);
     }
