@@ -229,9 +229,18 @@ static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
 	int32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
     aggregate = aggregate >> 16;
-	if( aggregate > INT16_MAX){
-		aggregate = INT16_MAX;
-	}
+	
+    /*
+    tf_unit_t curr = TF_GetCurrent();
+
+    PRINTS("Current value: ");
+    PRINT_HEX(&curr, sizeof(curr));
+    PRINTS("\r\n");
+    PRINTS("New value: ");
+    PRINT_HEX(&aggregate, sizeof(tf_unit_t));
+    PRINTS("\r\n");
+    */
+
 	//TF_SetCurrent((uint16_t)values[0]);
 	
 	if(TF_GetCurrent() < aggregate ){
