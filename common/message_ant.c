@@ -80,6 +80,22 @@ static ANT_Session_t * _find_unassigned_session(uint8_t * out_channel);
 /* Finds session by id */
 static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id);
 
+/* prepares tx context */
+static void INCREF _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
+
+static void INCREF
+_prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
+    if(ctx && data){
+        MSG_Base_AcquireDataAtomic(data);
+        ctx->payload = data;
+        ctx->header.size = data->len;
+        ctx->header.checksum = _calc_checksum(data);
+        ctx->header.page = 0;
+        ctx->header.page_count = data->len/6 + (((data->len)%6)?1:0);
+        ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
+        ctx->idx = 0;
+    }
+}
 static uint8_t
 _match_channel_type(uint8_t remote){
     switch(remote){
@@ -507,14 +523,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 PRINTS("Channel In Use\r\n");
             }else{
                 PRINTS("Sending...\r\n");
-                session->tx_ctx.payload = data;
-                MSG_Base_AcquireDataAtomic(data);
-                session->tx_ctx.header.size = data->len;
-                session->tx_ctx.header.checksum = _calc_checksum(data);
-                session->tx_ctx.header.page = 0;
-                session->tx_ctx.header.page_count = data->len/6 + (((data->len)%6)?1:0);
-                session->tx_ctx.count = 3;
-                session->tx_ctx.idx = 0;
+                _prepare_tx(&session->tx_ctx, data);
                 if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
                     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
                     _assemble_tx(&session->tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
