@@ -81,12 +81,11 @@ static ANT_Session_t * _find_unassigned_session(uint8_t * out_channel);
 static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id);
 
 /* prepares tx context */
-static void INCREF _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
+static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
 
-static void INCREF
+static void
 _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
     if(ctx && data){
-        MSG_Base_AcquireDataAtomic(data);
         ctx->payload = data;
         ctx->header.size = data->len;
         ctx->header.checksum = _calc_checksum(data);
@@ -355,7 +354,6 @@ _assemble_tx(ConnectionContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
 static void
 _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
-    uint32_t ret;
     ANT_Session_t * session = NULL;
     if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
         //central, only channels 1-7 are tx
