@@ -522,27 +522,23 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         uint8_t channel = dst.submodule - 1;
         if(channel < ANT_SESSION_NUM){
             ANT_Session_t * session = &self.sessions[channel];
-            if(session->tx_ctx.payload){
-                PRINTS("Channel In Use\r\n");
-                if(SUCCESS == MSG_Base_QueueAtomic(session->tx_queue, data)){
-                    MSG_Base_AcquireDataAtomic(data);
-                    PRINTS("Queue OK\r\n");
-                    PRINTS("E = ");
-                    PRINT_HEX(&session->tx_queue->elements,1);
-                    PRINTS("\r\n");
-                }else{
-                    PRINTS("Queue FAIL\r\n");
-                }
-            }else{
+            if(SUCCESS == MSG_Base_QueueAtomic(session->tx_queue, data)){
+                MSG_Base_AcquireDataAtomic(data);
+                PRINTS("Queue OK\r\n");
+                PRINTS("E = ");
+                PRINT_HEX(&session->tx_queue->elements,1);
+                PRINTS("\r\n");
                 PRINTS("Sending...\r\n");
-                _prepare_tx(&session->tx_ctx, data);
                 if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
+                    //FIXME should handle central gracefully
                     uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
                     _assemble_tx(&session->tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
                     sd_ant_broadcast_message_tx(channel+1,sizeof(message), message);
                 }else{
                     _connect(channel);
                 }
+            }else{
+                PRINTS("Queue FAIL\r\n");
             }
         }else{
             PRINTS("CHANNEL ERROR");
