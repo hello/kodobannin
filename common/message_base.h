@@ -80,15 +80,15 @@ MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
  */
 typedef struct{
     uint8_t capacity;
-    uint8_t num_elements;
+    uint8_t elements;
     uint8_t rdx;
     uint8_t wdx;
     MSG_Data_t * q[];
 }MSG_Queue_t;
 
-MSG_Status MSG_Base_InitQueue(MSG_Queue_t * queue, void * mem, uint32_t size);
-MSG_Status MSG_Base_Queue(MSG_Queue_t * queue, MSG_Data_t * obj);
-MSG_Data_t * MSG_Base_Dequeue(MSG_Queue_t * queue);
+MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size);
+MSG_Status INCREF MSG_Base_QueueAtomic(MSG_Queue_t * queue, MSG_Data_t * obj);
+MSG_Data_t * DECREF MSG_Base_DequeueAtomic(MSG_Queue_t * queue);
 
 #define MSG_PING(c,r,i) do{ \
     MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(1); \

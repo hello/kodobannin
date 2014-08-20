@@ -153,12 +153,52 @@ fail:
     return FAIL;
 }
 
-MSG_Status MSG_Base_InitQueue(MSG_Queue_t * queue, void * mem, uint32_t size){
-    return SUCCESS;
+MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size){
+    MSG_Queue_t * ret = NULL;
+    if(size < (sizeof(MSG_Queue_t) + sizeof(MSG_Data_t*))){
+        //minimum of one element is required
+        break;
+    }else{
+        ret = (MSG_Queue_t *)mem;
+        ret->capacity = (size - sizeof(MSG_Queue_t)) / sizeof(MSG_Data_t *);
+        ret->elements = 0;
+        ret->rdx = 0;
+        ret->wdx = 0;
+        PRINTS("Initialize size to: ");
+        PRINT_HEX(&ret->capacity, 1);
+        PRINTS(" elements\r\n");
+    }
+    return ret;
 }
-MSG_Status MSG_Base_Queue(MSG_Queue_t * queue, MSG_Data_t * obj){
-    return SUCCESS;
+MSG_Status MSG_Base_QueueAtomic(MSG_Queue_t * queue, MSG_Data_t * obj){
+    MSG_Status ret = FAIL;
+    if(queue && obj){
+        CRITICAL_REGION_ENTER();
+        if(queue->elements == queue->capacity){
+            PRINTS("At capacity");
+            ret = OOM;
+        }else{
+            incref(obj);
+            queue->q[queue->wdx] = obj;
+            queue->wdx = (queue->wdx + 1)%queue->capacity;
+            queue->elements += 1;
+            ret = SUCCESS;
+        }
+        CRITICAL_REGION_EXIT();
+    }
+    return ret;
 }
-MSG_Data_t * MSG_Base_Dequeue(MSG_Queue_t * queue){
-    return NULL;
+MSG_Data_t * MSG_Base_DequeueAtomic(MSG_Queue_t * queue){
+    MSG_Data_t * ret = NULL;
+    if(queue){
+        CRITICAL_REGION_ENTER();
+        if(queue->elements){
+            ret = queue->q[queue->rdx];
+            queue->elements -= 1;
+            queue->rdx = (queue->rdx + 1)%queue->capacity;
+            decref(ret);
+        }
+        CRITICAL_REGION_EXIT();
+    }
+    return ret;
 }
