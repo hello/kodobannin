@@ -73,7 +73,6 @@ HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard protobuf/*.c) \
 
-USE_SDK_BONDMNGR = 0
 
 NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/templates/system_nrf51.c \
@@ -96,14 +95,15 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/nrf_nvmc/nrf_nvmc.c \
 	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
 	nRF51_SDK/nrf51422/Source/spi_slave/spi_slave.c \
+	nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c \
 
 DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
 	$(wildcard drivers/battery.c) \
 
-ifeq ($(USE_SDK_BONDMNGR), 1)
-	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
-endif
+#ifeq ($(USE_SDK_BONDMNGR), 1)
+#	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
+#endif
 
 SRCS = $(HELLO_SRCS) $(NRF_SRCS) $(DRIVER_SRCS)
 
@@ -181,7 +181,7 @@ $(BUILD_DIR)/git_description.o: $(BUILD_DIR)/git_description.c | $(CC)
 
 
 # compile flags
-DEBUG = 0
+DEBUG = 1
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
