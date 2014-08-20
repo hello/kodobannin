@@ -14,10 +14,16 @@
 #include <nrf_soc.h>
 #include <pstorage.h>
 #include <softdevice_handler.h>
-#include "morpheus_ble_bondmngr.h"
+#include "app.h"
+#include "platform.h"
+
+#ifdef BONDING_REQUIRED
+#include "ble_bondmngr_cfg.h"
+#include "ble_bondmngr.h"
+#endif
 
 #include "util.h"
-#include "app.h"
+
 #include "hble.h"
 
 #include "morpheus_gatt.h"
@@ -35,7 +41,7 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
 
 #ifdef BONDING_REQUIRED
-    APP_OK(morpheus_ble_bondmngr_bonded_centrals_store());
+    APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
     nrf_delay_ms(100);
     hble_advertising_start();
@@ -81,7 +87,7 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 {
 
 #ifdef BONDING_REQUIRED
-    morpheus_ble_bondmngr_on_ble_evt(p_ble_evt);
+    ble_bondmngr_on_ble_evt(p_ble_evt);
 #endif
 
     ble_conn_params_on_ble_evt(p_ble_evt);
@@ -142,6 +148,33 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
     PRINTS("last connected central set\r\n");
 }
 
+void hble_erase_other_bonded_central()
+{
+    if(_last_connected_central == INVALID_CENTRAL_HANDLE)
+    {
+        APP_OK(ble_bondmngr_bonded_centrals_delete());
+        return;
+    }
+
+    PRINTS("Current central: ");
+    PRINT_HEX(_last_connected_central, sizeof(_last_connected_central));
+    PRINTS("\r\n");
+    
+    uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
+    memset(bonded_central_list, 0, sizeof(bonded_central_list));
+    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, sizeof(bonded_central_list)));
+    for(int i = 0; i < BLE_BONDMNGR_MAX_BONDED_CENTRALS; i++)
+    {
+        if(bonded_central_list[i] != _last_connected_central)
+        {
+            APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[i]));
+            PRINTS("Paired central ");
+            PRINT_HEX(&bonded_central_list[i], sizeof(bonded_central_list[i]));
+            PRINTS(" deleted.\r\n");
+        }
+    }
+}
+
 
 void hble_set_advertising_mode(bool pairing_mode)
 {
@@ -167,7 +200,7 @@ void hble_bond_manager_init()
     bond_init_data.error_handler           = _bond_manager_error_handler;
     bond_init_data.bonds_delete            = bonds_delete;
 
-    APP_OK(morpheus_ble_bondmngr_init(&bond_init_data));
+    APP_OK(ble_bondmngr_init(&bond_init_data));
     //PRINTS("bond manager init.\r\n");
 }
 
@@ -223,7 +256,7 @@ void hble_advertising_start()
         adv_params.type = adv_mode;
         ble_gap_whitelist_t whitelist;
         //APP_OK(ble_bondmngr_whitelist_get(&whitelist));
-        uint32_t err_code = morpheus_ble_bondmngr_whitelist_get(&whitelist);
+        uint32_t err_code = ble_bondmngr_whitelist_get(&whitelist);
         
         if(err_code == NRF_SUCCESS)
         {

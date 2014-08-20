@@ -68,7 +68,7 @@ _start()
 #endif
 
     morpheus_ble_transmission_layer_init();
-
+    
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
     memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));

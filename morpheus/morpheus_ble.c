@@ -8,8 +8,9 @@
 #include <ble_srv_common.h>
 #include <ble_advdata.h>
 
-#include "app.h"
+
 #include "platform.h"
+#include "app.h"
 
 #include "hlo_ble_time.h"
 #include "util.h"
@@ -29,6 +30,9 @@
 
 #include "ant_devices.h"
 
+// To generate the protobuf download nanopb
+// ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
+
 #define PROTOBUF_MAX_LEN  100
 
 extern uint8_t hello_type;
@@ -42,10 +46,38 @@ static uint16_t _protobuf_len;
 
 static void _morpheus_switch_mode(void*, uint16_t);
 static void _led_pairing_mode(void);
+static void _on_notify_completed(void* data, void* data_page);
+static void _on_notify_failed(void* data_page);
 
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
+}
+
+static void _erase_bonded_users(void* event_data, uint16_t event_size){
+	hble_erase_other_bonded_central();
+
+	MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(20);
+	MorpheusCommand command;
+	memset(&command, 0, sizeof(command));
+	memset(data_page->buf, 0, data_page->len);
+
+	command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_USER;
+	command.version = 0;
+	pb_ostream_t stream = pb_ostream_from_buffer(data_page->buf, data_page->len);
+	bool status = pb_encode(&stream, MorpheusCommand_fields, &command);
+    
+    if(status)
+    {
+    	size_t protobuf_len = stream.bytes_written;
+		hlo_ble_notify(0xB00B, data_page->buf, protobuf_len, 
+			&(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, data_page});
+	}else{
+		PRINTS("encode protobuf failed: ");
+		PRINTS(PB_GET_ERROR(&stream));
+		PRINTS("\r\n");
+		MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+	}
 }
 
 
@@ -134,6 +166,9 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 				{
 					PRINTS("Pass data to CC3200 failed, no enough memory.\r\n");
 				}
+				break;
+			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_USER:
+				app_sched_event_put(NULL, 0, _erase_bonded_users);
 				break;
 			default:
 				break;

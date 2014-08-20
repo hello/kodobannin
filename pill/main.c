@@ -30,6 +30,8 @@
 #include "app.h"
 #include "platform.h"
 
+#include "twi_master_config.h"
+
 #include "pill_gatt.h"
 #include "hble.h"
 
@@ -38,9 +40,12 @@
 #include "sensor_data.h"
 #include "util.h"
 
+void twi_master_disable();
+
 void _start()
 {
     //BOOL_OK(twi_master_init());
+    
 
     {
         enum {
