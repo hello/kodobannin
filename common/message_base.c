@@ -13,6 +13,15 @@ static struct{
 #endif
 }self;
 
+static inline uint8_t decref(MSG_Data_t * obj){
+    if(obj->ref){
+        obj->ref -= 1;
+    }
+}
+static inline uint8_t incref(MSG_Data_t * obj){
+    obj->ref += 1;
+}
+
 uint32_t MSG_Base_FreeCount(void){
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
     uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
@@ -48,7 +57,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     for(int i = 0; i < step_limit; i++){
         MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
         if(tmp->ref == 0){
-            tmp->ref = 1;
+            incref(tmp);
             ret = tmp;
             break;
         }
@@ -88,19 +97,20 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
     if(d){
         CRITICAL_REGION_ENTER();
-        if(d->ref){
-            d->ref--;
-            PRINTS("-");
-            if(d->ref==0){
-                PRINTS("~");
+        decref(d);
 #ifndef MSG_BASE_DATA_BUFFER_SIZE
-                //here we free the buffer
+        //here we free the buffer if dynamically allocated
 #endif
-            }
-        }
         CRITICAL_REGION_EXIT();
+        if(d->ref == 0){
+            PRINTS("~");
+        }else{
+            PRINTS("-");
+        };
+        return SUCCESS;
+    }else{
+        return FAIL;
     }
-    return FAIL;
 }
 static void
 _inspect(MSG_Data_t * o){
