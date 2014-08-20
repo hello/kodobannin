@@ -11,7 +11,11 @@
 #define INCREF
 #define DECREF
 
-typedef struct{
+typedef struct _MSG_Data_t{
+    /*
+     * Linked list
+     */
+    struct _MSG_Data_t * next;
     /*
      * Length of the valid data in the buffer 
      */
