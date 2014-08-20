@@ -143,3 +143,12 @@ fail:
     return FAIL;
 }
 
+MSG_Status MSG_Base_InitQueue(MSG_Queue_t * queue, void * mem, uint32_t size){
+    return SUCCESS;
+}
+MSG_Status MSG_Base_Queue(MSG_Queue_t * queue, MSG_Data_t * obj){
+    return SUCCESS;
+}
+MSG_Data_t * MSG_Base_Dequeue(MSG_Queue_t * queue){
+    return NULL;
+}
