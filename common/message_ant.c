@@ -374,8 +374,11 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     if(session){
         uint32_t ret = _assemble_tx(&session->tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
         if(ret == 0){
+            MSG_Data_t * next = MSG_Base_DequeueAtomic(session->tx_queue);
             _free_context(&session->tx_ctx);
-            if(self.discovery_role == ANT_DISCOVERY_PERIPHERAL){
+            if(next){
+                _prepare_tx(&session->tx_ctx, next);
+            }else if(self.discovery_role == ANT_DISCOVERY_PERIPHERAL){
                 _destroy_channel(*channel);
             }
         }
@@ -523,6 +526,15 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             ANT_Session_t * session = &self.sessions[channel];
             if(session->tx_ctx.payload){
                 PRINTS("Channel In Use\r\n");
+                if(SUCCESS == MSG_Base_QueueAtomic(session->tx_queue, data)){
+                    MSG_Base_AcquireDataAtomic(data);
+                    PRINTS("Queue OK\r\n");
+                    PRINTS("E = ");
+                    PRINT_HEX(&session->tx_queue->elements,1);
+                    PRINTS("\r\n");
+                }else{
+                    PRINTS("Queue FAIL\r\n");
+                }
             }else{
                 PRINTS("Sending...\r\n");
                 _prepare_tx(&session->tx_ctx, data);
