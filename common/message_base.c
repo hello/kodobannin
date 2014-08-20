@@ -157,7 +157,7 @@ MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size){
     MSG_Queue_t * ret = NULL;
     if(size < (sizeof(MSG_Queue_t) + sizeof(MSG_Data_t*))){
         //minimum of one element is required
-        break;
+        ret = NULL;
     }else{
         ret = (MSG_Queue_t *)mem;
         ret->capacity = (size - sizeof(MSG_Queue_t)) / sizeof(MSG_Data_t *);
@@ -175,7 +175,6 @@ MSG_Status MSG_Base_QueueAtomic(MSG_Queue_t * queue, MSG_Data_t * obj){
     if(queue && obj){
         CRITICAL_REGION_ENTER();
         if(queue->elements == queue->capacity){
-            PRINTS("At capacity");
             ret = OOM;
         }else{
             incref(obj);
