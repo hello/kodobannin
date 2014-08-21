@@ -101,7 +101,6 @@ _initialize_transaction(){
         case REG_WRITE_TO_SSPI:
             PRINTS("READ FROM MASTER\r\n");
             self.transaction.state = WAIT_READ_RX_CTX;
-            self.transaction.payload = MSG_Base_AllocateDataAtomic(128);
             return READING;
         case REG_READ_FROM_SSPI:
             PRINTS("WRITE TO MASTER\r\n");
@@ -134,6 +133,7 @@ _handle_transaction(){
             break;
         case WAIT_READ_RX_BUF:
             PRINTS("@WAIT RX BUF\r\n");
+            self.transaction.payload = MSG_Base_AllocateDataAtomic(self.transaction.context_reg.length);
             if(self.transaction.payload){
                 spi_slave_buffers_set(self.transaction.payload->buf, &self.transaction.payload->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
                 self.transaction.state = FIN_READ;
