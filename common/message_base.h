@@ -11,7 +11,7 @@
 #define INCREF
 #define DECREF
 
-typedef struct{
+typedef struct _MSG_Data_t{
     /*
      * Length of the valid data in the buffer 
      */
@@ -65,6 +65,7 @@ typedef struct{
     MSG_Status ( *unloadmod )(MSG_Base_t * mod);
 }MSG_Central_t;
 
+
 MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(uint32_t size);
 MSG_Data_t * INCREF MSG_Base_AllocateStringAtomic(const char * str);
 MSG_Status MSG_Base_BufferTest(void);
@@ -73,6 +74,21 @@ uint32_t MSG_Base_FreeCount(void);
 MSG_Status   INCREF MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
 MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
 
+/**
+ * Message queue object
+ * Use to queue up onjects for async operation
+ */
+typedef struct{
+    uint8_t capacity;
+    uint8_t elements;
+    uint8_t rdx;
+    uint8_t wdx;
+    MSG_Data_t * q[];
+}MSG_Queue_t;
+
+MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size);
+MSG_Status INCREF MSG_Base_QueueAtomic(MSG_Queue_t * queue, MSG_Data_t * obj);
+MSG_Data_t * DECREF MSG_Base_DequeueAtomic(MSG_Queue_t * queue);
 
 #define MSG_PING(c,r,i) do{ \
     MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(1); \

@@ -13,6 +13,15 @@ static struct{
 #endif
 }self;
 
+static inline uint8_t decref(MSG_Data_t * obj){
+    if(obj->ref){
+        obj->ref -= 1;
+    }
+}
+static inline uint8_t incref(MSG_Data_t * obj){
+    obj->ref += 1;
+}
+
 uint32_t MSG_Base_FreeCount(void){
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
     uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
@@ -48,14 +57,16 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     for(int i = 0; i < step_limit; i++){
         MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
         if(tmp->ref == 0){
-            tmp->len = (uint16_t)size;
-            tmp->ref = 1;
+            incref(tmp);
             ret = tmp;
-            PRINTS("+");
             break;
         }
     }
     CRITICAL_REGION_EXIT();
+    if(ret){
+        ret->len = (uint16_t)size;
+        PRINTS("+");
+    }
     return ret;
 }
 //TODO
@@ -76,9 +87,9 @@ MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str){
 MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
     if(d){
         CRITICAL_REGION_ENTER();
-        d->ref++;
-        PRINTS("+");
+        incref(d);
         CRITICAL_REGION_EXIT();
+        PRINTS("+");
         return SUCCESS;
     }
     return FAIL;
@@ -86,19 +97,20 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
     if(d){
         CRITICAL_REGION_ENTER();
-        if(d->ref){
-            d->ref--;
-            PRINTS("-");
-            if(d->ref==0){
-                PRINTS("~");
+        decref(d);
 #ifndef MSG_BASE_DATA_BUFFER_SIZE
-                //here we free the buffer
+        //here we free the buffer if dynamically allocated
 #endif
-            }
-        }
         CRITICAL_REGION_EXIT();
+        if(d->ref == 0){
+            PRINTS("~");
+        }else{
+            PRINTS("-");
+        };
+        return SUCCESS;
+    }else{
+        return FAIL;
     }
-    return FAIL;
 }
 static void
 _inspect(MSG_Data_t * o){
@@ -141,3 +153,51 @@ fail:
     return FAIL;
 }
 
+MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size){
+    MSG_Queue_t * ret = NULL;
+    if(size < (sizeof(MSG_Queue_t) + sizeof(MSG_Data_t*))){
+        //minimum of one element is required
+        ret = NULL;
+    }else{
+        ret = (MSG_Queue_t *)mem;
+        ret->capacity = (size - sizeof(MSG_Queue_t)) / sizeof(MSG_Data_t *);
+        ret->elements = 0;
+        ret->rdx = 0;
+        ret->wdx = 0;
+        PRINTS("Initialize size to: ");
+        PRINT_HEX(&ret->capacity, 1);
+        PRINTS(" elements\r\n");
+    }
+    return ret;
+}
+MSG_Status MSG_Base_QueueAtomic(MSG_Queue_t * queue, MSG_Data_t * obj){
+    MSG_Status ret = FAIL;
+    if(queue && obj){
+        CRITICAL_REGION_ENTER();
+        if(queue->elements == queue->capacity){
+            ret = OOM;
+        }else{
+            incref(obj);
+            queue->q[queue->wdx] = obj;
+            queue->wdx = (queue->wdx + 1)%queue->capacity;
+            queue->elements += 1;
+            ret = SUCCESS;
+        }
+        CRITICAL_REGION_EXIT();
+    }
+    return ret;
+}
+MSG_Data_t * MSG_Base_DequeueAtomic(MSG_Queue_t * queue){
+    MSG_Data_t * ret = NULL;
+    if(queue){
+        CRITICAL_REGION_ENTER();
+        if(queue->elements){
+            ret = queue->q[queue->rdx];
+            queue->elements -= 1;
+            queue->rdx = (queue->rdx + 1)%queue->capacity;
+            decref(ret);
+        }
+        CRITICAL_REGION_EXIT();
+    }
+    return ret;
+}

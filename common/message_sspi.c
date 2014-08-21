@@ -45,8 +45,8 @@ static struct{
     /*
      * Only one queue_tx right now
      */
-    MSG_Data_t * queued_tx;
     MSG_Data_t * dummy;
+    MSG_Queue_t * tx_queue;
 }self;
 
 static char * name = "SSPI";
@@ -60,32 +60,32 @@ _reset(void){
 }
 static MSG_Data_t *
 _dequeue_tx(void){
-    MSG_Data_t * ret = self.queued_tx;
+    MSG_Data_t * ret = MSG_Base_DequeueAtomic(self.tx_queue);
 #ifdef PLATFORM_HAS_SSPI
-    if(SSPI_INT != 0){
+    if(self.tx_queue->elements && SSPI_INT != 0){
         nrf_gpio_cfg_output(SSPI_INT);
         nrf_gpio_pin_write(SSPI_INT, 0);
     }
 #endif
-    self.queued_tx = NULL;
-    //return ret;
+    return ret;
     //this function pops the tx queue for spi, for now, simply returns a new buffer with test code
-    return MSG_Base_AllocateStringAtomic(TEST_STR);
+    //return MSG_Base_AllocateStringAtomic(TEST_STR);
 }
 static uint32_t
 _queue_tx(MSG_Data_t * o){
-    if(self.queued_tx){
+    if(SUCCESS == MSG_Base_QueueAtomic(self.tx_queue, o)){
+        PRINTS("Queued SPI Out\r\n");
+    }else{
         //we are forced to drop since something shouldn't be here
-        MSG_Base_ReleaseDataAtomic(self.queued_tx);
+        PRINTS("Dropped Old Data\r\n");
+        return 1;
     }
-    self.queued_tx = o;
 #ifdef PLATFORM_HAS_SSPI
     if(SSPI_INT != 0){
         nrf_gpio_cfg_output(SSPI_INT);
         nrf_gpio_pin_write(SSPI_INT, 1);
     }
 #endif
-    
     return 0;
 
 }
@@ -105,12 +105,13 @@ _initialize_transaction(){
         case REG_READ_FROM_SSPI:
             PRINTS("WRITE TO MASTER\r\n");
             //prepare buffer here
-            self.transaction.context_reg.length = 8; //get from tx queue;
             self.transaction.payload = _dequeue_tx();
             if(self.transaction.payload){
                 //change to payload address
+                self.transaction.context_reg.length = self.transaction.payload->len; //get from tx queue;
                 self.transaction.context_reg.address = (MSG_Address_t){0,0}; 
             }else{
+                self.transaction.context_reg.length = 0; //get from tx queue;
                 self.transaction.context_reg.address = (MSG_Address_t){0,0};
             }
             self.transaction.state = WRITE_TX_CTX;
@@ -127,7 +128,7 @@ _handle_transaction(){
             break;
         case WRITE_TX_CTX:
             PRINTS("@WRITE TX LEN\r\n");
-            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg,self.dummy->buf, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
+            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy->buf, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
             self.transaction.state = WRITE_TX_BUF;
             break;
         case WAIT_READ_RX_BUF:
@@ -189,13 +190,18 @@ _flush(void){
 }
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
-    if(dst.submodule == 0){
-        //command for this module
+    if(data){
+        if(dst.submodule == 0){
+            //command for this module
 
-    }else if(dst.submodule == 1){
-        //send to sspi slave
-    }else{
-        return FAIL;
+        }else if(dst.submodule == 1){
+            //send to sspi slave
+            if(0 == _queue_tx(data)){
+                MSG_Base_AcquireDataAtomic(data);
+            }
+        }else{
+            return FAIL;
+        }
     }
     return SUCCESS;
 }
@@ -246,6 +252,12 @@ _init(){
 #endif
     self.dummy = MSG_Base_AllocateDataAtomic(230);
     self.current_state = _reset();
+    {
+        MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
+        if(tmp){
+            self.tx_queue = MSG_Base_InitQueue(tmp->buf, tmp->len);
+        }
+    }
     return SUCCESS;
 
 }
