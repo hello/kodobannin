@@ -56,6 +56,7 @@ static SSPIState
 _reset(void){
     PRINTS("RESET\r\nWaiting Input....\r\n");
     spi_slave_buffers_set(&self.control_reg, &self.control_reg, 1, 1);
+    memset(&self.transaction.context_reg, 0, sizeof(self.transaction.context_reg));
     return IDLE;
 }
 static MSG_Data_t *
@@ -136,21 +137,23 @@ _handle_transaction(){
             if(self.transaction.payload){
                 spi_slave_buffers_set(self.transaction.payload->buf, &self.transaction.payload->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
                 self.transaction.state = FIN_READ;
-                break;
             }else{
                 //no buffer wat do?
+                spi_slave_buffers_set(self.dummy->buf, self.dummy->buf, 0, 0);
+                self.transaction.state = FIN_READ;
             }
-            return _reset();
+            break;
         case WRITE_TX_BUF:
             PRINTS("@WRITE TX BUF\r\n");
             if(self.transaction.payload){
                 spi_slave_buffers_set(self.transaction.payload->buf, self.dummy->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
                 self.transaction.state = FIN_WRITE;
-                break;
             }else{
                 //no buffer wat do?
+                spi_slave_buffers_set(self.dummy->buf, self.dummy->buf, 0, 0);
+                self.transaction.state = FIN_WRITE;
             }
-            return _reset();
+            break;
         case FIN_READ:
             PRINTS("@FIN RX BUF\r\n");
             PRINTS("LEN = ");
