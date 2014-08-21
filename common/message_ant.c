@@ -533,13 +533,15 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             if(SUCCESS == MSG_Base_QueueAtomic(session->tx_queue, data)){
                 MSG_Base_AcquireDataAtomic(data);
                 PRINTS("Sending...\r\n");
-                if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
-                    //FIXME should handle central gracefully
-                    uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE];
-                    _assemble_tx(&session->tx_ctx, message, ANT_STANDARD_DATA_PAYLOAD_SIZE);
-                    sd_ant_broadcast_message_tx(channel+1,sizeof(message), message);
-                }else{
+                if(self.discovery_role == ANT_DISCOVERY_PERIPHERAL){
                     _connect(channel);
+                }else if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
+                    if(!session->tx_ctx.payload){
+                        //temporary dirty fix to kick of central tx
+                        //due to the way rx scan mode works, you can not just connect
+                        uint8_t message[ANT_STANDARD_DATA_PAYLOAD_SIZE] = {0};
+                        sd_ant_broadcast_message_tx(channel+1, sizeof(message), message);
+                    }
                 }
             }else{
                 PRINTS("Queue Full\r\n");
