@@ -161,6 +161,8 @@ _handle_transaction(){
             PRINTS(" ADDR  = ");
             PRINT_HEX(&self.transaction.context_reg.pad, sizeof(uint16_t));
             //send and release
+            self.parent->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){BLE, 1}, self.transaction.payload);
+            self.parent->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){UART, 1}, self.transaction.payload);
             MSG_Base_ReleaseDataAtomic(self.transaction.payload);
             //only releasing now
             return _reset();
@@ -170,6 +172,7 @@ _handle_transaction(){
             PRINT_HEX(&self.transaction.context_reg.length, sizeof(uint16_t));
             PRINTS(" ADDR  = ");
             PRINT_HEX(&self.transaction.context_reg.pad, sizeof(uint16_t));
+            //send and release
             MSG_Base_ReleaseDataAtomic(self.transaction.payload);
             return _reset();
         case TXRX_ERROR:
