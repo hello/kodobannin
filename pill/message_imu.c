@@ -228,7 +228,7 @@ static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 
 	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
 	int32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
-    aggregate = aggregate >> (sizeof(aggregate) - sizeof(tf_unit_t));
+    aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
 	
     /*
     tf_unit_t curr = TF_GetCurrent();
