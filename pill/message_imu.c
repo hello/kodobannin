@@ -27,11 +27,6 @@
 #include <watchdog.h>
 
 
-// Magic number: (0xFFFF / 4000)
-//The range of accelerometer is +/-2G, the range of representation is 16bit in IMU
-// And we want 3 digit precision, so it is 0xFFFF / 4000 = 16.38375
-#define KG_CONVERT_FACTOR	16
-
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };

@@ -467,7 +467,7 @@ void imu_enter_low_power_mode(enum imu_hz sampling_rate, uint16_t wom_threshold)
 	uint8_t accel_config2;
 
 	_register_read(MPU_REG_ACC_CFG2, &accel_config2);
-	_register_write(MPU_REG_ACC_CFG2, accel_config2 /*| CONFIG_LPF_B_MASK*/ | ACCEL_CFG2_FCHOICE_1);
+	_register_write(MPU_REG_ACC_CFG2, accel_config2 /*| CONFIG_LPF_B_MASK*/ | ACCEL_CFG2_FCHOICE_0);
 	
 
     _register_write(MPU_REG_ACCEL_INTEL_CTRL, ACCEL_INTEL_CTRL_EN|ACCEL_INTEL_CTRL_6500_MODE);
