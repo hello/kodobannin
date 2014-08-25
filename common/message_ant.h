@@ -44,6 +44,11 @@
  * +----------------------------------------------------+
  **/
 
+typedef enum{
+    ANT_FUNCTION_NULL = 0,
+    ANT_FUNCTION_END = 0xFF
+}ANT_FunctionType_t;
+
 typedef struct{
     uint8_t page;
     uint8_t page_count;
