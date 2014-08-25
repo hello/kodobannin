@@ -52,6 +52,7 @@ static struct{
     MSG_Central_t * parent;
     uint8_t discovery_role;
     ANT_Session_t sessions[ANT_SESSION_NUM];
+    uint32_t sent, rcvd;
 }self;
 
 static char * name = "ANT";
@@ -379,6 +380,7 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             }else if(self.discovery_role == ANT_DISCOVERY_PERIPHERAL){
                 _destroy_channel(*channel);
             }
+            self.sent++;
         }
         sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
     }
@@ -434,6 +436,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                 }
             }
             MSG_Base_ReleaseDataAtomic(ret);
+            self.rcvd++;
         }
     }else{
         if(rx_payload[0] == 0){
