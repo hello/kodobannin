@@ -7,6 +7,7 @@ static struct{
 }self;
 
 static int16_t _raw_xyz[3];
+static uint16_t _dec_idx(uint16_t * idx);
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
     memset(&self.data, 0, sizeof(self.data));
@@ -42,8 +43,27 @@ inline void TF_SetCurrent(tf_unit_t val){
 inline tf_data_t * TF_GetAll(void){
     return &self.data;
 }
+static
+uint16_t _dec_idx(uint16_t * idx){
+    return ( (*idx - 1) % self.data.length );
+}
 
 inline int16_t* get_raw_xzy_address()
 {
     return _raw_xyz;
 }
+void TF_GetCondensed(tf_data_condensed_t * buf){
+    static uint8_t salt;
+    if(buf){
+        uint16_t  i,idx = self.current_idx;
+        buf->version = 0;
+        buf->UUID = GET_UUID_64();
+        //buf->time = self.data.mtime;
+        buf->time = salt++;
+        for(i = 0; i < TF_CONDENSED_BUFFER_SIZE; i++){
+            idx = _dec_idx(&idx);
+            buf->data[i] = idx;
+        }
+    }
+}
+

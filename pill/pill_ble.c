@@ -168,6 +168,17 @@ pill_ble_services_init(void)
     
 
 }
+static void
+_send_periodic_data_ant(void * ctx){
+	MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(sizeof(tf_data_condensed_t));
+	if(tmp){
+		TF_GetCondensed(tmp->buf);
+		central->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){ANT,1}, tmp);
+		MSG_Base_ReleaseDataAtomic(tmp);
+	}
+
+}
+
 
 
 void pill_ble_load_modules(void){
@@ -208,6 +219,13 @@ void pill_ble_load_modules(void){
 				.transmit_type = 0
 			};
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
+		}
+		{
+			app_timer_id_t summary_timer;
+			uint32_t ticks;
+            ticks = APP_TIMER_TICKS(5000,APP_TIMER_PRESCALER);
+			app_timer_create(&summary_timer, APP_TIMER_MODE_REPEATED, _send_periodic_data_ant);
+			ticks = app_timer_start(summary_timer, ticks, NULL);
 		}
 #endif
     }else{
