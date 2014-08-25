@@ -4,9 +4,6 @@
 
 #define ANTPLUS_RF_FREQ               0x39u             /**< Frequency, Decimal 57 (2457 MHz). */
 
-#define GET_UUID_32() (NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1])
-#define GET_UUID_16() ((uint16_t) (GET_UUID_32() & 0xFFFF)^((GET_UUID_32() >> 16) & 0xFFFF))
-
 #define SET_DISCOVERY_PROFILE(pb) do{\
     if(pb){\
     }\
