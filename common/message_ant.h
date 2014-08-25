@@ -13,16 +13,36 @@
 /**
  *
  * HLO ANT Air Protocol Constraints v0.1
- * 1. MetaData is always sent as page:0
- * 2. page count > 0
- * 3. crc32 is computed on receive of every meta page
- * 4. if meta page's crc changes, that means new message has arrived
+ * 1. Header data is always sent as page:0
+ * 2. Page count > 0 if data, otherwise is a special single packet command
+ * 3. crc16 is computed on receive of every header page
+ * 4. if header page's crc changes, that means new message has arrived
  * 
  * 5. TX ends message by transmitting message N times (defined by user)
  * 6. RX ends message by either completing checksum, or channel closes
  *    - In case of master, receiving an invalid checksum will result in loss packet.  
  *    - Further protocol are user defined
- */
+ *
+ * Below is the structure of the ANT air packet (8 Bytes)
+ * Table of page + page_count combinations:
+ * +----------------------------------------------------+
+ * |              Multi Frame Packets                   |
+ * +----------------------------------------------------+
+ * |   page   |page_count|function                      |
+ * +----------------------------------------------------+
+ * |    0     |   N > 0  |standard message header packet|
+ * |0 < n <= N|   N > 0  |standard message payload      |
+ * |          |          |                              |
+ * +----------------------------------------------------+
+ * |              Single Frame Packets                  |
+ * +----------------------------------------------------+
+ * |   page   |page_count|function                      |
+ * +----------------------------------------------------+
+ * |    0     |     0    |null function packet(ignore)  |
+ * |  n > 0   |     0    |TBD                           |
+ * |          |          |                              |
+ * +----------------------------------------------------+
+ **/
 
 typedef struct{
     uint8_t page;
@@ -34,8 +54,8 @@ typedef struct{
 }ANT_HeaderPacket_t;
 
 typedef struct{
-    uint8_t page;//always starts at 1, 
-    uint8_t page_count;
+    uint8_t page;
+    uint8_t page_count;//non 0 if it's a MSG_Data
     uint8_t payload[6];//unused payload must be set to 0
 }ANT_PayloadPacket_t;
 
@@ -46,6 +66,7 @@ typedef struct{
     uint8_t device_type;
     uint8_t transmit_type;
 }ANT_ChannelID_t;
+
 
 typedef struct{
     //cached status
