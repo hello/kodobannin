@@ -107,12 +107,14 @@ typedef struct{
         ANT_SET_ROLE,//sets device role
         ANT_CREATE_SESSION,
         ANT_ADVERTISE,
+        ANT_TEST_MODE_ECHO,
         ANT_END_CMD
     }cmd;
     union{
         uint8_t role;
         ANT_Channel_Settings_t settings;
         ANT_ChannelID_t session_info;
+        uint8_t test_mode_echo_enable;
     }param;
 }MSG_ANTCommand_t;
 
