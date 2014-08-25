@@ -324,10 +324,11 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
                 MSG_Base_AcquireDataAtomic(ret);
                 _free_context(ctx);
             }
-            if(ctx->header.checksum != new_crc){
+            if(ctx->prev_crc != new_crc){
                 _free_context(ctx);
                 ctx->header = *new_header;
                 ctx->payload = _allocate_payload_rx(&ctx->header);
+                ctx->prev_crc = new_crc;
             }else{
                 PRINTS("Same msg");
             }
