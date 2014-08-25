@@ -25,7 +25,7 @@ typedef struct{
     MSG_Data_t * payload;
     union{
         //tx
-        uint16_t idx;
+        int16_t idx;
         //rx
         struct{
             uint8_t network;
@@ -34,7 +34,7 @@ typedef struct{
     };
     union{
         //tx
-        uint16_t count;
+        int16_t count;
         //rx
         uint16_t prev_crc;
     };
@@ -111,7 +111,7 @@ _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
         ctx->header.page = 0;
         ctx->header.page_count = data->len/6 + (((data->len)%6)?1:0);
         ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
-        ctx->idx = 0;
+        ctx->idx = -ANT_DEFAULT_TRANSMIT_LIMIT;
     }
 }
 static uint8_t
@@ -346,13 +346,13 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
 static uint8_t DECREF
 _assemble_tx(ConnectionContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
     ANT_HeaderPacket_t * header = &ctx->header;
-    if(!ctx->payload || ctx->count == 0){
+    if(!ctx->payload || ctx->count <= 0){
         memcpy(out_buf, &ctx->header, 8);
         return 0;
     }else{
-        if(ctx->idx == 0){
+        if(ctx->idx <= 0){
             memcpy(out_buf, header, sizeof(*header));
-        }else{
+        }else if(ctx->idx <= header->page_count){
             uint16_t offset = (ctx->idx - 1) * 6;
             int i;
             out_buf[0] = ctx->idx;
