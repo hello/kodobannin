@@ -35,8 +35,6 @@ typedef struct{
     union{
         //tx
         int16_t count;
-        //rx
-        uint16_t prev_crc;
     };
 }ConnectionContext_t;
 
@@ -301,7 +299,7 @@ _assemble_payload(ConnectionContext_t * ctx, ANT_PayloadPacket_t * packet){
 }
 static uint8_t
 _integrity_check(ConnectionContext_t * ctx){
-    if(ctx->payload){
+    if(ctx->count >= ctx->header.page_count && ctx->payload){
         if(_calc_checksum(ctx->payload) == ctx->header.checksum){
             return 1;
         }
@@ -319,16 +317,19 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
             //standard header
             ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
             uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
+            PRINTS("CRC: ");
+            PRINT_HEX(&new_crc, 2);
+            PRINTS("\r\n");
             if(_integrity_check(ctx)){
                 ret = ctx->payload;
                 MSG_Base_AcquireDataAtomic(ret);
                 _free_context(ctx);
             }
-            if(ctx->prev_crc != new_crc){
+            if(ctx->header.checksum != new_crc){
                 _free_context(ctx);
                 ctx->header = *new_header;
                 ctx->payload = _allocate_payload_rx(&ctx->header);
-                ctx->prev_crc = new_crc;
+                ctx->count = 0;
             }else{
                 PRINTS("Same msg");
             }
@@ -336,6 +337,7 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
             //payload
             if(ctx->payload){
                 _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
+                ctx->count++;
             }
         }
     }else{
