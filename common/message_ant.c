@@ -84,6 +84,24 @@ static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id);
 /* prepares tx context */
 static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
 
+/* handles single packet special functions */
+static MSG_Data_t * INCREF _handle_ant_function(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload);
+
+static MSG_Data_t * INCREF
+_handle_ant_function(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload){
+    MSG_Data_t * ret = NULL;
+    switch(type){
+        default:
+        case ANT_FUNCTION_NULL:
+            PRINTS("Unknown Function\r\n");
+            break;
+        case ANT_FUNCTION_ECHO:
+            break;
+        case ANT_FUNCTION_END:
+            break;
+    }
+    return ret;
+}
 static void
 _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
     if(ctx && data){
@@ -296,28 +314,31 @@ _integrity_check(ConnectionContext_t * ctx){
 static MSG_Data_t *
 _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
-    if(buf[0] == 0 && buf[1] > 0){
-        //standard header
-        ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
-        uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
-        if(_integrity_check(ctx)){
-            ret = ctx->payload;
-            MSG_Base_AcquireDataAtomic(ret);
-            _free_context(ctx);
-        }
-        if(ctx->header.checksum != new_crc){
-            _free_context(ctx);
-            ctx->header = *new_header;
-            ctx->payload = _allocate_payload_rx(&ctx->header);
-        }else{
-        }
-    }else if(buf[0] <= buf[1] && buf[1] > 0){
-        //payload
-        if(ctx->payload){
-            _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
+    if(buf[1] > 0){
+        if(buf[0] == 0){
+            //standard header
+            ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
+            uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
+            if(_integrity_check(ctx)){
+                ret = ctx->payload;
+                MSG_Base_AcquireDataAtomic(ret);
+                _free_context(ctx);
+            }
+            if(ctx->header.checksum != new_crc){
+                _free_context(ctx);
+                ctx->header = *new_header;
+                ctx->payload = _allocate_payload_rx(&ctx->header);
+            }else{
+                PRINTS("Same msg");
+            }
+        }else if(buf[0] <= buf[1]){
+            //payload
+            if(ctx->payload){
+                _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
+            }
         }
     }else{
-        //Unknown
+        ret = _handle_ant_function(ctx, buf[0], buf+2);
     }
     return ret;
 }

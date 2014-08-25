@@ -45,7 +45,8 @@
  **/
 
 typedef enum{
-    ANT_FUNCTION_NULL = 0,
+    ANT_FUNCTION_NULL = 0,      /* ignore this packet */
+    ANT_FUNCTION_ECHO = 0x66,   /* receiver echos back the payload */
     ANT_FUNCTION_END = 0xFF
 }ANT_FunctionType_t;
 
