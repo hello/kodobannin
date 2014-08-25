@@ -433,10 +433,6 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             return;
         }
     }
-    if(rx_payload[0] == rx_payload[1] && rx_payload[1] == 0){
-        PRINTS("Discovery Packet\r\n");
-        return;
-    }
     session = _get_session_by_id(&id);
     //handle
     if(session){
@@ -460,7 +456,9 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             self.rcvd++;
         }
     }else{
-        if(rx_payload[0] == 0){
+        //null function packet is used to see what is around the area
+        //if no session exists for that ID
+        if(rx_payload[0] == 0 && rx_payload[1] == 0){
             PRINTS("Found Unknown ID = ");
             PRINT_HEX(&id.device_number, 2);
             PRINTS("\r\n");
