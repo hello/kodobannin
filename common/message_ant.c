@@ -455,10 +455,6 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             MSG_Base_ReleaseDataAtomic(ret);
             self.rcvd++;
         }
-        //artificially stretch tx count if there's a payload waiting in rx context
-        if(session->rx_ctx.payload){
-            session->tx_ctx.count = session->tx_ctx.count > 2?session->tx_ctx.count:2;
-        }
     }else{
         //null function packet is used to see what is around the area
         //if no session exists for that ID
