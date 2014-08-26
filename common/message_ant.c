@@ -93,7 +93,12 @@ _handle_ant_function(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload)
         case ANT_FUNCTION_NULL:
             PRINTS("Unknown Function\r\n");
             break;
-        case ANT_FUNCTION_ECHO:
+        case ANT_FUNCTION_TEST:
+            {
+                PRINTS("PING\r\n");
+                uint8_t meta[8]  = {0x66, 0, 0,0,0,0,0,0};
+                MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SEND_RAW, &meta, 8);
+            }
             break;
         case ANT_FUNCTION_END:
             break;
@@ -103,13 +108,21 @@ _handle_ant_function(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload)
 static void
 _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
     if(ctx && data){
-        ctx->payload = data;
-        ctx->header.size = data->len;
-        ctx->header.checksum = _calc_checksum(data);
-        ctx->header.page = 0;
-        ctx->header.page_count = data->len/6 + (((data->len)%6)?1:0);
-        ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
-        ctx->idx = -ANT_DEFAULT_HEADER_TRANSMIT_LIMIT;
+        if(data->context & MSG_DATA_CTX_META_DATA){
+            memcpy(&ctx->header, data->buf, 8);
+            ctx->payload = NULL;
+            ctx->idx = 0;
+            ctx->count = 1;
+            MSG_Base_ReleaseDataAtomic(data);
+        }else{
+            ctx->payload = data;
+            ctx->header.size = data->len;
+            ctx->header.checksum = _calc_checksum(data);
+            ctx->header.page = 0;
+            ctx->header.page_count = data->len/6 + (((data->len)%6)?1:0);
+            ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
+            ctx->idx = -ANT_DEFAULT_HEADER_TRANSMIT_LIMIT;
+        }
     }
 }
 static uint8_t
@@ -490,6 +503,18 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             default:
             case ANT_PING:
                 PRINTS("ANT_PING\r\n");
+                break;
+            case ANT_SEND_RAW:
+                {
+                    MSG_Data_t * d = MSG_Base_AllocateDataAtomic(8);
+                    if(d){
+                        memcpy(d->buf, antcmd->param.raw_data, 8);
+                        d->context |= MSG_DATA_CTX_META_DATA;
+                        //default to 1st session for now
+                        self.parent->dispatch((MSG_Address_t){ANT, 0}, (MSG_Address_t){ANT,1}, d);
+                        MSG_Base_ReleaseDataAtomic(d);
+                    }
+                }
                 break;
             case ANT_SET_ROLE:
                 PRINTS("ANT_SET_ROLE\r\n");

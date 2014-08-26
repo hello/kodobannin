@@ -31,21 +31,20 @@
  * +----------------------------------------------------+
  * |    0     |   N > 0  |standard message header packet|
  * |0 < n <= N|   N > 0  |standard message payload      |
- * |          |          |                              |
  * +----------------------------------------------------+
  * |              Single Frame Packets                  |
  * +----------------------------------------------------+
  * |   page   |page_count|function                      |
  * +----------------------------------------------------+
  * |    0     |     0    |null function packet(ignore)  |
- * |  n > 0   |     0    |TBD                           |
- * |          |          |                              |
+ * |  n > 0   |     0    |See ANT_FunctionType_t        |
+ * |          |     0    |                              |
  * +----------------------------------------------------+
  **/
 
 typedef enum{
     ANT_FUNCTION_NULL = 0,      /* ignore this packet */
-    ANT_FUNCTION_ECHO = 0x66,   /* receiver echos back the payload */
+    ANT_FUNCTION_TEST = 0x66,   /* receiver echos back the payload */
     ANT_FUNCTION_END = 0xFF
 }ANT_FunctionType_t;
 
@@ -107,14 +106,14 @@ typedef struct{
         ANT_SET_ROLE,//sets device role
         ANT_CREATE_SESSION,
         ANT_ADVERTISE,
-        ANT_TEST_MODE_ECHO,
+        ANT_SEND_RAW,
         ANT_END_CMD
     }cmd;
     union{
         uint8_t role;
         ANT_Channel_Settings_t settings;
         ANT_ChannelID_t session_info;
-        uint8_t test_mode_echo_enable;
+        uint8_t raw_data[8];
     }param;
 }MSG_ANTCommand_t;
 
