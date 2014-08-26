@@ -331,13 +331,17 @@ void hble_params_init(char* device_name)
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
 
-        size_t device_id_len = sizeof(NRF_FICR->DEVICEID);
-        size_t device_id_uint_len = sizeof(NRF_FICR->DEVICEID[0]);
-        size_t hex_device_id_len = device_id_len * device_id_uint_len * 2 + (device_id_len - 1) + 1;  // xxxxxxxx-xxxxxxxx-...
-        char hex_device_id[hex_device_id_len];
-        char device_id[device_id_len * device_id_uint_len];
+        size_t device_id_len = sizeof(NRF_FICR->DEVICEID); 
 
-        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len * device_id_uint_len);
+        PRINTS("Device id array size: ");
+        PRINT_HEX(&device_id_len, sizeof(device_id_len));
+        PRINTS("\r\n");
+
+        size_t hex_device_id_len = device_id_len * 2 + 1;
+        char hex_device_id[hex_device_id_len];
+        char device_id[device_id_len];
+
+        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len);
         memset(hex_device_id, 0, hex_device_id_len);
         const char* hex_table = "0123456789ABCDEF";
         
@@ -345,22 +349,13 @@ void hble_params_init(char* device_name)
         for(size_t i = 0; i < device_id_len; i++)
         {
             //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
-            for(size_t len = 0; len < device_id_uint_len; len++)
-            {
-                uint8_t num = device_id[i * device_id_uint_len + (device_id_uint_len - len - 1)];
+            uint8_t num = device_id[i];
                 
-                uint8_t ret = num / 16;
-                uint8_t remain = num % 16;
+            uint8_t ret = num / 16;
+            uint8_t remain = num % 16;
 
-                hex_device_id[index++] = hex_table[ret];
-                hex_device_id[index++] = hex_table[remain];
-
-                if(i < device_id_len - 1 && len == device_id_uint_len - 1)
-                {
-                    hex_device_id[index++] = '-';
-                }
-            }
-
+            hex_device_id[index++] = hex_table[ret];
+            hex_device_id[index++] = hex_table[remain];
             
         }
 

@@ -42,18 +42,11 @@ static uint16_t _pill_service_handle;
 static MSG_Central_t * central;
 static bool _should_stream = false;
 
-static void
-_unhandled_msg_event(void* event_data, uint16_t event_size){
+static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
 }
 
-
-static void
-_data_send_finished()
-{
-	PRINTS("DONE!");
-}
 
 static void _reply_time(void * p_event_data, uint16_t event_size)
 {
@@ -99,7 +92,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
         break;
     case PILL_COMMAND_SEND_DATA:
         //hlo_ble_notify(0xFEED, _daily_data, sizeof(_daily_data), _data_send_finished);
-		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
+		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, NULL);
         break;
     case PILL_COMMAND_GET_TIME:
 			/*{
