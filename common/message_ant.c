@@ -109,7 +109,7 @@ _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
         ctx->header.page = 0;
         ctx->header.page_count = data->len/6 + (((data->len)%6)?1:0);
         ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
-        ctx->idx = -ANT_DEFAULT_TRANSMIT_LIMIT;
+        ctx->idx = -ANT_DEFAULT_HEADER_TRANSMIT_LIMIT;
     }
 }
 static uint8_t

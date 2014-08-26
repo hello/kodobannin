@@ -6,8 +6,7 @@
 //how often does each payload transmit
 #define ANT_DEFAULT_TRANSMIT_LIMIT 3
 
-//how often header packets are transmit between payload
-//there are always one at the begining and one at the end
+//how often header transmits before the rest of payload
 #define ANT_DEFAULT_HEADER_TRANSMIT_LIMIT 5
 
 /**
