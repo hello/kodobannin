@@ -83,10 +83,10 @@ static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id);
 static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
 
 /* handles single packet special functions */
-static MSG_Data_t * INCREF _handle_ant_function(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload);
+static MSG_Data_t * INCREF _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload);
 
 static MSG_Data_t * INCREF
-_handle_ant_function(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload){
+_handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload){
     MSG_Data_t * ret = NULL;
     switch(type){
         default:
@@ -354,7 +354,7 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
             }
         }
     }else{
-        ret = _handle_ant_function(ctx, buf[0], buf+2);
+        ret = _handle_ant_single_packet(ctx, buf[0], buf+2);
     }
     return ret;
 }
