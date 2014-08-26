@@ -8,8 +8,18 @@
 #include <stdint.h>
 #include "message_config.h"
 
+/**
+ * Flags for functions that modifies reference
+ **/
 #define INCREF
 #define DECREF
+/**
+ * MSG_Data Object context flags
+ * Modules should try to conform to these flags
+ **/
+#define MSG_DATA_CTX_READ_ONLY 0x01 /* Read only Object */
+#define MSG_DATA_CTX_META_DATA 0x02 /* Contains metadata instead of normal data */
+#define MSG_DATA_CTX_RETURN_TO_SENDER 0x80 /* not implemented yet */
 
 typedef struct _MSG_Data_t{
     /*

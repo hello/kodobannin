@@ -103,6 +103,7 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
 #endif
         CRITICAL_REGION_EXIT();
         if(d->ref == 0){
+            d->context = 0;
             PRINTS("~");
         }else{
             PRINTS("-");
