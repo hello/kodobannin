@@ -30,7 +30,9 @@ void TF_TickOneSecond(const struct hlo_ble_time * current_time){
         //MSG_Time_GetMonotonicTime(&self.data.mtime);
         PRINTS("^");
     }
-    self.data.mtime += 1000;
+    if(self.data.mtime){
+        self.data.mtime += 1000;
+    }
 }
 
 inline tf_unit_t TF_GetCurrent(void){
