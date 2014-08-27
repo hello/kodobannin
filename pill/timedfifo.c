@@ -3,6 +3,7 @@
 
 static struct{
     tf_data_t data;
+    uint8_t tick;
     uint16_t current_idx;
 }self;
 
@@ -19,19 +20,16 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
 }
 
 
-void TF_TickOneSecond(const struct hlo_ble_time * current_time){
-    
-    PRINTS("*");
-    if(current_time->monotonic_time % TF_UNIT_TIME_MS == 0){
-        self.data.mtime = current_time->monotonic_time - TF_UNIT_TIME_MS;
+void TF_TickOneSecond(uint64_t monotonic_time){
+    self.data.mtime = monotonic_time;
+    if(++self.tick > 60){
+        self.tick = 0;
         self.data.prev_idx = self.current_idx;
         self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
         self.data.data[self.current_idx] = 0;
-        //MSG_Time_GetMonotonicTime(&self.data.mtime);
         PRINTS("^");
-    }
-    if(self.data.mtime){
-        self.data.mtime += 1000;
+    }else{
+        PRINTS("*");
     }
 }
 

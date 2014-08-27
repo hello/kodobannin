@@ -37,7 +37,7 @@ typedef struct{
 
 
 void TF_Initialize(const struct hlo_ble_time * init_time);
-void TF_TickOneSecond(const struct hlo_ble_time * init_time);
+void TF_TickOneSecond(uint64_t monotonic_time);
 tf_unit_t TF_GetCurrent(void);
 void TF_SetCurrent(tf_unit_t val);
 tf_data_t * TF_GetAll(void);
