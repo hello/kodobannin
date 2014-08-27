@@ -46,7 +46,11 @@ inline tf_data_t * TF_GetAll(void){
 }
 static
 uint16_t _dec_idx(uint16_t * idx){
-    return ( (*idx - 1) % self.data.length );
+    if( *idx == 0){
+        return TF_BUFFER_SIZE - 1;
+    }else{
+        return (*idx - 1);
+    }
 }
 
 inline int16_t* get_raw_xzy_address()
