@@ -25,7 +25,7 @@ typedef struct{
     MSG_Data_t * payload;
     union{
         //tx
-        uint16_t idx;
+        int16_t idx;
         //rx
         struct{
             uint8_t network;
@@ -34,9 +34,7 @@ typedef struct{
     };
     union{
         //tx
-        uint16_t count;
-        //rx
-        uint16_t prev_crc;
+        int16_t count;
     };
 }ConnectionContext_t;
 
@@ -52,6 +50,11 @@ static struct{
     MSG_Central_t * parent;
     uint8_t discovery_role;
     ANT_Session_t sessions[ANT_SESSION_NUM];
+    uint32_t sent, rcvd;
+    //test
+    uint32_t expected;
+    uint32_t total;
+    uint32_t matched;
 }self;
 
 static char * name = "ANT";
@@ -83,16 +86,58 @@ static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id);
 /* prepares tx context */
 static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
 
+/* handles single packet special functions */
+static MSG_Data_t * INCREF _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload);
+
+static MSG_Data_t * INCREF
+_handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload){
+    MSG_Data_t * ret = NULL;
+    switch(type){
+        default:
+        case ANT_FUNCTION_NULL:
+            PRINTS("Unknown Function\r\n");
+            break;
+        case ANT_FUNCTION_TEST:
+            {
+                uint32_t rcvd = payload[0];
+                if(self.total == 0){
+                    PRINTS("Test Init!\r\n");
+                    self.matched++;
+                }else if(rcvd == self.expected){
+                    self.matched++;
+                }
+                self.total++;
+                self.expected = rcvd+1;
+                PRINTS("M: ");
+                PRINT_HEX(&self.matched, 4);
+                PRINTS(" T: ");
+                PRINT_HEX(&self.total, 4);
+                PRINTS("\r\n");
+            }
+            break;
+        case ANT_FUNCTION_END:
+            break;
+    }
+    return ret;
+}
 static void
 _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
     if(ctx && data){
-        ctx->payload = data;
-        ctx->header.size = data->len;
-        ctx->header.checksum = _calc_checksum(data);
-        ctx->header.page = 0;
-        ctx->header.page_count = data->len/6 + (((data->len)%6)?1:0);
-        ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
-        ctx->idx = 0;
+        if(data->context & MSG_DATA_CTX_META_DATA){
+            memcpy(&ctx->header, data->buf, 8);
+            ctx->payload = NULL;
+            ctx->idx = 0;
+            ctx->count = 1;
+            MSG_Base_ReleaseDataAtomic(data);
+        }else{
+            ctx->payload = data;
+            ctx->header.size = data->len;
+            ctx->header.checksum = _calc_checksum(data);
+            ctx->header.page = 0;
+            ctx->header.page_count = data->len/6 + (((data->len)%6)?1:0);
+            ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
+            ctx->idx = -ANT_DEFAULT_HEADER_TRANSMIT_LIMIT;
+        }
     }
 }
 static uint8_t
@@ -282,7 +327,7 @@ _assemble_payload(ConnectionContext_t * ctx, ANT_PayloadPacket_t * packet){
 }
 static uint8_t
 _integrity_check(ConnectionContext_t * ctx){
-    if(ctx->payload){
+    if(ctx->count >= ctx->header.page_count && ctx->payload){
         if(_calc_checksum(ctx->payload) == ctx->header.checksum){
             return 1;
         }
@@ -295,41 +340,49 @@ _integrity_check(ConnectionContext_t * ctx){
 static MSG_Data_t *
 _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
-    if(buf[0] == 0 && buf[1] > 0){
-        //standard header
-        ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
-        uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
-        if(_integrity_check(ctx)){
-            ret = ctx->payload;
-            MSG_Base_AcquireDataAtomic(ret);
-            _free_context(ctx);
-        }
-        if(ctx->header.checksum != new_crc){
-            _free_context(ctx);
-            ctx->header = *new_header;
-            ctx->payload = _allocate_payload_rx(&ctx->header);
-        }else{
-        }
-    }else if(buf[0] <= buf[1] && buf[1] > 0){
-        //payload
-        if(ctx->payload){
-            _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
+    if(buf[1] > 0){
+        if(buf[0] == 0){
+            //standard header
+            ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
+            uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
+            PRINTS("CRC: ");
+            PRINT_HEX(&new_crc, 2);
+            PRINTS("\r\n");
+            if(_integrity_check(ctx)){
+                ret = ctx->payload;
+                MSG_Base_AcquireDataAtomic(ret);
+                _free_context(ctx);
+            }
+            if(ctx->header.checksum != new_crc){
+                _free_context(ctx);
+                ctx->header = *new_header;
+                ctx->payload = _allocate_payload_rx(&ctx->header);
+                ctx->count = 0;
+            }else{
+                PRINTS("Same msg");
+            }
+        }else if(buf[0] <= buf[1]){
+            //payload
+            if(ctx->payload){
+                _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
+                ctx->count++;
+            }
         }
     }else{
-        //Unknown
+        ret = _handle_ant_single_packet(ctx, buf[0], buf+2);
     }
     return ret;
 }
 static uint8_t DECREF
 _assemble_tx(ConnectionContext_t * ctx, uint8_t * out_buf, uint32_t buf_size){
     ANT_HeaderPacket_t * header = &ctx->header;
-    if(!ctx->payload || ctx->count == 0){
+    if(!ctx->payload || ctx->count <= 0){
         memcpy(out_buf, &ctx->header, 8);
         return 0;
     }else{
-        if(ctx->idx == 0){
+        if(ctx->idx <= 0){
             memcpy(out_buf, header, sizeof(*header));
-        }else{
+        }else if(ctx->idx <= header->page_count){
             uint16_t offset = (ctx->idx - 1) * 6;
             int i;
             out_buf[0] = ctx->idx;
@@ -379,6 +432,7 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             }else if(self.discovery_role == ANT_DISCOVERY_PERIPHERAL){
                 _destroy_channel(*channel);
             }
+            self.sent++;
         }
         sd_ant_broadcast_message_tx(*channel,sizeof(message), message);
     }
@@ -410,10 +464,6 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             return;
         }
     }
-    if(rx_payload[0] == rx_payload[1] && rx_payload[1] == 0){
-        PRINTS("Discovery Packet\r\n");
-        return;
-    }
     session = _get_session_by_id(&id);
     //handle
     if(session){
@@ -434,9 +484,12 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
                 }
             }
             MSG_Base_ReleaseDataAtomic(ret);
+            self.rcvd++;
         }
     }else{
-        if(rx_payload[0] == 0){
+        //null function packet is used to see what is around the area
+        //if no session exists for that ID
+        if(rx_payload[0] == 0 && rx_payload[1] == 0){
             PRINTS("Found Unknown ID = ");
             PRINT_HEX(&id.device_number, 2);
             PRINTS("\r\n");
@@ -465,6 +518,18 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             default:
             case ANT_PING:
                 PRINTS("ANT_PING\r\n");
+                break;
+            case ANT_SEND_RAW:
+                {
+                    MSG_Data_t * d = MSG_Base_AllocateDataAtomic(8);
+                    if(d){
+                        memcpy(d->buf, antcmd->param.raw_data, 8);
+                        d->context |= MSG_DATA_CTX_META_DATA;
+                        //default to 1st session for now
+                        self.parent->dispatch((MSG_Address_t){ANT, 0}, (MSG_Address_t){ANT,1}, d);
+                        MSG_Base_ReleaseDataAtomic(d);
+                    }
+                }
                 break;
             case ANT_SET_ROLE:
                 PRINTS("ANT_SET_ROLE\r\n");
