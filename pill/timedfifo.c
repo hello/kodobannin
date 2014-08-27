@@ -61,12 +61,12 @@ void TF_GetCondensed(tf_data_condensed_t * buf){
     static uint8_t salt;
     if(buf){
         uint16_t  i,idx = self.current_idx;
-        buf->version = 0;
+        buf->version = 0x1;
         buf->UUID = GET_UUID_64();
         buf->time = self.data.mtime;
         for(i = 0; i < TF_CONDENSED_BUFFER_SIZE; i++){
             idx = _dec_idx(&idx);
-            buf->data[i] = idx;
+            buf->data[i] = self.data.data[idx];
         }
     }
 }
