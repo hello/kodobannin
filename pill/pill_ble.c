@@ -62,7 +62,14 @@ static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
 {
 	if(_should_stream)
 	{
-		hlo_ble_notify(0xFEED, raw_xyz, len, NULL);
+        size_t new_len = len + sizeof(tf_unit_t);
+        int32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
+        aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
+        uint8_t buffer[new_len];
+        memcpy(buffer, raw_xyz, len);
+        memcpy(&buffer[len], &aggregate, sizeof(tf_unit_t));
+
+		hlo_ble_notify(0xFEED, buffer, new_len, NULL);
 	}
 	
 }
@@ -129,8 +136,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     };
 }
 
-static void
-_data_ack_handler(ble_gatts_evt_write_t* event)
+static void _data_ack_handler(ble_gatts_evt_write_t* event)
 {
     PRINTS("_data_ack_handler()\r\n");
 }
