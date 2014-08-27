@@ -55,6 +55,8 @@ static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 }
 
 static void _erase_bonded_users(void* event_data, uint16_t event_size){
+	PRINTS("Trying to erase paired centrals....\r\n");
+
 	hble_erase_other_bonded_central();
 
 	MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(20);
