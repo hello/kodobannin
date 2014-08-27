@@ -42,11 +42,19 @@ static uint16_t _pill_service_handle;
 static MSG_Central_t * central;
 static bool _should_stream = false;
 
-static void _unhandled_msg_event(void* event_data, uint16_t event_size){
+
+static void
+_unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
 }
 
+
+static void
+_data_send_finished()
+{
+	PRINTS("DONE!");
+}
 
 static void _reply_time(void * p_event_data, uint16_t event_size)
 {
@@ -92,7 +100,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
         break;
     case PILL_COMMAND_SEND_DATA:
         //hlo_ble_notify(0xFEED, _daily_data, sizeof(_daily_data), _data_send_finished);
-		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, NULL);
+		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
 			/*{
@@ -169,6 +177,21 @@ _send_periodic_data_ant(void * ctx){
 		central->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){ANT,1}, tmp);
 		MSG_Base_ReleaseDataAtomic(tmp);
 	}
+	/*
+	 *static struct{
+	 *    uint8_t header;
+	 *    uint8_t reserved;
+	 *    uint8_t test;
+	 *    uint8_t reserved0;
+	 *    uint8_t reserved1;
+	 *    uint8_t reserved2;
+	 *    uint8_t reserved3;
+	 *    uint8_t reserved4;
+	 *}m;
+	 *m.header = 0x66;
+	 *MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SEND_RAW, &m, 8);
+	 *m.test++;
+	 */
 
 }
 
