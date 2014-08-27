@@ -30,6 +30,7 @@ void TF_TickOneSecond(const struct hlo_ble_time * current_time){
         //MSG_Time_GetMonotonicTime(&self.data.mtime);
         PRINTS("^");
     }
+    self.data.mtime += 1000;
 }
 
 inline tf_unit_t TF_GetCurrent(void){
@@ -58,8 +59,7 @@ void TF_GetCondensed(tf_data_condensed_t * buf){
         uint16_t  i,idx = self.current_idx;
         buf->version = 0;
         buf->UUID = GET_UUID_64();
-        //buf->time = self.data.mtime;
-        buf->time = salt++;
+        buf->time = self.data.mtime;
         for(i = 0; i < TF_CONDENSED_BUFFER_SIZE; i++){
             idx = _dec_idx(&idx);
             buf->data[i] = idx;
