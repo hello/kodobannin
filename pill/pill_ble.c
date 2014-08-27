@@ -239,7 +239,7 @@ void pill_ble_load_modules(void){
 		{
 			app_timer_id_t summary_timer;
 			uint32_t ticks;
-            ticks = APP_TIMER_TICKS(5000,APP_TIMER_PRESCALER);
+            ticks = APP_TIMER_TICKS(60000,APP_TIMER_PRESCALER);
 			app_timer_create(&summary_timer, APP_TIMER_MODE_REPEATED, _send_periodic_data_ant);
 			ticks = app_timer_start(summary_timer, ticks, NULL);
 		}
