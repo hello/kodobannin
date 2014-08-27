@@ -60,6 +60,7 @@ inline int16_t* get_raw_xzy_address()
 void TF_GetCondensed(tf_data_condensed_t * buf){
     static uint8_t salt;
     if(buf){
+        memset(buf, 0, sizeof(*buf));
         uint16_t  i,idx = self.current_idx;
         buf->version = 0x1;
         buf->UUID = GET_UUID_64();
