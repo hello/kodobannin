@@ -3,10 +3,12 @@
 
 static struct{
     tf_data_t data;
+    uint8_t tick;
     uint16_t current_idx;
 }self;
 
 static int16_t _raw_xyz[3];
+static uint16_t _dec_idx(uint16_t * idx);
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
     memset(&self.data, 0, sizeof(self.data));
@@ -18,16 +20,16 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
 }
 
 
-void TF_TickOneSecond(const struct hlo_ble_time * current_time){
-    
-    PRINTS("*");
-    if(current_time->monotonic_time % TF_UNIT_TIME_MS == 0){
-        self.data.mtime = current_time->monotonic_time - TF_UNIT_TIME_MS;
+void TF_TickOneSecond(uint64_t monotonic_time){
+    self.data.mtime = monotonic_time;
+    if(++self.tick > 60){
+        self.tick = 0;
         self.data.prev_idx = self.current_idx;
         self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
         self.data.data[self.current_idx] = 0;
-        //MSG_Time_GetMonotonicTime(&self.data.mtime);
         PRINTS("^");
+    }else{
+        PRINTS("*");
     }
 }
 
@@ -42,8 +44,31 @@ inline void TF_SetCurrent(tf_unit_t val){
 inline tf_data_t * TF_GetAll(void){
     return &self.data;
 }
+static
+uint16_t _dec_idx(uint16_t * idx){
+    if( *idx == 0){
+        return TF_BUFFER_SIZE - 1;
+    }else{
+        return (*idx - 1);
+    }
+}
 
 inline int16_t* get_raw_xzy_address()
 {
     return _raw_xyz;
 }
+void TF_GetCondensed(tf_data_condensed_t * buf){
+    static uint8_t salt;
+    if(buf){
+        memset(buf, 0, sizeof(*buf));
+        uint16_t  i,idx = self.current_idx;
+        buf->version = 0x1;
+        buf->UUID = GET_UUID_64();
+        buf->time = self.data.mtime;
+        for(i = 0; i < TF_CONDENSED_BUFFER_SIZE; i++){
+            idx = _dec_idx(&idx);
+            buf->data[i] = self.data.data[idx];
+        }
+    }
+}
+

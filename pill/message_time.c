@@ -35,7 +35,7 @@ static void
 _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;
-    TF_TickOneSecond(&self.ble_time);
+    TF_TickOneSecond(self.ble_time.monotonic_time);
     if(self.user_cb){
         MSG_TimeCB_t * cb = &((MSG_TimeCommand_t*)(self.user_cb->buf))->param.wakeup_cb;
         if(cb->cb(&self.ble_time,1000,cb->ctx)){
