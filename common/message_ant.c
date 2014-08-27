@@ -51,6 +51,10 @@ static struct{
     uint8_t discovery_role;
     ANT_Session_t sessions[ANT_SESSION_NUM];
     uint32_t sent, rcvd;
+    //test
+    uint32_t expected;
+    uint32_t total;
+    uint32_t matched;
 }self;
 
 static char * name = "ANT";
@@ -95,9 +99,20 @@ _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * pay
             break;
         case ANT_FUNCTION_TEST:
             {
-                PRINTS("PING\r\n");
-                uint8_t meta[8]  = {0x66, 0, 0,0,0,0,0,0};
-                MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SEND_RAW, &meta, 8);
+                uint32_t rcvd = payload[0];
+                if(self.total == 0){
+                    PRINTS("Test Init!\r\n");
+                    self.matched++;
+                }else if(rcvd == self.expected){
+                    self.matched++;
+                }
+                self.total++;
+                self.expected = rcvd+1;
+                PRINTS("M: ");
+                PRINT_HEX(&self.matched, 4);
+                PRINTS(" T: ");
+                PRINT_HEX(&self.total, 4);
+                PRINTS("\r\n");
             }
             break;
         case ANT_FUNCTION_END:
