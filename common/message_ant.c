@@ -546,6 +546,10 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 //sessions become virtual channels
                 {
                     uint8_t out_channel;
+                    if(_get_session_by_id(&antcmd->param.session_info)){
+                        PRINTS("Session Already Exists\r\n");
+                        return SUCCESS;
+                    }
                     ANT_Session_t * s = _find_unassigned_session(&out_channel);
                     PRINTS("Create Session\r\n");
                     switch(self.discovery_role){
