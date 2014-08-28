@@ -19,7 +19,7 @@ void ShakeDetectReset(uint32_t threshold){
 
 
 void ShakeDetectDecWindow(void){
-    self.cnt = self.cnt >> 1;
+
     if(self.shaking_time_sec){
         ++self.shaking_time_sec;
     }
@@ -45,6 +45,7 @@ bool ShakeDetect(uint32_t accelmag){
         }
 
         ++self.cnt;
+        return true;
     }
 
     return false;
