@@ -414,7 +414,7 @@ void morpheus_load_modules(void){
 		//MSG_Base_BufferTest();
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);
 		{
-			uint8_t role = 0;
+			uint8_t role = ANT_DISCOVERY_CENTRAL;
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,1);
 		}
 		{
