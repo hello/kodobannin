@@ -335,6 +335,10 @@ void imu_printf_data_ready_callback_fifo(uint16_t fifo_bytes_available)
 
 
 static MSG_Status _init(void){
+	//harder
+	//ShakeDetectReset(15000000000, 5);
+	//easier to trigger
+	ShakeDetectReset(1000000000, 5);
     return SUCCESS;
 }
 
@@ -357,6 +361,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 			case IMU_READ_XYZ:
 				{
 					int16_t values[3];
+					uint32_t mag;
 					imu_accel_reg_read((uint8_t*)values);
 					//uint8_t interrupt_status = imu_clear_interrupt_status();
 
@@ -364,9 +369,10 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 						_settings.wom_callback(values, sizeof(values));
 					}
 
-					_aggregate_motion_data(values, sizeof(values));
+					mag = _aggregate_motion_data(values, sizeof(values));
+					ShakeDetect(mag);
 #ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
-					_dispatch_motion_data_via_ant(values, sizeof(values));
+					//_dispatch_motion_data_via_ant(values, sizeof(values));
 #endif
 				}
 
