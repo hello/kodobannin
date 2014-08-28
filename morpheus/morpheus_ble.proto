@@ -1,6 +1,6 @@
 message WifiEndPoint {
 	optional string name = 1;
-	required bytes mac = 2;
+	required string ssid = 2;
 }
 
 message SelectedWifiEndPoint {
@@ -9,10 +9,11 @@ message SelectedWifiEndPoint {
 }
 
 enum ErrorType {
-	TIME_OUT = 0;       // Internal time out, no implemented yet.
-	NETWORK_ERROR = 1;  // Network not available or unreachable network.
+	TIME_OUT = 0;              // Internal time out, no implemented yet.
+	NETWORK_ERROR = 1;         // Network not available or unreachable network.
 	DEVICE_ALREADY_PAIRED = 2; // User tries to paired a paired device to another account.
 	INTERNAL_DATA_ERROR = 3;   // Data packets corruption during BLE or SPI transfer
+	DEVICE_DATABASE_FULL = 4;  // No more space for device pairing.
 }
 
 message MorpheusCommand {

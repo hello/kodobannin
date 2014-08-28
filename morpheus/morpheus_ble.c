@@ -11,6 +11,7 @@
 
 #include "platform.h"
 #include "app.h"
+#include "ble_bondmngr_cfg.h"
 
 #include "hlo_ble_time.h"
 #include "util.h"
@@ -31,7 +32,8 @@
 #include "ant_devices.h"
 
 // To generate the protobuf download nanopb
-// ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
+// Generate C code: ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
+// Generate Java code: protoc --java_out=. morpheus/morpheus_ble.proto
 
 #define PROTOBUF_MAX_LEN  100
 
@@ -279,6 +281,46 @@ static void _on_notify_failed(void* data_page)
 static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 {
 	bool* mode = (bool*)event_data;
+
+	if(*mode){
+		uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    	APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+
+    	if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS){
+    		PRINTS("Pairing database full.\r\n");
+
+    		// The pairing db is full, do not proceed and ask the user to erase the paired users.
+    		MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(20);
+			MorpheusCommand command;
+			memset(&command, 0, sizeof(command));
+			memset(data_page->buf, 0, data_page->len);
+
+			command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERROR;
+			command.version = 0;
+
+			command.has_error = true;
+			command.error = ErrorType_DEVICE_DATABASE_FULL;
+
+			pb_ostream_t stream = pb_ostream_from_buffer(data_page->buf, data_page->len);
+			bool status = pb_encode(&stream, MorpheusCommand_fields, &command);
+		    
+		    if(status)
+		    {
+		    	size_t protobuf_len = stream.bytes_written;
+				hlo_ble_notify(0xB00B, data_page->buf, protobuf_len, 
+					&(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, data_page});
+			}else{
+				PRINTS("encode protobuf failed: ");
+				PRINTS(PB_GET_ERROR(&stream));
+				PRINTS("\r\n");
+				MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+			}
+
+			return;
+    	}
+	}
+
+
 	hble_set_advertising_mode(*mode);
 
 #ifdef PROTO_REPLY
