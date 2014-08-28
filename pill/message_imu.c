@@ -216,13 +216,13 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 #endif
 }
 
-static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
+static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
 	int16_t values[3];
 	memcpy(values, raw_xyz, len);
 
 	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
-	int32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
+	uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
     aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
 	
     /*
@@ -243,6 +243,7 @@ static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 		PRINTS("NEW MAX: ");
 		PRINT_HEX(&aggregate, sizeof(aggregate));
 	}
+	return aggregate;
 }
 
 
@@ -334,6 +335,10 @@ void imu_printf_data_ready_callback_fifo(uint16_t fifo_bytes_available)
 
 
 static MSG_Status _init(void){
+	//harder
+	//ShakeDetectReset(15000000000, 5);
+	//easier to trigger
+	ShakeDetectReset(1000000000, 5);
     return SUCCESS;
 }
 
@@ -356,6 +361,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 			case IMU_READ_XYZ:
 				{
 					int16_t values[3];
+					uint32_t mag;
 					imu_accel_reg_read((uint8_t*)values);
 					//uint8_t interrupt_status = imu_clear_interrupt_status();
 
@@ -363,9 +369,11 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 						_settings.wom_callback(values, sizeof(values));
 					}
 
-					_aggregate_motion_data(values, sizeof(values));
+					mag = _aggregate_motion_data(values, sizeof(values));
 #ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
-					_dispatch_motion_data_via_ant(values, sizeof(values));
+					if(ShakeDetect(mag)){
+						_dispatch_motion_data_via_ant(values, sizeof(values));
+					}
 #endif
 				}
 
