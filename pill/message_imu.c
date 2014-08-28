@@ -370,9 +370,10 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 					}
 
 					mag = _aggregate_motion_data(values, sizeof(values));
-					ShakeDetect(mag);
 #ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
-					//_dispatch_motion_data_via_ant(values, sizeof(values));
+					if(ShakeDetect(mag)){
+						_dispatch_motion_data_via_ant(values, sizeof(values));
+					}
 #endif
 				}
 
