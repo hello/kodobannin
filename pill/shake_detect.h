@@ -7,7 +7,7 @@
  * Simple algorithm that counts #of shakes above threshold
  */
 
-void ShakeDetectReset(uint32_t threshold, uint32_t count);
+void ShakeDetectReset(uint32_t threshold, uint16_t count);
 void ShakeDetectDecWindow(void);
 bool ShakeDetect(uint32_t accelmag);
 

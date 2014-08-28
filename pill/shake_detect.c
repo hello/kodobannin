@@ -2,10 +2,11 @@
 #include "util.h"
 
 static struct{
-    uint32_t thmag, thcnt, cnt;
+    uint32_t thmag;
+    uint16_t thcnt, cnt;
 }self;
 
-void ShakeDetectReset(uint32_t threshold, uint32_t count){
+void ShakeDetectReset(uint32_t threshold, uint16_t count){
     self.thmag = threshold;
     self.thcnt = count;
     self.cnt = count;
