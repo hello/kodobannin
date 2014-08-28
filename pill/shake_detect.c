@@ -2,7 +2,7 @@
 #include "util.h"
 
 #define SLIDING_WINDOW_SIZE_SEC         (2)
-#define SHAKING_DATA_COUNT_THRESHOLD    (6)
+#define SHAKING_DATA_COUNT_THRESHOLD    (8)
 
 static struct{
     uint32_t thmag, cnt;
@@ -26,16 +26,14 @@ void ShakeDetectDecWindow(void){
     if(self.shaking_time_sec){
         ++self.shaking_time_sec;
     }
-    //shake immediately if above th
-    if(self.cnt >= SHAKING_DATA_COUNT_THRESHOLD){ // The user shakes hard enough and long enough
-        if(self._shake_detection_callback){
-            self._shake_detection_callback();
-        }
-        _reset();
-    }
     //clear sliding window if time out
     if(self.shaking_time_sec > SLIDING_WINDOW_SIZE_SEC){
         // sliding window ends, reset all the counter
+        if(self.cnt >= SHAKING_DATA_COUNT_THRESHOLD){ // The user shakes hard enough and long enough
+            if(self._shake_detection_callback){
+                self._shake_detection_callback();
+            }
+        }
         _reset();
     }
 
