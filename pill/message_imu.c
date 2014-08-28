@@ -333,12 +333,21 @@ void imu_printf_data_ready_callback_fifo(uint16_t fifo_bytes_available)
     }
 }
 
+static void _on_pill_pairing_guesture_detected(void){
+    //TODO: send pairing request packets via ANT
+#ifdef ANT_ENABLE
+
+#endif
+}
+
 
 static MSG_Status _init(void){
 	//harder
 	//ShakeDetectReset(15000000000, 5);
 	//easier to trigger
-	ShakeDetectReset(1000000000, 5);
+	ShakeDetectReset(1000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+    set_shake_detection_callback(_on_pill_pairing_guesture_detected);
+
     return SUCCESS;
 }
 
@@ -371,9 +380,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 
 					mag = _aggregate_motion_data(values, sizeof(values));
 #ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
-					if(ShakeDetect(mag)){
-						_dispatch_motion_data_via_ant(values, sizeof(values));
-					}
+					
+					_dispatch_motion_data_via_ant(values, sizeof(values));
+					
 #endif
 				}
 
@@ -406,8 +415,6 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 		    APP_OK(app_gpiote_user_enable(_gpiote_user));
 
 		    imu_clear_interrupt_status();
-			//imu_calibrate_zero();
-
 			PRINTS("IMU: initialization done.\r\n");
 			initialized = true;
 		}
