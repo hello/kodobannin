@@ -216,13 +216,13 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 #endif
 }
 
-static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
+static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
 	int16_t values[3];
 	memcpy(values, raw_xyz, len);
 
 	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
-	int32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
+	uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
     aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
 	
     /*
@@ -243,6 +243,7 @@ static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 		PRINTS("NEW MAX: ");
 		PRINT_HEX(&aggregate, sizeof(aggregate));
 	}
+	return aggregate;
 }
 
 
