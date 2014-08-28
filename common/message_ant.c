@@ -45,6 +45,7 @@ static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     uint8_t discovery_role;
+    uint8_t discovery_action;
     ANT_Session_t sessions[ANT_SESSION_NUM];
     uint32_t sent, rcvd;
     //test
@@ -85,6 +86,31 @@ static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
 /* handles single packet special functions */
 static MSG_Data_t * INCREF _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload);
 
+/* handle unknown device(not paird) indicated by 0 0 header */
+static void _handle_unknown_device(const ANT_ChannelID_t * id);
+
+static void
+_handle_unknown_device(const ANT_ChannelID_t * id){
+    PRINTS("Found Unknown ID = ");
+    PRINT_HEX(id->device_number, 2);
+    PRINTS("\r\n");
+    switch(self.discovery_action){
+        default:
+        case ANT_DISCOVERY_NO_ACTION:
+            PRINTS("No Action Needed\r\n");
+            break;
+        case ANT_DISCOVERY_REPORT_DEVICE:
+            //send message to spi and ble and uart
+            break;
+        case ANT_DISCOVERY_ACCEPT_NEXT_DEVICE:
+            self.discovery_action = ANT_DISCOVERY_REPORT_DEVICE;
+            //create session
+            break;
+        case ANT_DISCOVERY_ACCEPT_ALL_DEVICE:
+            //create session
+            break;
+    }
+}
 static MSG_Data_t * INCREF
 _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload){
     MSG_Data_t * ret = NULL;
@@ -486,9 +512,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         //null function packet is used to see what is around the area
         //if no session exists for that ID
         if(rx_payload[0] == 0 && rx_payload[1] == 0){
-            PRINTS("Found Unknown ID = ");
-            PRINT_HEX(&id.device_number, 2);
-            PRINTS("\r\n");
+            _handle_unknown_device(&id);
         }
     }
 }
