@@ -267,7 +267,7 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_Cha
 }
 
 static MSG_Status
-_set_discovery_mode(uint8_t role){
+_set_discovery_mode(ANT_DISCOVERY_ROLE role){
     ANT_ChannelID_t id = {0};
     ANT_ChannelPHY_t phy = {
         .period = 273,

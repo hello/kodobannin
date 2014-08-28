@@ -103,7 +103,7 @@ typedef struct{
 /**
  * device roles
  */
-enum{
+typedef enum{
     ANT_DISCOVERY_CENTRAL = 0,
     ANT_DISCOVERY_PERIPHERAL
 }ANT_DISCOVERY_ROLE;
@@ -111,7 +111,7 @@ enum{
 /**
  * action when it sees unknown device
  */
-enum{
+typedef enum{
     ANT_DISCOVERY_NO_ACTION = 0,
     ANT_DISCOVERY_REPORT_DEVICE,
     ANT_DISCOVERY_ACCEPT_NEXT_DEVICE,
@@ -128,7 +128,7 @@ typedef struct{
         ANT_END_CMD
     }cmd;
     union{
-        uint8_t role;
+        ANT_DISCOVERY_ROLE role;
         ANT_Channel_Settings_t settings;
         ANT_ChannelID_t session_info;
         uint8_t raw_data[8];
