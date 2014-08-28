@@ -418,12 +418,16 @@ void morpheus_load_modules(void){
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,1);
 		}
 		{
-			ANT_ChannelID_t id = {
-				.device_number = 0x7E1A,
-				.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
-				.transmit_type = 0
-			};
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
+			/*
+			 *ANT_ChannelID_t id = {
+			 *    .device_number = 0x7E1A,
+			 *    .device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
+			 *    .transmit_type = 0
+			 *};
+			 *MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
+			 */
+			ANT_DISCOVERY_ACTION action = ANT_DISCOVERY_ACCEPT_NEXT_DEVICE;
+			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_DISCOVERY_ACTION, &action, sizeof(action));
 		}
     }else{
         PRINTS("FAIL");

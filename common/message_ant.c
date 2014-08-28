@@ -91,20 +91,25 @@ static void _handle_unknown_device(const ANT_ChannelID_t * id);
 
 static void
 _handle_unknown_device(const ANT_ChannelID_t * id){
-    PRINTS("Found Unknown ID = ");
-    PRINT_HEX(id->device_number, 2);
-    PRINTS("\r\n");
     switch(self.discovery_action){
         default:
         case ANT_DISCOVERY_NO_ACTION:
-            PRINTS("No Action Needed\r\n");
             break;
         case ANT_DISCOVERY_REPORT_DEVICE:
+            {
+                PRINTS("Found Unknown ID = ");
+                PRINT_HEX(&id->device_number, 2);
+                PRINTS("\r\n");
+                PRINTS("No Action Needed\r\n");
+            }
             //send message to spi and ble and uart
             break;
         case ANT_DISCOVERY_ACCEPT_NEXT_DEVICE:
-            self.discovery_action = ANT_DISCOVERY_REPORT_DEVICE;
-            //create session
+            {
+                //create session
+                self.discovery_action = ANT_DISCOVERY_REPORT_DEVICE;
+                MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, id, sizeof(*id));
+            }
             break;
         case ANT_DISCOVERY_ACCEPT_ALL_DEVICE:
             //create session
@@ -555,6 +560,11 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                         self.parent->dispatch((MSG_Address_t){ANT, 0}, (MSG_Address_t){ANT,1}, d);
                         MSG_Base_ReleaseDataAtomic(d);
                     }
+                }
+                break;
+            case ANT_SET_DISCOVERY_ACTION:
+                {
+                    self.discovery_action = antcmd->param.action;
                 }
                 break;
             case ANT_SET_ROLE:
