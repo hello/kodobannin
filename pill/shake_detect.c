@@ -10,10 +10,13 @@ static struct{
     shake_detection_callback_t _shake_detection_callback;
 }self;
 
-void ShakeDetectReset(uint32_t threshold){
-    self.thmag = threshold;
+static inline void _reset(void){
     self.cnt = 0;
     self.shaking_time_sec = 0;
+}
+void ShakeDetectReset(uint32_t threshold){
+    self.thmag = threshold;
+    _reset();
 }
 
 
@@ -28,13 +31,12 @@ void ShakeDetectDecWindow(void){
         if(self._shake_detection_callback){
             self._shake_detection_callback();
         }
-        self.cnt = 0;
+        _reset();
     }
-    //clear sliding window
+    //clear sliding window if time out
     if(self.shaking_time_sec > SLIDING_WINDOW_SIZE_SEC){
         // sliding window ends, reset all the counter
-        self.shaking_time_sec = 0;
-        self.cnt = 0;
+        _reset();
     }
 
 }
