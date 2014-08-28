@@ -15,10 +15,6 @@
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
 #define ANT_SESSION_NUM 3
-enum{
-    ANT_DISCOVERY_CENTRAL = 0,
-    ANT_DISCOVERY_PERIPHERAL
-}ANT_DISCOVERY_ROLE;
 
 typedef struct{
     ANT_HeaderPacket_t header;
@@ -49,6 +45,7 @@ static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     uint8_t discovery_role;
+    uint8_t discovery_action;
     ANT_Session_t sessions[ANT_SESSION_NUM];
     uint32_t sent, rcvd;
     //test
@@ -89,6 +86,36 @@ static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
 /* handles single packet special functions */
 static MSG_Data_t * INCREF _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload);
 
+/* handle unknown device(not paird) indicated by 0 0 header */
+static void _handle_unknown_device(const ANT_ChannelID_t * id);
+
+static void
+_handle_unknown_device(const ANT_ChannelID_t * id){
+    switch(self.discovery_action){
+        default:
+        case ANT_DISCOVERY_NO_ACTION:
+            break;
+        case ANT_DISCOVERY_REPORT_DEVICE:
+            {
+                PRINTS("Found Unknown ID = ");
+                PRINT_HEX(&id->device_number, 2);
+                PRINTS("\r\n");
+                PRINTS("No Action Needed\r\n");
+            }
+            //send message to spi and ble and uart
+            break;
+        case ANT_DISCOVERY_ACCEPT_NEXT_DEVICE:
+            {
+                //create session
+                self.discovery_action = ANT_DISCOVERY_REPORT_DEVICE;
+                MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, id, sizeof(*id));
+            }
+            break;
+        case ANT_DISCOVERY_ACCEPT_ALL_DEVICE:
+            //create session
+            break;
+    }
+}
 static MSG_Data_t * INCREF
 _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload){
     MSG_Data_t * ret = NULL;
@@ -271,7 +298,7 @@ _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_Cha
 }
 
 static MSG_Status
-_set_discovery_mode(uint8_t role){
+_set_discovery_mode(ANT_DISCOVERY_ROLE role){
     ANT_ChannelID_t id = {0};
     ANT_ChannelPHY_t phy = {
         .period = 273,
@@ -490,9 +517,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         //null function packet is used to see what is around the area
         //if no session exists for that ID
         if(rx_payload[0] == 0 && rx_payload[1] == 0){
-            PRINTS("Found Unknown ID = ");
-            PRINT_HEX(&id.device_number, 2);
-            PRINTS("\r\n");
+            _handle_unknown_device(&id);
         }
     }
 }
@@ -519,6 +544,12 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case ANT_PING:
                 PRINTS("ANT_PING\r\n");
                 break;
+            case ANT_ADVERTISE:
+                {
+                    uint8_t advdata[8] = {0};
+                    MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SEND_RAW, advdata, 8);
+                }
+                break;
             case ANT_SEND_RAW:
                 {
                     MSG_Data_t * d = MSG_Base_AllocateDataAtomic(8);
@@ -531,6 +562,11 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                     }
                 }
                 break;
+            case ANT_SET_DISCOVERY_ACTION:
+                {
+                    self.discovery_action = antcmd->param.action;
+                }
+                break;
             case ANT_SET_ROLE:
                 PRINTS("ANT_SET_ROLE\r\n");
                 PRINT_HEX(&antcmd->param.role, 0x1);
@@ -540,6 +576,10 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 //sessions become virtual channels
                 {
                     uint8_t out_channel;
+                    if(_get_session_by_id(&antcmd->param.session_info)){
+                        PRINTS("Session Already Exists\r\n");
+                        return SUCCESS;
+                    }
                     ANT_Session_t * s = _find_unassigned_session(&out_channel);
                     PRINTS("Create Session\r\n");
                     switch(self.discovery_role){
