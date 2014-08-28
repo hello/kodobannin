@@ -50,6 +50,7 @@ static void _morpheus_switch_mode(void*, uint16_t);
 static void _led_pairing_mode(void);
 static void _on_notify_completed(void* data, void* data_page);
 static void _on_notify_failed(void* data_page);
+static bool _reply_protobuf(const MorpheusCommand* morpheus_command);
 
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
@@ -61,27 +62,12 @@ static void _erase_bonded_users(void* event_data, uint16_t event_size){
 
 	hble_erase_other_bonded_central();
 
-	MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(20);
 	MorpheusCommand command;
 	memset(&command, 0, sizeof(command));
-	memset(data_page->buf, 0, data_page->len);
-
+	
 	command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_USER;
 	command.version = 0;
-	pb_ostream_t stream = pb_ostream_from_buffer(data_page->buf, data_page->len);
-	bool status = pb_encode(&stream, MorpheusCommand_fields, &command);
-    
-    if(status)
-    {
-    	size_t protobuf_len = stream.bytes_written;
-		hlo_ble_notify(0xB00B, data_page->buf, protobuf_len, 
-			&(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, data_page});
-	}else{
-		PRINTS("encode protobuf failed: ");
-		PRINTS(PB_GET_ERROR(&stream));
-		PRINTS("\r\n");
-		MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
-	}
+	_reply_protobuf(&command);
 }
 
 
@@ -278,43 +264,52 @@ static void _on_notify_failed(void* data_page)
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 }
 
+static bool _reply_protobuf(const MorpheusCommand* morpheus_command){
+	MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(20);
+	memset(heap_page->buf, 0, heap_page->len);
+
+	pb_ostream_t stream = pb_ostream_from_buffer(heap_page->buf, heap_page->len);
+	bool status = pb_encode(&stream, MorpheusCommand_fields, morpheus_command);
+    
+    if(status)
+    {
+    	size_t protobuf_len = stream.bytes_written;
+		hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
+			&(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, heap_page});
+	}else{
+		PRINTS("encode protobuf failed: ");
+		PRINTS(PB_GET_ERROR(&stream));
+		PRINTS("\r\n");
+		MSG_Base_ReleaseDataAtomic(heap_page);
+	}
+
+	return status;
+}
+
 static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 {
 	bool* mode = (bool*)event_data;
 
-	if(*mode){
+	if(*mode)
+	{
 		uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
     	APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
 
-    	if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS){
+    	if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS)
+    	{
     		PRINTS("Pairing database full.\r\n");
 
     		// The pairing db is full, do not proceed and ask the user to erase the paired users.
-    		MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(20);
+    		
 			MorpheusCommand command;
 			memset(&command, 0, sizeof(command));
-			memset(data_page->buf, 0, data_page->len);
-
+			
 			command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERROR;
 			command.version = 0;
 
 			command.has_error = true;
 			command.error = ErrorType_DEVICE_DATABASE_FULL;
-
-			pb_ostream_t stream = pb_ostream_from_buffer(data_page->buf, data_page->len);
-			bool status = pb_encode(&stream, MorpheusCommand_fields, &command);
-		    
-		    if(status)
-		    {
-		    	size_t protobuf_len = stream.bytes_written;
-				hlo_ble_notify(0xB00B, data_page->buf, protobuf_len, 
-					&(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, data_page});
-			}else{
-				PRINTS("encode protobuf failed: ");
-				PRINTS(PB_GET_ERROR(&stream));
-				PRINTS("\r\n");
-				MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
-			}
+			_reply_protobuf(&command);
 
 			return;
     	}
@@ -325,28 +320,15 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 
 #ifdef PROTO_REPLY
 	// reply to 0xB00B
-	MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(20);
 	MorpheusCommand command;
 	memset(&command, 0, sizeof(command));
-	memset(data_page->buf, 0, data_page->len);
-
+	
 	command.type = (*mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
 		MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
 	command.version = 0;
-	pb_ostream_t stream = pb_ostream_from_buffer(data_page->buf, data_page->len);
-	bool status = pb_encode(&stream, MorpheusCommand_fields, &command);
-    
-    if(status)
-    {
-    	size_t protobuf_len = stream.bytes_written;
-		hlo_ble_notify(0xB00B, data_page->buf, protobuf_len, 
-			&(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, data_page});
+	if(_reply_protobuf(&command))
+	{
 		_led_pairing_mode();
-	}else{
-		PRINTS("encode protobuf failed: ");
-		PRINTS(PB_GET_ERROR(&stream));
-		PRINTS("\r\n");
-		MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 	}
 
 #else
