@@ -15,10 +15,6 @@
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32u  /**< Minimum size of an ANT event message buffer. */
 #define ANT_SESSION_NUM 3
-enum{
-    ANT_DISCOVERY_CENTRAL = 0,
-    ANT_DISCOVERY_PERIPHERAL
-}ANT_DISCOVERY_ROLE;
 
 typedef struct{
     ANT_HeaderPacket_t header;

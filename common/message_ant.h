@@ -100,6 +100,24 @@ typedef struct{
     ANT_ChannelID_t id;
 }ANT_Channel_Settings_t;
 
+/**
+ * device roles
+ */
+enum{
+    ANT_DISCOVERY_CENTRAL = 0,
+    ANT_DISCOVERY_PERIPHERAL
+}ANT_DISCOVERY_ROLE;
+
+/**
+ * action when it sees unknown device
+ */
+enum{
+    ANT_DISCOVERY_NO_ACTION = 0,
+    ANT_DISCOVERY_REPORT_DEVICE,
+    ANT_DISCOVERY_ACCEPT_NEXT_DEVICE,
+    ANT_DISCOVERY_ACCEPT_ALL_DEVICE,
+}ANT_DISCOVERY_STATE;
+
 typedef struct{
     enum{
         ANT_PING=0,
