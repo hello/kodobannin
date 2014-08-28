@@ -336,7 +336,7 @@ void imu_printf_data_ready_callback_fifo(uint16_t fifo_bytes_available)
 static void _on_pill_pairing_guesture_detected(void){
     //TODO: send pairing request packets via ANT
 #ifdef ANT_ENABLE
-
+	MSG_SEND_CMD(parent, ANT, MSG_ANTCommand_t, ANT_ADVERTISE, NULL, 0);
 #endif
 }
 

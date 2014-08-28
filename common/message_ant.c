@@ -519,6 +519,12 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case ANT_PING:
                 PRINTS("ANT_PING\r\n");
                 break;
+            case ANT_ADVERTISE:
+                {
+                    uint8_t advdata[8] = {0};
+                    MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SEND_RAW, advdata, 8);
+                }
+                break;
             case ANT_SEND_RAW:
                 {
                     MSG_Data_t * d = MSG_Base_AllocateDataAtomic(8);
