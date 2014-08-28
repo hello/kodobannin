@@ -35,7 +35,7 @@ static ble_gap_sec_params_t _sec_params;
 static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
-static int8_t  _last_connected_central; 
+static int16_t  _last_bond_central_id; 
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
@@ -144,28 +144,45 @@ static void _bond_manager_error_handler(uint32_t nrf_error)
  */
 static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 {
-    _last_connected_central = p_evt->central_handle;
-    PRINTS("last connected central set\r\n");
+    _last_bond_central_id = p_evt->central_id;
+    PRINTS("last bonded central: ");
+    PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
+    PRINTS("\r\n");
 }
 
 void hble_erase_other_bonded_central()
 {
-    if(_last_connected_central == INVALID_CENTRAL_HANDLE)
+    if(!_last_bond_central_id)
     {
-        APP_OK(ble_bondmngr_bonded_centrals_delete());
+        PRINTS("Current user is not bonded!");
         return;
     }
 
     PRINTS("Current central: ");
-    PRINT_HEX(_last_connected_central, sizeof(_last_connected_central));
+    PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
     PRINTS("\r\n");
     
+    
+
+    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+    if(paired_users_count == 0)
+    {
+        PRINTS("No paired centrals found.\r\n");
+        return;
+    }
+
+    PRINTS("Paired central count: ");
+    PRINT_HEX(&paired_users_count, sizeof(paired_users_count));
+    PRINTS("\r\n");
+
     uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
     memset(bonded_central_list, 0, sizeof(bonded_central_list));
-    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, sizeof(bonded_central_list)));
-    for(int i = 0; i < BLE_BONDMNGR_MAX_BONDED_CENTRALS; i++)
+
+    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, &paired_users_count));
+    for(int i = 0; i < paired_users_count; i++)
     {
-        if(bonded_central_list[i] != _last_connected_central)
+        if(bonded_central_list[i] != _last_bond_central_id)
         {
             APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[i]));
             PRINTS("Paired central ");
@@ -332,13 +349,17 @@ void hble_params_init(char* device_name)
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
 
-        size_t device_id_len = sizeof(NRF_FICR->DEVICEID);
-        size_t device_id_uint_len = sizeof(NRF_FICR->DEVICEID[0]);
-        size_t hex_device_id_len = device_id_len * device_id_uint_len * 2 + (device_id_len - 1) + 1;  // xxxxxxxx-xxxxxxxx-...
-        char hex_device_id[hex_device_id_len];
-        char device_id[device_id_len * device_id_uint_len];
+        size_t device_id_len = sizeof(NRF_FICR->DEVICEID); 
 
-        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len * device_id_uint_len);
+        PRINTS("Device id array size: ");
+        PRINT_HEX(&device_id_len, sizeof(device_id_len));
+        PRINTS("\r\n");
+
+        size_t hex_device_id_len = device_id_len * 2 + 1;
+        char hex_device_id[hex_device_id_len];
+        char device_id[device_id_len];
+
+        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len);
         memset(hex_device_id, 0, hex_device_id_len);
         const char* hex_table = "0123456789ABCDEF";
         
@@ -346,22 +367,13 @@ void hble_params_init(char* device_name)
         for(size_t i = 0; i < device_id_len; i++)
         {
             //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
-            for(size_t len = 0; len < device_id_uint_len; len++)
-            {
-                uint8_t num = device_id[i * device_id_uint_len + (device_id_uint_len - len - 1)];
+            uint8_t num = device_id[i];
                 
-                uint8_t ret = num / 16;
-                uint8_t remain = num % 16;
+            uint8_t ret = num / 16;
+            uint8_t remain = num % 16;
 
-                hex_device_id[index++] = hex_table[ret];
-                hex_device_id[index++] = hex_table[remain];
-
-                if(i < device_id_len - 1 && len == device_id_uint_len - 1)
-                {
-                    hex_device_id[index++] = '-';
-                }
-            }
-
+            hex_device_id[index++] = hex_table[ret];
+            hex_device_id[index++] = hex_table[remain];
             
         }
 

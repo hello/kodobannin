@@ -19,7 +19,10 @@ enum {
 #define BLE_MODEL_NUM         "EVT1"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
+
+
 //#define BONDING_REQUIRED
+//#define DATA_SCIENCE_TASK
 
 
 /*

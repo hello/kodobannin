@@ -14,8 +14,15 @@
 //time of each index
 #define TF_UNIT_TIME_S 60 
 #define TF_UNIT_TIME_MS 60000
-#define TF_BUFFER_SIZE (8 * 60)
+
+#ifdef DATA_SCIENCE_TASK
+#define TF_BUFFER_SIZE (10 * 60)
+#else
+#define TF_BUFFER_SIZE (4 * 60)
+#endif
+
 #define TF_CONDENSED_BUFFER_SIZE (3)
+
 typedef int32_t tf_unit_t;  // Good job, this is a keen design!
 
 typedef struct{

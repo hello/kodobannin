@@ -8,6 +8,13 @@ message SelectedWifiEndPoint {
 	optional string password = 2;
 }
 
+enum ErrorType {
+	TIME_OUT = 0;       // Internal time out, no implemented yet.
+	NETWORK_ERROR = 1;  // Network not available or unreachable network.
+	DEVICE_ALREADY_PAIRED = 2; // User tries to paired a paired device to another account.
+	INTERNAL_DATA_ERROR = 3;   // Data packets corruption during BLE or SPI transfer
+}
+
 message MorpheusCommand {
 	enum CommandType {
 	    MORPHEUS_COMMAND_SET_TIME = 0;
@@ -22,9 +29,13 @@ message MorpheusCommand {
 	    MORPHEUS_COMMAND_STOP_WIFISCAN = 9;
 	    MORPHEUS_COMMAND_GET_DEVICE_ID = 10;
 	    MORPHEUS_COMMAND_EREASE_PAIRED_USER = 11;
+	    MORPHEUS_COMMAND_PAIR_PILL = 12;
+	    MORPHEUS_COMMAND_ERROR = 13;  // if you receive this, that means something goes wrong.
 	}
 	required int32 version = 1;
 	required CommandType type = 2;
-	optional SelectedWifiEndPoint selectedWIFIEndPoint = 3;
+	optional SelectedWifiEndPoint selectedWIFIEndPoint = 3;  // MORPHEUS_COMMAND_SET_WIFI_ENDPOINT, MORPHEUS_COMMAND_GET_WIFI_ENDPOINT
 	optional bytes deviceId = 4;
+	optional int64 accountId = 5;  // Used by MORPHEUS_COMMAND_PAIRE_PILL
+	optional ErrorType error = 6;  // MORPHEUS_COMMAND_ERROR
 }

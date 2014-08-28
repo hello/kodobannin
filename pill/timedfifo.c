@@ -16,6 +16,7 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
     self.data.prev_idx = 0xFFFF;
     
     self.current_idx = 0;
+    self.tick = 0;
     self.data.mtime = init_time->monotonic_time;
 }
 
