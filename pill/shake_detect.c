@@ -1,8 +1,8 @@
 #include "shake_detect.h"
 #include "util.h"
 
-#define SLIDING_WINDOW_SIZE_SEC         (5)
-#define SHAKING_DATA_COUNT_THRESHOLD    (25)
+#define SLIDING_WINDOW_SIZE_SEC         (2)
+#define SHAKING_DATA_COUNT_THRESHOLD    (6)
 
 static struct{
     uint32_t thmag, cnt;
