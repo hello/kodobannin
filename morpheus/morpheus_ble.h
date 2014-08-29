@@ -5,6 +5,10 @@
 #include "hlo_ble_time.h"
 #include "morpheus_gatt.h"
 
+#include "pb_decode.h"
+#include "pb_encode.h"
+#include "morpheus_ble.pb.h"
+
 enum {
     BLE_UUID_MORPHEUS_SVC = 0xFEE1,
 };
@@ -74,3 +78,4 @@ void morpheus_ble_evt_handler(ble_evt_t* ble_evt);
 void morpheus_ble_advertising_init(void);
 void morpheus_load_modules(void);
 void morpheus_ble_transmission_layer_init();
+bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command);

@@ -29,7 +29,7 @@ message MorpheusCommand {
 	    MORPHEUS_COMMAND_START_WIFISCAN = 8;
 	    MORPHEUS_COMMAND_STOP_WIFISCAN = 9;
 	    MORPHEUS_COMMAND_GET_DEVICE_ID = 10;
-	    MORPHEUS_COMMAND_EREASE_PAIRED_USER = 11;
+	    MORPHEUS_COMMAND_EREASE_PAIRED_PHONE = 11;
 	    MORPHEUS_COMMAND_PAIR_PILL = 12;
 	    MORPHEUS_COMMAND_ERROR = 13;  // if you receive this, that means something goes wrong.
 	}
@@ -37,6 +37,6 @@ message MorpheusCommand {
 	required CommandType type = 2;
 	optional SelectedWifiEndPoint selectedWIFIEndPoint = 3;  // MORPHEUS_COMMAND_SET_WIFI_ENDPOINT, MORPHEUS_COMMAND_GET_WIFI_ENDPOINT
 	optional bytes deviceId = 4;
-	optional int64 accountId = 5;  // Used by MORPHEUS_COMMAND_PAIRE_PILL
+	optional string accountId = 5;  // Used by MORPHEUS_COMMAND_PAIRE_PILL
 	optional ErrorType error = 6;  // MORPHEUS_COMMAND_ERROR
 }

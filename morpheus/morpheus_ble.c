@@ -25,10 +25,6 @@
 #include "morpheus_ble.h"
 #include "message_ble.h"
 
-#include "pb_decode.h"
-#include "pb_encode.h"
-#include "morpheus_ble.pb.h"
-
 #include "ant_devices.h"
 
 // To generate the protobuf download nanopb
@@ -50,7 +46,7 @@ static void _morpheus_switch_mode(void*, uint16_t);
 static void _led_pairing_mode(void);
 static void _on_notify_completed(void* data, void* data_page);
 static void _on_notify_failed(void* data_page);
-static bool _reply_protobuf(const MorpheusCommand* morpheus_command);
+
 
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
@@ -65,9 +61,9 @@ static void _erase_bonded_users(void* event_data, uint16_t event_size){
 	MorpheusCommand command;
 	memset(&command, 0, sizeof(command));
 	
-	command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_USER;
+	command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE;
 	command.version = 0;
-	_reply_protobuf(&command);
+	morpheus_ble_reply_protobuf(&command);
 }
 
 
@@ -88,88 +84,66 @@ static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
 }
 
 static void _on_packet_arrival(void* event_data, uint16_t event_size){
-	struct hlo_ble_packet* ble_packet = (struct hlo_ble_packet*)event_data;
-	if(ble_packet->sequence_number == 0)
-	{
-		if(_protobuf_buffer)
-		{
-			// Possible race condition here, need to make sure no concurrency operation is allowed
-			// from the phone.
-			MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
-			_protobuf_buffer = NULL;
-    	}
+	MSG_Data_t* data_page = *(MSG_Data_t**)event_data;
 
-    	_protobuf_buffer = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
-    	if(!_protobuf_buffer){
-    		PRINTS("Not enought memory\r\n");
-    		return;
-    	}
-    	
-		_protobuf_len = event_size - 2;   // seq# + total#, 2 bytes
-		memcpy(_protobuf_buffer->buf, ble_packet->header.data, event_size - 2);  // seq# + total#, 2 bytes
-		_end_seq = ble_packet->sequence_number + ble_packet->header.packet_count - 1;
-	}else{
-		memcpy(&_protobuf_buffer->buf[_protobuf_len], ble_packet->body.data, event_size - 1);
+	PRINTS("Data len after scheduled: ");
+	PRINT_HEX(&data_page->len, sizeof(data_page->len));
+	PRINTS("\r\n");
 
-		// update the offset
-		_protobuf_len += event_size - 1;
-	}
+	PRINTS("Data after scheduled: ");
+	PRINT_HEX(&data_page->buf, data_page->len);
+	PRINTS("\r\n");
 
+	MorpheusCommand command;
+	memset(&command, 0, sizeof(command));
 
-	if(ble_packet->sequence_number == _end_seq)
-	{
-		MorpheusCommand command;
-		memset(&command, 0, sizeof(command));
+	pb_istream_t stream = pb_istream_from_buffer(data_page->buf, data_page->len);
+    bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
+	MSG_Base_ReleaseDataAtomic(data_page);
 
-		_protobuf_buffer->len = _protobuf_len;
-		pb_istream_t stream = pb_istream_from_buffer(_protobuf_buffer->buf, _protobuf_len);
-        bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
+    if (!status)
+    {
+        PRINTS("Decoding protobuf failed, error: ");
+        PRINTS(PB_GET_ERROR(&stream));
+        PRINTS("\r\n");
         
-        if (!status)
-        {
-            PRINTS("Decoding protobuf failed, error: ");
-            PRINTS(PB_GET_ERROR(&stream));
-            PRINTS("\r\n");
-            MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
-            _protobuf_buffer = NULL;  // Race condition, pissible.
-            return;
-        }
+        return;
+    }
 
-		switch(command.type)
+	switch(command.type)
+	{
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
 		{
-			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-			{
-				bool pairing_mode = true;
-				app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
-			}
-				break;
-			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-			{
-				bool pairing_mode = false;
-				app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
-			}
-				break;
-			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
-			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
-			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
-				if(route_data_to_cc3200(_protobuf_buffer) == FAIL)
-				{
-					PRINTS("Pass data to CC3200 failed, no enough memory.\r\n");
-				}
-				break;
-			case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_USER:
-				app_sched_event_put(NULL, 0, _erase_bonded_users);
-				break;
-			default:
-				break;
+			bool pairing_mode = true;
+			//app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
+			_morpheus_switch_mode(&pairing_mode, sizeof(pairing_mode));
 		}
-
-		_seq_expected = 0;
-		MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
-		_protobuf_buffer = NULL; // Race condition, pissible.
-
-	}
-	
+			break;
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+		{
+			bool pairing_mode = false;
+			//app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
+			_morpheus_switch_mode(&pairing_mode, sizeof(pairing_mode));
+		}
+			break;
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
+			if(route_data_to_cc3200(_protobuf_buffer) == FAIL)
+			{
+				PRINTS("Pass data to CC3200 failed, no enough memory.\r\n");
+			}
+			break;
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
+			//app_sched_event_put(NULL, 0, _erase_bonded_users);
+			_erase_bonded_users(NULL, 0);
+			break;
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
+			PRINTS("Paire pill request received.\r\n");
+			break;
+		default:
+			break;
+	}	
 	
 }
 
@@ -186,9 +160,22 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 		PRINT_HEX(&_seq_expected, sizeof(_seq_expected));
 		PRINTS("\r\n");
 
+		if(_protobuf_buffer){
+			MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
+			_protobuf_buffer = NULL;
+		}
+
 		_seq_expected = 0;  // Reset the transmission and abort.
 
 		return;
+	}else{
+		PRINTS("expected seq# ");
+		PRINT_HEX(&_seq_expected, sizeof(_seq_expected));
+		PRINTS("\r\n");
+
+		PRINTS("rcv seq# ");
+		PRINT_HEX(&ble_packet->sequence_number, sizeof(ble_packet->sequence_number));
+		PRINTS("\r\n");
 	}
 
 	if(ble_packet->sequence_number == 0)
@@ -199,25 +186,72 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 			_seq_expected = 0;
 			return;
 		}
+
+		if(_protobuf_buffer)
+		{
+			// Possible race condition here, need to make sure no concurrency operation is allowed
+			// from the phone.
+			MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
+			_protobuf_buffer = NULL;
+    	}
+
+    	_protobuf_buffer = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
+    	if(!_protobuf_buffer){
+    		PRINTS("Not enought memory\r\n");
+    		return;
+    	}
+    	
+		_protobuf_len = event->len - 2;   // seq# + total#, 2 bytes
+		PRINTS("Payload length: ");
+		PRINT_HEX(&_protobuf_len, sizeof(_protobuf_len));
+		PRINTS("\r\n");
+
+		memcpy(_protobuf_buffer->buf, ble_packet->header.data, _protobuf_len);  // seq# + total#, 2 bytes
+		_end_seq = ble_packet->header.packet_count - 1;
+	}else{
+		size_t payload_len = event->len - 1;
+		PRINTS("Payload length: ");
+		PRINT_HEX(&payload_len, sizeof(payload_len));
+		PRINTS("\r\n");
+
+		memcpy(&_protobuf_buffer->buf[_protobuf_len], ble_packet->body.data, payload_len);
+
+		// update the offset
+		_protobuf_len += payload_len;
 	}
 
-	
-	_seq_expected = ble_packet->sequence_number + 1;
-
-	if(_end_seq < _seq_expected)
+	if(ble_packet->sequence_number == _end_seq)
 	{
+		MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(_protobuf_len);
+		if(!data_page){
+			PRINTS("Not enought memory\r\n");
+		}else{
+			memcpy(data_page->buf, _protobuf_buffer->buf, _protobuf_len);
+			PRINTS("Protobuf raw: ");
+			PRINT_HEX(&data_page->buf, _protobuf_len);
+			PRINTS("\r\n");
+
+			
+		}
+
+		MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
+		_protobuf_buffer = NULL;
 		_seq_expected = 0;
+
+
+		uint32_t err_code = app_sched_event_put(&data_page, sizeof(data_page), _on_packet_arrival);
+		if(NRF_SUCCESS != err_code)
+		{
+			PRINTS("Scheduler error, transmission abort.\r\n");
+			MSG_Base_ReleaseDataAtomic(data_page);
+		}
+	}else{
+		_seq_expected = ble_packet->sequence_number + 1;
+		PRINTS("expected seq set to: ");
+		PRINT_HEX(&_seq_expected, sizeof(_seq_expected));
+		PRINTS("\r\n");
 	}
 
-	PRINTS("expected seq# ");
-	PRINT_HEX(&_seq_expected, sizeof(_seq_expected));
-	PRINTS("\r\n");
-	uint32_t err_code = app_sched_event_put(event->data, event->len, _on_packet_arrival);
-	if(NRF_SUCCESS != err_code)
-	{
-		PRINTS("Scheduler error, transmission abort.\r\n");
-		_seq_expected = 0;
-	}
 }
 
 static void _command_write_handler(ble_gatts_evt_write_t* event)
@@ -264,7 +298,7 @@ static void _on_notify_failed(void* data_page)
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 }
 
-static bool _reply_protobuf(const MorpheusCommand* morpheus_command){
+bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
 	MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(20);
 	memset(heap_page->buf, 0, heap_page->len);
 
@@ -309,7 +343,7 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 
 			command.has_error = true;
 			command.error = ErrorType_DEVICE_DATABASE_FULL;
-			_reply_protobuf(&command);
+			morpheus_ble_reply_protobuf(&command);
 
 			return;
     	}
@@ -326,7 +360,7 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 	command.type = (*mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
 		MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
 	command.version = 0;
-	if(_reply_protobuf(&command))
+	if(morpheus_ble_reply_protobuf(&command))
 	{
 		_led_pairing_mode();
 	}
@@ -410,7 +444,7 @@ void morpheus_load_modules(void){
 		central->loadmod(MSG_BLE_Base(central));
 #ifdef ANT_ENABLE
 		central->loadmod(MSG_ANT_Base(central));
-#endif
+
 		//MSG_Base_BufferTest();
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);
 		{
@@ -429,6 +463,8 @@ void morpheus_load_modules(void){
 			ANT_DISCOVERY_ACTION action = ANT_DISCOVERY_ACCEPT_NEXT_DEVICE;
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_DISCOVERY_ACTION, &action, sizeof(action));
 		}
+#endif
+
     }else{
         PRINTS("FAIL");
     }
