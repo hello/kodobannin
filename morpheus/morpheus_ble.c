@@ -83,19 +83,39 @@ static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
 	return false;
 }
 
+static bool _decode_account_id(pb_istream_t *stream, const pb_field_t *field, void **arg)
+{
+    char* buffer = (char*)*arg;
+
+    /* We could read block-by-block to avoid the large buffer... */
+    if (stream->bytes_left > PROTOBUF_MAX_LEN - 1)
+        return false;
+   
+    if (!pb_read(stream, buffer, stream->bytes_left))
+        return false;
+
+    return true;
+}
+
+
 static void _on_packet_arrival(void* event_data, uint16_t event_size){
-	MSG_Data_t* data_page = *(MSG_Data_t**)event_data;
+	MSG_Data_t* data_page = (MSG_Data_t*)event_data;
 
 	PRINTS("Data len after scheduled: ");
 	PRINT_HEX(&data_page->len, sizeof(data_page->len));
 	PRINTS("\r\n");
 
 	PRINTS("Data after scheduled: ");
-	PRINT_HEX(&data_page->buf, data_page->len);
+	PRINT_HEX(data_page->buf, data_page->len);
 	PRINTS("\r\n");
 
 	MorpheusCommand command;
 	memset(&command, 0, sizeof(command));
+
+	char account_id[PROTOBUF_MAX_LEN] = {0};
+	command.accountId.funcs.decode = &_decode_account_id;
+	command.accountId.arg = &account_id;
+
 
 	pb_istream_t stream = pb_istream_from_buffer(data_page->buf, data_page->len);
     bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
@@ -139,7 +159,10 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 			_erase_bonded_users(NULL, 0);
 			break;
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
-			PRINTS("Paire pill request received.\r\n");
+			PRINTS("Account id: ");
+			PRINTS(account_id);
+			PRINTS("\r\n");
+
 			break;
 		default:
 			break;
@@ -150,6 +173,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 
 static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 {
+	// This is the transmission layer that assemble the fucking protobuf.
 	PRINTS("Protobuf received\r\n");
 
 	struct hlo_ble_packet* ble_packet = (struct hlo_ble_packet*)event->data;
@@ -228,7 +252,7 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 		}else{
 			memcpy(data_page->buf, _protobuf_buffer->buf, _protobuf_len);
 			PRINTS("Protobuf raw: ");
-			PRINT_HEX(&data_page->buf, _protobuf_len);
+			PRINT_HEX(data_page->buf, _protobuf_len);
 			PRINTS("\r\n");
 
 			
@@ -239,7 +263,7 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 		_seq_expected = 0;
 
 
-		uint32_t err_code = app_sched_event_put(&data_page, sizeof(data_page), _on_packet_arrival);
+		uint32_t err_code = app_sched_event_put(data_page, sizeof(MSG_Data_t), _on_packet_arrival);
 		if(NRF_SUCCESS != err_code)
 		{
 			PRINTS("Scheduler error, transmission abort.\r\n");
