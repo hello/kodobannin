@@ -9,6 +9,8 @@
 #include "pb_encode.h"
 #include "morpheus_ble.pb.h"
 
+#define PROTOBUF_MAX_LEN  100
+
 enum {
     BLE_UUID_MORPHEUS_SVC = 0xFEE1,
 };

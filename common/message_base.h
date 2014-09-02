@@ -25,7 +25,7 @@ typedef struct _MSG_Data_t{
     /*
      * Length of the valid data in the buffer 
      */
-    uint16_t len;
+    size_t len;
     /*
      * reference count, user do not modify
      */
@@ -37,7 +37,7 @@ typedef struct _MSG_Data_t{
     /*
      * data buffer
      */
-    uint8_t buf[0];
+    uint8_t buf[1];
 }MSG_Data_t;
 
 typedef enum{
@@ -76,7 +76,7 @@ typedef struct{
 }MSG_Central_t;
 
 
-MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(uint32_t size);
+MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(size_t size);
 MSG_Data_t * INCREF MSG_Base_AllocateStringAtomic(const char * str);
 MSG_Status MSG_Base_BufferTest(void);
 uint32_t MSG_Base_FreeCount(void);

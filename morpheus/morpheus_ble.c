@@ -31,7 +31,6 @@
 // Generate C code: ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
 // Generate Java code: protoc --java_out=. morpheus/morpheus_ble.proto
 
-#define PROTOBUF_MAX_LEN  100
 
 extern uint8_t hello_type;
 
@@ -62,7 +61,7 @@ static void _erase_bonded_users(void* event_data, uint16_t event_size){
 	memset(&command, 0, sizeof(command));
 	
 	command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE;
-	command.version = 0;
+	command.version = PROTOBUF_VERSION;
 	morpheus_ble_reply_protobuf(&command);
 }
 
@@ -85,48 +84,56 @@ static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
 
 static bool _decode_account_id(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
-    char* buffer = (char*)*arg;
-
     /* We could read block-by-block to avoid the large buffer... */
     if (stream->bytes_left > PROTOBUF_MAX_LEN - 1)
         return false;
-   
-    if (!pb_read(stream, buffer, stream->bytes_left))
+   	
+   	char account_id[PROTOBUF_MAX_LEN] = {0};
+    if (!pb_read(stream, account_id, stream->bytes_left))
         return false;
+
+    
+
+	MSG_Data_t* account_id_page = MSG_Base_AllocateStringAtomic(account_id);
+	*arg = account_id_page;
 
     return true;
 }
 
 
 static void _on_packet_arrival(void* event_data, uint16_t event_size){
-	MSG_Data_t* data_page = (MSG_Data_t*)event_data;
+	MSG_Data_t* data_page = *(MSG_Data_t**)event_data;
 
+	
 	PRINTS("Data len after scheduled: ");
 	PRINT_HEX(&data_page->len, sizeof(data_page->len));
 	PRINTS("\r\n");
 
+/*
 	PRINTS("Data after scheduled: ");
 	PRINT_HEX(data_page->buf, data_page->len);
 	PRINTS("\r\n");
+*/
 
 	MorpheusCommand command;
 	memset(&command, 0, sizeof(command));
 
-	char account_id[PROTOBUF_MAX_LEN] = {0};
-	command.accountId.funcs.decode = &_decode_account_id;
-	command.accountId.arg = &account_id;
-
+	
+	command.accountId.funcs.decode = _decode_account_id;
+	command.accountId.arg = NULL;
+	
 
 	pb_istream_t stream = pb_istream_from_buffer(data_page->buf, data_page->len);
     bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
-	MSG_Base_ReleaseDataAtomic(data_page);
+	
 
     if (!status)
     {
         PRINTS("Decoding protobuf failed, error: ");
         PRINTS(PB_GET_ERROR(&stream));
         PRINTS("\r\n");
-        
+    	MSG_Base_ReleaseDataAtomic(data_page);
+
         return;
     }
 
@@ -149,9 +156,9 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
-			if(route_data_to_cc3200(_protobuf_buffer) == FAIL)
+			if(route_data_to_cc3200(data_page) == FAIL)
 			{
-				PRINTS("Pass data to CC3200 failed, no enough memory.\r\n");
+				PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
 			}
 			break;
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
@@ -159,14 +166,22 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 			_erase_bonded_users(NULL, 0);
 			break;
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
-			PRINTS("Account id: ");
-			PRINTS(account_id);
-			PRINTS("\r\n");
-
+		{
+			MSG_Data_t* account_id_page = command.accountId.arg;
+			if(account_id_page){
+				process_pending_pill_piairing_request(account_id_page->buf);
+				PRINTS("Account id: ");
+				PRINTS(account_id_page->buf);
+				PRINTS("\r\n");
+				MSG_Base_ReleaseDataAtomic(account_id_page);
+			}
+		}
 			break;
 		default:
 			break;
-	}	
+	}
+
+	MSG_Base_ReleaseDataAtomic(data_page);
 	
 }
 
@@ -226,6 +241,7 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
     	}
     	
 		_protobuf_len = event->len - 2;   // seq# + total#, 2 bytes
+
 		PRINTS("Payload length: ");
 		PRINT_HEX(&_protobuf_len, sizeof(_protobuf_len));
 		PRINTS("\r\n");
@@ -251,11 +267,6 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 			PRINTS("Not enought memory\r\n");
 		}else{
 			memcpy(data_page->buf, _protobuf_buffer->buf, _protobuf_len);
-			PRINTS("Protobuf raw: ");
-			PRINT_HEX(data_page->buf, _protobuf_len);
-			PRINTS("\r\n");
-
-			
 		}
 
 		MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
@@ -263,7 +274,7 @@ static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
 		_seq_expected = 0;
 
 
-		uint32_t err_code = app_sched_event_put(data_page, sizeof(MSG_Data_t), _on_packet_arrival);
+		uint32_t err_code = app_sched_event_put(&data_page, sizeof(data_page), _on_packet_arrival);
 		if(NRF_SUCCESS != err_code)
 		{
 			PRINTS("Scheduler error, transmission abort.\r\n");
@@ -323,7 +334,7 @@ static void _on_notify_failed(void* data_page)
 }
 
 bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
-	MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(20);
+	MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
 	memset(heap_page->buf, 0, heap_page->len);
 
 	pb_ostream_t stream = pb_ostream_from_buffer(heap_page->buf, heap_page->len);
@@ -363,7 +374,7 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 			memset(&command, 0, sizeof(command));
 			
 			command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERROR;
-			command.version = 0;
+			command.version = PROTOBUF_VERSION;
 
 			command.has_error = true;
 			command.error = ErrorType_DEVICE_DATABASE_FULL;
@@ -383,7 +394,7 @@ static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
 	
 	command.type = (*mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
 		MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
-	command.version = 0;
+	command.version = PROTOBUF_VERSION;
 	if(morpheus_ble_reply_protobuf(&command))
 	{
 		_led_pairing_mode();
@@ -474,18 +485,6 @@ void morpheus_load_modules(void){
 		{
 			uint8_t role = ANT_DISCOVERY_CENTRAL;
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,1);
-		}
-		{
-			/*
-			 *ANT_ChannelID_t id = {
-			 *    .device_number = 0x7E1A,
-			 *    .device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
-			 *    .transmit_type = 0
-			 *};
-			 *MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
-			 */
-			ANT_DISCOVERY_ACTION action = ANT_DISCOVERY_ACCEPT_NEXT_DEVICE;
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_DISCOVERY_ACTION, &action, sizeof(action));
 		}
 #endif
 
