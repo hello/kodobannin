@@ -178,28 +178,16 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
 
     if(dst.submodule == 1 && src.module == ANT && src.submodule == 1){
         MSG_Base_AcquireDataAtomic(data);
-        MorpheusCommand morpheus_command;
-        memset(&morpheus_command, 0, sizeof(morpheus_command));
 
-        morpheus_command.deviceId.funcs.decode = _decode_pill_id;
-        
-        pb_istream_t in_stream = pb_istream_from_buffer(data->buf, data->len);
-        bool status = pb_decode(&in_stream, MorpheusCommand_fields, &morpheus_command);
-        
+        uint64_t* pill_id = (uint64_t*)data->buf;  // Shall we define a message type or move message_ant.c to corresponding app?
+        size_t hex_string_len = 0;
+        hble_uint64_to_hex_device_id(*pill_id, NULL, &hex_string_len);
+        char hex_string[hex_string_len];
+        hble_uint64_to_hex_device_id(*pill_id, hex_string, &hex_string_len);
+        MSG_Data_t* pill_id_page = MSG_Base_AllocateStringAtomic(hex_string);
+        self.pill_pairing_request.device_id = pill_id_page;
 
-        if (!status)
-        {
-            // This will result a time out in the client.
-            PRINTS("Decoding protobuf failed, error: ");
-            PRINTS(PB_GET_ERROR(&in_stream));
-            PRINTS("\r\n");
-        }
-
-        switch(morpheus_command.type){
-            case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
-                _register_pill();
-                break;
-        }
+        _register_pill();
         
         MSG_Base_ReleaseDataAtomic(data);
     }
