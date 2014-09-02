@@ -322,6 +322,32 @@ void hble_stack_init()
 
 }
 
+void hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_t* len)
+{
+    if(!hex_device_id || sizeof(device_id) * 2 + 1 < (*len))
+    {
+        *len = sizeof(device_id) * 2 + 1;
+        return;
+    }
+
+    memset(hex_device_id, 0, *len);
+    const char* hex_table = "0123456789ABCDEF";
+    
+    size_t index = 0;
+    for(size_t i = 0; i < sizeof(device_id); i++)
+    {
+        //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
+        uint8_t num = (&device_id)[i];
+            
+        uint8_t ret = num / 16;
+        uint8_t remain = num % 16;
+
+        hex_device_id[index++] = hex_table[ret];
+        hex_device_id[index++] = hex_table[remain];
+        
+    }
+}
+
 void hble_params_init(char* device_name)
 {
     // initialize GAP parameters
@@ -349,33 +375,17 @@ void hble_params_init(char* device_name)
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
 
-        size_t device_id_len = sizeof(NRF_FICR->DEVICEID); 
+        size_t hex_device_id_len = 0;
+        uint64_t device_id = 0;
+        memcpy(&device_id, NRF_FICR->DEVICEID, sizeof(device_id));
+        hble_uint64_to_hex_device_id(device_id, NULL, &hex_device_id_len);
 
-        PRINTS("Device id array size: ");
-        PRINT_HEX(&device_id_len, sizeof(device_id_len));
+        PRINTS("Device id hex string array size: ");
+        PRINT_HEX(&hex_device_id_len, sizeof(hex_device_id_len));
         PRINTS("\r\n");
 
-        size_t hex_device_id_len = device_id_len * 2 + 1;
         char hex_device_id[hex_device_id_len];
-        char device_id[device_id_len];
-
-        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len);
-        memset(hex_device_id, 0, hex_device_id_len);
-        const char* hex_table = "0123456789ABCDEF";
-        
-        size_t index = 0;
-        for(size_t i = 0; i < device_id_len; i++)
-        {
-            //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
-            uint8_t num = device_id[i];
-                
-            uint8_t ret = num / 16;
-            uint8_t remain = num % 16;
-
-            hex_device_id[index++] = hex_table[ret];
-            hex_device_id[index++] = hex_table[remain];
-            
-        }
+        hble_uint64_to_hex_device_id(device_id, hex_device_id, &hex_device_id_len);
 
         ble_srv_ascii_to_utf8(&dis_init.serial_num_str, hex_device_id);
         

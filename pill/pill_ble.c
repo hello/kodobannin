@@ -152,7 +152,7 @@ static void _data_ack_handler(ble_gatts_evt_write_t* event)
 void pill_ble_evt_handler(ble_evt_t* ble_evt)
 {
     PRINTS("Pill BLE event handler: ");
-    PRINT_HEX(ble_evt->header.evt_id, sizeof(ble_evt->header.evt_id));
+    PRINT_HEX(&ble_evt->header.evt_id, sizeof(ble_evt->header.evt_id));
     PRINTS("\r\n");
     // sd_ble_gatts_rw_authorize_reply
 }
