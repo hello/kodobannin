@@ -1,12 +1,3 @@
-message WifiEndPoint {
-	optional string name = 1;
-	required string ssid = 2;
-}
-
-message SelectedWifiEndPoint {
-	optional WifiEndPoint endPoint = 1;
-	optional string password = 2;
-}
 
 enum ErrorType {
 	TIME_OUT = 0;              // Internal time out, no implemented yet.
@@ -33,11 +24,14 @@ message MorpheusCommand {
 	    MORPHEUS_COMMAND_EREASE_PAIRED_PHONE = 11;
 	    MORPHEUS_COMMAND_PAIR_PILL = 12;
 	    MORPHEUS_COMMAND_ERROR = 13;  // if you receive this, that means something goes wrong.
+	    MORPHEUS_COMMAND_PAIR_SENSE = 14;
 	}
 	required int32 version = 1;
 	required CommandType type = 2;
-	optional SelectedWifiEndPoint selectedWIFIEndPoint = 3;  // MORPHEUS_COMMAND_SET_WIFI_ENDPOINT, MORPHEUS_COMMAND_GET_WIFI_ENDPOINT
-	optional string deviceId = 4;
-	optional string accountId = 5;  // Used by MORPHEUS_COMMAND_PAIRE_PILL
-	optional ErrorType error = 6;  // MORPHEUS_COMMAND_ERROR
+	optional string deviceId = 3;
+	optional string accountId = 4;  // Used by MORPHEUS_COMMAND_PAIRE_PILL
+	optional ErrorType error = 5;  // MORPHEUS_COMMAND_ERROR
+	optional string wifiName = 6;
+	optional string wifiSSID = 7;
+	optional string wifiPassword = 8;
 }
