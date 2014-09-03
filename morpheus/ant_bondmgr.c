@@ -55,26 +55,17 @@ static uint32_t bonding_info_load_from_flash(ANT_BondedDevice_t * p_bond, pstora
     err_code = pstorage_block_identifier_get(&self.mp_flash_bond_info,
                                                 *block_idx,
                                              &source_block);
-    PRINTS("1\r\n");
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
     }
     
-    PRINTS("RID = ");
-    PRINT_HEX(&source_block.block_id, 4);
-    PRINTS("\r\n");
-    PRINTS("2\r\n");
-//    err_code = pstorage_load((uint8_t *)&crc, &source_block, sizeof(uint32_t), 0);
-    err_code = 0;
-    memcpy(&crc, (uint8_t*)source_block.block_id, 4);
+    err_code = pstorage_load((uint8_t *)&crc, &source_block, sizeof(uint32_t), 0);
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
     }
     
-    PRINTS("3 CRC\r\n");
-    PRINT_HEX(&crc, 4);
     // Extract CRC from header.
     // if result is NRF_ERROR_NOT_FOUND, then no data needs to be loaded
     err_code = crc_extract(crc, &crc_header);
@@ -88,7 +79,6 @@ static uint32_t bonding_info_load_from_flash(ANT_BondedDevice_t * p_bond, pstora
                              &source_block,
                              sizeof(*p_bond),
                              sizeof(uint32_t));
-    PRINTS("4\r\n");
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
@@ -98,7 +88,6 @@ static uint32_t bonding_info_load_from_flash(ANT_BondedDevice_t * p_bond, pstora
     m_crc_bond_info = crc16_compute((uint8_t *)p_bond,
                                     sizeof(*p_bond),
                                     NULL);
-    PRINTS("5\r\n");
     if (m_crc_bond_info == crc_header)
     {
         (*block_idx)++;
@@ -150,15 +139,11 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
 
     // Get block pointer from base
     err_code = pstorage_block_identifier_get(&self.mp_flash_bond_info,self.m_bond_info_in_flash_count,&dest_block);
-    PRINTS("a2 \r\n");
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
     }
     
-    PRINTS("WID = ");
-    PRINT_HEX(&dest_block.block_id, 4);
-    PRINTS("\r\n");
     // Write Bonding Information
     err_code = pstorage_store(&dest_block,
                               (uint8_t *)p_bond,
@@ -166,7 +151,6 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
                               sizeof(uint32_t));
 
 
-    PRINTS("a3 \r\n");
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
@@ -177,15 +161,11 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
 
     // Write header
     self.m_bond_crc = (ANT_BOND_MANAGER_DATA_SIGNATURE | m_crc_bond_info);
-    PRINTS("CS = ");
-    PRINT_HEX(&self.m_bond_crc, 4);
     err_code = pstorage_store(&dest_block, (uint8_t *)&self.m_bond_crc,sizeof(uint32_t),0);
-    PRINTS("a4\r\n");
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
     }
-    PRINTS("a5\r\n");
     self.m_bond_info_in_flash_count++;
     return NRF_SUCCESS;
 }
@@ -197,9 +177,6 @@ void ANT_BondMgrForEach(ANT_BondMgrCB cb){
 uint32_t ANT_BondMgr_EraseAll(void){
     uint32_t err_code;
     err_code = pstorage_clear(&self.mp_flash_bond_info, ANT_BOND_MANAGER_DATA_COUNT * (sizeof(uint32_t) + sizeof(ANT_BondedDevice_t)));
-    PRINTS("Erase == ");
-    PRINT_HEX(&err_code, 1);
-    PRINTS("\r\n");
     return err_code;
 }
 
