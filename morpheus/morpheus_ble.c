@@ -82,20 +82,22 @@ static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
 	return false;
 }
 
-static bool _decode_account_id(pb_istream_t *stream, const pb_field_t *field, void **arg)
+static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     /* We could read block-by-block to avoid the large buffer... */
     if (stream->bytes_left > PROTOBUF_MAX_LEN - 1)
+    {
         return false;
+    }
    	
-   	char account_id[PROTOBUF_MAX_LEN] = {0};
-    if (!pb_read(stream, account_id, stream->bytes_left))
+   	char str[PROTOBUF_MAX_LEN] = {0};
+    if (!pb_read(stream, str, stream->bytes_left))
+    {
         return false;
+    }
 
-    
-
-	MSG_Data_t* account_id_page = MSG_Base_AllocateStringAtomic(account_id);
-	*arg = account_id_page;
+	MSG_Data_t* string_page = MSG_Base_AllocateStringAtomic(str);
+	*arg = string_page;
 
     return true;
 }
@@ -119,9 +121,11 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 	memset(&command, 0, sizeof(command));
 
 	
-	command.accountId.funcs.decode = _decode_account_id;
+	command.accountId.funcs.decode = _decode_string_field;
 	command.accountId.arg = NULL;
-	
+
+	command.deviceId.funcs.decode = _decode_string_field;
+	command.deviceId.arg = NULL;
 
 	pb_istream_t stream = pb_istream_from_buffer(data_page->buf, data_page->len);
     bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
@@ -156,6 +160,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
 			if(route_data_to_cc3200(data_page) == FAIL)
 			{
 				PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
@@ -173,12 +178,29 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 				PRINTS("Account id: ");
 				PRINTS(account_id_page->buf);
 				PRINTS("\r\n");
-				MSG_Base_ReleaseDataAtomic(account_id_page);
+			}
+		}
+			break;
+		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
+		{
+			MSG_Data_t* pill_id_page = command.deviceId.arg;
+			if(pill_id_page){
+				send_remove_pill_notification(pill_id_page->buf);
 			}
 		}
 			break;
 		default:
 			break;
+	}
+
+	if(command.accountId.arg)
+	{
+		MSG_Base_ReleaseDataAtomic(command.accountId.arg);
+	}
+
+	if(command.deviceId.arg)
+	{
+		MSG_Base_ReleaseDataAtomic(command.deviceId.arg);
 	}
 
 	MSG_Base_ReleaseDataAtomic(data_page);

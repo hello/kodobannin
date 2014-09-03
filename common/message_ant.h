@@ -126,7 +126,10 @@ typedef struct{
         ANT_SET_DISCOVERY_ACTION,
         ANT_ADVERTISE,
         ANT_SEND_RAW,
-        ANT_END_CMD
+        ANT_END_CMD,
+        ANT_REMOVE_DEVICE,
+        ANT_ACK_DEVICE_REMOVED,
+        ANT_ACK_DEVICE_PAIRED
     }cmd;
     union{
         ANT_DISCOVERY_ROLE role;
