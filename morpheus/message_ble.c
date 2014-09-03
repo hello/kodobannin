@@ -6,6 +6,7 @@
 #include "util.h"
 
 #include "message_ble.h"
+#include "message_ant.h"
 #include "hble.h"
 #include "morpheus_ble.h"
 
@@ -110,17 +111,8 @@ static void _register_pill(){
                 MSG_Data_t* compact_page = MSG_Base_AllocateDataAtomic(protobuf_len);
                 if(compact_page){
                     memcpy(compact_page->buf, data_page->buf, protobuf_len);
-
-#ifdef ANT_ENABLE
                     route_data_to_cc3200(compact_page);
                     MSG_Base_ReleaseDataAtomic(compact_page);
-#else
-                    // Echo test
-                    hlo_ble_notify(0xB00B, compact_page->buf, compact_page->len, 
-                        &(struct hlo_ble_operation_callbacks){_on_hlo_notify_completed, _on_hlo_notify_failed, compact_page});
-#endif
-                    
-
                 }else{
                     _reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
                 }
@@ -155,15 +147,38 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
     if(dst.submodule == 1 && src.module == ANT && src.submodule == 1){
         MSG_Base_AcquireDataAtomic(data);
 
-        uint64_t* pill_id = (uint64_t*)data->buf;  // Shall we define a message type or move message_ant.c to corresponding app?
-        size_t hex_string_len = 0;
-        hble_uint64_to_hex_device_id(*pill_id, NULL, &hex_string_len);
-        char hex_string[hex_string_len];
-        hble_uint64_to_hex_device_id(*pill_id, hex_string, &hex_string_len);
-        MSG_Data_t* pill_id_page = MSG_Base_AllocateStringAtomic(hex_string);
-        self.pill_pairing_request.device_id = pill_id_page;
+        MSG_ANTCommand_t* ant_command = (MSG_ANTCommand_t*)data->buf;  // Shall we define a message type or move message_ant.c to corresponding app?
+        
+        switch(ant_command->cmd)
+        {
+            case ANT_ACK_DEVICE_PAIRED:  // TODO, check we don't crash here.
+            {
+                uint64_t* pill_id = (uint64_t*)ant_command->param.raw_data;
+                size_t hex_string_len = 0;
+                hble_uint64_to_hex_device_id(*pill_id, NULL, &hex_string_len);
+                char hex_string[hex_string_len];
+                hble_uint64_to_hex_device_id(*pill_id, hex_string, &hex_string_len);
+                MSG_Data_t* pill_id_page = MSG_Base_AllocateStringAtomic(hex_string);
+                self.pill_pairing_request.device_id = pill_id_page;
 
-        _register_pill();
+                _register_pill();
+            }
+            break;
+            case ANT_ACK_DEVICE_REMOVED:
+            {
+                // Reply to the phone the pill in whitelist has been deleted
+                // The phone should delete the pill from server.
+                // DONOT keep state here.
+                MorpheusCommand morpheus_command;
+                morpheus_command.version = PROTOBUF_VERSION;
+                morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
+                morpheus_ble_reply_protobuf(&morpheus_command);
+            }
+            break;
+
+            default:
+            break;
+        }
         
         MSG_Base_ReleaseDataAtomic(data);
     }
@@ -191,6 +206,47 @@ static void _release_pending_resources(){
         MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.device_id);
         self.pill_pairing_request.device_id = NULL;
     }
+}
+
+MSG_Status send_remove_pill_notification(const char* hex_pill_id)
+{
+    // We should NOT keep any states here as well, so no timeout is needed and no memory leak danger.
+    uint64_t pill_id = 0;
+    if(!hble_hex_to_uint64_device_id(hex_pill_id, &pill_id))
+    {
+        _reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
+        return FAIL;
+    }
+
+#ifdef ANT_ENABLE
+    MSG_Data_t* command_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANTCommand_t));
+    if(!command_page)
+    {
+        _reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+        return FAIL;
+    }
+    memset(command_page->buf, 0, command_page->len);
+    MSG_ANTCommand_t* ant_command = (MSG_ANTCommand_t*)command_page->buf;
+    ant_command->cmd = ANT_REMOVE_DEVICE;
+    memcpy(ant_command->param.raw_data, &pill_id, sizeof(pill_id));
+
+    self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){ANT, 1}, command_page);
+    MSG_Base_ReleaseDataAtomic(command_page);
+#else
+    // echo test
+    PRINTS("Pill id to unpair:");
+    PRINT_HEX(&pill_id, sizeof(pill_id));
+    PRINTS("\r\n");
+
+    MorpheusCommand morpheus_command;
+    memset(&morpheus_command, 0, sizeof(morpheus_command));
+    morpheus_command.version = PROTOBUF_VERSION;
+    morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
+    morpheus_ble_reply_protobuf(&morpheus_command);
+#endif
+
+    return SUCCESS;
+
 }
 
 MSG_Status process_pending_pill_piairing_request(const char* account_id)
@@ -235,6 +291,14 @@ MSG_Status route_data_to_cc3200(const MSG_Data_t* data){
     
     if(data){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
+#ifndef ANT_ENABLE
+        // Echo test
+        if(SUCCESS == MSG_Base_AcquireDataAtomic(data))
+        {
+            hlo_ble_notify(0xB00B, data->buf, data->len, 
+                        &(struct hlo_ble_operation_callbacks){_on_hlo_notify_completed, _on_hlo_notify_failed, data});
+        }
+#endif
         
         return SUCCESS;
     }else{
