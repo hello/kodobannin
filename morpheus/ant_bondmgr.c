@@ -13,7 +13,7 @@
 
 typedef struct{
     pstorage_handle_t   mp_flash_bond_info;                              /**< Pointer to flash location to write next Bonding Information. */
-    pstorage_size_t m_bond_info_in_flash_count;                                /** < Number of bonded devices in flash **/
+    pstorage_size_t bond_count;                                /** < Number of bonded devices in flash **/
     uint32_t m_bond_crc;
     ANT_BondedDevice_t devices[ANT_BOND_MANAGER_DATA_COUNT];
 }ANT_BondMgr_t;
@@ -129,7 +129,7 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
     pstorage_handle_t dest_block;
 
     // Check if flash is full
-    if (self.m_bond_info_in_flash_count >= ANT_BOND_MANAGER_DATA_COUNT)
+    if (self.bond_count >= ANT_BOND_MANAGER_DATA_COUNT)
     {
         return NRF_ERROR_NO_MEM;
     }
@@ -142,18 +142,18 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
                 return NRF_SUCCESS;
             }
         }
-        self.devices[self.m_bond_info_in_flash_count] = *p_bond;
+        self.devices[self.bond_count] = *p_bond;
     }
 
     // Check if this is the first bond to be stored
-    if (self.m_bond_info_in_flash_count == 0)
+    if (self.bond_count == 0)
     {
         // Initialize CRC
         m_crc_bond_info = crc16_compute(NULL, 0, NULL);
     }
 
     // Get block pointer from base
-    err_code = pstorage_block_identifier_get(&self.mp_flash_bond_info,self.m_bond_info_in_flash_count,&dest_block);
+    err_code = pstorage_block_identifier_get(&self.mp_flash_bond_info,self.bond_count,&dest_block);
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
@@ -181,7 +181,7 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
     {
         return err_code;
     }
-    self.m_bond_info_in_flash_count++;
+    self.bond_count++;
     return NRF_SUCCESS;
 }
 uint32_t ANT_BondMgrRemove(const ANT_BondedDevice_t * p_bond){
@@ -206,11 +206,11 @@ static uint32_t load_all_from_flash(){
     ANT_BondedDevice_t dev;
     uint32_t err;
     do{
-        err = bonding_info_load_from_flash(&dev, &self.m_bond_info_in_flash_count);
-        self.devices[self.m_bond_info_in_flash_count] = dev;
+        err = bonding_info_load_from_flash(&dev, &self.bond_count);
+        self.devices[self.bond_count] = dev;
     }while(err == NRF_SUCCESS);
     PRINTS("ANT BOND COUNT = ");
-    PRINT_HEX(&self.m_bond_info_in_flash_count, 2);
+    PRINT_HEX(&self.bond_count, 2);
     return err;
 }
 static void bm_pstorage_cb_handler(pstorage_handle_t * handle,
