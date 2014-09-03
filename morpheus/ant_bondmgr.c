@@ -207,6 +207,7 @@ static uint32_t load_all_from_flash(){
     uint32_t err;
     do{
         err = bonding_info_load_from_flash(&dev, &self.m_bond_info_in_flash_count);
+        self.devices[self.m_bond_info_in_flash_count] = dev;
     }while(err == NRF_SUCCESS);
     PRINTS("ANT BOND COUNT = ");
     PRINT_HEX(&self.m_bond_info_in_flash_count, 2);
