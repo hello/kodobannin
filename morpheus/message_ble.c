@@ -9,6 +9,10 @@
 #include "hble.h"
 #include "morpheus_ble.h"
 
+#ifdef ANT_ENABLE
+#include "message_ant.h"
+#endif
+
 static void _reply_protobuf_error(uint32_t error_type);
 static void _release_pending_resources();
 

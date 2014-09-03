@@ -206,8 +206,6 @@ void hble_bond_manager_init()
     ble_bondmngr_init_t bond_init_data;
     bool bonds_delete = false;
 
-    // Initialize persistent storage module.
-    APP_OK(pstorage_init());
     //PRINTS("pstorage_init() done.\r\n");
 
     memset(&bond_init_data, 0, sizeof(bond_init_data));
