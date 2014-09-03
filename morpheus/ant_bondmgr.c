@@ -14,8 +14,8 @@
 typedef struct{
     pstorage_handle_t   mp_flash_bond_info;                              /**< Pointer to flash location to write next Bonding Information. */
     pstorage_size_t bond_count;                                /** < Number of bonded devices in flash **/
-    uint32_t m_bond_crc;
     ANT_BondedDevice_t devices[ANT_BOND_MANAGER_DATA_COUNT];
+    uint32_t crc[ANT_BOND_MANAGER_DATA_COUNT];
 }ANT_BondMgr_t;
 
 static ANT_BondMgr_t self;
@@ -27,9 +27,7 @@ static void bm_pstorage_cb_handler(pstorage_handle_t * handle,
 static uint32_t bonding_info_load_from_flash(ANT_BondedDevice_t * p_bond, pstorage_size_t * block_idx);
 static uint32_t load_all_from_flash(void);
 static uint32_t crc_extract(uint32_t header, uint16_t * p_crc);
-
-
-
+static uint32_t _commit_block(const ANT_BondedDevice_t * p_bond, pstorage_size_t  block_idx);
 
 static uint32_t crc_extract(uint32_t header, uint16_t * p_crc){
     if ((header & 0xFFFF0000U) == ANT_BOND_MANAGER_DATA_SIGNATURE)
@@ -123,11 +121,53 @@ uint32_t ANT_BondMgrInit(void){
     load_all_from_flash();
     return NRF_SUCCESS;
 }
+static uint32_t _commit_block(const ANT_BondedDevice_t * p_bond, pstorage_size_t  block_idx){
+    uint32_t err_code;
+    pstorage_handle_t dest_block;
+    uint32_t m_crc_bond_info;
+    //self.crc[block_idx] = crc16_compute(NULL, 0, NULL);
+    err_code = pstorage_block_identifier_get(&self.mp_flash_bond_info,block_idx,&dest_block);
+    // Get block pointer from base
+    if (err_code != NRF_SUCCESS){
+        return err_code;
+    }
+
+    // Write Bonding Information
+    err_code = pstorage_store(&dest_block,
+            (uint8_t *)p_bond,
+            sizeof(*p_bond),
+            sizeof(uint32_t));
+
+
+    if (err_code != NRF_SUCCESS)
+    {
+        return err_code;
+    }
+
+    m_crc_bond_info = crc16_compute((uint8_t *)p_bond,
+            sizeof(*p_bond),
+            NULL);
+
+    // Write header
+    self.crc[block_idx] = (ANT_BOND_MANAGER_DATA_SIGNATURE | m_crc_bond_info);
+    err_code = pstorage_store(&dest_block, (uint8_t *)&self.crc[block_idx],sizeof(uint32_t),0);
+    if (err_code != NRF_SUCCESS)
+    {
+        return err_code;
+    }
+    return NRF_SUCCESS;
+
+}
+uint32_t ANT_BondMgrCommit(void){
+    uint32_t m_crc_bond_info, i;
+    //TODO only commit if dirty
+    ANT_BondMgr_EraseAll();
+    for(i = 0; i < self.bond_count; i++){
+        _commit_block(&self.devices[i], i);
+    }
+}
 
 uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
-    uint32_t err_code, m_crc_bond_info;
-    pstorage_handle_t dest_block;
-
     // Check if flash is full
     if (self.bond_count >= ANT_BOND_MANAGER_DATA_COUNT)
     {
@@ -137,62 +177,26 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
     {
         int i;
         for(i = 0; i < ANT_BOND_MANAGER_DATA_COUNT; i ++){
-            if(self.devices[i].full_uid == p_bond.full_uid){
+            if(self.devices[i].full_uid == p_bond->full_uid){
                 PRINTS("Already in flash");
                 return NRF_SUCCESS;
             }
         }
         self.devices[self.bond_count] = *p_bond;
     }
-
-    // Check if this is the first bond to be stored
-    if (self.bond_count == 0)
-    {
-        // Initialize CRC
-        m_crc_bond_info = crc16_compute(NULL, 0, NULL);
-    }
-
-    // Get block pointer from base
-    err_code = pstorage_block_identifier_get(&self.mp_flash_bond_info,self.bond_count,&dest_block);
-    if (err_code != NRF_SUCCESS)
-    {
-        return err_code;
-    }
-    
-    // Write Bonding Information
-    err_code = pstorage_store(&dest_block,
-                              (uint8_t *)p_bond,
-                              sizeof(*p_bond),
-                              sizeof(uint32_t));
-
-
-    if (err_code != NRF_SUCCESS)
-    {
-        return err_code;
-    }
-    m_crc_bond_info = crc16_compute((uint8_t *)p_bond,
-                                     sizeof(*p_bond),
-                                     NULL);
-
-    // Write header
-    self.m_bond_crc = (ANT_BOND_MANAGER_DATA_SIGNATURE | m_crc_bond_info);
-    err_code = pstorage_store(&dest_block, (uint8_t *)&self.m_bond_crc,sizeof(uint32_t),0);
-    if (err_code != NRF_SUCCESS)
-    {
-        return err_code;
-    }
     self.bond_count++;
     return NRF_SUCCESS;
 }
 uint32_t ANT_BondMgrRemove(const ANT_BondedDevice_t * p_bond){
+    //swap with the last bondcount
+    //TODO implement
     return 0;
 }
 void ANT_BondMgrForEach(ANT_BondMgrCB cb){
     int i;
-    for(i = 0; i < ANT_BOND_MANAGER_DATA_COUNT; i++){
+    for(i = 0; i < self.bond_count; i++){
         cb(&self.devices[i]);
     }
-
 }
 
 uint32_t ANT_BondMgr_EraseAll(void){
