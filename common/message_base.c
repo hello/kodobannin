@@ -35,7 +35,7 @@ uint32_t MSG_Base_FreeCount(void){
     }
     return ret;
 }
-MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
+MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     MSG_Data_t * ret = NULL;
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
     uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
@@ -64,7 +64,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(uint32_t size){
     }
     CRITICAL_REGION_EXIT();
     if(ret){
-        ret->len = (uint16_t)size;
+        ret->len = size;
         PRINTS("+");
     }
     return ret;

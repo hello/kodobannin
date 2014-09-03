@@ -126,7 +126,7 @@ MSG_Status MSG_Time_GetMonotonicTime(uint64_t * out_time){
     }
 }
 
-struct hlo_ble_time* get_time()
+uint64_t* get_time()
 {
-    return &self.ble_time;
+    return &self.ble_time.monotonic_time;
 }
