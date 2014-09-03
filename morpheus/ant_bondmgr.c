@@ -128,7 +128,17 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
     {
         return NRF_ERROR_NO_MEM;
     }
-    PRINTS("a1\r\n");
+    // Check if in cache
+    {
+        int i;
+        for(i = 0; i < self.m_bond_info_in_flash_count; i ++){
+            if(self.devices[i].full_uid == p_bond.full_uid){
+                PRINTS("Already in flash");
+                return NRF_SUCCESS;
+            }
+        }
+        self.devices[self.m_bond_info_in_flash_count] = *p_bond;
+    }
 
     // Check if this is the first bond to be stored
     if (self.m_bond_info_in_flash_count == 0)
