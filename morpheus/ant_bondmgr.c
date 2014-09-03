@@ -1,3 +1,8 @@
+/**
+ * mostly copypasta code from ble_bondmngr.c
+ * TODO
+ * make applicationg generic
+ **/
 #include "ant_bondmgr.h"
 #include "pstorage.h"
 #include "util.h"
@@ -131,7 +136,7 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
     // Check if in cache
     {
         int i;
-        for(i = 0; i < self.m_bond_info_in_flash_count; i ++){
+        for(i = 0; i < ANT_BOND_MANAGER_DATA_COUNT; i ++){
             if(self.devices[i].full_uid == p_bond.full_uid){
                 PRINTS("Already in flash");
                 return NRF_SUCCESS;
@@ -183,7 +188,13 @@ uint32_t ANT_BondMgrRemove(const ANT_BondedDevice_t * p_bond){
     return 0;
 }
 void ANT_BondMgrForEach(ANT_BondMgrCB cb){
+    int i;
+    for(i = 0; i < ANT_BOND_MANAGER_DATA_COUNT; i++){
+        cb(&self.devices[i]);
+    }
+
 }
+
 uint32_t ANT_BondMgr_EraseAll(void){
     uint32_t err_code;
     err_code = pstorage_clear(&self.mp_flash_bond_info, ANT_BOND_MANAGER_DATA_COUNT * (sizeof(uint32_t) + sizeof(ANT_BondedDevice_t)));
