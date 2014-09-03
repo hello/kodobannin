@@ -25,7 +25,7 @@ typedef struct _MSG_Data_t{
     /*
      * Length of the valid data in the buffer 
      */
-    size_t len;
+    uint16_t len;
     /*
      * reference count, user do not modify
      */
