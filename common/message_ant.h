@@ -43,8 +43,15 @@
  **/
 
 typedef enum{
-    ANT_FUNCTION_NULL = 0,      /* ignore this packet */
-    ANT_FUNCTION_TEST = 0x66,   /* receiver echos back the payload */
+    /* Reserved Mask Range 0x00 - 0x0F */
+    ANT_FUNCTION_NULL = 0,              /* ignore this packet */
+    /* Discovery Mask Range 0x10 - 0x1F */
+    ANT_FUNCTION_DISC_UUID = 0x10,          /* UUID broadcast */
+    ANT_FUNCTION_DISC_TYPE = 0x11,          /* Device Type broadcast */
+    ANT_FUNCTION_DISC_SW_VERSION = 0x12,    /* SW Version */
+    ANT_FUNCTION_DISC_HW_VERSION = 0x13,    /* HW Version */
+    /* Misc */
+    ANT_FUNCTION_TEST = 0x66,           /* receiver echos back the payload */
     ANT_FUNCTION_END = 0xFF
 }ANT_FunctionType_t;
 
