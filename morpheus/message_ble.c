@@ -37,34 +37,6 @@ static void _on_hlo_notify_failed(void* tag){
     MSG_Base_ReleaseDataAtomic((MSG_Data_t*)tag);
 }
 
-static bool _decode_pill_id(pb_istream_t *stream, const pb_field_t *field, void **arg){
-    if (stream->bytes_left > 20)
-        return false;
-    
-    char device_id[20] = {0};
-    if (!pb_read(stream, device_id, stream->bytes_left))
-        return false;
-
-    PRINTS("pill id for pending pairing request: ");
-    PRINTS(device_id);
-    PRINTS("\r\n");
-
-    if(NULL != self.pill_pairing_request.device_id){
-        MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.device_id);
-        self.pill_pairing_request.device_id = NULL;
-    }
-
-    MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(device_id);
-
-    if(NULL == device_id_page){
-        PRINTS("Not enough memory\r\n");
-        _reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
-    }else{
-        self.pill_pairing_request.device_id = device_id_page;
-    }
-
-    return true;
-}
 
 static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
 {
