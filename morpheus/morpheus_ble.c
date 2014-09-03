@@ -56,6 +56,7 @@ static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 void test_bond(const ANT_BondedDevice_t * id){
 	PRINTS("ID FOUND = ");
 	PRINT_HEX(&id->full_uid,2);
+	MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id->id, sizeof(id->id));
 }
 static void _erase_bonded_users(void* event_data, uint16_t event_size){
 	PRINTS("Trying to erase paired centrals....\r\n");
