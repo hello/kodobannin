@@ -1,5 +1,6 @@
 // vi:noet:sw=4 ts=4
-#include <platform.h>
+#include "app.h"
+#include "platform.h"
 
 #include <app_timer.h>
 #include <spi.h>
@@ -254,20 +255,6 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
 	if(interrupt_status & INT_STS_WOM_INT)
 	{
 		MSG_PING(parent,IMU,IMU_READ_XYZ);
-
-		/*
-		tf_unit_t values[3];
-		imu_accel_reg_read((uint8_t*)values);
-		imu_clear_interrupt_status();
-		//uint8_t interrupt_status = imu_clear_interrupt_status();
-
-		int16_t* p_raw_xyz = get_raw_xzy_address();
-		p_raw_xyz[0] = values[0];
-		p_raw_xyz[1] = values[1];
-		p_raw_xyz[2] = values[2];
-
-		app_sched_event_put(p_raw_xyz, 6, pill_ble_stream_data);
-		*/
 	}
 
 }

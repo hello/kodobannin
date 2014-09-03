@@ -5,6 +5,9 @@
  */
 
 #include <stdint.h>
+
+#include "platform.h"
+#include "app.h"
 #include "hlo_ble_time.h"
 
 /*
@@ -16,7 +19,7 @@
 #define TF_UNIT_TIME_MS 60000
 
 #ifdef DATA_SCIENCE_TASK
-#define TF_BUFFER_SIZE (10 * 60)
+#define TF_BUFFER_SIZE (9 * 60)
 #else
 #define TF_BUFFER_SIZE (4 * 60)
 #endif
@@ -48,5 +51,4 @@ void TF_TickOneSecond(uint64_t monotonic_time);
 tf_unit_t TF_GetCurrent(void);
 void TF_SetCurrent(tf_unit_t val);
 tf_data_t * TF_GetAll(void);
-int16_t* get_raw_xzy_address();
 void TF_GetCondensed(tf_data_condensed_t * buf);
