@@ -3,7 +3,7 @@
  * Messaging framework type declarations.
  *
  */
-
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include "message_config.h"
