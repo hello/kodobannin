@@ -27,6 +27,7 @@
 
 #include "ant_devices.h"
 #include "ant_bondmgr.h"
+#include "ant_user.h"
 
 // To generate the protobuf download nanopb
 // Generate C code: ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
@@ -506,7 +507,7 @@ void morpheus_load_modules(void){
 #endif
 		central->loadmod(MSG_BLE_Base(central));
 #ifdef ANT_ENABLE
-		central->loadmod(MSG_ANT_Base(central));
+		central->loadmod(MSG_ANT_Base(central, morpheus_ant_user(central)));
 
 		//MSG_Base_BufferTest();
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);

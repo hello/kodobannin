@@ -44,6 +44,7 @@ typedef struct{
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
+    MSG_ANTHandler_t * user_handler;
     uint8_t discovery_role;
     uint8_t discovery_action;
     ANT_Session_t sessions[ANT_SESSION_NUM];
@@ -78,7 +79,7 @@ static uint8_t _match_channel_type(uint8_t remote);
 static ANT_Session_t * _find_unassigned_session(uint8_t * out_channel);
 
 /* Finds session by id */
-static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id);
+static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id, uint8_t * out_idx);
 
 /* prepares tx context */
 static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
@@ -186,11 +187,14 @@ _match_channel_type(uint8_t remote){
             return 0xFF;
     }
 }
-static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id){
-    int i;
+static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id, uint8_t * out_idx){
+    uint8_t i;
     for(i = 0; i < ANT_SESSION_NUM; i++){
         //if(self.sessions[i].rx_ctx.
         if(self.sessions[i].id.device_number == id->device_number){
+            if(out_idx){
+                *out_idx = i;
+            }
             return &self.sessions[i];
         }
 
@@ -470,6 +474,8 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
     ANT_Session_t * session = NULL;
     ANT_ChannelID_t id = {0};
+    uint8_t idx;
+
     if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
         EXT_MESG_BF ext = msg->ANT_MESSAGE_sExtMesgBF;
         uint8_t * extbytes = msg->ANT_MESSAGE_aucExtData;
@@ -491,22 +497,14 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             return;
         }
     }
-    session = _get_session_by_id(&id);
+    session = _get_session_by_id(&id, &idx);
     //handle
     if(session){
         ConnectionContext_t * ctx = &session->rx_ctx;
         MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
         if(ret){
-            PRINTS("MSG FROM ID = ");
-            PRINT_HEX(&id.device_number, 2);
-            PRINTS("\r\n");
-            {
-                MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
-                //then dispatch to uart for printout
-                self.parent->dispatch(src, (MSG_Address_t){UART, 1}, ret);
-                if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
-                    self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, ret);
-                }
+            if(self.user_handler){
+                self.user_handler->on_message(&id, (MSG_Address_t){ANT, idx+1}, ret);
             }
             MSG_Base_ReleaseDataAtomic(ret);
             self.rcvd++;
@@ -574,7 +572,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 //sessions become virtual channels
                 {
                     uint8_t out_channel;
-                    if(_get_session_by_id(&antcmd->param.session_info)){
+                    if(_get_session_by_id(&antcmd->param.session_info, NULL)){
                         PRINTS("Session Already Exists\r\n");
                         return SUCCESS;
                     }
@@ -671,8 +669,9 @@ _init(){
         return FAIL;
     }
 }
-MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent){
+MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler){
     self.parent = parent;
+    self.user_handler = handler;
     {
         self.base.init =  _init;
         self.base.flush = _flush;
