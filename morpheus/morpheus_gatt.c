@@ -220,12 +220,14 @@ static bool _dispatch_packet(struct hlo_ble_packet * t){
 		.p_len = &mlen,
 		.p_data = (uint8_t*)t,
 	};
-	PRINTS("!");
+	PRINTS("Sending BLE Packet:");
 	PRINT_HEX(t, mlen);
+	PRINTS("\r\n");
+	
 	uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
 	switch(err){
 		case NRF_SUCCESS:
-			PRINTS("@");
+			PRINTS("BLE Packet sent\r\n");
 			if(t->sequence_number == _notify_context.total - 1)
 			{
 				if(_notify_context.callback_info.on_succeed)
@@ -237,7 +239,7 @@ static bool _dispatch_packet(struct hlo_ble_packet * t){
 			break;
 		default:
 		case BLE_ERROR_NO_TX_BUFFERS:
-			PRINTS("ERROR");
+			PRINTS("Send notification failed.\r\n");
 			if(_notify_context.callback_info.on_failed)
 			{
 				_notify_context.callback_info.on_failed(_notify_context.callback_info.callback_data);
