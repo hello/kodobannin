@@ -9,7 +9,7 @@
 #include "hble.h"
 #include "morpheus_ble.h"
 
-#ifdef ANT_ENABLE
+#ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
 #endif
 
