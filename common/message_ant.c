@@ -409,6 +409,7 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     ANT_ChannelID_t id = {0};
     uint8_t idx;
 
+    //extract ID from channel
     if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
         EXT_MESG_BF ext = msg->ANT_MESSAGE_sExtMesgBF;
         uint8_t * extbytes = msg->ANT_MESSAGE_aucExtData;
@@ -430,8 +431,11 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             return;
         }
     }
+
+    //extract session from channel
     session = _get_session_by_id(&id, &idx);
-    //handle
+
+    //handle session + payload
     if(session){
         ConnectionContext_t * ctx = &session->rx_ctx;
         MSG_Address_t src = {ANT, idx+1};
