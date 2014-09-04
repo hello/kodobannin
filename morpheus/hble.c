@@ -114,7 +114,7 @@ static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
 {
     switch(p_evt->evt_type) {
     case BLE_CONN_PARAMS_EVT_FAILED:
-        PRINTS("BLE_CONN_PARAMS_EVT_FAILED");
+        PRINTS("BLE_CONN_PARAMS_EVT_FAILED\r\n");
         APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_CONN_INTERVAL_UNACCEPTABLE));
         break;
     default:
