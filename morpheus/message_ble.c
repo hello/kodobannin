@@ -261,8 +261,6 @@ MSG_Status process_pending_pill_piairing_request(const char* account_id)
      *MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
      */
     PRINTS("Waiting the pill to reply...\r\n");
-    ANT_DISCOVERY_ACTION action = ANT_DISCOVERY_ACCEPT_NEXT_DEVICE;
-    MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_SET_DISCOVERY_ACTION, &action, sizeof(action));
 #else
     // For echo test
     PRINTS("echo test\r\n");

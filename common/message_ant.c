@@ -87,36 +87,6 @@ static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
 /* handles single packet special functions */
 static MSG_Data_t * INCREF _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload);
 
-/* handle unknown device(not paird) indicated by 0 0 header */
-static void _handle_unknown_device(const ANT_ChannelID_t * id);
-
-static void
-_handle_unknown_device(const ANT_ChannelID_t * id){
-    switch(self.discovery_action){
-        default:
-        case ANT_DISCOVERY_NO_ACTION:
-            break;
-        case ANT_DISCOVERY_REPORT_DEVICE:
-            {
-                PRINTS("Found Unknown ID = ");
-                PRINT_HEX(&id->device_number, 2);
-                PRINTS("\r\n");
-                PRINTS("No Action Needed\r\n");
-            }
-            //send message to spi and ble and uart
-            break;
-        case ANT_DISCOVERY_ACCEPT_NEXT_DEVICE:
-            {
-                //create session
-                self.discovery_action = ANT_DISCOVERY_REPORT_DEVICE;
-                MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, id, sizeof(*id));
-            }
-            break;
-        case ANT_DISCOVERY_ACCEPT_ALL_DEVICE:
-            //create session
-            break;
-    }
-}
 static MSG_Data_t * INCREF
 _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload){
     MSG_Data_t * ret = NULL;
@@ -513,7 +483,6 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
         //null function packet is used to see what is around the area
         //if no session exists for that ID
         if(rx_payload[0] == 0 && rx_payload[1] == 0){
-            _handle_unknown_device(&id);
         }
     }
 }
@@ -556,11 +525,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                         self.parent->dispatch((MSG_Address_t){ANT, 0}, (MSG_Address_t){ANT,1}, d);
                         MSG_Base_ReleaseDataAtomic(d);
                     }
-                }
-                break;
-            case ANT_SET_DISCOVERY_ACTION:
-                {
-                    self.discovery_action = antcmd->param.action;
                 }
                 break;
             case ANT_SET_ROLE:
