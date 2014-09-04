@@ -58,7 +58,7 @@ enum {
 
 // Time from initiating event (connect or start of notification) to first
 // time ble_gap_conn_param_update is called (5 seconds)
-#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
+#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER)
 // Time between each call to ble_gap_conn_param_update after the first (30 seconds)
 #define NEXT_CONN_PARAMS_UPDATE_DELAY        APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
 // Number of attempts before giving up the connection parameter negotiation

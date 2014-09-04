@@ -81,3 +81,4 @@ void morpheus_ble_advertising_init(void);
 void morpheus_load_modules(void);
 void morpheus_ble_transmission_layer_init();
 bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command);
+bool morpheus_ble_reply_protobuf_error(uint32_t error_type);
