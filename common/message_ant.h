@@ -139,6 +139,11 @@ typedef struct{
  * ANT user defined actions
  * all callbacks must be defined(can not be NULL)
  **/
+typedef enum{
+    ANT_STATUS_NULL = 0,
+    ANT_STATUS_DISCONNECTED,
+    ANT_STATUS_CONNECTED
+}ANT_Status_t;
 typedef struct{
     /* Called when a known and connected device sends a message */
     void (*on_message)(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_t * msg);
@@ -148,6 +153,8 @@ typedef struct{
 
     /* Called when a known and connected device sends a single frame message */
     void (*on_control_message)(const ANT_ChannelID_t * id, MSG_Address_t src, uint8_t control_type, const uint8_t * control_payload);
+
+    void (*on_status_update)(const ANT_ChannelID_t * id, ANT_Status_t status);
 }MSG_ANTHandler_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);

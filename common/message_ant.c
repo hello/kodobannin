@@ -519,51 +519,36 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                     }
                     ANT_Session_t * s = _find_unassigned_session(&out_channel);
                     PRINTS("Create Session\r\n");
-                    switch(self.discovery_role){
-                        case ANT_DISCOVERY_CENTRAL:
-                            if(s){
-                                s->id = antcmd->param.session_info;
-                                {
-                                    uint16_t ret ;
-                                    ANT_ChannelPHY_t phy = {
-                                        .frequency = 66,
-                                        .period = 1092,
-                                        .channel_type = CHANNEL_TYPE_SLAVE,
-                                        .network = 0
-                                    };
-                                    PRINTS("Creating Session ID = ");
-                                    PRINT_HEX(&s->id.device_number, 2);
-                                    ret = _configure_channel(out_channel+1, &phy, &s->id,0);
-                                    PRINTS("Assign Queue\r\n");
-                                    MSG_Data_t * q = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
-                                    if(q){
-                                        s->tx_queue = MSG_Base_InitQueue(q->buf, q->len);
-                                        PRINTS("Queue Init OK");
-                                    }else{
-                                        PRINTS("Can't load data");
-                                    }
-                                }
-                            }else{
-                                PRINTS("Out of sessions");
-                            }
-                            break;
-                        case ANT_DISCOVERY_PERIPHERAL:
-                            if(s){
-                                PRINTS("Assign ID\r\n");
-                                s->id = antcmd->param.session_info;
-                                PRINTS("Assign Queue\r\n");
-                                MSG_Data_t * q = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
-                                if(q){
-                                    s->tx_queue = MSG_Base_InitQueue(q->buf, q->len);
-                                    PRINTS("Queue Init OK");
-                                }else{
-                                    PRINTS("Can't load data");
-                                }
-                            }
-                            break;
-                        default:
-                            PRINTS("Need to define a role first!\r\n");
-                            break;
+                    if(s){
+                        PRINTS("Assign ID\r\n");
+                        s->id = antcmd->param.session_info;
+                        if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
+                            uint16_t ret ;
+                            ANT_ChannelPHY_t phy = {
+                                .frequency = 66,
+                                .period = 1092,
+                                .channel_type = CHANNEL_TYPE_SLAVE,
+                                .network = 0
+                            };
+                            PRINTS("Creating Session ID = ");
+                            PRINT_HEX(&s->id.device_number, 2);
+                            ret = _configure_channel(out_channel+1, &phy, &s->id,0);
+                        }
+                        if(self.user_handler){
+                            self.user_handler->on_status_update(&antcmd->param.session_info, ANT_STATUS_CONNECTED);
+                        }
+                        PRINTS("Assign Queue\r\n");
+                        MSG_Data_t * q = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
+                        if(q){
+                            s->tx_queue = MSG_Base_InitQueue(q->buf, q->len);
+                            PRINTS("Queue Init OK");
+                        }else{
+                            PRINTS("Can't load data");
+                        }
+                    }else{
+                        //no session
+                        PRINTS("Out of sessions\r\n");
+                        return OOM;
                     }
                 }
                 break;
