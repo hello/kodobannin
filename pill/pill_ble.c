@@ -218,7 +218,7 @@ void pill_ble_load_modules(void){
 #endif
 
 #ifdef ANT_ENABLE
-		central->loadmod(MSG_ANT_Base(central));
+		central->loadmod(MSG_ANT_Base(central, NULL));
 #endif
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
