@@ -58,6 +58,9 @@ _start()
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 
+    // Initialize persistent storage module.
+    APP_OK(pstorage_init());
+
     morpheus_load_modules();
 
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);

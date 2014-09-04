@@ -502,11 +502,9 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             PRINTS("\r\n");
             {
                 MSG_Address_t src = (MSG_Address_t){ANT, channel+1};
-                MSG_Address_t dst = (MSG_Address_t){UART, 1};
                 //then dispatch to uart for printout
-                self.parent->dispatch(src, dst, ret);
+                self.parent->dispatch(src, (MSG_Address_t){UART, 1}, ret);
                 if(self.discovery_role == ANT_DISCOVERY_CENTRAL){
-                    self.parent->dispatch(src, (MSG_Address_t){ANT,1}, ret);
                     self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, ret);
                 }
             }

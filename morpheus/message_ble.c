@@ -6,9 +6,12 @@
 #include "util.h"
 
 #include "message_ble.h"
-#include "message_ant.h"
 #include "hble.h"
 #include "morpheus_ble.h"
+
+#ifdef ANT_ENABLE
+#include "message_ant.h"
+#endif
 
 static void _release_pending_resources();
 
