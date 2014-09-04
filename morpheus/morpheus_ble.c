@@ -538,7 +538,7 @@ void morpheus_load_modules(void){
 #endif
 		central->loadmod(MSG_BLE_Base(central));
 #ifdef ANT_ENABLE
-		central->loadmod(MSG_ANT_Base(central, morpheus_ant_user(central)));
+		central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
 
 		//MSG_Base_BufferTest();
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);

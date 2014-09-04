@@ -5,4 +5,6 @@
  * DO NOT block any of the callbacks, dispatch actions via central instead
  */
 
-MSG_ANTHandler_t * morpheus_ant_user(MSG_Central_t * central);
+MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central);
+void ANT_UserPairNextDevice(void);
+
