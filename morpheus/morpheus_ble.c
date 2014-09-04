@@ -42,6 +42,7 @@ static MSG_Data_t* _protobuf_buffer;
 static uint8_t _end_seq;
 static uint8_t _seq_expected;
 static uint16_t _protobuf_len;
+static uint8_t _last_straw[10];
 
 static void _morpheus_switch_mode(void*, uint16_t);
 static void _led_pairing_mode(void);
@@ -379,6 +380,36 @@ bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
 		PRINTS(PB_GET_ERROR(&stream));
 		PRINTS("\r\n");
 		MSG_Base_ReleaseDataAtomic(heap_page);
+	}
+
+	return status;
+}
+
+bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
+{
+    MorpheusCommand morpheus_command;
+    memset(&morpheus_command, 0, sizeof(morpheus_command));
+    morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERROR;
+    morpheus_command.version = PROTOBUF_VERSION;
+
+    morpheus_command.has_error = true;
+    morpheus_command.error = error_type;
+
+    // We shall NOT use morpheus_ble_reply_protobuf to reply error
+    // because when out of memory happens, the heap will not be available
+    memset(_last_straw, 0, sizeof(_last_straw));
+
+    pb_ostream_t stream = pb_ostream_from_buffer(_last_straw, sizeof(_last_straw));
+	bool status = pb_encode(&stream, MorpheusCommand_fields, &morpheus_command);
+    
+    if(status)
+    {
+    	size_t protobuf_len = stream.bytes_written;
+		hlo_ble_notify(0xB00B, _last_straw, protobuf_len, NULL);
+	}else{
+		PRINTS("encode protobuf failed: ");
+		PRINTS(PB_GET_ERROR(&stream));
+		PRINTS("\r\n");
 	}
 
 	return status;

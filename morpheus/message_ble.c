@@ -6,15 +6,13 @@
 #include "util.h"
 
 #include "message_ble.h"
-#include "message_ant.h"
 #include "hble.h"
 #include "morpheus_ble.h"
 
-#ifdef ANT_ENABLE
+#ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
 #endif
 
-static void _reply_protobuf_error(uint32_t error_type);
 static void _release_pending_resources();
 
 static struct{
@@ -88,7 +86,7 @@ static void _register_pill(){
 
         if(!data_page){
             PRINTS("No memory\r\n");
-            _reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
         }else{
             memset(data_page->buf, 0, data_page->len);
 
@@ -114,14 +112,14 @@ static void _register_pill(){
                     route_data_to_cc3200(compact_page);
                     MSG_Base_ReleaseDataAtomic(compact_page);
                 }else{
-                    _reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+                    morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
                 }
 
             }else{
                 PRINTS("encode protobuf failed: ");
                 PRINTS(PB_GET_ERROR(&out_stream));
                 PRINTS("\r\n");
-                _reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
+                morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
                 
             }
             MSG_Base_ReleaseDataAtomic(data_page);
@@ -184,17 +182,6 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
     }
 }
 
-static void _reply_protobuf_error(uint32_t error_type){
-    MorpheusCommand morpheus_command;
-    memset(&morpheus_command, 0, sizeof(morpheus_command));
-    morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERROR;
-    morpheus_command.version = PROTOBUF_VERSION;
-
-    morpheus_command.has_error = true;
-    morpheus_command.error = error_type;
-
-    morpheus_ble_reply_protobuf(&morpheus_command);
-}
 
 static void _release_pending_resources(){
     if(NULL != self.pill_pairing_request.account_id){
@@ -214,7 +201,7 @@ MSG_Status send_remove_pill_notification(const char* hex_pill_id)
     uint64_t pill_id = 0;
     if(!hble_hex_to_uint64_device_id(hex_pill_id, &pill_id))
     {
-        _reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
+        morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
         return FAIL;
     }
 
@@ -222,7 +209,7 @@ MSG_Status send_remove_pill_notification(const char* hex_pill_id)
     MSG_Data_t* command_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANTCommand_t));
     if(!command_page)
     {
-        _reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+        morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
         return FAIL;
     }
     memset(command_page->buf, 0, command_page->len);
@@ -257,7 +244,7 @@ MSG_Status process_pending_pill_piairing_request(const char* account_id)
     if(NULL == account_id_page){
         PRINTS("Not enough memory\r\n");
 
-        _reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+        morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
         return FAIL;
     }
 
