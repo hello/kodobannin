@@ -84,40 +84,7 @@ static ANT_Session_t * _get_session_by_id(const ANT_ChannelID_t * id, uint8_t * 
 /* prepares tx context */
 static void _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * d);
 
-/* handles single packet special functions */
-static MSG_Data_t * INCREF _handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload);
 
-static MSG_Data_t * INCREF
-_handle_ant_single_packet(ConnectionContext_t * ctx, uint8_t type, uint8_t * payload){
-    MSG_Data_t * ret = NULL;
-    switch(type){
-        default:
-        case ANT_FUNCTION_NULL:
-            PRINTS("Unknown Function\r\n");
-            break;
-        case ANT_FUNCTION_TEST:
-            {
-                uint32_t rcvd = payload[0];
-                if(self.total == 0){
-                    PRINTS("Test Init!\r\n");
-                    self.matched++;
-                }else if(rcvd == self.expected){
-                    self.matched++;
-                }
-                self.total++;
-                self.expected = rcvd+1;
-                PRINTS("M: ");
-                PRINT_HEX(&self.matched, 4);
-                PRINTS(" T: ");
-                PRINT_HEX(&self.total, 4);
-                PRINTS("\r\n");
-            }
-            break;
-        case ANT_FUNCTION_END:
-            break;
-    }
-    return ret;
-}
 static void
 _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
     if(ctx && data){
@@ -341,36 +308,32 @@ _integrity_check(ConnectionContext_t * ctx){
 static MSG_Data_t *
 _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
     MSG_Data_t * ret = NULL;
-    if(buf[1] > 0){
-        if(buf[0] == 0){
-            //standard header
-            ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
-            uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
-            PRINTS("CRC: ");
-            PRINT_HEX(&new_crc, 2);
-            PRINTS("\r\n");
-            if(_integrity_check(ctx)){
-                ret = ctx->payload;
-                MSG_Base_AcquireDataAtomic(ret);
-                _free_context(ctx);
-            }
-            if(ctx->header.checksum != new_crc){
-                _free_context(ctx);
-                ctx->header = *new_header;
-                ctx->payload = _allocate_payload_rx(&ctx->header);
-                ctx->count = 0;
-            }else{
-                PRINTS("Same msg");
-            }
-        }else if(buf[0] <= buf[1]){
-            //payload
-            if(ctx->payload){
-                _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
-                ctx->count++;
-            }
+    if(buf[0] == 0){
+        //standard header
+        ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
+        uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
+        PRINTS("CRC: ");
+        PRINT_HEX(&new_crc, 2);
+        PRINTS("\r\n");
+        if(_integrity_check(ctx)){
+            ret = ctx->payload;
+            MSG_Base_AcquireDataAtomic(ret);
+            _free_context(ctx);
         }
-    }else{
-        ret = _handle_ant_single_packet(ctx, buf[0], buf+2);
+        if(ctx->header.checksum != new_crc){
+            _free_context(ctx);
+            ctx->header = *new_header;
+            ctx->payload = _allocate_payload_rx(&ctx->header);
+            ctx->count = 0;
+        }else{
+            PRINTS("Same msg");
+        }
+    }else if(buf[0] <= buf[1]){
+        //payload
+        if(ctx->payload){
+            _assemble_payload(ctx, (ANT_PayloadPacket_t *)buf);
+            ctx->count++;
+        }
     }
     return ret;
 }
@@ -471,18 +434,28 @@ _handle_rx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
     //handle
     if(session){
         ConnectionContext_t * ctx = &session->rx_ctx;
-        MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
-        if(ret){
-            if(self.user_handler){
-                self.user_handler->on_message(&id, (MSG_Address_t){ANT, idx+1}, ret);
+        MSG_Address_t src = {ANT, idx+1};
+        if(buf[1] > 0){
+            MSG_Data_t * ret = _assemble_rx(ctx, rx_payload, buf_size);
+            if(ret){
+                if(self.user_handler){
+                    self.user_handler->on_message(&id, (MSG_Address_t){ANT, idx+1}, ret);
+                }
+                MSG_Base_ReleaseDataAtomic(ret);
+                self.rcvd++;
             }
-            MSG_Base_ReleaseDataAtomic(ret);
-            self.rcvd++;
+        }else{
+            if(self.user_handler){
+                self.user_handler->on_control_message(&id, src, buf[0], buf+2);
+            }
         }
     }else{
         //null function packet is used to see what is around the area
         //if no session exists for that ID
         if(rx_payload[0] == 0 && rx_payload[1] == 0){
+            if(self.user_handler){
+                self.user_handler->on_unknown_device(&id);
+            }
         }
     }
 }

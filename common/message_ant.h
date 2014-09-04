@@ -135,8 +135,19 @@ typedef struct{
     }param;
 }MSG_ANTCommand_t;
 
+/**
+ * ANT user defined actions
+ * all callbacks must be defined(can not be NULL)
+ **/
 typedef struct{
+    /* Called when a known and connected device sends a message */
     void (*on_message)(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_t * msg);
+
+    /* Called when an unknown device initiates advertisement */
+    void (*on_unknown_device)(const ANT_ChannelID_t * id);
+
+    /* Called when a known and connected device sends a single frame message */
+    void (*on_control_message)(const ANT_ChannelID_t * id, MSG_Address_t src, uint8_t control_type, const uint8_t * control_payload);
 }MSG_ANTHandler_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);
