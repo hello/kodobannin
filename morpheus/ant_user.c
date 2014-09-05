@@ -1,5 +1,6 @@
 #include "ant_user.h"
 #include "message_uart.h"
+#include "message_ble.h"
 #include "util.h"
 
 static struct{
@@ -30,6 +31,16 @@ static void _on_status_update(const ANT_ChannelID_t * id, ANT_Status_t  status){
             break;
         case ANT_STATUS_CONNECTED:
             PRINTS("DEVICE CONNECTED\r\n");
+            {
+                MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
+                if(obj){
+                    MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
+                    cmd->param.pill_uid = 0x12345678;
+                    cmd->cmd = BLE_ACK_DEVICE_ADDED;
+                    self.parent->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){BLE, 0}, obj);
+                    MSG_Base_ReleaseDataAtomic(obj);
+                }
+            }
             break;
     }
 }
