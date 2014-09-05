@@ -246,6 +246,7 @@ static void _pill_pairing_time_out(void* context)
 {
     _release_pending_resources();
     morpheus_ble_reply_protobuf_error(ErrorType_TIME_OUT);
+    ANT_UserSetPairing(0);
     PRINTS("Pill pairing time out.\r\n");
 }
 
@@ -269,12 +270,12 @@ MSG_Status process_pending_pill_piairing_request(MSG_Data_t * account_id_page)
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
 #ifdef ANT_ENABLE
     PRINTS("Waiting the pill to reply...\r\n");
-    if(!self.time_id)
+    if(!self.timer_id)
     {
         // One minute timeout
         if(NRF_SUCCESS == app_timer_start(self.timer_id, APP_PILL_PAIRING_TIMEOUT_INTERVAL, NULL))
         {
-            ANT_UserPairNextDevice();
+            ANT_UserSetPairing(1);
         }else{
             morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
             _release_pending_resources();

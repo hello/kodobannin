@@ -72,6 +72,6 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     return &handler;
 }
 
-void ANT_UserPairNextDevice(void){
-    self.pair_enable = 1;
+void ANT_UserSetPairing(uint8_t enable){
+    self.pair_enable = enable;
 }

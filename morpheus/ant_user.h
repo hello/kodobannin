@@ -6,5 +6,5 @@
  */
 
 MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central);
-void ANT_UserPairNextDevice(void);
+void ANT_UserSetPairing(uint8_t enable);
 
