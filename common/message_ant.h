@@ -46,13 +46,15 @@ typedef enum{
     /* Reserved Mask Range 0x00 - 0x0F */
     ANT_FUNCTION_NULL = 0,              /* ignore this packet */
     /* Discovery Mask Range 0x10 - 0x1F */
+    /* Discovery Mask is only mask that is handled without an established session */
     ANT_FUNCTION_DISC_UUID = 0x10,          /* UUID broadcast */
     ANT_FUNCTION_DISC_TYPE = 0x11,          /* Device Type broadcast */
     ANT_FUNCTION_DISC_SW_VERSION = 0x12,    /* SW Version */
     ANT_FUNCTION_DISC_HW_VERSION = 0x13,    /* HW Version */
-    /* Misc */
-    ANT_FUNCTION_TEST = 0x66,           /* receiver echos back the payload */
-    ANT_FUNCTION_END = 0xFF
+    /* Test functions range 0x20 - 0x2F */
+    ANT_FUNCTION_TEST = 0x20,               /* receiver echos back the payload */
+    /* Control functions range 0x80 - 0x8F */
+    ANT_FUNCTION_SET_TIME = 0x80            /* set 32bit unix time */
 }ANT_FunctionType_t;
 
 typedef struct{
@@ -121,6 +123,7 @@ typedef struct{
         ANT_SET_ROLE,//sets device role
         ANT_CREATE_SESSION,
         ANT_ADVERTISE,
+        ANT_ADVERTISE_STOP,
         ANT_SEND_RAW,
         ANT_END_CMD,
         ANT_REMOVE_DEVICE,
