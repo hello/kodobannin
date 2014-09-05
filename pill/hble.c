@@ -18,6 +18,7 @@
 #include <ble_bondmngr.h>
 
 #include "app.h"
+#include "platform.h"
 #include "hble.h"
 #include "util.h"
 #include "pill_gatt.h"

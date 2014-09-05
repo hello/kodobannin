@@ -96,7 +96,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51822/Source/nrf_nvmc/nrf_nvmc.c \
 	nRF51_SDK/nrf51822/Source/sd_common/softdevice_handler.c \
 	nRF51_SDK/nrf51822/Source/spi_slave/spi_slave.c \
-	nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c \
+	nRF51_SDK/nrf51822/Source/ble/ble_bondmngr.c \
 
 DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
@@ -179,7 +179,7 @@ $(BUILD_DIR)/git_description.o: $(BUILD_DIR)/git_description.c | $(CC)
 
 
 # compile flags
-DEBUG = 1
+DEBUG = 0
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both

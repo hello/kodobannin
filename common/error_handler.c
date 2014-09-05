@@ -37,11 +37,11 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 	PRINTS("\n");
 
 	PRINTS("line number: ");
-	PRINT_HEX(line_num, sizeof(line_num));
+	PRINT_HEX(&line_num, sizeof(line_num));
 	PRINTS("\n");
 
 	PRINTS("error code: ");
-	PRINT_HEX(error_code, sizeof(error_code));
+	PRINT_HEX(&error_code, sizeof(error_code));
 	PRINTS("\n");
 	
 

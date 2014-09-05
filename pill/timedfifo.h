@@ -5,6 +5,9 @@
  */
 
 #include <stdint.h>
+
+#include "platform.h"
+#include "app.h"
 #include "hlo_ble_time.h"
 
 /*
@@ -14,8 +17,15 @@
 //time of each index
 #define TF_UNIT_TIME_S 60 
 #define TF_UNIT_TIME_MS 60000
-#define TF_BUFFER_SIZE (8 * 60)
+
+#ifdef DATA_SCIENCE_TASK
+#define TF_BUFFER_SIZE (9 * 60)
+#else
+#define TF_BUFFER_SIZE (4 * 60)
+#endif
+
 #define TF_CONDENSED_BUFFER_SIZE (3)
+
 typedef int32_t tf_unit_t;  // Good job, this is a keen design!
 
 typedef struct{
@@ -41,5 +51,4 @@ void TF_TickOneSecond(uint64_t monotonic_time);
 tf_unit_t TF_GetCurrent(void);
 void TF_SetCurrent(tf_unit_t val);
 tf_data_t * TF_GetAll(void);
-int16_t* get_raw_xzy_address();
 void TF_GetCondensed(tf_data_condensed_t * buf);

@@ -1,5 +1,6 @@
 // vi:noet:sw=4 ts=4
-#include <platform.h>
+#include "app.h"
+#include "platform.h"
 
 #include <app_timer.h>
 #include <spi.h>
@@ -216,13 +217,13 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 #endif
 }
 
-static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
+static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
 	int16_t values[3];
 	memcpy(values, raw_xyz, len);
 
 	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
-	int32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
+	uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
     aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
 	
     /*
@@ -243,6 +244,7 @@ static void _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 		PRINTS("NEW MAX: ");
 		PRINT_HEX(&aggregate, sizeof(aggregate));
 	}
+	return aggregate;
 }
 
 
@@ -253,20 +255,6 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
 	if(interrupt_status & INT_STS_WOM_INT)
 	{
 		MSG_PING(parent,IMU,IMU_READ_XYZ);
-
-		/*
-		tf_unit_t values[3];
-		imu_accel_reg_read((uint8_t*)values);
-		imu_clear_interrupt_status();
-		//uint8_t interrupt_status = imu_clear_interrupt_status();
-
-		int16_t* p_raw_xyz = get_raw_xzy_address();
-		p_raw_xyz[0] = values[0];
-		p_raw_xyz[1] = values[1];
-		p_raw_xyz[2] = values[2];
-
-		app_sched_event_put(p_raw_xyz, 6, pill_ble_stream_data);
-		*/
 	}
 
 }
@@ -332,8 +320,21 @@ void imu_printf_data_ready_callback_fifo(uint16_t fifo_bytes_available)
     }
 }
 
+static void _on_pill_pairing_guesture_detected(void){
+    //TODO: send pairing request packets via ANT
+#ifdef ANT_ENABLE
+	MSG_SEND_CMD(parent, ANT, MSG_ANTCommand_t, ANT_ADVERTISE, NULL, 0);
+#endif
+}
+
 
 static MSG_Status _init(void){
+	//harder
+	//ShakeDetectReset(15000000000, 5);
+	//easier to trigger
+	ShakeDetectReset(1000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+    set_shake_detection_callback(_on_pill_pairing_guesture_detected);
+
     return SUCCESS;
 }
 
@@ -356,6 +357,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 			case IMU_READ_XYZ:
 				{
 					int16_t values[3];
+					uint32_t mag;
 					imu_accel_reg_read((uint8_t*)values);
 					//uint8_t interrupt_status = imu_clear_interrupt_status();
 
@@ -363,9 +365,11 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 						_settings.wom_callback(values, sizeof(values));
 					}
 
-					_aggregate_motion_data(values, sizeof(values));
+					mag = _aggregate_motion_data(values, sizeof(values));
 #ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
-					_dispatch_motion_data_via_ant(values, sizeof(values));
+					ShakeDetect(mag);
+					//_dispatch_motion_data_via_ant(values, sizeof(values));
+					
 #endif
 				}
 
@@ -398,8 +402,6 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 		    APP_OK(app_gpiote_user_enable(_gpiote_user));
 
 		    imu_clear_interrupt_status();
-			//imu_calibrate_zero();
-
 			PRINTS("IMU: initialization done.\r\n");
 			initialized = true;
 		}

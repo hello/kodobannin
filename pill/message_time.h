@@ -27,9 +27,8 @@ typedef struct{
 }MSG_TimeCommand_t;
 
 MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central);
-MSG_Status MSG_Time_GetTime(struct hlo_ble_time * out_time);
 MSG_Status MSG_Time_GetMonotonicTime(uint64_t * out_time);
-struct hlo_ble_time* get_time();
+uint64_t* get_time();
 
 
 
