@@ -24,4 +24,5 @@ MSG_Status route_data_to_cc3200(const MSG_Data_t* data);
 //MSG_Status process_pending_pill_piairing_request(const char* account_id);
 MSG_Status process_pending_pill_piairing_request(MSG_Data_t * account_id_page);
 MSG_Status send_remove_pill_notification(const char* pill_id);
+void clear_pill_pairing_state();
 
