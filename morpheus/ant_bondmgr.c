@@ -119,8 +119,9 @@ uint32_t ANT_BondMgrInit(void){
         return err_code;
     }
     load_all_from_flash();
-    return NRF_SUCCESS;
+    return err_code;
 }
+
 static uint32_t _commit_block(const ANT_BondedDevice_t * p_bond, pstorage_size_t  block_idx){
     uint32_t err_code;
     pstorage_handle_t dest_block;

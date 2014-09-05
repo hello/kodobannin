@@ -538,9 +538,11 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                             PRINT_HEX(&s->id.device_number, 2);
                             ret = _configure_channel(out_channel+1, &phy, &s->id,0);
                         }
+                        //notify user
                         if(self.user_handler){
                             self.user_handler->on_status_update(&antcmd->param.session_info, ANT_STATUS_CONNECTED);
                         }
+                        //update cache
                         PRINTS("Assign Queue\r\n");
                         MSG_Data_t * q = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
                         if(q){
