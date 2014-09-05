@@ -1,5 +1,5 @@
 #include <stdlib.h>
-
+#include <app_timer.h>
 
 #include "app.h"
 #include "platform.h"
@@ -158,6 +158,9 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 break;
             case BLE_ACK_DEVICE_ADDED:
                 {
+                    app_timer_stop(self.timer_id);
+                    memset(&self.timer_id, 0, sizeof(self.timer_id));
+
                     uint64_t* pill_id = &(cmd->param.pill_uid);
                     size_t hex_string_len = 0;
                     hble_uint64_to_hex_device_id(*pill_id, NULL, &hex_string_len);
@@ -240,6 +243,17 @@ MSG_Status send_remove_pill_notification(const char* hex_pill_id)
 
 }
 
+
+static void _pill_pairing_time_out(void* context)
+{
+    _release_pending_resources();
+    morpheus_ble_reply_protobuf_error(ErrorType_TIME_OUT);
+    memset(&self.timer_id, 0, sizeof(self.timer_id));
+    PRINTS("Pill pairing time out.\r\n");
+}
+
+
+
 MSG_Status process_pending_pill_piairing_request(MSG_Data_t * account_id_page)
 {
     _release_pending_resources();
@@ -258,7 +272,20 @@ MSG_Status process_pending_pill_piairing_request(MSG_Data_t * account_id_page)
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
 #ifdef ANT_ENABLE
     PRINTS("Waiting the pill to reply...\r\n");
-	ANT_UserPairNextDevice();
+    if(!self.time_id)
+    {
+        // One minute timeout
+        if(NRF_SUCCESS == app_timer_start(self.timer_id, APP_PILL_PAIRING_TIMEOUT_INTERVAL, NULL))
+        {
+            ANT_UserPairNextDevice();
+        }else{
+            morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
+        }
+        
+    }else{
+        morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
+    }
+	
 #else
     // For echo test
     PRINTS("echo test\r\n");
@@ -291,6 +318,7 @@ MSG_Status route_data_to_cc3200(const MSG_Data_t* data){
 
 static MSG_Status _init(){
     self.pill_pairing_request = (struct pill_pairing_request){};
+    app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
 
     // Tests
     // self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
