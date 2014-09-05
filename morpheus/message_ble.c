@@ -11,6 +11,7 @@
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
+#include "ant_user.h"
 #endif
 
 static void _release_pending_resources();
@@ -257,6 +258,7 @@ MSG_Status process_pending_pill_piairing_request(MSG_Data_t * account_id_page)
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
 #ifdef ANT_ENABLE
     PRINTS("Waiting the pill to reply...\r\n");
+	ANT_UserPairNextDevice();
 #else
     // For echo test
     PRINTS("echo test\r\n");

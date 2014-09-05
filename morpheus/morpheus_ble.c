@@ -182,7 +182,6 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 		{
 			MSG_Data_t* account_id_page = command.accountId.arg;
 			if(account_id_page){
-				//process_pending_pill_piairing_request(account_id_page->buf);
 				process_pending_pill_piairing_request(account_id_page);
 				PRINTS("Account id: ");
 				PRINTS(account_id_page->buf);
