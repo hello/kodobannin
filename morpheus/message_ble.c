@@ -339,3 +339,12 @@ MSG_Base_t* MSG_BLE_Base(MSG_Central_t* parent){
 
 }
 
+void clear_pill_pairing_state()
+{
+#ifdef ANT_ENABLE
+    ANT_UserSetPairing(0);
+#endif
+    _release_pending_resources();
+
+}
+
