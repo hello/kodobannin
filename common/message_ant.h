@@ -46,13 +46,15 @@ typedef enum{
     /* Reserved Mask Range 0x00 - 0x0F */
     ANT_FUNCTION_NULL = 0,              /* ignore this packet */
     /* Discovery Mask Range 0x10 - 0x1F */
+    /* Discovery Mask is only mask that is handled without an established session */
     ANT_FUNCTION_DISC_UUID = 0x10,          /* UUID broadcast */
     ANT_FUNCTION_DISC_TYPE = 0x11,          /* Device Type broadcast */
     ANT_FUNCTION_DISC_SW_VERSION = 0x12,    /* SW Version */
     ANT_FUNCTION_DISC_HW_VERSION = 0x13,    /* HW Version */
-    /* Misc */
-    ANT_FUNCTION_TEST = 0x66,           /* receiver echos back the payload */
-    ANT_FUNCTION_END = 0xFF
+    /* Test functions range 0x20 - 0x2F */
+    ANT_FUNCTION_TEST = 0x20,               /* receiver echos back the payload */
+    /* Control functions range 0x80 - 0x8F */
+    ANT_FUNCTION_SET_TIME = 0x80            /* set 32bit unix time */
 }ANT_FunctionType_t;
 
 typedef struct{
@@ -121,6 +123,7 @@ typedef struct{
         ANT_SET_ROLE,//sets device role
         ANT_CREATE_SESSION,
         ANT_ADVERTISE,
+        ANT_ADVERTISE_STOP,
         ANT_SEND_RAW,
         ANT_END_CMD,
         ANT_REMOVE_DEVICE,
@@ -139,6 +142,11 @@ typedef struct{
  * ANT user defined actions
  * all callbacks must be defined(can not be NULL)
  **/
+typedef enum{
+    ANT_STATUS_NULL = 0,
+    ANT_STATUS_DISCONNECTED,
+    ANT_STATUS_CONNECTED
+}ANT_Status_t;
 typedef struct{
     /* Called when a known and connected device sends a message */
     void (*on_message)(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_t * msg);
@@ -148,6 +156,8 @@ typedef struct{
 
     /* Called when a known and connected device sends a single frame message */
     void (*on_control_message)(const ANT_ChannelID_t * id, MSG_Address_t src, uint8_t control_type, const uint8_t * control_payload);
+
+    void (*on_status_update)(const ANT_ChannelID_t * id, ANT_Status_t status);
 }MSG_ANTHandler_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);
