@@ -53,7 +53,6 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
         .on_status_update = _on_status_update,
     };
     self.parent = central;
-    ANT_UserPairNextDevice();
     return &handler;
 }
 
