@@ -277,10 +277,12 @@ MSG_Status process_pending_pill_piairing_request(MSG_Data_t * account_id_page)
             ANT_UserPairNextDevice();
         }else{
             morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
+            _release_pending_resources();
         }
         
     }else{
         morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
+        _release_pending_resources();
     }
 	
 #else
