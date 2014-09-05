@@ -23,7 +23,6 @@ static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_
 static void _on_unknown_device(const ANT_ChannelID_t * id){
     if(self.pair_enable){
         MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, id, sizeof(*id));
-        self.pair_enable = 0;
     }
 }
 

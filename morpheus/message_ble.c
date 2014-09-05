@@ -131,7 +131,6 @@ static void _register_pill(){
         PRINTS("Invalid pairing state\r\n");
     }
 
-
     _release_pending_resources();
 }
 
@@ -159,6 +158,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
             case BLE_ACK_DEVICE_ADDED:
                 {
                     app_timer_stop(self.timer_id);
+                    ANT_UserSetPairing(0);
                     uint64_t* pill_id = &(cmd->param.pill_uid);
                     size_t hex_string_len = 0;
                     hble_uint64_to_hex_device_id(*pill_id, NULL, &hex_string_len);

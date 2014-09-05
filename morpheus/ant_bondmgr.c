@@ -45,6 +45,7 @@ static uint32_t crc_extract(uint32_t header, uint16_t * p_crc){
         return NRF_ERROR_INVALID_DATA;
     }
 }
+
 static uint32_t bonding_info_load_from_flash(ANT_BondedDevice_t * p_bond, pstorage_size_t * block_idx)
 {
     pstorage_handle_t source_block;
