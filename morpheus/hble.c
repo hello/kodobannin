@@ -27,6 +27,7 @@
 #include "hble.h"
 
 #include "morpheus_gatt.h"
+#include "ant_user.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
@@ -40,6 +41,7 @@ static int16_t  _last_bond_central_id;
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
 
+	ANT_UserSetPairing(0);
 #ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
