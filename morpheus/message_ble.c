@@ -19,6 +19,7 @@ static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     struct pill_pairing_request pill_pairing_request;
+    app_timer_id_t timer_id;
 } self;
 
 
