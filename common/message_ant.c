@@ -312,9 +312,11 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
         //standard header
         ANT_HeaderPacket_t * new_header = (ANT_HeaderPacket_t *)buf;
         uint16_t new_crc = (uint16_t)(buf[7] << 8) + buf[6];
-        PRINTS("CRC: ");
-        PRINT_HEX(&new_crc, 2);
-        PRINTS("\r\n");
+        /*
+         *PRINTS("CRC: ");
+         *PRINT_HEX(&new_crc, 2);
+         *PRINTS("\r\n");
+         */
         if(_integrity_check(ctx)){
             ret = ctx->payload;
             MSG_Base_AcquireDataAtomic(ret);
@@ -326,7 +328,9 @@ _assemble_rx(ConnectionContext_t * ctx, uint8_t * buf, uint32_t buf_size){
             ctx->payload = _allocate_payload_rx(&ctx->header);
             ctx->count = 0;
         }else{
-            PRINTS("Same msg");
+            /*
+             *PRINTS("Same msg");
+             */
         }
     }else if(buf[0] <= buf[1]){
         //payload
