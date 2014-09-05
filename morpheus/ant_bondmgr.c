@@ -45,6 +45,7 @@ static uint32_t crc_extract(uint32_t header, uint16_t * p_crc){
         return NRF_ERROR_INVALID_DATA;
     }
 }
+
 static uint32_t bonding_info_load_from_flash(ANT_BondedDevice_t * p_bond, pstorage_size_t * block_idx)
 {
     pstorage_handle_t source_block;
@@ -119,8 +120,9 @@ uint32_t ANT_BondMgrInit(void){
         return err_code;
     }
     load_all_from_flash();
-    return NRF_SUCCESS;
+    return err_code;
 }
+
 static uint32_t _commit_block(const ANT_BondedDevice_t * p_bond, pstorage_size_t  block_idx){
     uint32_t err_code;
     pstorage_handle_t dest_block;

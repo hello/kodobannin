@@ -2,12 +2,19 @@
 #include "message_uart.h"
 #include "message_ble.h"
 #include "util.h"
+#include "ant_bondmgr.h"
+#include "app_timer.h"
+#include "app.h"
 
 static struct{
     MSG_Central_t * parent;
     volatile uint8_t pair_enable;
+    app_timer_id_t commit_timer;
 }self;
 
+static void _commit_pairing(void * ctx){
+    PRINTS("\r\n======\r\nCOMMIT PAIRING\r\n======\r\n");
+}
 static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_t * msg){
     self.parent->dispatch(src, (MSG_Address_t){UART,1}, msg);
     self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, msg);
@@ -16,7 +23,6 @@ static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_
 static void _on_unknown_device(const ANT_ChannelID_t * id){
     if(self.pair_enable){
         MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, id, sizeof(*id));
-        self.pair_enable = 0;
     }
 }
 
@@ -40,6 +46,14 @@ static void _on_status_update(const ANT_ChannelID_t * id, ANT_Status_t  status){
                     self.parent->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){BLE, 0}, obj);
                     MSG_Base_ReleaseDataAtomic(obj);
                 }
+                {
+                    ANT_BondedDevice_t dev = {
+                        .id = *id,
+                        .full_uid = id->device_number,
+                    };
+                    ANT_BondMgrAdd(&dev);
+                }
+                app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
             }
             break;
     }
@@ -53,10 +67,10 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
         .on_status_update = _on_status_update,
     };
     self.parent = central;
-    ANT_UserPairNextDevice();
+    app_timer_create(&self.commit_timer, APP_TIMER_MODE_SINGLE_SHOT, _commit_pairing);
     return &handler;
 }
 
-void ANT_UserPairNextDevice(void){
-    self.pair_enable = 1;
+void ANT_UserSetPairing(uint8_t enable){
+    self.pair_enable = enable;
 }
