@@ -285,20 +285,19 @@ MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
 
 MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
     
-    if(data){
+    if(SUCCESS == MSG_Base_AcquireDataAtomic(data)){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
+
 #ifndef ANT_ENABLE
         // Echo test
-        if(SUCCESS == MSG_Base_AcquireDataAtomic(data))
-        {
-            hlo_ble_notify(0xB00B, data->buf, data->len, 
-                        &(struct hlo_ble_operation_callbacks){
-                            morpheus_ble_on_notify_completed, 
-                            morpheus_ble_on_notify_failed, 
-                            data
-                        });
-        }
+        hlo_ble_notify(0xB00B, data->buf, data->len, 
+                    &(struct hlo_ble_operation_callbacks){
+                        morpheus_ble_on_notify_completed, 
+                        morpheus_ble_on_notify_failed, 
+                        data
+                    });
 #endif
+        MSG_Base_ReleaseDataAtomic(data);
         
         return SUCCESS;
     }else{
