@@ -77,8 +77,9 @@ struct morpheus_data_response
 
 void morpheus_ble_services_init(void);
 void morpheus_ble_evt_handler(ble_evt_t* ble_evt);
-void morpheus_ble_advertising_init(void);
+void morpheus_ble_write_handler(ble_gatts_evt_write_t* event);
 void morpheus_load_modules(void);
 void morpheus_ble_transmission_layer_init();
+void morpheus_ble_transmission_layer_reset();
 bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command);
 bool morpheus_ble_reply_protobuf_error(uint32_t error_type);

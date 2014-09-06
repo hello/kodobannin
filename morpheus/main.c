@@ -69,9 +69,6 @@ _start()
 #ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
 #endif
-
-    morpheus_ble_transmission_layer_init();
-    
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
     memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
@@ -81,9 +78,7 @@ _start()
     device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
     device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
     hble_params_init(device_name);
-
-    hlo_ble_init();
-    morpheus_ble_services_init();
+    hble_services_init();
 
     ble_uuid_t service_uuid = {
         .type = hello_type,

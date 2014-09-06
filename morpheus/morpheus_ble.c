@@ -1,4 +1,5 @@
-// vi:noet:sw=4 ts=4
+/* BLE transmission layer for Morpheus */
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -34,9 +35,7 @@
 // Generate Java code: protoc --java_out=. morpheus/morpheus_ble.proto
 
 
-extern uint8_t hello_type;
 
-static uint16_t _morpheus_service_handle;
 static MSG_Central_t * central; 
 static MSG_Data_t* _protobuf_buffer;
 static uint8_t _end_seq;
@@ -60,6 +59,7 @@ void create_bond(const ANT_BondedDevice_t * id){
 	PRINT_HEX(&id->full_uid,2);
 	MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id->id, sizeof(id->id));
 }
+
 static void _erase_bonded_users(void* event_data, uint16_t event_size){
 	PRINTS("Trying to erase paired centrals....\r\n");
 
@@ -169,7 +169,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
 		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
-			if(route_data_to_cc3200(data_page) == FAIL)
+			if(message_ble_route_data_to_cc3200(data_page) == FAIL)
 			{
 				PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
 			}
@@ -182,7 +182,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 		{
 			MSG_Data_t* account_id_page = command.accountId.arg;
 			if(account_id_page){
-				process_pending_pill_piairing_request(account_id_page);
+				message_ble_pill_pairing_begin(account_id_page);
 				PRINTS("Account id: ");
 				PRINTS(account_id_page->buf);
 				PRINTS("\r\n");
@@ -193,7 +193,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 		{
 			MSG_Data_t* pill_id_page = command.deviceId.arg;
 			if(pill_id_page){
-				send_remove_pill_notification(pill_id_page->buf);
+				message_ble_remove_pill(pill_id_page->buf);
 			}
 		}
 			break;
@@ -216,7 +216,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 }
 
 
-static void _protobuf_command_write_handler(ble_gatts_evt_write_t* event)
+void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 {
 	// This is the transmission layer that assemble the fucking protobuf.
 	PRINTS("Protobuf received\r\n");
@@ -476,28 +476,20 @@ void morpheus_ble_transmission_layer_init()
 	_protobuf_buffer = NULL;
 }
 
-
-void morpheus_ble_services_init(void)
+void morpheus_ble_transmission_layer_reset()
 {
+	// 1. Reset the application layer
+	message_ble_reset();
 
-    {
-        ble_uuid_t pill_service_uuid = {
-            .type = hello_type,
-            .uuid = BLE_UUID_MORPHEUS_SVC ,
-        };
-
-        APP_OK(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &pill_service_uuid, &_morpheus_service_handle));
-
-        hlo_ble_char_write_request_add(0xDEED, &_command_write_handler, sizeof(struct morpheus_command));
-        hlo_ble_char_notify_add(0xD00D);
-
-        hlo_ble_char_write_request_add(0xBEEB, &_protobuf_command_write_handler, sizeof(struct hlo_ble_packet));
-        hlo_ble_char_notify_add(0xB00B);
-
-        hlo_ble_char_notify_add(0xFEE1);
-        
-        hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
-    }
+	// 2. reset transmission layer.
+	_seq_expected = 0;
+	_end_seq = 0;
+	_protobuf_len = 0;
+	if(!_protobuf_buffer)
+	{
+		MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
+	}
+	_protobuf_buffer = NULL;
 }
 
 void morpheus_load_modules(void){
@@ -555,32 +547,4 @@ void morpheus_load_modules(void){
     }else{
         PRINTS("FAIL");
     }
-}
-
-void morpheus_ble_advertising_init(void){
-	ble_advdata_t advdata;
-	ble_advdata_t scanrsp;
-	uint8_t       flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE; //BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
-
-	ble_uuid_t morpheus_service_uuid = {
-		.type = hello_type,
-		.uuid = BLE_UUID_MORPHEUS_SVC 
-	};
-
-	// YOUR_JOB: Use UUIDs for service(s) used in your application.
-	ble_uuid_t adv_uuids[] = {morpheus_service_uuid};
-
-	// Build and set advertising data
-	memset(&advdata, 0, sizeof(advdata));
-	advdata.name_type = BLE_ADVDATA_FULL_NAME;
-	advdata.include_appearance = true;
-	advdata.flags.size = sizeof(flags);
-	advdata.flags.p_data = &flags;
-	
-
-
-	memset(&scanrsp, 0, sizeof(scanrsp));
-	scanrsp.uuids_more_available.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
-	scanrsp.uuids_more_available.p_uuids  = adv_uuids;
-	APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }

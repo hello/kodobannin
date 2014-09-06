@@ -1,3 +1,5 @@
+/* Application layer for Morpheus BLE */
+
 #include <stdlib.h>
 #include <app_timer.h>
 
@@ -111,7 +113,7 @@ static void _register_pill(){
                 MSG_Data_t* compact_page = MSG_Base_AllocateDataAtomic(protobuf_len);
                 if(compact_page){
                     memcpy(compact_page->buf, data_page->buf, protobuf_len);
-                    route_data_to_cc3200(compact_page);
+                    message_ble_route_data_to_cc3200(compact_page);
                     MSG_Base_ReleaseDataAtomic(compact_page);
                 }else{
                     morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
@@ -200,7 +202,7 @@ static void _release_pending_resources(){
     }
 }
 
-MSG_Status send_remove_pill_notification(const char* hex_pill_id)
+MSG_Status message_ble_remove_pill(const char* hex_pill_id)
 {
     // We should NOT keep any states here as well, so no timeout is needed and no memory leak danger.
     uint64_t pill_id = 0;
@@ -252,7 +254,7 @@ static void _pill_pairing_time_out(void* context)
 
 
 
-MSG_Status process_pending_pill_piairing_request(MSG_Data_t * account_id_page)
+MSG_Status message_ble_pill_pairing_begin(MSG_Data_t * account_id_page)
 {
     _release_pending_resources();
 
@@ -297,7 +299,7 @@ MSG_Status process_pending_pill_piairing_request(MSG_Data_t * account_id_page)
 
 }
 
-MSG_Status route_data_to_cc3200(const MSG_Data_t* data){
+MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
     
     if(data){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
@@ -339,7 +341,7 @@ MSG_Base_t* MSG_BLE_Base(MSG_Central_t* parent){
 
 }
 
-void clear_pill_pairing_state()
+void message_ble_reset()
 {
     if(self.timer_id)
     {
