@@ -43,12 +43,6 @@ static uint8_t _seq_expected;
 static uint16_t _protobuf_len;
 static uint8_t _last_straw[10];
 
-static void _morpheus_switch_mode(void*, uint16_t);
-static void _led_pairing_mode(void);
-static void _on_notify_completed(void* data, void* data_page);
-static void _on_notify_failed(void* data_page);
-
-
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
@@ -60,18 +54,7 @@ void create_bond(const ANT_BondedDevice_t * id){
 	MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id->id, sizeof(id->id));
 }
 
-static void _erase_bonded_users(void* event_data, uint16_t event_size){
-	PRINTS("Trying to erase paired centrals....\r\n");
 
-	hble_erase_other_bonded_central();
-
-	MorpheusCommand command;
-	memset(&command, 0, sizeof(command));
-	
-	command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE;
-	command.version = PROTOBUF_VERSION;
-	morpheus_ble_reply_protobuf(&command);
-}
 
 
 static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
@@ -111,10 +94,12 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
 }
 
 
-static void _on_packet_arrival(void* event_data, uint16_t event_size){
+static void _on_packet_arrival(void* event_data, uint16_t event_size)
+{
+	// The data_page is allocated BEFORE scheduling and NOT released by the schedule call.
+	// So DONOT acquire data_page again here, or there will be memory leak.
 	MSG_Data_t* data_page = *(MSG_Data_t**)event_data;
 
-	
 	PRINTS("Data len after scheduled: ");
 	PRINT_HEX(&data_page->len, sizeof(data_page->len));
 	PRINTS("\r\n");
@@ -149,57 +134,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
         return;
     }
 
-	switch(command.type)
-	{
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-		{
-			bool pairing_mode = true;
-			//app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
-			_morpheus_switch_mode(&pairing_mode, sizeof(pairing_mode));
-		}
-			break;
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-		{
-			bool pairing_mode = false;
-			//app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
-			_morpheus_switch_mode(&pairing_mode, sizeof(pairing_mode));
-		}
-			break;
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
-			if(message_ble_route_data_to_cc3200(data_page) == FAIL)
-			{
-				PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
-			}
-			break;
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
-			//app_sched_event_put(NULL, 0, _erase_bonded_users);
-			_erase_bonded_users(NULL, 0);
-			break;
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
-		{
-			MSG_Data_t* account_id_page = command.accountId.arg;
-			if(account_id_page){
-				message_ble_pill_pairing_begin(account_id_page);
-				PRINTS("Account id: ");
-				PRINTS(account_id_page->buf);
-				PRINTS("\r\n");
-			}
-		}
-			break;
-		case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
-		{
-			MSG_Data_t* pill_id_page = command.deviceId.arg;
-			if(pill_id_page){
-				message_ble_remove_pill(pill_id_page->buf);
-			}
-		}
-			break;
-		default:
-			break;
-	}
+	message_ble_on_protobuf_command(data_page, &command);
 
 	if(command.accountId.arg)
 	{
@@ -211,6 +146,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size){
 		MSG_Base_ReleaseDataAtomic(command.deviceId.arg);
 	}
 
+	// Don't forget to release the data_page.
 	MSG_Base_ReleaseDataAtomic(data_page);
 	
 }
@@ -319,46 +255,13 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 
 }
 
-static void _command_write_handler(ble_gatts_evt_write_t* event)
-{
-	struct morpheus_command* command = (struct morpheus_command*)event->data;
-	bool pairing_mode = false;
-	switch(command->command)
-	{
-		case MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
-			pairing_mode = true;
-			app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
-			break;
-		case MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-			pairing_mode = false;
-			app_sched_event_put(&pairing_mode, sizeof(pairing_mode), _morpheus_switch_mode);
-			break;
-		case MORPHEUS_COMMAND_START_WIFISCAN:
-			
-			break;
-		case MORPHEUS_COMMAND_STOP_WIFISCAN:
-			
-			break;
-		case MORPHEUS_COMMAND_GET_DEVICE_ID:
-			break;
-		default:
-			break;
-	}
-	
 
-}
-
-static void _led_pairing_mode(void)
-{
-	// TODO: Notify the led
-}
-
-static void _on_notify_completed(void* data, void* data_page)
+void morpheus_ble_on_notify_completed(void* data, void* data_page)
 {
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 }
 
-static void _on_notify_failed(void* data_page)
+void morpheus_ble_on_notify_failed(void* data_page)
 {
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 }
@@ -374,7 +277,7 @@ bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
     {
     	size_t protobuf_len = stream.bytes_written;
 		hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
-			&(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, heap_page});
+			&(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, heap_page});
 	}else{
 		PRINTS("encode protobuf failed: ");
 		PRINTS(PB_GET_ERROR(&stream));
@@ -413,59 +316,6 @@ bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
 	}
 
 	return status;
-}
-
-static void _morpheus_switch_mode(void* event_data, uint16_t event_size)
-{
-	bool* mode = (bool*)event_data;
-
-	if(*mode)
-	{
-		uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
-    	APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
-
-    	if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS)
-    	{
-    		PRINTS("Pairing database full.\r\n");
-
-    		// The pairing db is full, do not proceed and ask the user to erase the paired users.
-    		
-			MorpheusCommand command;
-			memset(&command, 0, sizeof(command));
-			
-			command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERROR;
-			command.version = PROTOBUF_VERSION;
-
-			command.has_error = true;
-			command.error = ErrorType_DEVICE_DATABASE_FULL;
-			morpheus_ble_reply_protobuf(&command);
-
-			return;
-    	}
-	}
-
-
-	hble_set_advertising_mode(*mode);
-
-#ifdef PROTO_REPLY
-	// reply to 0xB00B
-	MorpheusCommand command;
-	memset(&command, 0, sizeof(command));
-	
-	command.type = (*mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
-		MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
-	command.version = PROTOBUF_VERSION;
-	if(morpheus_ble_reply_protobuf(&command))
-	{
-		_led_pairing_mode();
-	}
-
-#else
-	// raw memory layout, reply to 0xD00D
-	PRINTS("reply with raw memory layout\r\n");
-	hlo_ble_notify(0xD00D, &((struct morpheus_command*)event_data)->command, event_size, NULL);
-	_led_pairing_mode();
-#endif
 }
 
 void morpheus_ble_transmission_layer_init()

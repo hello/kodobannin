@@ -83,3 +83,5 @@ void morpheus_ble_transmission_layer_init();
 void morpheus_ble_transmission_layer_reset();
 bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command);
 bool morpheus_ble_reply_protobuf_error(uint32_t error_type);
+void morpheus_ble_on_notify_completed(void* data, void* data_page);
+void morpheus_ble_on_notify_failed(void* data_page);

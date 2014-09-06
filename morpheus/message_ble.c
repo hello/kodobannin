@@ -6,6 +6,7 @@
 #include "app.h"
 #include "platform.h"
 #include "util.h"
+#include "ble_bondmngr_cfg.h"
 
 #include "message_ble.h"
 #include "hble.h"
@@ -35,15 +36,6 @@ static MSG_Status _destroy(void){
 static MSG_Status _flush(void){
     return SUCCESS;
 }
-
-static void _on_hlo_notify_completed(const void* data_sent, void* tag){
-	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)tag);
-}
-
-static void _on_hlo_notify_failed(void* tag){
-    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)tag);
-}
-
 
 static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
 {
@@ -185,7 +177,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         MSG_Base_AcquireDataAtomic(data);
         // protobuf, dump the thing straight back?
         hlo_ble_notify(0xB00B, data->buf, data->len,
-                &(struct hlo_ble_operation_callbacks){_on_hlo_notify_completed, _on_hlo_notify_failed, data});
+                &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
     }
 }
 
@@ -254,19 +246,11 @@ static void _pill_pairing_time_out(void* context)
 
 
 
-MSG_Status message_ble_pill_pairing_begin(MSG_Data_t * account_id_page)
+MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
 {
     _release_pending_resources();
 
-    //MSG_Data_t* account_id_page = MSG_Base_AllocateStringAtomic(account_id);
     MSG_Base_AcquireDataAtomic(account_id_page);
-    if(NULL == account_id_page){
-        PRINTS("Not enough memory\r\n");
-
-        morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
-        return FAIL;
-    }
-
     self.pill_pairing_request.account_id = account_id_page;
 
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
@@ -308,7 +292,11 @@ MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
         if(SUCCESS == MSG_Base_AcquireDataAtomic(data))
         {
             hlo_ble_notify(0xB00B, data->buf, data->len, 
-                        &(struct hlo_ble_operation_callbacks){_on_hlo_notify_completed, _on_hlo_notify_failed, data});
+                        &(struct hlo_ble_operation_callbacks){
+                            morpheus_ble_on_notify_completed, 
+                            morpheus_ble_on_notify_failed, 
+                            data
+                        });
         }
 #endif
         
@@ -351,6 +339,115 @@ void message_ble_reset()
     ANT_UserSetPairing(0);
 #endif
     _release_pending_resources();
+
+}
+
+
+static void _erase_bonded_users(){
+    PRINTS("Trying to erase paired centrals....\r\n");
+
+    hble_erase_other_bonded_central();
+
+    MorpheusCommand command;
+    memset(&command, 0, sizeof(command));
+    
+    command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE;
+    command.version = PROTOBUF_VERSION;
+    morpheus_ble_reply_protobuf(&command);
+}
+
+
+
+static void _led_pairing_mode(void)
+{
+    // TODO: Notify the led
+}
+
+
+static void _morpheus_switch_mode(bool is_pairing_mode)
+{
+    if(is_pairing_mode)
+    {
+        uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+        APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+
+        if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS)
+        {
+            PRINTS("Pairing database full.\r\n");
+            morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_DATABASE_FULL);
+            return;
+        }
+    }
+
+
+    hble_set_advertising_mode(is_pairing_mode);
+    // reply to 0xB00B
+    MorpheusCommand command;
+    memset(&command, 0, sizeof(command));
+    
+    command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
+        MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
+    command.version = PROTOBUF_VERSION;
+    if(morpheus_ble_reply_protobuf(&command))
+    {
+        _led_pairing_mode();
+    }
+
+}
+
+void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const MorpheusCommand* command)
+{
+    MSG_Base_AcquireDataAtomic(data_page);
+    // A protobuf actually occupy multiple pages..
+
+    switch(command->type)
+    {
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
+            _morpheus_switch_mode(true);
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+            _morpheus_switch_mode(false);
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+            }
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
+            _erase_bonded_users();
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
+        {
+            MSG_Data_t* account_id_page = command->accountId.arg;
+            if(account_id_page){
+                MSG_Base_AcquireDataAtomic(account_id_page);
+                message_ble_pill_pairing_begin(account_id_page);
+                PRINTS("Account id: ");
+                PRINTS(account_id_page->buf);
+                PRINTS("\r\n");
+                MSG_Base_ReleaseDataAtomic(account_id_page);
+            }
+        }
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
+        {
+            MSG_Data_t* pill_id_page = command->deviceId.arg;
+            if(pill_id_page){
+                MSG_Base_AcquireDataAtomic(pill_id_page);
+                message_ble_remove_pill(pill_id_page->buf);
+                MSG_Base_ReleaseDataAtomic(pill_id_page);
+            }
+        }
+            break;
+        default:
+            break;
+    }
+
+    MSG_Base_ReleaseDataAtomic(data_page);
 
 }
 
