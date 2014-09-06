@@ -19,7 +19,10 @@ enum {
 #define BLE_MODEL_NUM         "EVT1"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
+
+
 //#define BONDING_REQUIRED
+#define DATA_SCIENCE_TASK
 
 
 /*
@@ -28,7 +31,7 @@ enum {
 // Advertising interval (in units of 0.625 ms)
 #define APP_ADV_INTERVAL                     800 * 8
 // Advertising timeout in units of seconds.
-#define APP_ADV_TIMEOUT_IN_SECONDS           180
+#define APP_ADV_TIMEOUT_IN_SECONDS           0
 
 // Definition of 1 second, when 1 unit is 1.25 ms.
 #define SECOND_1_25_MS_UNITS                    800

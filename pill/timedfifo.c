@@ -7,7 +7,6 @@ static struct{
     uint16_t current_idx;
 }self;
 
-static int16_t _raw_xyz[3];
 static uint16_t _dec_idx(uint16_t * idx);
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
@@ -16,6 +15,7 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
     self.data.prev_idx = 0xFFFF;
     
     self.current_idx = 0;
+    self.tick = 0;
     self.data.mtime = init_time->monotonic_time;
 }
 
@@ -53,10 +53,6 @@ uint16_t _dec_idx(uint16_t * idx){
     }
 }
 
-inline int16_t* get_raw_xzy_address()
-{
-    return _raw_xyz;
-}
 void TF_GetCondensed(tf_data_condensed_t * buf){
     static uint8_t salt;
     if(buf){

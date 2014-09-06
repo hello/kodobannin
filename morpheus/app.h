@@ -7,7 +7,7 @@
 
 enum {
     APP_TIMER_PRESCALER = 0,
-    APP_TIMER_MAX_TIMERS = 4,
+    APP_TIMER_MAX_TIMERS = 5,
     APP_TIMER_OP_QUEUE_SIZE = 5,
 };
 
@@ -22,6 +22,7 @@ enum {
 
 #define BONDING_REQUIRED
 #define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D
+#define PROTOBUF_VERSION		(0)
 
 #ifdef DEBUG_SERIAL
 #define PB_NO_ERRMSG
@@ -47,17 +48,17 @@ enum {
 
 #define MIN_CONN_INTERVAL                    (2 * TWENTY_MS_1_25_MS_UNITS)
 // Maximum acceptable connection interval (1 second), Connection interval uses 1.25 ms units.
-#define MAX_CONN_INTERVAL                    (2 * TWENTY_MS_1_25_MS_UNITS)
+#define MAX_CONN_INTERVAL                    (3 * TWENTY_MS_1_25_MS_UNITS)
 
 // Slave latency. */
 #define SLAVE_LATENCY                        1
 // Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units
-#define CONN_SUP_TIMEOUT                     (2 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
+#define CONN_SUP_TIMEOUT                     (4 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
 
 
 // Time from initiating event (connect or start of notification) to first
 // time ble_gap_conn_param_update is called (5 seconds)
-#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
+#define FIRST_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER)
 // Time between each call to ble_gap_conn_param_update after the first (30 seconds)
 #define NEXT_CONN_PARAMS_UPDATE_DELAY        APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)
 // Number of attempts before giving up the connection parameter negotiation
@@ -91,3 +92,5 @@ enum {
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
 
 #define TX_POWER_LEVEL (0)
+
+#define APP_PILL_PAIRING_TIMEOUT_INTERVAL	 (APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER))

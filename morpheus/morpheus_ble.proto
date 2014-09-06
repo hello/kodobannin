@@ -1,11 +1,12 @@
-message WifiEndPoint {
-	optional string name = 1;
-	required bytes mac = 2;
-}
 
-message SelectedWifiEndPoint {
-	optional WifiEndPoint endPoint = 1;
-	optional string password = 2;
+enum ErrorType {
+	TIME_OUT = 0;              // Internal time out, no implemented yet.
+	NETWORK_ERROR = 1;         // Network not available or unreachable network.
+	DEVICE_ALREADY_PAIRED = 2; // User tries to paired a paired device to another account.
+	INTERNAL_DATA_ERROR = 3;   // Data packets corruption during BLE or SPI transfer
+	DEVICE_DATABASE_FULL = 4;  // No more space for device pairing.
+	DEVICE_NO_MEMORY = 5;  // Device run out of heap
+	INTERNAL_OPERATION_FAILED = 6;
 }
 
 message MorpheusCommand {
@@ -21,10 +22,18 @@ message MorpheusCommand {
 	    MORPHEUS_COMMAND_START_WIFISCAN = 8;
 	    MORPHEUS_COMMAND_STOP_WIFISCAN = 9;
 	    MORPHEUS_COMMAND_GET_DEVICE_ID = 10;
-	    MORPHEUS_COMMAND_EREASE_PAIRED_USER = 11;
+	    MORPHEUS_COMMAND_EREASE_PAIRED_PHONE = 11;
+	    MORPHEUS_COMMAND_PAIR_PILL = 12;
+	    MORPHEUS_COMMAND_ERROR = 13;  // if you receive this, that means something goes wrong.
+	    MORPHEUS_COMMAND_PAIR_SENSE = 14;
+	    MORPHEUS_COMMAND_UNPAIR_PILL = 15;
 	}
 	required int32 version = 1;
 	required CommandType type = 2;
-	optional SelectedWifiEndPoint selectedWIFIEndPoint = 3;
-	optional bytes deviceId = 4;
+	optional string deviceId = 3;
+	optional string accountId = 4;  // Used by MORPHEUS_COMMAND_PAIRE_PILL
+	optional ErrorType error = 5;  // MORPHEUS_COMMAND_ERROR
+	optional string wifiName = 6;
+	optional string wifiSSID = 7;
+	optional string wifiPassword = 8;
 }

@@ -27,6 +27,7 @@
 #include "hble.h"
 
 #include "morpheus_gatt.h"
+#include "message_ble.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
@@ -35,11 +36,12 @@ static ble_gap_sec_params_t _sec_params;
 static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
-static int8_t  _last_connected_central; 
+static int16_t  _last_bond_central_id; 
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
 
+	clear_pill_pairing_state();
 #ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
@@ -114,7 +116,7 @@ static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
 {
     switch(p_evt->evt_type) {
     case BLE_CONN_PARAMS_EVT_FAILED:
-        PRINTS("BLE_CONN_PARAMS_EVT_FAILED");
+        PRINTS("BLE_CONN_PARAMS_EVT_FAILED\r\n");
         APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_CONN_INTERVAL_UNACCEPTABLE));
         break;
     default:
@@ -144,28 +146,45 @@ static void _bond_manager_error_handler(uint32_t nrf_error)
  */
 static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 {
-    _last_connected_central = p_evt->central_handle;
-    PRINTS("last connected central set\r\n");
+    _last_bond_central_id = p_evt->central_id;
+    PRINTS("last bonded central: ");
+    PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
+    PRINTS("\r\n");
 }
 
 void hble_erase_other_bonded_central()
 {
-    if(_last_connected_central == INVALID_CENTRAL_HANDLE)
+    if(!_last_bond_central_id)
     {
-        APP_OK(ble_bondmngr_bonded_centrals_delete());
+        PRINTS("Current user is not bonded!");
         return;
     }
 
     PRINTS("Current central: ");
-    PRINT_HEX(_last_connected_central, sizeof(_last_connected_central));
+    PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
     PRINTS("\r\n");
     
+    
+
+    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+    if(paired_users_count == 0)
+    {
+        PRINTS("No paired centrals found.\r\n");
+        return;
+    }
+
+    PRINTS("Paired central count: ");
+    PRINT_HEX(&paired_users_count, sizeof(paired_users_count));
+    PRINTS("\r\n");
+
     uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
     memset(bonded_central_list, 0, sizeof(bonded_central_list));
-    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, sizeof(bonded_central_list)));
-    for(int i = 0; i < BLE_BONDMNGR_MAX_BONDED_CENTRALS; i++)
+
+    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, &paired_users_count));
+    for(int i = 0; i < paired_users_count; i++)
     {
-        if(bonded_central_list[i] != _last_connected_central)
+        if(bonded_central_list[i] != _last_bond_central_id)
         {
             APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[i]));
             PRINTS("Paired central ");
@@ -189,8 +208,6 @@ void hble_bond_manager_init()
     ble_bondmngr_init_t bond_init_data;
     bool bonds_delete = false;
 
-    // Initialize persistent storage module.
-    APP_OK(pstorage_init());
     //PRINTS("pstorage_init() done.\r\n");
 
     memset(&bond_init_data, 0, sizeof(bond_init_data));
@@ -305,6 +322,85 @@ void hble_stack_init()
 
 }
 
+bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_t* len)
+{
+    if(!len)
+    {
+        return false;
+    }
+
+    if(!hex_device_id || sizeof(device_id) * 2 + 1 < (*len))
+    {
+        *len = sizeof(device_id) * 2 + 1;
+        return false;
+    }
+
+    memset(hex_device_id, 0, *len);
+    const char* hex_table = "0123456789ABCDEF";
+    
+    size_t index = 0;
+    for(size_t i = 0; i < sizeof(device_id); i++)
+    {
+        //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
+        uint8_t num = (&device_id)[i];
+            
+        uint8_t ret = num / 16;
+        uint8_t remain = num % 16;
+
+        hex_device_id[index++] = hex_table[ret];
+        hex_device_id[index++] = hex_table[remain];
+        
+    }
+
+    return true;
+}
+
+bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id)
+{
+    if(!hex_device_id || !device_id)
+    {
+        return false;
+    }
+
+    uint16_t hex_len = strlen(hex_device_id);
+    if(hex_len != sizeof(uint64_t) * 2)
+    {
+        return false;
+    }
+
+    const char* hex_table = "0123456789ABCDEF";
+    const uint8_t hex_table_len = strlen(hex_table);
+    *device_id = 0;
+
+    uint8_t index = 0;
+
+    for(uint8_t i = 0; i < sizeof(uint64_t); i++)
+    {
+        uint8_t multiplier = 0;
+        uint8_t remain = 0;
+        
+
+        for(uint8_t j = 0; j < hex_table_len; j++)
+        {
+            if(hex_table[j] == hex_device_id[i * 2])
+            {
+                multiplier = j;
+            }
+
+            if(hex_table[j] == hex_device_id[i * 2 + 1])
+            {
+                remain = j;
+            }
+        }
+
+        uint64_t num = (multiplier << 4) + remain;
+        *device_id += num << (i * 8);
+    }
+
+    return true;
+
+}
+
 void hble_params_init(char* device_name)
 {
     // initialize GAP parameters
@@ -332,38 +428,17 @@ void hble_params_init(char* device_name)
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
 
-        size_t device_id_len = sizeof(NRF_FICR->DEVICEID);
-        size_t device_id_uint_len = sizeof(NRF_FICR->DEVICEID[0]);
-        size_t hex_device_id_len = device_id_len * device_id_uint_len * 2 + (device_id_len - 1) + 1;  // xxxxxxxx-xxxxxxxx-...
+        size_t hex_device_id_len = 0;
+        uint64_t device_id = 0;
+        memcpy(&device_id, NRF_FICR->DEVICEID, sizeof(device_id));
+        hble_uint64_to_hex_device_id(device_id, NULL, &hex_device_id_len);
+
+        PRINTS("Device id hex string array size: ");
+        PRINT_HEX(&hex_device_id_len, sizeof(hex_device_id_len));
+        PRINTS("\r\n");
+
         char hex_device_id[hex_device_id_len];
-        char device_id[device_id_len * device_id_uint_len];
-
-        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len * device_id_uint_len);
-        memset(hex_device_id, 0, hex_device_id_len);
-        const char* hex_table = "0123456789ABCDEF";
-        
-        size_t index = 0;
-        for(size_t i = 0; i < device_id_len; i++)
-        {
-            //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
-            for(size_t len = 0; len < device_id_uint_len; len++)
-            {
-                uint8_t num = device_id[i * device_id_uint_len + (device_id_uint_len - len - 1)];
-                
-                uint8_t ret = num / 16;
-                uint8_t remain = num % 16;
-
-                hex_device_id[index++] = hex_table[ret];
-                hex_device_id[index++] = hex_table[remain];
-
-                if(i < device_id_len - 1 && len == device_id_uint_len - 1)
-                {
-                    hex_device_id[index++] = '-';
-                }
-            }
-
-            
-        }
+        hble_uint64_to_hex_device_id(device_id, hex_device_id, &hex_device_id_len);
 
         ble_srv_ascii_to_utf8(&dis_init.serial_num_str, hex_device_id);
         

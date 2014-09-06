@@ -64,17 +64,31 @@ _char_add(const uint16_t uuid,
 	BLE_UUID_BLE_ASSIGN(ble_uuid, uuid);
 
 	ble_gatts_char_md_t char_md;
+	ble_gatts_attr_md_t cccd_md;
+
 	memset(&char_md, 0, sizeof(char_md));
+	memset(&cccd_md, 0, sizeof(cccd_md));
+
 	char_md.char_props = *props;
+	char_md.p_cccd_md = &cccd_md;
+
+	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&cccd_md.write_perm);
+    cccd_md.vloc = BLE_GATTS_VLOC_STACK;
 
 	ble_gatts_attr_md_t attr_md;
 	memset(&attr_md, 0, sizeof(attr_md));
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.read_perm);
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.write_perm);
+
+	//BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&attr_md.read_perm);
+	//BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&attr_md.write_perm);
+
 	attr_md.vloc = BLE_GATTS_VLOC_STACK;
 	attr_md.rd_auth = 0;
 	attr_md.wr_auth = 0;
 	attr_md.vlen = 1;
+
 
 	ble_gatts_attr_t attr_char_value;
 	memset(&attr_char_value, 0, sizeof(attr_char_value));
@@ -206,12 +220,14 @@ static bool _dispatch_packet(struct hlo_ble_packet * t){
 		.p_len = &mlen,
 		.p_data = (uint8_t*)t,
 	};
-	PRINTS("!");
+	PRINTS("Sending BLE Packet:");
 	PRINT_HEX(t, mlen);
+	PRINTS("\r\n");
+	
 	uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
 	switch(err){
 		case NRF_SUCCESS:
-			PRINTS("@");
+			PRINTS("BLE Packet sent\r\n");
 			if(t->sequence_number == _notify_context.total - 1)
 			{
 				if(_notify_context.callback_info.on_succeed)
@@ -223,7 +239,7 @@ static bool _dispatch_packet(struct hlo_ble_packet * t){
 			break;
 		default:
 		case BLE_ERROR_NO_TX_BUFFERS:
-			PRINTS("ERROR");
+			PRINTS("Send notification failed.\r\n");
 			if(_notify_context.callback_info.on_failed)
 			{
 				_notify_context.callback_info.on_failed(_notify_context.callback_info.callback_data);
