@@ -14,22 +14,23 @@
  
 /** @file
  *
- * @defgroup ble_sdk_app_proximity_bondmngr_cfg Proximity Bond Manager Configuration
+ * @defgroup ble_sdk_app_hrs_eval_battery Battery Level Hardware Handling
  * @{
- * @ingroup ble_sdk_app_proximity
- * @brief Definition of bond manager configurable parameters
+ * @ingroup ble_sdk_app_hrs_eval
+ * @brief Battery Level Hardware Handling prototypes
+ *
  */
 
-#ifndef BLE_BONDMNGR_CFG_H__
-#define BLE_BONDMNGR_CFG_H__
+#ifndef BATTERY_H__
+#define BATTERY_H__
 
-/**@brief Number of CCCDs used in the proximity application. */
-#define BLE_BONDMNGR_CCCD_COUNT            2
+typedef void(*batter_measure_callback_t)(uint32_t batt_level_milli_volts, uint8_t percentage_battery_level);
 
-/**@brief Maximum number of bonded centrals. */
-#define BLE_BONDMNGR_MAX_BONDED_CENTRALS   7
+/**@brief Function for making the ADC start a battery level conversion.
+ */
+void start_battery_measurement(batter_measure_callback_t callback);
 
-#endif // BLE_BONDMNGR_CFG_H__
+#endif // BATTERY_H__
 
 /** @} */
 /** @endcond */

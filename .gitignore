@@ -1,2 +1,5 @@
+*.swo
+*.swp
+*.swn
 build/
 .clang_complete

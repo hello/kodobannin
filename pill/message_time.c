@@ -4,14 +4,15 @@
 #include "message_time.h"
 #include "util.h"
 #include "app.h"
+#include "shake_detect.h"
 
 static struct{
     MSG_Base_t base;
     bool initialized;
     struct hlo_ble_time ble_time;
-    //uint64_t monotonic_time;//used for internal datastructure
     MSG_Central_t * central;
     app_timer_id_t timer_id;
+    MSG_Data_t * user_cb;
 }self;
 
 static char * name = "TIME";
@@ -30,41 +31,24 @@ static MSG_Status
 _flush(void){
     return SUCCESS;
 }
-static uint8_t 
-_incCarry(uint8_t * target, uint8_t carry, uint8_t overflow){
-    *target = *target + carry;
-    if(*target > overflow){
-        *target = 0;
-        return 1;
-    }
-    return 0;
-}
+
 static void
 _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;
-    TF_TickOneSecond();
-    /*{
-        
-        struct hlo_ble_time t = self.ble_time;
-        _incCarry(&t.year,
-                _incCarry(&t.month,
-                    _incCarry(&t.day,
-                        _incCarry(&t.hours,
-                            _incCarry(&t.minutes,
-                                _incCarry(&t.seconds, 1, 59),59),23),31),12),9999);
-                                
-        CRITICAL_REGION_ENTER();
-        self.ble_time = t;
-        CRITICAL_REGION_EXIT();
-        TF_UpdateTime(&self.ble_time);
-    }*/
-
-    TF_UpdateTime(&self.ble_time);
+    TF_TickOneSecond(self.ble_time.monotonic_time);
+    ShakeDetectDecWindow();
+    if(self.user_cb){
+        MSG_TimeCB_t * cb = &((MSG_TimeCommand_t*)(self.user_cb->buf))->param.wakeup_cb;
+        if(cb->cb(&self.ble_time,1000,cb->ctx)){
+            MSG_Base_ReleaseDataAtomic(self.user_cb);
+            self.user_cb = NULL;
+        }
+    }
 }
 
 static MSG_Status
-_send(MSG_ModuleType src, MSG_Data_t * data){
+_send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(data){
         uint32_t ticks;
         MSG_Base_AcquireDataAtomic(data);
@@ -77,7 +61,7 @@ _send(MSG_ModuleType src, MSG_Data_t * data){
             case TIME_SYNC:
                 PRINTS("SETTIME = ");
                 self.ble_time.monotonic_time = tmp->param.ble_time.monotonic_time;
-                TF_Initialize(&tmp->param.ble_time);
+                //TF_Initialize(&tmp->param.ble_time);
                 PRINT_HEX(&tmp->param.ble_time, sizeof(tmp->param.ble_time));
                 break;
             case TIME_STOP_PERIODIC:
@@ -90,6 +74,16 @@ _send(MSG_ModuleType src, MSG_Data_t * data){
                 app_timer_stop(self.timer_id);
                 app_timer_start(self.timer_id, ticks, NULL);
                 break;
+            case TIME_SET_5S_RESOLUTION:
+                PRINTS("PERIODIC 1S");
+                ticks = APP_TIMER_TICKS(5000,APP_TIMER_PRESCALER);
+                app_timer_stop(self.timer_id);
+                app_timer_start(self.timer_id, ticks, NULL);
+                break;
+            case TIME_SET_WAKEUP_CB:
+                MSG_Base_AcquireDataAtomic(data);
+                MSG_Base_ReleaseDataAtomic(self.user_cb);
+                self.user_cb = data;
         }
 
         MSG_Base_ReleaseDataAtomic(data);
@@ -130,4 +124,9 @@ MSG_Status MSG_Time_GetMonotonicTime(uint64_t * out_time){
     }else{
         return FAIL;
     }
+}
+
+uint64_t* get_time()
+{
+    return &self.ble_time.monotonic_time;
 }

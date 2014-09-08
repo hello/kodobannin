@@ -2,6 +2,11 @@
 
 #pragma once
 
+#define ANT_ENABLE
+//#define BLE_ENABLE
+//#define BATTERY_SERVICE_ENABLE
+//#define DEBUG_BATT_LVL
+
 #define PLATFORM_HAS_IMU
 
 enum {
@@ -13,7 +18,6 @@ enum {
 };
 
 #define PLATFORM_HAS_RTC
-
 enum {
     RTC_SDA = 0,
     RTC_SCL = 24,
@@ -35,3 +39,4 @@ enum {
     SERIAL_CTS_PIN = 0,
     SERIAL_RTS_PIN = 0,
 };
+

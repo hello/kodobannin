@@ -41,6 +41,11 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 #define STR(x) STR_HELPER(x)
 #define TRACE(...) do { PRINTS(__FILE__ ":" STR(__LINE__) " ("); PRINTS(__func__); PRINTS(")\r\n"); } while (0)
 
+#define GET_UUID_64() (*(uint64_t*)NRF_FICR->DEVICEID)
+#define GET_UUID_32() (NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1])
+#define GET_UUID_16() ((uint16_t) (GET_UUID_32() & 0xFFFF)^((GET_UUID_32() >> 16) & 0xFFFF))
+
+
 void serial_print_hex(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
 
