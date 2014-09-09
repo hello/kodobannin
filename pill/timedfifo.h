@@ -21,7 +21,7 @@
 #ifdef DATA_SCIENCE_TASK
 #define TF_BUFFER_SIZE (9 * 60)
 #else
-#define TF_BUFFER_SIZE (4 * 60)
+#define TF_BUFFER_SIZE (2 * 60)
 #endif
 
 #define TF_CONDENSED_BUFFER_SIZE (3)
