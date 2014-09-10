@@ -134,6 +134,8 @@ static void dfu_cb_handler(uint32_t result, uint8_t * p_data)
 static ble_dfu_resp_val_t nrf_error_to_dfu_resp_val(uint32_t                  err_code,
                                                     const ble_dfu_procedure_t current_dfu_proc)
 {
+    if(err_code == NRF_SUCCESS) return BLE_DFU_RESP_VAL_SUCCESS;
+
     switch (err_code)
     {
         case NRF_SUCCESS:
