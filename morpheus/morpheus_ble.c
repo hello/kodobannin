@@ -129,21 +129,19 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
         PRINTS("Decoding protobuf failed, error: ");
         PRINTS(PB_GET_ERROR(&stream));
         PRINTS("\r\n");
-    	MSG_Base_ReleaseDataAtomic(data_page);
+    }else{
 
-        return;
-    }
+		message_ble_on_protobuf_command(data_page, &command);
 
-	message_ble_on_protobuf_command(data_page, &command);
+		if(command.accountId.arg)
+		{
+			MSG_Base_ReleaseDataAtomic(command.accountId.arg);
+		}
 
-	if(command.accountId.arg)
-	{
-		MSG_Base_ReleaseDataAtomic(command.accountId.arg);
-	}
-
-	if(command.deviceId.arg)
-	{
-		MSG_Base_ReleaseDataAtomic(command.deviceId.arg);
+		if(command.deviceId.arg)
+		{
+			MSG_Base_ReleaseDataAtomic(command.deviceId.arg);
+		}
 	}
 
 	// Don't forget to release the data_page.

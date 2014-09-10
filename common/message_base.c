@@ -35,6 +35,36 @@ uint32_t MSG_Base_FreeCount(void){
     }
     return ret;
 }
+
+uint32_t MSG_Base_BigPoolFreeCount(void){
+
+#ifndef MSG_BASE_USE_BIG_POOL
+    return 0;
+#else
+    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG);
+    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE_BIG;
+    uint8_t * p = self.bigpool;
+    uint32_t ret = 0;
+    for(int i = 0; i < step_limit; i++){
+        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
+        if(tmp->ref == 0){
+            ret++;
+        }
+    }
+    return ret;
+#endif
+}
+
+bool MSG_Base_HasMemoryLeak(void){
+#ifndef MSG_BASE_USE_BIG_POOL
+    return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE;
+#else
+    return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE || MSG_Base_BigPoolFreeCount() != MSG_BASE_SHARED_POOL_SIZE_BIG;
+#endif
+}
+
+
+
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     MSG_Data_t * ret = NULL;
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
