@@ -223,9 +223,13 @@ define rule-product
 
 .PHONY: $1+$2
 $1+$2: $(BUILD_DIR)/$1+$2.bin
+$1+$2: $(BUILD_DIR)/$1+$2.hex
 
 $(BUILD_DIR)/$1+$2.bin: $(BUILD_DIR)/$1+$2.elf
 	$(OBJCOPY) -O binary $$< $$@
+
+$(BUILD_DIR)/$1+$2.hex: $(BUILD_DIR)/$1+$2.elf
+	$(OBJCOPY) -O ihex $$< $$@
 
 $(BUILD_DIR)/$1+$2/%.o: %.c | $(CC)
 	@mkdir -p $$(dir $$@)
