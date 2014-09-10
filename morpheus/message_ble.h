@@ -24,8 +24,8 @@ typedef struct{
 
 MSG_Base_t* MSG_BLE_Base(MSG_Central_t* parent);
 MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data);
-MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t * account_id_page);
-MSG_Status message_ble_remove_pill(const char* pill_id);
+MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page);
+MSG_Status message_ble_remove_pill(const MSG_Data_t* pill_id_page);
 void message_ble_reset();
 void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const MorpheusCommand* command);
 

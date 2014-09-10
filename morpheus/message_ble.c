@@ -194,42 +194,52 @@ static void _release_pending_resources(){
     }
 }
 
-MSG_Status message_ble_remove_pill(const char* hex_pill_id)
+MSG_Status message_ble_remove_pill(const MSG_Data_t* pill_id_page)
 {
+    if(SUCCESS != MSG_Base_AcquireDataAtomic(pill_id_page)){
+        morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
+        return FAIL;
+    }
+
+    const char* hex_pill_id = pill_id_page->buf;
     // We should NOT keep any states here as well, so no timeout is needed and no memory leak danger.
     uint64_t pill_id = 0;
     if(!hble_hex_to_uint64_device_id(hex_pill_id, &pill_id))
     {
         morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
-        return FAIL;
-    }
+    }else{
 
 #ifdef ANT_ENABLE
-    MSG_Data_t* command_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANTCommand_t));
-    if(!command_page)
-    {
-        morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
-        return FAIL;
-    }
-    memset(command_page->buf, 0, command_page->len);
-    MSG_ANTCommand_t* ant_command = (MSG_ANTCommand_t*)command_page->buf;
-    ant_command->cmd = ANT_REMOVE_DEVICE;
-    memcpy(ant_command->param.raw_data, &pill_id, sizeof(pill_id));
+        MSG_Data_t* command_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANTCommand_t));
+        if(!command_page)
+        {
+            morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            return FAIL;
+        }else{
+            memset(command_page->buf, 0, command_page->len);
+            MSG_ANTCommand_t* ant_command = (MSG_ANTCommand_t*)command_page->buf;
+            ant_command->cmd = ANT_REMOVE_DEVICE;
+            memcpy(ant_command->param.raw_data, &pill_id, sizeof(pill_id));
 
-    self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){ANT, 1}, command_page);
-    MSG_Base_ReleaseDataAtomic(command_page);
+            self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){ANT, 1}, command_page);
+            MSG_Base_ReleaseDataAtomic(command_page);
+        }
 #else
-    // echo test
-    PRINTS("Pill id to unpair:");
-    PRINT_HEX(&pill_id, sizeof(pill_id));
-    PRINTS("\r\n");
+        // echo test
+        PRINTS("Pill id to unpair:");
+        PRINT_HEX(&pill_id, sizeof(pill_id));
+        PRINTS("\r\n");
 
-    MorpheusCommand morpheus_command;
-    memset(&morpheus_command, 0, sizeof(morpheus_command));
-    morpheus_command.version = PROTOBUF_VERSION;
-    morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
-    morpheus_ble_reply_protobuf(&morpheus_command);
+        MorpheusCommand morpheus_command;
+        memset(&morpheus_command, 0, sizeof(morpheus_command));
+        morpheus_command.version = PROTOBUF_VERSION;
+        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
+        morpheus_ble_reply_protobuf(&morpheus_command);
 #endif
+    }
+
+    MSG_Base_ReleaseDataAtomic(pill_id_page);
+
 
     return SUCCESS;
 
@@ -277,6 +287,7 @@ MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
     PRINTS("echo test\r\n");
     self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
     _register_pill();
+
 #endif
 
     return SUCCESS;
@@ -423,22 +434,21 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
         {
             MSG_Data_t* account_id_page = command->accountId.arg;
             if(account_id_page){
-                MSG_Base_AcquireDataAtomic(account_id_page);
+                
                 message_ble_pill_pairing_begin(account_id_page);
                 PRINTS("Account id: ");
                 PRINTS(account_id_page->buf);
                 PRINTS("\r\n");
-                MSG_Base_ReleaseDataAtomic(account_id_page);
+                
             }
         }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
         {
             MSG_Data_t* pill_id_page = command->deviceId.arg;
-            if(pill_id_page){
-                MSG_Base_AcquireDataAtomic(pill_id_page);
-                message_ble_remove_pill(pill_id_page->buf);
-                MSG_Base_ReleaseDataAtomic(pill_id_page);
+            if(pill_id_page)
+            {
+                message_ble_remove_pill(pill_id_page);
             }
         }
             break;

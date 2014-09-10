@@ -48,6 +48,12 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 #endif
     nrf_delay_ms(100);
     hble_advertising_start();
+
+    if(MSG_Base_HasMemoryLeak()){
+        PRINTS("Possible memory leak detected!\r\n");
+    }else{
+        PRINTS("No memory leak.\r\n");
+    }
 }
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
