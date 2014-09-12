@@ -26,6 +26,7 @@ enum {
 #define IMU_DYNAMIC_SAMPLING
 
 
+
 /*
  * BLE Connection Parameters
  */
