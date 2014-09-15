@@ -49,11 +49,13 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
     nrf_delay_ms(100);
     hble_advertising_start();
 
+#ifndef ANT_ENABLE
     if(MSG_Base_HasMemoryLeak()){
         PRINTS("Possible memory leak detected!\r\n");
     }else{
         PRINTS("No memory leak.\r\n");
     }
+#endif
 }
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
