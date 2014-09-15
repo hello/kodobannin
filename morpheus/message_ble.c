@@ -405,6 +405,11 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
 
 }
 
+void _start_dfu_process(void)
+{
+    // TODO: Begin DFU here.
+}
+
 void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const MorpheusCommand* command)
 {
     MSG_Base_AcquireDataAtomic(data_page);
@@ -451,6 +456,9 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
                 message_ble_remove_pill(pill_id_page);
             }
         }
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_DFU_BEGIN:
+            _start_dfu_process();
             break;
         default:
             break;
