@@ -13,17 +13,16 @@ typedef void(*imu_data_ready_callback_t)(uint16_t fifo_bytes_available);
 typedef void(*imu_wom_callback_t)(const int16_t* raw_data_point, size_t len);
 
 struct imu_settings {
-	uint16_t wom_threshold; // in microgravities
-    enum imu_hz low_power_mode_sampling_rate;
+	uint16_t active_wom_threshold; // in microgravities
+    uint16_t inactive_wom_threshold; // in microgravities
+    enum imu_hz inactive_sampling_rate;
     enum imu_sensor_set active_sensors;
-	enum imu_hz normal_mode_sampling_rate;
+	enum imu_hz active_sampling_rate;
 	enum imu_accel_range accel_range;
-    enum imu_gyro_range gyro_range;
-    unsigned ticks_to_fill_fifo;
-	unsigned ticks_to_fifo_watermark;
-	bool active;
+    
     imu_data_ready_callback_t data_ready_callback;
     imu_wom_callback_t wom_callback;
+    bool is_active;
 };
 
 typedef struct{
