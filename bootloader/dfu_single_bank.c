@@ -367,7 +367,7 @@ uint32_t dfu_image_validate()
                 if (err_code == NRF_SUCCESS)
                 {                    
                     // calculate CRC from DFU_BANK_1_REGION_START to mp_app_write_address.
-                    m_image_crc  = crc16_compute((uint8_t*)DFU_BANK_1_REGION_START, 
+                    m_image_crc  = crc16_compute((uint8_t*)DFU_BANK_0_REGION_START,
                                                  m_image_size, 
                                                  NULL);
                     received_crc = uint16_decode((uint8_t*)&m_init_packet[0]);
