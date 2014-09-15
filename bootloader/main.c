@@ -189,18 +189,9 @@ _start()
 		APP_OK(bootloader_dfu_start());
 
 		if(bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
-			NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
-
-            SIMPRINTS("DFU successful, rebooting...\r\n");
-
-			// Need to turn the radio off before calling ble_flash_block_write?
-			// ble_flash_on_radio_active_evt(false);
-
-			// _sha1_fw_area(new_fw_sha1);
-			// nrf_nvmc_page_erase(BOOTLOADER_SETTINGS_ADDRESS);
-			// nrf_nvmc_write_words(BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
+			//NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
+			SIMPRINTS("DFU successful, rebooting...\r\n");
 		}
-
 		NVIC_SystemReset();
     } else {
 	    SIMPRINTS("Bootloader kicking to app...\r\n");
