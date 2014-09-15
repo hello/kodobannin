@@ -141,12 +141,11 @@ uint32_t dfu_init(void)
     
     m_storage_handle_app.block_id   = CODE_REGION_1_START;
     m_storage_handle_swap           = m_storage_handle_app;
-    //m_storage_handle_swap.block_id += DFU_IMAGE_MAX_SIZE_BANKED;
     
     bootloader_settings_get(&bootloader_settings);
     if ((bootloader_settings.bank_1 != BANK_ERASED) || (*p_bank_start_address != EMPTY_FLASH_MASK))
     {
-        err_code = pstorage_raw_clear(&m_storage_handle_swap, DFU_IMAGE_MAX_SIZE_BANKED);
+        err_code = pstorage_raw_clear(&m_storage_handle_swap, DFU_IMAGE_MAX_SIZE_FULL);
         if (err_code != NRF_SUCCESS)
         {
             m_dfu_state = DFU_STATE_INIT_ERROR;
@@ -170,7 +169,7 @@ uint32_t dfu_init(void)
     // Size which indicates how large application DFU are able to handle.
     // The area is not erased but has been locked by the running application, and is considered
     // to be application data save space.
-    m_new_app_max_size = DFU_IMAGE_MAX_SIZE_BANKED;
+    m_new_app_max_size = DFU_IMAGE_MAX_SIZE_FULL;
     
     m_app_data_received = 0;
     m_dfu_state         = DFU_STATE_IDLE;        
