@@ -36,7 +36,7 @@ enum {
 #define SECOND_10_MS_UNITS                   100
 // Minimum acceptable connection interval (0.5 seconds),
 // Connection interval uses 1.25 ms units
-#define MIN_CONN_INTERVAL                    (TWENTY_MS_1_25_MS_UNITS)
+#define MIN_CONN_INTERVAL                    (2*TWENTY_MS_1_25_MS_UNITS)
 // Maximum acceptable connection interval (1 second), Connection interval uses 1.25 ms units.
 #define MAX_CONN_INTERVAL                    (2*TWENTY_MS_1_25_MS_UNITS)
 
@@ -54,7 +54,7 @@ enum {
 #define MAX_CONN_PARAMS_UPDATE_COUNT         3
 
 // Timeout for Pairing Request or Security Request (in seconds)
-#define SEC_PARAM_TIMEOUT                    30
+#define SEC_PARAM_TIMEOUT                    60
 // Perform bonding.
 #define SEC_PARAM_BOND                       0
 // Man In The Middle protection not required.
