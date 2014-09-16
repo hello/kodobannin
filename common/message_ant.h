@@ -57,6 +57,11 @@ typedef enum{
     ANT_FUNCTION_SET_TIME = 0x80            /* set 32bit unix time */
 }ANT_FunctionType_t;
 
+typedef enum { 
+    ANT_PILL_DATA = 0,
+    ANT_PILL_HEARTBEAT,
+} ANT_PayloadType_t;
+
 typedef struct{
     uint8_t page;
     uint8_t page_count;
