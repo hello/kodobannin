@@ -5,6 +5,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "platform.h"
 #include "app.h"
