@@ -168,34 +168,6 @@ pill_ble_services_init(void)
     
 
 }
-static void _send_available_data_ant(void * ctx){
-	MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(sizeof(tf_data_condensed_t));
-	if(tmp){
-		if(TF_GetCondensed(tmp->buf))
-        {
-		  central->dispatch((MSG_Address_t){0,0}, (MSG_Address_t){ANT,1}, tmp);
-        }else{
-            // Morpheus should fake data if there is nothing received for that minute.
-        }
-		MSG_Base_ReleaseDataAtomic(tmp);
-	}
-	/*
-	 *static struct{
-	 *    uint8_t header;
-	 *    uint8_t reserved;
-	 *    uint8_t test;
-	 *    uint8_t reserved0;
-	 *    uint8_t reserved1;
-	 *    uint8_t reserved2;
-	 *    uint8_t reserved3;
-	 *    uint8_t reserved4;
-	 *}m;
-	 *m.header = 0x66;
-	 *MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SEND_RAW, &m, 8);
-	 *m.test++;
-	 */
-
-}
 
 
 
@@ -237,13 +209,6 @@ void pill_ble_load_modules(void){
 				.transmit_type = 0
 			};
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
-		}
-		{
-			app_timer_id_t summary_timer;
-			uint32_t ticks;
-            ticks = APP_TIMER_TICKS(60000,APP_TIMER_PRESCALER);
-			app_timer_create(&summary_timer, APP_TIMER_MODE_REPEATED, _send_available_data_ant);
-			ticks = app_timer_start(summary_timer, ticks, NULL);
 		}
 #endif
     }else{

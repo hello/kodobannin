@@ -3,13 +3,19 @@
 #include "app_timer.h"
 #include "message_time.h"
 #include "util.h"
+#include "platform.h"
 #include "app.h"
 #include "shake_detect.h"
+#include "timedfifo.h"
+
+#ifdef ANT_STACK_SUPPORT_REQD
+#include "message_ant.h"
+#endif
 
 static struct{
     MSG_Base_t base;
     bool initialized;
-    struct hlo_ble_time ble_time;
+    struct hlo_ble_time ble_time;  // Keep it here for debug, can see if pill crashed or not.
     MSG_Central_t * central;
     app_timer_id_t timer_id;
     MSG_Data_t * user_cb;
@@ -32,12 +38,36 @@ _flush(void){
     return SUCCESS;
 }
 
+static void _send_available_data_ant(){
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(tf_data_condensed_t));
+    if(data_page){
+        memset(&data_page->buf, 0, sizeof(data_page->len));
+        tf_data_condensed_t* ant_data = &data_page->buf;
+        if(TF_GetCondensed(ant_data))
+        {
+          self.central->dispatch((MSG_Address_t){0,0}, (MSG_Address_t){ANT,1}, data_page);
+        }else{
+            // Morpheus should fake data if there is nothing received for that minute.
+        }
+        MSG_Base_ReleaseDataAtomic(data_page);
+    }
+}
+
+
+
 static void
 _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;
     TF_TickOneSecond(self.ble_time.monotonic_time);
+#ifdef ANT_ENABLE
+    if(get_tick() == 0)
+    {
+        _send_available_data_ant();
+    }
     ShakeDetectDecWindow();
+#endif
+    
     if(self.user_cb){
         MSG_TimeCB_t * cb = &((MSG_TimeCommand_t*)(self.user_cb->buf))->param.wakeup_cb;
         if(cb->cb(&self.ble_time,1000,cb->ctx)){
