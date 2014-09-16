@@ -24,7 +24,7 @@
 #define TF_BUFFER_SIZE (2 * 60)
 #endif
 
-#define TF_CONDENSED_BUFFER_SIZE (1)
+#define TF_CONDENSED_BUFFER_SIZE (3)
 
 typedef int32_t tf_unit_t;  // Good job, this is a keen design!
 

@@ -174,6 +174,8 @@ static void _send_available_data_ant(void * ctx){
 		if(TF_GetCondensed(tmp->buf))
         {
 		  central->dispatch((MSG_Address_t){0,0}, (MSG_Address_t){ANT,1}, tmp);
+        }else{
+            // Morpheus should fake data if there is nothing received for that minute.
         }
 		MSG_Base_ReleaseDataAtomic(tmp);
 	}
