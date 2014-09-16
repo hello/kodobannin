@@ -39,8 +39,8 @@ typedef struct{
 }__attribute__((packed)) tf_data_t;
 
 typedef struct{
-    uint8_t version;
     uint8_t type;
+    uint8_t version;
     uint8_t reserved[2];
     uint64_t UUID;
     //uint64_t time;  // Morpheus should attch time, pill don't keep track of time anymore.
