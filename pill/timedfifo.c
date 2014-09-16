@@ -7,7 +7,7 @@ static struct{
     uint16_t current_idx;
 }self;
 
-static uint16_t _dec_idx(uint16_t * idx);
+static uint16_t _decrease_index(uint16_t * idx);
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
     memset(&self.data, 0, sizeof(self.data));
@@ -45,7 +45,7 @@ inline tf_data_t * TF_GetAll(void){
     return &self.data;
 }
 static
-uint16_t _dec_idx(uint16_t * idx){
+uint16_t _decrease_index(uint16_t * idx){
     if( *idx == 0){
         return TF_BUFFER_SIZE - 1;
     }else{
@@ -53,18 +53,28 @@ uint16_t _dec_idx(uint16_t * idx){
     }
 }
 
-void TF_GetCondensed(tf_data_condensed_t * buf){
+bool TF_GetCondensed(tf_data_condensed_t * buf){
     static uint8_t salt;
+
+    bool has_data = false;
+
     if(buf){
         memset(buf, 0, sizeof(*buf));
         uint16_t  i,idx = self.current_idx;
         buf->version = 0x1;
         buf->UUID = GET_UUID_64();
-        buf->time = self.data.mtime;
+        //buf->time = self.data.mtime;
+
         for(i = 0; i < TF_CONDENSED_BUFFER_SIZE; i++){
-            idx = _dec_idx(&idx);
+            idx = _decrease_index(&idx);
             buf->data[i] = self.data.data[idx];
+            if(self.data.data[idx] != 0)
+            {
+                has_data = true;
+            }
         }
     }
+
+    return has_data;
 }
 
