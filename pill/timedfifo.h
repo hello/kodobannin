@@ -41,7 +41,7 @@ typedef struct{
     uint8_t version;
     uint8_t reserved[3];
     uint64_t UUID;
-    //uint64_t time;  // Morpheus should attch time, pill don't keep trak of time anymore.
+    //uint64_t time;  // Morpheus should attch time, pill don't keep track of time anymore.
     tf_unit_t data[TF_CONDENSED_BUFFER_SIZE];
 }__attribute__((packed)) tf_data_condensed_t;
 
