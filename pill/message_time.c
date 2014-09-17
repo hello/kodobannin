@@ -39,11 +39,15 @@ _flush(void){
 }
 
 static void _send_available_data_ant(){
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(tf_data_condensed_t));
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
-        tf_data_condensed_t* ant_data = &data_page->buf;
-        if(TF_GetCondensed(ant_data))
+        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        ant_data->version = 0x1;
+        ant_data->type = ANT_PILL_DATA;
+        ant_data->UUID = GET_UUID_64();
+
+        if(TF_GetCondensed(ant_data->payload.data, TF_CONDENSED_BUFFER_SIZE))
         {
           self.central->dispatch((MSG_Address_t){0,0}, (MSG_Address_t){ANT,1}, data_page);
         }else{

@@ -9,6 +9,8 @@
 //how often header transmits before the rest of payload
 #define ANT_DEFAULT_HEADER_TRANSMIT_LIMIT 5
 
+#define TF_CONDENSED_BUFFER_SIZE (3)
+
 /**
  *
  * HLO ANT Air Protocol Constraints v0.1
@@ -56,11 +58,6 @@ typedef enum{
     /* Control functions range 0x80 - 0x8F */
     ANT_FUNCTION_SET_TIME = 0x80            /* set 32bit unix time */
 }ANT_FunctionType_t;
-
-typedef enum { 
-    ANT_PILL_DATA = 0,
-    ANT_PILL_HEARTBEAT,
-} ANT_PayloadType_t;
 
 typedef struct{
     uint8_t page;
@@ -142,6 +139,21 @@ typedef struct{
         uint8_t raw_data[8];
     }param;
 }MSG_ANTCommand_t;
+
+typedef struct{
+    enum {
+        ANT_PILL_DATA = 0,
+        ANT_PILL_HEARTBEAT
+    } type;
+    uint8_t version;
+    uint8_t reserved[2];
+    uint64_t UUID;
+    //uint64_t time;  // Morpheus should attch time, pill don't keep track of time anymore.
+    union {
+        uint32_t data[TF_CONDENSED_BUFFER_SIZE];
+        uint8_t battery_level;
+    } payload;
+}__attribute__((packed)) MSG_ANT_PillData_t;
 
 /**
  * ANT user defined actions
