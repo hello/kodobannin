@@ -140,6 +140,13 @@ typedef struct{
     }param;
 }MSG_ANTCommand_t;
 
+
+typedef struct 
+{
+    uint8_t battery_level;
+    uint32_t uptime_sec;
+}__attribute__((packed)) pill_heartbeat_t;
+
 typedef struct{
     enum {
         ANT_PILL_DATA = 0,
@@ -151,7 +158,7 @@ typedef struct{
     //uint64_t time;  // Morpheus should attch time, pill don't keep track of time anymore.
     union {
         uint32_t data[TF_CONDENSED_BUFFER_SIZE];
-        uint8_t battery_level;
+        pill_heartbeat_t heartbeat_data;
     } payload;
 }__attribute__((packed)) MSG_ANT_PillData_t;
 
