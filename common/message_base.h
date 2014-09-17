@@ -40,6 +40,20 @@ typedef struct _MSG_Data_t{
     uint8_t buf[0];
 }MSG_Data_t __attribute__((packed));
 
+
+typedef enum{
+    CENTRAL = 0,
+    UART,
+    IMU,
+    BLE,
+    ANT,
+    RTC,
+    CLI,
+    TIME,
+    SSPI
+}MSG_ModuleType;
+
+
 typedef enum{
     SUCCESS = 0,
     FAIL,

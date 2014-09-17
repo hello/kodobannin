@@ -49,7 +49,7 @@ static void _send_available_data_ant(){
 
         if(TF_GetCondensed(ant_data->payload.data, TF_CONDENSED_BUFFER_SIZE))
         {
-          self.central->dispatch((MSG_Address_t){0,0}, (MSG_Address_t){ANT,1}, data_page);
+          self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
         }else{
             // Morpheus should fake data if there is nothing received for that minute.
         }
