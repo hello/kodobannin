@@ -1,6 +1,6 @@
-#using travis ssh key
+#!/bin/bash
 language: c
-script: bash ./build.sh
+script: ./build.sh
 compiler:
     - gcc
 after_failure: cat build/git_description.c
