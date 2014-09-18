@@ -1,2 +1,12 @@
 language: c
-script: build.sh
+script: ./build.sh
+branches:
+    only:
+    - master
+    - integration
+    - travis
+notification:
+    email:
+    - jchen@sayhello.com
+        
+
