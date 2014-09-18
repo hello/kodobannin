@@ -1,3 +1,4 @@
+#using travis ssh key
 language: c
 script: ./build.sh
 branches:
