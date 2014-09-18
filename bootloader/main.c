@@ -27,7 +27,9 @@
 #include "error_handler.h"
 #include "hello_dfu.h"
 #include "util.h"
+#ifdef ECC_BENCHMARK
 #include "ecc_benchmark.h"
+#endif
 #include "git_description.h"
 
 enum {
@@ -107,16 +109,16 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
-    PRINTS("\r\nBootloader v");
-	PRINTS(GIT_DESCRIPTION);
-	PRINTS(" is alive\r\n");
+    SIMPRINTS("\r\nBootloader v");
+	SIMPRINTS(GIT_DESCRIPTION);
+	SIMPRINTS(" is alive\r\n");
 
 	crash_log_save();
 
 #ifdef DEBUG
-    PRINTS("Device name: ");
-    PRINTS(BLE_DEVICE_NAME);
-    PRINTS("\r\n");
+    SIMPRINTS("Device name: ");
+    SIMPRINTS(BLE_DEVICE_NAME);
+    SIMPRINTS("\r\n");
 
 	{
 		uint8_t mac_address[6];
@@ -137,7 +139,7 @@ _start()
 	// const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
-        PRINTS("Application crashed :(\r\n");
+        SIMPRINTS("Application crashed :(\r\n");
     }
 
     bool should_dfu = false;
@@ -165,19 +167,19 @@ _start()
     printf("CRC-16 is %d\r\n", expected_crc);
 
     if(!bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
-        PRINTS("Firmware doesn't match expected CRC-16\r\n");
+        SIMPRINTS("Firmware doesn't match expected CRC-16\r\n");
 
         should_dfu = true;
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
-        PRINTS("Forcefully booting into DFU mode.\r\n");
+        SIMPRINTS("Forcefully booting into DFU mode.\r\n");
 
         should_dfu = true;
 	}
 
     if(should_dfu) {
-	    PRINTS("Bootloader: in DFU mode...\r\n");
+	    SIMPRINTS("Bootloader: in DFU mode...\r\n");
 
         SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
@@ -187,21 +189,12 @@ _start()
 		APP_OK(bootloader_dfu_start());
 
 		if(bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
-			NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
-
-            PRINTS("DFU successful, rebooting...\r\n");
-
-			// Need to turn the radio off before calling ble_flash_block_write?
-			// ble_flash_on_radio_active_evt(false);
-
-			// _sha1_fw_area(new_fw_sha1);
-			// nrf_nvmc_page_erase(BOOTLOADER_SETTINGS_ADDRESS);
-			// nrf_nvmc_write_words(BOOTLOADER_SETTINGS_ADDRESS, (uint32_t*)new_fw_sha1, SHA1_DIGEST_LENGTH/sizeof(uint32_t));
+			//NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
+			SIMPRINTS("DFU successful, rebooting...\r\n");
 		}
-
 		NVIC_SystemReset();
     } else {
-	    PRINTS("Bootloader kicking to app...\r\n");
+	    SIMPRINTS("Bootloader kicking to app...\r\n");
 
 		bootloader_app_start(CODE_REGION_1_START);
 	}
