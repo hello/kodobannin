@@ -13,5 +13,10 @@ branches:
 notification:
     email:
     - jchen@sayhello.com
+    hipchat:
+        rooms:
+            - mDwGqxGUPFlLf8CBEWGs9JPzZBmhJiQahoaHmlns@ops
+        template:
+            - "%{repository}#%{build_number} (%{branch} - %{commit} : %{author}): %{message}"
         
 
