@@ -1,5 +1,5 @@
 language: c
-script: ./build.sh
+script: ./tools/build.sh
 compiler:
     - gcc
 #installs 32bit dependencies

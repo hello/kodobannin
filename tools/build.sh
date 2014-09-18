@@ -1,7 +1,8 @@
 #!/bin/sh
 set -ex
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # make sure build_list exists
-builds=build_list.txt
+builds=$DIR/build_list.txt
 clean_repo()
 {
     make clean
