@@ -165,19 +165,6 @@ gdbs:
 clean:
 	-rm -rf $(BUILD_DIR)
 
-
-# git description
-GIT_DESCRIPTION = $(shell git describe --all --long --dirty)
-GIT_DESCRIPTION_C_CONTENTS = const char* const GIT_DESCRIPTION = "$(GIT_DESCRIPTION)";
-ifneq ($(GIT_DESCRIPTION_C_CONTENTS), $(shell cat $(BUILD_DIR)/git_description.c 2> /dev/null))
-.PHONY: git_description.c
-endif
-$(BUILD_DIR)/git_description.c:
-	@mkdir -p $(dir $@)
-	@echo '$(GIT_DESCRIPTION_C_CONTENTS)' > $@
-
-$(BUILD_DIR)/git_description.o: $(BUILD_DIR)/git_description.c | $(CC)
-	$(CC) $(CFLAGS) -c -o $@ $<
 
 
 # compile flags
@@ -244,7 +231,7 @@ $1+$2_OBJS = $(call product-objs,$1,$2)
 $1+$2_DEPS = $$($1+$2_OBJS:.o=.d)
 -include $$($1+$2_DEPS)
 
-$(BUILD_DIR)/$1+$2.elf: $(BUILD_DIR)/git_description.o $$($1+$2_OBJS)
+$(BUILD_DIR)/$1+$2.elf: $$($1+$2_OBJS)
 $(BUILD_DIR)/$1+$2.elf: startup/$1.ld startup/common.ld startup/memory.ld | $(dir $@) $(CC)
 	$(LD) $(LDFLAGS) -o $$@ $$(filter %.o, $$^) -Tstartup/$1.ld $(LDFLAGS)
 
