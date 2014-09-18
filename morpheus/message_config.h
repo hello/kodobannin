@@ -12,18 +12,6 @@
 #define MSG_BASE_DATA_BUFFER_SIZE_BIG 256
 #endif
 
-typedef enum{
-    CENTRAL = 0,
-    UART,
-    BLE,
-    ANT,
-    RTC,
-    CLI,
-    SSPI,
-    TIME,
-    MOD_END
-}MSG_ModuleType;
-
 #ifdef ANT_STACK_SUPPORT_REQD
 #include <ant_stack_handler_types.h>
 void ant_handler(ant_evt_t * p_ant_evt);

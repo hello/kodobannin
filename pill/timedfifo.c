@@ -4,10 +4,6 @@
 #include "timedfifo.h"
 #include "util.h"
 
-#ifdef ANT_STACK_SUPPORT_REQD
-#include "message_ant.h"
-#endif
-
 static struct{
     tf_data_t data;
     uint8_t tick;
@@ -60,19 +56,16 @@ uint16_t _decrease_index(uint16_t * idx){
     }
 }
 
-bool TF_GetCondensed(tf_data_condensed_t * buf){
+bool TF_GetCondensed(uint32_t* buf, uint8_t length){
     bool has_data = false;
 
     if(buf){
         uint16_t  i,idx = self.current_idx;
-        buf->version = 0x1;
-        buf->type = ANT_PILL_DATA;
-        buf->UUID = GET_UUID_64();
         //buf->time = self.data.mtime;
 
-        for(i = 0; i < TF_CONDENSED_BUFFER_SIZE; i++){
+        for(i = 0; i < length; i++){
             idx = _decrease_index(&idx);
-            buf->payload.data[i] = self.data.data[idx];
+            buf[i] = self.data.data[idx];
             if(self.data.data[idx] != 0)
             {
                 has_data = true;

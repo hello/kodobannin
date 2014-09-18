@@ -20,17 +20,6 @@
 
 #define MSG_CENTRAL_MODULE_NUM  10
 
-typedef enum{
-    CENTRAL = 0,
-    UART,
-    IMU,
-    BLE,
-    ANT,
-    RTC,
-    CLI,
-    TIME,
-    SSPI
-}MSG_ModuleType;
 
 #ifdef ANT_STACK_SUPPORT_REQD
 void ant_handler(ant_evt_t * p_ant_evt);
