@@ -15,7 +15,7 @@ notification:
     - jchen@sayhello.com
     hipchat:
         rooms:
-            - KBYAKZQ0oG2SFmI0YyPpz3RoUKe0v6dQLd9kF8CS@ops
+            - KBYAKZQ0oG2SFmI0YyPpz3RoUKe0v6dQLd9kF8CS@Ops
         template:
             - "%{repository}#%{build_number} (%{branch} - %{commit} : %{author}): %{message}"
         
