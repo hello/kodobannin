@@ -31,6 +31,9 @@ extern const uint8_t hex[16];
 #define PRINTC(a) {}
 #define simple_uart_config(a,b,c,d,e) {}
 #define printf(a, ...) {}
+#define SIMPRINT_HEX(a,b) {}
+#define SIMPRINTS(a) {}
+#define SIMPRINTC(a) {}
 #endif //===================================================
 
 void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);

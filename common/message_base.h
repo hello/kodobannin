@@ -50,7 +50,8 @@ typedef enum{
     RTC,
     CLI,
     TIME,
-    SSPI
+    SSPI,
+    MOD_END
 }MSG_ModuleType;
 
 
