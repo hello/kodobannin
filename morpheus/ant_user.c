@@ -41,7 +41,7 @@ static void _on_status_update(const ANT_ChannelID_t * id, ANT_Status_t  status){
                 MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
                 if(obj){
                     MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
-                    cmd->param.pill_uid = 0x12345678;
+                    cmd->param.pill_uid = 0x12345678;  // TODO: change to real production code?
                     cmd->cmd = BLE_ACK_DEVICE_ADDED;
                     self.parent->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){BLE, 0}, obj);
                     MSG_Base_ReleaseDataAtomic(obj);
