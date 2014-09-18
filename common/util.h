@@ -30,7 +30,6 @@ extern const uint8_t hex[16];
 #define PRINTS(a) {}
 #define PRINTC(a) {}
 #define simple_uart_config(a,b,c,d,e) {}
-#define printf(a, ...) {}
 #define SIMPRINT_HEX(a,b) {}
 #define SIMPRINTS(a) {}
 #define SIMPRINTC(a) {}

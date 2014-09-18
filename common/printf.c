@@ -206,6 +206,12 @@ printf(const char *fmt, ...)
 
 	return ret;
 }
+#else
+__printflike(1, 2) int
+printf(const char *fmt, ...){
+	return 0;
+}
+
 #endif
 
 __printflike(3, 4) uint32_t
