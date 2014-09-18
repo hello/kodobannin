@@ -10,7 +10,7 @@ function build_targ()
     make $1
 }
 
-clean_repo
+#clean_repo
 while read p; do
     build_targ $p
 done < $builds
