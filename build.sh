@@ -1,10 +1,6 @@
 set -e
 # make sure build_list exists
 builds=build_list.txt
-function sync_repo()
-{
-    git submodule init && git submodule update
-}
 function clean_repo()
 {
     make clean
@@ -14,7 +10,7 @@ function build_targ()
     make $1
 }
 
-sync_repo && clean_repo
+clean_repo
 while read p; do
     build_targ $p
 done < $builds
