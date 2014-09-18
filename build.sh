@@ -3,7 +3,7 @@ set -e
 builds=build_list.txt
 function sync_repo()
 {
-    git submodule update && git submodule sync
+    git submodule init && git submodule update
 }
 function clean_repo()
 {
