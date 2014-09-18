@@ -1,8 +1,9 @@
-#!/bin/bash
 language: c
 script: ./build.sh
 compiler:
     - gcc
+#installs 32bit dependencies
+before_script: apt-get install lib32z1 lib32ncurses5 lib32bz2-1.0
 after_failure: cat build/git_description.c
 branches:
     only:
