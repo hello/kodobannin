@@ -1,4 +1,5 @@
 set -e
+# make sure build_list exists
 builds=build_list.txt
 function sync_repo()
 {
