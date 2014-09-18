@@ -11,6 +11,7 @@ APPS = bootloader morpheus pill $(TEST_APPS)
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
 S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
+UNAME := $(shell uname)
 
 # product aliases
 
@@ -293,8 +294,14 @@ $(foreach platform, $(PLATFORMS),$(foreach app, $(APPS), $(eval $(call rule-prod
 
 # downloading required dependencies (GCC, J-Link)
 
+ifeq ($(UNAME), Linux)
+GCC_PACKAGE_BASENAME = gcc-arm-none-eabi-4_7-2013q3-20130916-linux.tar.bz2
+GCC_PACKAGE_URL = https://launchpadlibrarian.net/151487636/$(GCC_PACKAGE_BASENAME)
+endif
+ifeq ($(UNAME), Darwin)
 GCC_PACKAGE_BASENAME = gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2
 GCC_PACKAGE_URL = https://launchpadlibrarian.net/151487551/$(GCC_PACKAGE_BASENAME)
+endif
 
 .INTERMEDIATE: $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
 $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME):
@@ -303,7 +310,8 @@ $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME):
 
 $(DEFAULT_GCC_ROOT)/bin/$(PREFIX)gcc: | $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
 	$(info [UNTARRING GCC...])
-	@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2)
+	@(cd $(CURDIR)/tools && tar jxf $(GCC_PACKAGE_BASENAME))
+#@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-linux.tar.bz2)
 # submodule inits
 
 GIT_SUBMODULE_DEPENDENCY_FILES = $(SOFTDEVICE_SRC) micro-ecc/README.md nRF51422/Documentation/index.html $(CURDIR)/tools/JLink_MacOSX_V474/JLinkExe.command
