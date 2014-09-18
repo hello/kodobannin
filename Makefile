@@ -11,6 +11,7 @@ APPS = bootloader morpheus pill $(TEST_APPS)
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
 S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
+UNAME := $(shell uname)
 
 # product aliases
 
@@ -165,19 +166,6 @@ gdbs:
 clean:
 	-rm -rf $(BUILD_DIR)
 
-
-# git description
-GIT_DESCRIPTION = $(shell git describe --all --long --dirty)
-GIT_DESCRIPTION_C_CONTENTS = const char* const GIT_DESCRIPTION = "$(GIT_DESCRIPTION)";
-ifneq ($(GIT_DESCRIPTION_C_CONTENTS), $(shell cat $(BUILD_DIR)/git_description.c 2> /dev/null))
-.PHONY: git_description.c
-endif
-$(BUILD_DIR)/git_description.c:
-	@mkdir -p $(dir $@)
-	@echo '$(GIT_DESCRIPTION_C_CONTENTS)' > $@
-
-$(BUILD_DIR)/git_description.o: $(BUILD_DIR)/git_description.c | $(CC)
-	$(CC) $(CFLAGS) -c -o $@ $<
 
 
 # compile flags
@@ -244,7 +232,7 @@ $1+$2_OBJS = $(call product-objs,$1,$2)
 $1+$2_DEPS = $$($1+$2_OBJS:.o=.d)
 -include $$($1+$2_DEPS)
 
-$(BUILD_DIR)/$1+$2.elf: $(BUILD_DIR)/git_description.o $$($1+$2_OBJS)
+$(BUILD_DIR)/$1+$2.elf: $$($1+$2_OBJS)
 $(BUILD_DIR)/$1+$2.elf: startup/$1.ld startup/common.ld startup/memory.ld | $(dir $@) $(CC)
 	$(LD) $(LDFLAGS) -o $$@ $$(filter %.o, $$^) -Tstartup/$1.ld $(LDFLAGS)
 
@@ -306,8 +294,14 @@ $(foreach platform, $(PLATFORMS),$(foreach app, $(APPS), $(eval $(call rule-prod
 
 # downloading required dependencies (GCC, J-Link)
 
+ifeq ($(UNAME), Linux)
+GCC_PACKAGE_BASENAME = gcc-arm-none-eabi-4_7-2013q3-20130916-linux.tar.bz2
+GCC_PACKAGE_URL = https://launchpadlibrarian.net/151487636/$(GCC_PACKAGE_BASENAME)
+endif
+ifeq ($(UNAME), Darwin)
 GCC_PACKAGE_BASENAME = gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2
 GCC_PACKAGE_URL = https://launchpadlibrarian.net/151487551/$(GCC_PACKAGE_BASENAME)
+endif
 
 .INTERMEDIATE: $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
 $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME):
@@ -316,7 +310,8 @@ $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME):
 
 $(DEFAULT_GCC_ROOT)/bin/$(PREFIX)gcc: | $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
 	$(info [UNTARRING GCC...])
-	@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2)
+	@(cd $(CURDIR)/tools && tar jxf $(GCC_PACKAGE_BASENAME))
+#@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-linux.tar.bz2)
 # submodule inits
 
 GIT_SUBMODULE_DEPENDENCY_FILES = $(SOFTDEVICE_SRC) micro-ecc/README.md nRF51422/Documentation/index.html $(CURDIR)/tools/JLink_MacOSX_V474/JLinkExe.command
