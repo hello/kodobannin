@@ -1,11 +1,12 @@
+#!/bin/sh
 set -e
 # make sure build_list exists
 builds=build_list.txt
-function clean_repo()
+clean_repo()
 {
     make clean
 }
-function build_targ()
+build_targ()
 {
     make $1
 }
