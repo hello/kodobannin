@@ -110,7 +110,6 @@ _start()
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
     SIMPRINTS("\r\nBootloader v");
-	SIMPRINTS(GIT_DESCRIPTION);
 	SIMPRINTS(" is alive\r\n");
 
 	crash_log_save();
@@ -174,7 +173,6 @@ _start()
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
         SIMPRINTS("Forcefully booting into DFU mode.\r\n");
-
         should_dfu = true;
 	}
 
