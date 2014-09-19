@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 # make sure build_list exists
-builds=build_list.txt
+builds=./tools/build_list.txt
 clean_repo()
 {
     make clean
