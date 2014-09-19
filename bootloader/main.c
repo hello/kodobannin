@@ -187,7 +187,7 @@ _start()
 		APP_OK(bootloader_dfu_start());
 
 		if(bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
-			//NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
+			sd_power_gpregret_clr(GPREGRET_FORCE_DFU_ON_BOOT_MASK);
 			SIMPRINTS("DFU successful, rebooting...\r\n");
 		}
 		NVIC_SystemReset();
