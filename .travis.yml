@@ -3,8 +3,9 @@ script: ./tools/build.sh
 compiler:
     - gcc
 #installs 32bit dependencies
-before_script: sudo apt-get update && sudo apt-get install lib32z1 lib32ncurses5 lib32bz2-1.0
+before_script: sudo apt-get update && sudo apt-get install lib32z1 lib32ncurses5 lib32bz2-1.0 python python-pip && sudo pip install boto
 after_failure: cat build/git_description.c
+after_success: python ./tools/upload_hex.py "$TRAVIS_COMMIT"
 branches:
     only:
     - master
