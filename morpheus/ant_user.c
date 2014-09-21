@@ -15,9 +15,105 @@ static struct{
 static void _commit_pairing(void * ctx){
     PRINTS("\r\n======\r\nCOMMIT PAIRING\r\n======\r\n");
 }
+
+static bool _encode_pill_command_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
+{
+    char* str = NULL;
+
+    switch(field->tag)
+    {
+        case MorpheusCommand_deviceId_tag:
+        {
+            // This would be the pill id in uint64_t
+            uint64_t* device_id_ptr = *arg;
+            if(!device_id_ptr)
+            {
+                return false;
+            }
+
+            str = char[17];
+            memset(str, 0, 17);
+            if(!hble_uint64_to_hex_device_id(*device_id_ptr, str, 17))
+            {
+                PRINTS("Get pill id failed.\r\n");
+            }
+        }
+        break;
+    }
+    
+    
+    if (!pb_encode_tag_for_field(stream, field))
+        return false;
+
+    return pb_encode_string(stream, (uint8_t*)str, strlen(str));
+}
+
+
 static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_t * msg){
+    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
+    {
+        PRINTS("Acquire data error.\r\n");
+        return;
+    }
+
+
     self.parent->dispatch(src, (MSG_Address_t){UART,1}, msg);
-    self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, msg);
+    if(src.module == TIME && src.submodule == 1){
+        // TODO, this shit needs to be tested on CC3200 side.
+        MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+
+        MorpheusCommand morpheus_command;
+        memset(morpheus_command, 0, sizeof(MorpheusCommand));
+
+        morpheus_command.version = PROTOBUF_VERSION;
+        morpheus_command.deviceId.funcs.encode = _encode_pill_command_string_fields;
+        morpheus_command.deviceId.arg = &pill_data->UUID;
+
+        switch(pill_data->type){
+            case ANT_PILL_DATA:
+            {
+                morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
+                morpheus_command.has_motionData = true;
+                morpheus_command.motionData = pill_data.payload.data[TF_CONDENSED_BUFFER_SIZE - 1];
+            }
+            break;
+            case ANT_PILL_HEARTBEAT:
+            {
+                morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
+                morpheus_command.has_batteryLevel = true;
+                morpheus_command.batteryLevel = pill_data.payload.heartbeat_data.battery_level;
+
+                morpheus_command.has_uptime = true;
+                morpheus_command.uptime = pill_data.payload.heartbeat_data.uptime_sec;
+            }
+            break;
+            default:
+            break;
+        }
+
+        MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
+
+        if(!proto_page){
+            PRINTS("No memory for convert protobuf.\r\n");
+        }else{
+
+            pb_ostream_t out_stream = pb_ostream_from_buffer(proto_page->buf, proto_page->len);
+            bool status = pb_encode(&out_stream, MorpheusCommand_fields, &morpheus_command);
+            if(!status)
+            {
+                PRINTS("Encoding protobuf failed, error: ");
+                PRINTS(PB_GET_ERROR(&stream));
+                PRINTS("\r\n");
+                
+            }else{
+                self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
+            }
+
+            MSG_Base_ReleaseDataAtomic(proto_page);
+        }
+    }
+
+    MSG_Base_ReleaseDataAtomic(msg);
 }
 
 static void _on_unknown_device(const ANT_ChannelID_t * id){
