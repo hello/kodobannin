@@ -21,8 +21,10 @@ enum {
 #define BLE_ORG_UNIQUE_ID     0x1337
 
 #define BONDING_REQUIRED
+ 
 #define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D
 #define PROTOBUF_VERSION		(0)
+#define PROTOBUF_MAX_LEN        (100)
 
 #ifdef DEBUG_SERIAL
 #define PB_NO_ERRMSG

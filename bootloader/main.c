@@ -110,7 +110,6 @@ _start()
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
     SIMPRINTS("\r\nBootloader v");
-	SIMPRINTS(GIT_DESCRIPTION);
 	SIMPRINTS(" is alive\r\n");
 
 	crash_log_save();
@@ -174,7 +173,6 @@ _start()
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
         SIMPRINTS("Forcefully booting into DFU mode.\r\n");
-
         should_dfu = true;
 	}
 
@@ -189,7 +187,7 @@ _start()
 		APP_OK(bootloader_dfu_start());
 
 		if(bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
-			//NRF_POWER->GPREGRET &= ~GPREGRET_FORCE_DFU_ON_BOOT_MASK;
+			sd_power_gpregret_clr(GPREGRET_FORCE_DFU_ON_BOOT_MASK);
 			SIMPRINTS("DFU successful, rebooting...\r\n");
 		}
 		NVIC_SystemReset();
