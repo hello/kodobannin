@@ -4,6 +4,7 @@
 
 #include <app_error.h>
 #include "message_uart.h"
+#include "hello_dfu.h"
 
 extern const uint8_t hex[16];
 
@@ -47,6 +48,11 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 #define GET_UUID_32() (NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1])
 #define GET_UUID_16() ((uint16_t) (GET_UUID_32() & 0xFFFF)^((GET_UUID_32() >> 16) & 0xFFFF))
 
+#define REBOOT_TO_DFU() do{\
+								if(NRF_SUCCESS == sd_power_gpregret_set((uint32_t)GPREGRET_FORCE_DFU_ON_BOOT_MASK)){\
+									NVIC_SystemReset();\
+								}\
+							}while(0)
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
