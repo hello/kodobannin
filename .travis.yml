@@ -1,0 +1,23 @@
+language: c
+script: ./tools/build.sh
+compiler:
+    - gcc
+#installs 32bit dependencies
+before_script: sudo apt-get update && sudo apt-get install lib32z1 lib32ncurses5 lib32bz2-1.0 python python-pip && sudo pip install boto
+after_failure: cat build/git_description.c
+after_success: python ./tools/upload_hex.py $(date +%s)-$(git log -1 --pretty=format:"%h")
+branches:
+    only:
+    - master
+    - integration
+    - travis
+notification:
+    email:
+    - jchen@sayhello.com
+    hipchat:
+        rooms:
+            - KBYAKZQ0oG2SFmI0YyPpz3RoUKe0v6dQLd9kF8CS@Ops
+        template:
+            - "%{repository}#%{build_number} (%{branch} - %{commit} : %{author}): %{message}"
+        
+

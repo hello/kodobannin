@@ -42,6 +42,11 @@ static inline void _register_write(MPU_Register_t register_address, uint8_t valu
 	BOOL_OK(ret == 2);
 }
 
+inline void imu_set_accel_freq(enum imu_hz sampling_rate)
+{
+    _register_write(MPU_REG_ACCEL_ODR, sampling_rate);
+}
+
 unsigned imu_get_sampling_interval(enum imu_hz hz)
 {
     // The following line is a fast way to convert an enum imu_hz sample rate

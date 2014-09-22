@@ -39,6 +39,7 @@ void imu_set_gyro_range(enum imu_gyro_range range);
 
 /// Given the enum imu_hz passed to it, returns the sampling interval (a.k.a. sampling period or sampling time, in milliseconds).
 unsigned imu_get_sampling_interval(enum imu_hz);
+void imu_set_accel_freq(enum imu_hz sampling_rate);
 
 void imu_set_sensors(enum imu_sensor_set sensors);
 
@@ -51,6 +52,8 @@ void imu_enter_normal_mode(uint8_t sampling_rate, enum imu_sensor_set active_sen
 /// Deactivate the IMU by putting it into sleep mode. This also clears the the IMU interrupt.
 void imu_enter_low_power_mode(enum imu_hz sampling_rate, uint16_t wom_threshold);
 uint8_t imu_clear_interrupt_status();
+
+void imu_wom_set_threshold(uint16_t microgravities);
 void imu_wom_disable();
 
 

@@ -39,7 +39,7 @@
 #endif 
 
 #define BOOTLOADER_REGION_START         0x00036000                                              /**< This field should correspond to start address of the bootloader, found in UICR.RESERVED, 0x10001014, register. This value is used for sanity check, so the bootloader will fail immediately if this value differs from runtime value. The value is used to determine max application size for updating. */
-#define BOOTLOADER_SETTINGS_ADDRESS     0x0003FC00                                              /**< The field specifies the page location of the bootloader settings address. */
+#define BOOTLOADER_SETTINGS_ADDRESS     0x0003F000                                              /**< The field specifies the page location of the bootloader settings address. */
 
 #define DFU_REGION_TOTAL_SIZE           (BOOTLOADER_REGION_START - CODE_REGION_1_START)         /**< Total size of the region between SD and Bootloader. */
 

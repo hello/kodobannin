@@ -26,7 +26,6 @@
 #include "app.h"
 #include "hble.h"
 #include "platform.h"
-#include "git_description.h"
 #include "morpheus_ble.h"
 
 void
