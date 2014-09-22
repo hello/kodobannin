@@ -37,12 +37,6 @@ void watchdog_init(unsigned seconds, bool pauseTimerWhileCPUSleeping)
 	NRF_WDT->TASKS_START = 1;
 }
 static void _kick(void * ctx){
-    PRINTS("Kick\r\n");
-    if (NRF_WDT->RUNSTATUS == 1){
-        PRINTS("running\r\n");
-    }else{
-        PRINTS("halted\r\n");
-    }
     watchdog_pet();
 }
 void watchdog_task_start(unsigned int seconds){
