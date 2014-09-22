@@ -38,6 +38,7 @@
 #include "pill_ble.h"
 #include "sensor_data.h"
 #include "util.h"
+#include "watchdog.h"
 
 void twi_master_disable();
 
@@ -113,6 +114,8 @@ void _start()
 #endif
 
     PRINTS("INIT DONE.\r\n");
+	watchdog_init(10,0);
+	watchdog_task_start(5);
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

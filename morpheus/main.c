@@ -87,6 +87,9 @@ _start()
     hble_advertising_init(service_uuid);
     hble_advertising_start();
 
+	watchdog_init(10,0);
+	watchdog_task_start(5);
+
     for(;;) {
         APP_OK(sd_app_evt_wait());
         app_sched_execute();
