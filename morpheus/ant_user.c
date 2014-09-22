@@ -4,7 +4,11 @@
 #include "util.h"
 #include "ant_bondmgr.h"
 #include "app_timer.h"
+
+#include "platform.h"
 #include "app.h"
+
+#include "hble.h"
 
 static struct{
     MSG_Central_t * parent;
@@ -31,9 +35,13 @@ static bool _encode_pill_command_string_fields(pb_ostream_t *stream, const pb_fi
                 return false;
             }
 
-            str = char[17];
-            memset(str, 0, 17);
-            if(!hble_uint64_to_hex_device_id(*device_id_ptr, str, 17))
+            char buffer[17];
+            str = buffer;
+
+            memset(buffer, 0, 17);
+            size_t buffer_len = sizeof(buffer);
+
+            if(!hble_uint64_to_hex_device_id(*device_id_ptr, buffer, &buffer_len))
             {
                 PRINTS("Get pill id failed.\r\n");
             }
@@ -63,7 +71,7 @@ static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_
         MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
 
         MorpheusCommand morpheus_command;
-        memset(morpheus_command, 0, sizeof(MorpheusCommand));
+        memset(&morpheus_command, 0, sizeof(MorpheusCommand));
 
         morpheus_command.version = PROTOBUF_VERSION;
         morpheus_command.deviceId.funcs.encode = _encode_pill_command_string_fields;
@@ -74,17 +82,17 @@ static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_
             {
                 morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
                 morpheus_command.has_motionData = true;
-                morpheus_command.motionData = pill_data.payload.data[TF_CONDENSED_BUFFER_SIZE - 1];
+                morpheus_command.motionData = pill_data->payload.data[TF_CONDENSED_BUFFER_SIZE - 1];
             }
             break;
             case ANT_PILL_HEARTBEAT:
             {
                 morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
                 morpheus_command.has_batteryLevel = true;
-                morpheus_command.batteryLevel = pill_data.payload.heartbeat_data.battery_level;
+                morpheus_command.batteryLevel = pill_data->payload.heartbeat_data.battery_level;
 
                 morpheus_command.has_uptime = true;
-                morpheus_command.uptime = pill_data.payload.heartbeat_data.uptime_sec;
+                morpheus_command.uptime = pill_data->payload.heartbeat_data.uptime_sec;
             }
             break;
             default:
