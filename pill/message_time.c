@@ -42,6 +42,7 @@ _flush(void){
     return SUCCESS;
 }
 
+#ifdef ANT_STACK_SUPPORT_REQD
 static void _send_available_data_ant(){
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
     if(data_page){
@@ -83,7 +84,7 @@ static void _send_heartbeat_data_ant(){
     }
 }
 
-
+#endif
 
 static void _timer_handler(void * ctx){
     //uint8_t carry;
