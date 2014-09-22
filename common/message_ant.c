@@ -64,7 +64,7 @@ static uint16_t _calc_checksum(MSG_Data_t * data);
 /*
  * Closes the channel, context are freed at channel closure callback
  */
-static MSG_Status _destroy_channel(uint8_t channel);
+static MSG_Status _disconnect(uint8_t channel);
 
 /* Allocates payload based on receiving header packet */
 static MSG_Data_t * INCREF _allocate_payload_rx(ANT_HeaderPacket_t * buf);
@@ -99,7 +99,7 @@ _prepare_tx(ConnectionContext_t * ctx, MSG_Data_t * data){
             ctx->header.size = data->len;
             ctx->header.checksum = _calc_checksum(data);
             ctx->header.page = 0;
-            ctx->header.page_count = data->len/6 + (((data->len)%6)?1:0);
+            ctx->header.page_count = data->len / 6 + ((data->len % 6) ? 1 : 0);
             ctx->count = ANT_DEFAULT_TRANSMIT_LIMIT;
             ctx->idx = -ANT_DEFAULT_HEADER_TRANSMIT_LIMIT;
         }
@@ -155,13 +155,8 @@ _find_unassigned_session(uint8_t * out_channel){
     }
     return ret;
 }
-static MSG_Status
-_destroy_channel(uint8_t channel){
-    //this destroys the channel regardless of what state its in
-    sd_ant_channel_close(channel);
-    //sd_ant_channel_unassign(channel);
-    return SUCCESS;
-}
+
+
 /*
  *#define STATUS_UNASSIGNED_CHANNEL                  ((uint8_t)0x00) ///< Indicates channel has not been assigned.
  *#define STATUS_ASSIGNED_CHANNEL                    ((uint8_t)0x01) ///< Indicates channel has been assigned.
@@ -225,7 +220,7 @@ static MSG_Status
 _configure_channel(uint8_t channel, const ANT_ChannelPHY_t * spec, const ANT_ChannelID_t * id, uint8_t  ext_fields){
     uint32_t ret = 0;
     if(_get_channel_status(channel)){
-        ret = _destroy_channel(channel);
+        ret = _disconnect(channel);
     }
     if(!ret){
         ret += sd_ant_channel_assign(channel, spec->channel_type, spec->network, ext_fields);
@@ -259,7 +254,7 @@ _set_discovery_mode(ANT_DISCOVERY_ROLE role){
             //peripheral mode
             //configure shit here
             PRINTS("PERIPHERAL\r\n");
-            phy.channel_type = CHANNEL_TYPE_MASTER;
+            phy.channel_type = CHANNEL_TYPE_MASTER_TX_ONLY;  //CHANNEL_TYPE_MASTER;
             id.device_number = GET_UUID_16();
             id.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT;
             id.transmit_type = 0;
@@ -267,7 +262,7 @@ _set_discovery_mode(ANT_DISCOVERY_ROLE role){
             phy.period = 1092;
             APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
             _configure_channel(ANT_DISCOVERY_CHANNEL, &phy, &id, 0);
-            _connect(ANT_DISCOVERY_CHANNEL);
+            //_connect(ANT_DISCOVERY_CHANNEL);
             break;
         default:
             break;
@@ -398,7 +393,7 @@ _handle_tx(uint8_t * channel, uint8_t * buf, uint8_t buf_size){
             if(next){
                 _prepare_tx(&session->tx_ctx, next);
             }else if(self.discovery_role == ANT_DISCOVERY_PERIPHERAL){
-                _destroy_channel(*channel);
+                _disconnect(*channel);
             }
             self.sent++;
         }
