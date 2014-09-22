@@ -26,6 +26,7 @@
 #include "util.h"
 #include "app.h"
 #include <app_timer.h>
+#include <nrf_soc.h>
 
 void watchdog_init(unsigned seconds, bool pauseTimerWhileCPUSleeping)
 {
@@ -46,5 +47,6 @@ void watchdog_task_start(unsigned int seconds){
         PRINTS("Watchdog task success\r\n");
     }else{
         //this is a critical failure, need to reboot to bootloader
+        REBOOT_TO_DFU();
     }
 }
