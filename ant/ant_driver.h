@@ -7,6 +7,7 @@ typedef enum{
 
 /*
  * object for an ant device
+ * uniquely identifies the device
  */
 typedef struct{
     uint16_t device_number;
