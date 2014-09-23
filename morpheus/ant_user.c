@@ -13,6 +13,7 @@
 static struct{
     MSG_Central_t * parent;
     volatile uint8_t pair_enable;
+    volatile uint64_t dfu_pill_id;
     app_timer_id_t commit_timer;
 }self;
 
@@ -141,6 +142,8 @@ static void _on_status_update(const ANT_ChannelID_t * id, ANT_Status_t  status){
             break;
         case ANT_STATUS_CONNECTED:
             PRINTS("DEVICE CONNECTED\r\n");
+
+            if(self.pair_enable)
             {
                 MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
                 if(obj){
@@ -157,7 +160,18 @@ static void _on_status_update(const ANT_ChannelID_t * id, ANT_Status_t  status){
                     };
                     ANT_BondMgrAdd(&dev);
                 }
+
+                // Send a message back to pill
+                // Notify it is paired and tell it flash the LED.
+
+                // Timer?
                 app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
+            }
+
+            if(self.dfu_pill_id)
+            {
+                // Send DFU message to pill.
+                // tell the pill to erase it's setting flash and enter DFU mode.
             }
             break;
     }
@@ -171,10 +185,16 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
         .on_status_update = _on_status_update,
     };
     self.parent = central;
+    self.dfu_pill_id = 0;
+
     app_timer_create(&self.commit_timer, APP_TIMER_MODE_SINGLE_SHOT, _commit_pairing);
     return &handler;
 }
 
-void ANT_UserSetPairing(uint8_t enable){
+inline void ANT_UserSetPairing(uint8_t enable){
     self.pair_enable = enable;
+}
+
+inline void ant_pill_dfu_begin(uint64_t pill_id){
+    self.dfu_pill_id = pill_id;
 }

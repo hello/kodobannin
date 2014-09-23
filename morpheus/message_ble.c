@@ -405,9 +405,15 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
 
 }
 
-void _start_dfu_process(void)
+static void _start_morpheus_dfu_process(void)
 {
     // TODO: Begin DFU here.
+}
+
+static void _start_pill_dfu_process(uint64_t pill_id)
+{
+    // TODO: Begin Pill DFU here.
+    ant_pill_dfu_begin(pill_id);
 }
 
 void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const MorpheusCommand* command)
@@ -457,8 +463,20 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
             }
         }
             break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_DFU_BEGIN:
-            _start_dfu_process();
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
+            _start_morpheus_dfu_process();
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DFU_BEGIN:
+            {
+                MSG_Data_t* device_id_page = command->deviceId.arg;
+                if(!device_id_page){
+                    PRINTS("No device id found for DFU.\r\n");
+                    return;
+                }
+                uint64_t pill_id = 0;
+                hble_hex_to_uint64_device_id(device_id_page->buf, &pill_id);
+                _start_pill_dfu_process(pill_id);
+            }
             break;
         default:
             break;

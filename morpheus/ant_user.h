@@ -8,4 +8,5 @@
 
 MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central);
 void ANT_UserSetPairing(uint8_t enable);
+void ant_pill_dfu_begin(uint64_t pill_id);
 
