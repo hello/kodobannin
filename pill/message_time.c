@@ -142,7 +142,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
                 app_timer_start(self.timer_id, ticks, NULL);
                 break;
             case TIME_SET_5S_RESOLUTION:
-                PRINTS("PERIODIC 1S");
+                PRINTS("PERIODIC 5S");
                 ticks = APP_TIMER_TICKS(5000,APP_TIMER_PRESCALER);
                 app_timer_stop(self.timer_id);
                 app_timer_start(self.timer_id, ticks, NULL);
