@@ -192,25 +192,27 @@ void pill_ble_load_modules(void){
 		central->loadmod(MSG_IMU_Init(central));
 #endif
 
-#ifdef ANT_ENABLE
-		central->loadmod(MSG_ANT_Base(central, NULL));
-#endif
-		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
-		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
-#ifdef ANT_ENABLE
-		{
-			uint8_t role = ANT_DISCOVERY_PERIPHERAL;
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
-		}
-		{
-			ANT_ChannelID_t id = {
-				.device_number = GET_UUID_16(),
-				.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
-				.transmit_type = 0
-			};
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
-		}
-#endif
+/*
+ *#ifdef ANT_ENABLE
+ *        central->loadmod(MSG_ANT_Base(central, NULL));
+ *#endif
+ *        MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
+ *        MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
+ *#ifdef ANT_ENABLE
+ *        {
+ *            uint8_t role = ANT_DISCOVERY_PERIPHERAL;
+ *            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
+ *        }
+ *        {
+ *            ANT_ChannelID_t id = {
+ *                .device_number = GET_UUID_16(),
+ *                .device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
+ *                .transmit_type = 0
+ *            };
+ *            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
+ *        }
+ *#endif
+ */
     }else{
         PRINTS("FAIL");
     }
