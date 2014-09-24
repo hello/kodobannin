@@ -4,24 +4,68 @@
 #include <ant_parameters.h>
 #include "util.h"
 
+#define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32
+typedef struct{
+    //cached status
+    uint8_t reserved;
+    //MASTER/SLAVE/SHARED etc
+    uint8_t channel_type;
+    //2.4GHz + frequency, 2.4XX
+    uint8_t frequency;
+    //network key, HLO specific
+    uint8_t network;
+    //period 32768/period Hz
+    uint16_t period;
+}hlo_ant_channel_phy_t;
+
 static struct{
     hlo_ant_role role;
-    hlo_ant_event_callback_t * event_listener;
+    hlo_ant_event_listener_t * event_listener;
 }self;
 
-int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_callback_t * callbacks){
-    if(!callbacks){
+static int
+_configure_channel(uint8_t channel,const hlo_ant_channel_phy_t * phy,  const hlo_ant_device_t * device, uint8_t ext_fields){
+    int ret = 0;
+    ret += sd_ant_channel_assign(channel, phy->channel_type, phy->network, ext_fields);
+    ret += sd_ant_channel_radio_freq_set(channel, phy->frequency);
+    ret += sd_ant_channel_period_set(channel, phy->period);
+    ret += sd_ant_channel_id_set(channel, device->device_number, device->device_type, device->transmit_type);
+    ret += sd_ant_channel_low_priority_rx_search_timeout_set(channel, 0xFF);
+    ret += sd_ant_channel_rx_search_timeout_set(channel, 0);
+    return ret;
+}
+int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
+    hlo_ant_channel_phy_t phy = {
+        .period = 273,
+        .frequency = 66,
+        .channel_type = CHANNEL_TYPE_SLAVE,
+        .network = 0
+    };
+    hlo_ant_device_t device = {0};
+    if(!user){
         return -1;
     }
     self.role = role;
-    self.event_listener = callbacks;
+    self.event_listener = user;
+    if(role == HLO_ANT_ROLE_CENTRAL){
+        PRINTS("Configured as ANT Central\r\n");
+        APP_OK(_configure_channel(0, &phy, &device, 0)); 
+        APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
+        sd_ant_rx_scan_mode_start(0);
+    }
     return 0;
 }
-const hlo_ant_channel_t * hlo_ant_connect(const hlo_ant_device_t * device){
+int hlo_ant_connect(const hlo_ant_device_t * device){
+    if(self.role == HLO_ANT_ROLE_CENTRAL){
+
+    }else if(self.role ==HLO_ANT_ROLE_PERIPHERAL){
+    }else{
+        return NULL;
+    }
 
 }
 
-int32_t hlo_ant_disconnect(const hlo_ant_channel_t * channel){
+int32_t hlo_ant_disconnect(int channel){
     
 }
 
@@ -52,7 +96,7 @@ _handle_rx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
     }else{
         return;
     }
-    self.event_listener->on_rx_event(&device, rx_payload, size);
+    self.event_listener->on_rx_event(&device, rx_payload, 8);
 }
 
 static void
@@ -85,7 +129,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             break;
         case EVENT_RX:
             PRINTS("R");
-            //_handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
             PRINTS("RXTO\r\n");

@@ -15,24 +15,16 @@ typedef struct{
     uint8_t transmit_type;
 }hlo_ant_device_t;
 
-/**
- * ant driver object
- */
-typedef struct{
-    hlo_ant_device_t device;
-}hlo_ant_channel_t;
-
-
 typedef struct{
     /* tx event indicates opportunity to send data to the id */
-    void (*on_tx_event)(const hlo_ant_channel_t * channel, uint8_t * out_buffer, uint8_t * out_buffer_len);
+    void (*on_tx_event)(const hlo_ant_device_t * channel, uint8_t * out_buffer, uint8_t * out_buffer_len);
     /* rx event indicates receiving a packet from the channel */
-    void (*on_rx_event)(const hlo_ant_channel_t * channel, uint8_t * buffer, uint8_t buffer_len);
-    void (*on_error_event)(const hlo_ant_channel_t * channel, uint32_t event);
-}hlo_ant_event_callback_t;
+    void (*on_rx_event)(const hlo_ant_device_t * channel, uint8_t * buffer, uint8_t buffer_len);
+    void (*on_error_event)(const hlo_ant_device_t * channel, uint32_t event);
+}hlo_ant_event_listener_t;
 
-int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_callback_t * callbacks);
-const hlo_ant_channel_t * hlo_ant_connect(const hlo_ant_device_t * device);
-int32_t hlo_ant_disconnect(const hlo_ant_channel_t * channel);
+int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * callbacks);
+int hlo_ant_connect(const hlo_ant_device_t * device);
+int32_t hlo_ant_disconnect(int channel);
 
 
