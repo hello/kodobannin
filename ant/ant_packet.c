@@ -36,11 +36,7 @@ static struct{
 }self;
 
 static inline uint16_t _calc_checksum(MSG_Data_t * data){
-    uint16_t checksum = crc16_compute(data->buf, data->len, NULL);
-    PRINTS("CS =");
-    PRINT_HEX(&checksum, 2);
-    PRINTS("\r\n");
-    return checksum;
+    return (crc16_compute(data->buf, data->len, NULL));
 }
 
 static inline hlo_ant_packet_session_t *
@@ -123,7 +119,7 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
             if(self.user){
                 self.user->on_message(ret_obj);
             }
-            _reset_session(session);
+            _close_session(session);
         }
     }else{
         //no more sessions available
