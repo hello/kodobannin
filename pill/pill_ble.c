@@ -30,6 +30,8 @@
 #include "message_ant.h"
 #include "ant_devices.h"
 #include "antutil.h"
+#include "ant_driver.h"
+#include "ant_packet.h"
 #endif
 
 #include "message_time.h"
@@ -213,6 +215,8 @@ void pill_ble_load_modules(void){
  *        }
  *#endif
  */
+
+	hlo_ant_init(HLO_ANT_ROLE_CENTRAL, hlo_ant_packet_init(NULL));
     }else{
         PRINTS("FAIL");
     }
