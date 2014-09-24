@@ -23,6 +23,32 @@ static struct{
     hlo_ant_event_listener_t * event_listener;
 }self;
 
+static int _find_open_channel_by_device(const hlo_ant_device_t * device, uint8_t begin, uint8_t end){
+    uint8_t i;
+    for(i = begin; i <= end; i++){
+        uint8_t status;
+        if(NRF_SUCCESS == sd_ant_channel_status_get(i, &status) && status > STATUS_UNASSIGNED_CHANNEL){
+            uint16_t dev_num;
+            uint8_t dud;
+            if(NRF_SUCCESS == sd_ant_channel_id_get(i, &dev_num, &dud, &dud)){
+                if(device->device_number == dev_num){
+                    return i;
+                }
+            }
+        }
+    }
+    return -1;
+}
+static int _find_unassigned_channel(uint8_t begin, uint8_t end){
+    uint8_t i;
+    for(i = begin; i <= end; i++){
+        uint8_t status;
+        if( NRF_SUCCESS == sd_ant_channel_status_get(i, &status) && status == STATUS_UNASSIGNED_CHANNEL){
+            return i;
+        }
+    }
+    return -1;
+}
 static int
 _configure_channel(uint8_t channel,const hlo_ant_channel_phy_t * phy,  const hlo_ant_device_t * device, uint8_t ext_fields){
     int ret = 0;
@@ -55,17 +81,36 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     }
     return 0;
 }
-int hlo_ant_connect(const hlo_ant_device_t * device){
-    if(self.role == HLO_ANT_ROLE_CENTRAL){
-
-    }else if(self.role ==HLO_ANT_ROLE_PERIPHERAL){
+int32_t hlo_ant_connect(const hlo_ant_device_t * device){
+    //scenarios:
+    //no channel with device : create channel, return success
+    //channel with device : return success
+    //no channel available : return error
+    uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
+    int ch = _find_open_channel_by_device(device, begin,7);
+    if(ch >= begin){
+        PRINTS("Channel already open!\r\n");
+        return 0;
     }else{
-        return NULL;
+        //open channel
+        int new_ch = _find_unassigned_channel(begin, 7);
+        if(new_ch >= begin){
+            hlo_ant_channel_phy_t phy = {
+                //TODO set period properly based on deivce number
+                .period = 1092,
+                .frequency = 66,
+                .channel_type = CHANNEL_TYPE_MASTER,
+                .network = 0
+            };
+            APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, 0));
+            APP_OK(sd_ant_channel_open((uint8_t)new_ch));
+            return new_ch;
+        }
     }
-
+    return -1;
 }
 
-int32_t hlo_ant_disconnect(int channel){
+int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
     
 }
 
@@ -109,6 +154,7 @@ _handle_tx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
         return;
     }else{
         if(NRF_SUCCESS == sd_ant_channel_id_get(channel, &device.device_number, &device.device_type, &device.transmit_type)){
+
         }else{
             //error
             return;

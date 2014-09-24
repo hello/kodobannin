@@ -17,14 +17,14 @@ typedef struct{
 
 typedef struct{
     /* tx event indicates opportunity to send data to the id */
-    void (*on_tx_event)(const hlo_ant_device_t * channel, uint8_t * out_buffer, uint8_t * out_buffer_len);
+    void (*on_tx_event)(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len);
     /* rx event indicates receiving a packet from the channel */
-    void (*on_rx_event)(const hlo_ant_device_t * channel, uint8_t * buffer, uint8_t buffer_len);
-    void (*on_error_event)(const hlo_ant_device_t * channel, uint32_t event);
+    void (*on_rx_event)(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len);
+    void (*on_error_event)(const hlo_ant_device_t * device, uint32_t event);
 }hlo_ant_event_listener_t;
 
 int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * callbacks);
-int hlo_ant_connect(const hlo_ant_device_t * device);
-int32_t hlo_ant_disconnect(int channel);
+int32_t hlo_ant_connect(const hlo_ant_device_t * device);
+int32_t hlo_ant_disconnect(const hlo_ant_device_t * device);
 
 
