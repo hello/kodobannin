@@ -1,5 +1,6 @@
 #include "ant_packet.h"
 #include "util.h"
+#include "crc16.h"
 
 #define CID2UID(cid) (cid)
 #define UID2CID(uid) ((uint16_t)uid)
@@ -34,6 +35,14 @@ static struct{
     hlo_ant_packet_listener * user;
 }self;
 
+static inline uint16_t _calc_checksum(MSG_Data_t * data){
+    uint16_t checksum = crc16_compute(data->buf, data->len, NULL);
+    PRINTS("CS =");
+    PRINT_HEX(&checksum, 2);
+    PRINTS("\r\n");
+    return checksum;
+}
+
 static inline hlo_ant_packet_session_t *
 _allocate_session(uint16_t cid){
     int i;
@@ -52,21 +61,27 @@ _allocate_session(uint16_t cid){
     return NULL;
 }
 static inline
-_close_session(hlo_ant_packet_session_t * session){
-    session->cid = 0;
+_reset_session(hlo_ant_packet_session_t * session){
+    if(session->rx_obj){
+        MSG_Base_ReleaseDataAtomic(session->rx_obj);
+    }
     session->rx_obj = NULL;
     session->rx_count = 0;
 }
+static inline
+_close_session(hlo_ant_packet_session_t * session){
+    _reset_session(session);
+    session->cid = 0;
+}
+
 static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_packet_t * packet){
    uint16_t offset = (packet->page - 1) * 6; 
    //make sure the offset does not exceed the length
-   if(offset + 6 < payload->len){
-       uint8_t i, diff = 0;
+   if(offset + 6 <= payload->len){
+       uint8_t i;
        for(i = 0; i < 6; i++){
-           diff += (payload->buf[offset + i] ^ packet->payload[i]);
            payload->buf[offset + i] = packet->payload[i];
        }
-       return diff;
    }
    return 0;
 }
@@ -79,21 +94,20 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
             hlo_ant_header_packet_t * new_header = buffer;
             if(new_crc != session->header.checksum){
                 //if crc is new, create new obj
-                MSG_Base_ReleaseDataAtomic(session->rx_obj);
-                session->rx_obj = MSG_Base_AllocateDataAtomic(new_size);
+                //TODO optimize by not swapping objects, but reusing it
                 session->header = *new_header;
-                session->rx_count = 1;
-            }else if(session->rx_count >= (session->header.page_count)){
-                //do integrity check
-                //might be able to move this outside of receiving a header packet
-                PRINTS("Check integrity\r\n");
+                _reset_session(session);
+                session->rx_obj = MSG_Base_AllocateDataAtomic(new_size);
             }
-        }else{
-            if(session->rx_obj){
-                uint8_t diff = _assemble_rx_payload(session->rx_obj, (hlo_ant_payload_packet_t *)buffer);
-                session->rx_count += (diff?1:0);
+        }else if(session->rx_obj){
+            _assemble_rx_payload(session->rx_obj, (hlo_ant_payload_packet_t *)buffer);
+            if(session->rx_count >= (session->header.page_count)){
+                if(_calc_checksum(session->rx_obj) == session->header.checksum){
+                    return session->rx_obj;
+                }
             }
         }
+        session->rx_count++;
     }else{
         //invalid packet
     }
@@ -106,9 +120,10 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
     if(session){
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
-            if(self.user)
+            if(self.user){
                 self.user->on_message(ret_obj);
-            MSG_Base_ReleaseDataAtomic(ret_obj);
+            }
+            _reset_session(session);
         }
     }else{
         //no more sessions available
