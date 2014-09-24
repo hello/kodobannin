@@ -11,8 +11,9 @@
 
 typedef struct{
     void (*on_message)(MSG_Data_t * message);
+    void (*on_message_sent)(MSG_Data_t * message);
 }hlo_ant_packet_listener;
 
 hlo_ant_event_listener_t * hlo_ant_packet_init(const hlo_ant_packet_listener * user_listener);
-int hlo_ant_packet_send_message(uint64_t uid, MSG_Data_t * msg);
-int hlo_ant_packet_send_command(uint64_t uid, MSG_Data_t * command);
+//no queue enabled, returns error if sending
+int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * msg);
