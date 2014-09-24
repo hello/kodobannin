@@ -129,7 +129,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             break;
         case EVENT_RX:
             PRINTS("R");
-            _handle_rx(&ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            _handle_rx(ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
             PRINTS("RXTO\r\n");
@@ -142,7 +142,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             break;
         case EVENT_TX:
             PRINTS("T");
-            //_handle_tx(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            _handle_tx(ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_TRANSFER_TX_FAILED:
             break;
