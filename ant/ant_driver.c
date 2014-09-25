@@ -99,11 +99,17 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
                 //TODO set period properly based on deivce number
                 .period = 1092,
                 .frequency = 66,
-                .channel_type = CHANNEL_TYPE_MASTER,
+                .channel_type = (self.role==HLO_ANT_ROLE_CENTRAL)?CHANNEL_TYPE_SLAVE:CHANNEL_TYPE_MASTER,
                 .network = 0
             };
             APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, 0));
-            APP_OK(sd_ant_channel_open((uint8_t)new_ch));
+            if(self.role == HLO_ANT_ROLE_PERIPHERAL){
+                APP_OK(sd_ant_channel_open((uint8_t)new_ch));
+            }else{
+                //as master, we dont connect, but instead start by sending a dud message
+                uint8_t message[8] = {0};
+                sd_ant_broadcast_message_tx((uint8_t)new_ch, sizeof(message), message);
+            }
             return new_ch;
         }
     }
