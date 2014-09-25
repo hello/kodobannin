@@ -86,15 +86,15 @@ typedef enum{
 #define ANT_ChannelID_t hlo_ant_device_t
 typedef struct{
     /* Called when a known and connected device sends a message */
-    void (*on_message)(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_t * msg);
+    void (*on_message)(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg);
 
     /* Called when an unknown device initiates advertisement */
-    void (*on_unknown_device)(const ANT_ChannelID_t * id);
+    void (*on_unknown_device)(const hlo_ant_device_t * id);
 
     /* Called when a known and connected device sends a single frame message */
-    void (*on_control_message)(const ANT_ChannelID_t * id, MSG_Address_t src, uint8_t control_type, const uint8_t * control_payload);
+    void (*on_control_message)(const hlo_ant_device_t * id, MSG_Address_t src, uint8_t control_type, const uint8_t * control_payload);
 
-    void (*on_status_update)(const ANT_ChannelID_t * id, ANT_Status_t status);
+    void (*on_status_update)(const hlo_ant_device_t * * id, ANT_Status_t status);
 }MSG_ANTHandler_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);

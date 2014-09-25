@@ -27,6 +27,11 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case ANT_SET_ROLE:
                 hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener));
                 break;
+
+            case ANT_REMOVE_DEVICE:
+                break;
+            case ANT_ADD_DEVICE:
+                break;
         }
     }
     return SUCCESS;
