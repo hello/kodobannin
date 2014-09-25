@@ -62,6 +62,10 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 }
                 break;
         }
+    }else if(dst.submodule <= DEFAULT_ANT_BOND_COUNT){
+        int idx = dst.submodule - 1;
+        //donp't have queue atm, dropping extra data for now
+        hlo_ant_packet_send_message(&self.paired_devices[idx], data);
     }
     return SUCCESS;
 }
@@ -86,6 +90,7 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
 
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){
     //get next queued tx message
+    PRINTS("Message Sent!\r\n");
 }
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler){
