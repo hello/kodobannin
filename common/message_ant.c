@@ -22,6 +22,16 @@ _find_paired(const hlo_ant_device_t * device){
     }
     return -1;
 }
+static int
+_find_empty(void){
+    int ret;
+    for(ret = 0; ret < DEFAULT_ANT_BOND_COUNT; ret++){
+        if(self.paired_devices[ret].device_number == 0){
+            return ret;
+        }
+    }
+    return -1;
+}
 static MSG_Status
 _init(void){
     return SUCCESS;
@@ -43,6 +53,13 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case ANT_REMOVE_DEVICE:
                 break;
             case ANT_ADD_DEVICE:
+                {
+                    int i = _find_empty();
+                    if(i >= 0){
+                        self.paired_devices[(uint8_t)i] = antcmd->param.device;
+                        PRINTS("Paired\r\n");
+                    }
+                }
                 break;
         }
     }
