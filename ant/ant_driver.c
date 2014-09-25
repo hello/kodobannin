@@ -117,6 +117,14 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
 }
 
 int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
+    uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
+    int ch = _find_open_channel_by_device(device, begin,7);
+    if(ch >= begin){
+        sd_ant_channel_close(ch);
+        sd_ant_channel_unassign(ch);
+        return 0;
+    }
+    return -1;
     
 }
 
@@ -154,7 +162,7 @@ static void
 _handle_tx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
     hlo_ant_device_t device;
     uint8_t out_buf[8] = {0};
-    uint8_t out_size = 8;
+    uint8_t out_size = 0;
     if(channel == 0 && self.role == HLO_ANT_ROLE_CENTRAL){
         //this should not happen
         return;
@@ -167,7 +175,7 @@ _handle_tx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
         }
     }
     self.event_listener->on_tx_event(&device, out_buf, &out_size);
-    if(out_size <= 8){
+    if(out_size && out_size <= 8){
         sd_ant_broadcast_message_tx(channel, out_size, out_buf);
     }
 }
