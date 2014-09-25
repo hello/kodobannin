@@ -1,14 +1,27 @@
 #include "message_ant.h"
 #include "util.h"
 
+#define DEFAULT_ANT_BOND_COUNT 4
 static struct{
     MSG_Central_t * parent;
     MSG_Base_t base;
     MSG_ANTHandler_t * user_handler;
     hlo_ant_packet_listener message_listener;
+    hlo_ant_device_t paired_devices[DEFAULT_ANT_BOND_COUNT];//TODO macro this in later
 }self;
 static char * name = "ANT";
 
+//returns -1 if not found, otherwise return index
+static int
+_find_paired(const hlo_ant_device_t * device){
+    int ret;
+    for(ret = 0; ret < DEFAULT_ANT_BOND_COUNT; ret++){
+        if(self.paired_devices[ret].device_number == device->device_number){
+            return ret;
+        }
+    }
+    return -1;
+}
 static MSG_Status
 _init(void){
     return SUCCESS;
@@ -27,7 +40,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case ANT_SET_ROLE:
                 hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener));
                 break;
-
             case ANT_REMOVE_DEVICE:
                 break;
             case ANT_ADD_DEVICE:
@@ -42,9 +54,17 @@ _destroy(void){
     return SUCCESS;
 }
 static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
-    //dump message into work queue
-    PRINTS("Seen Message\r\n");
-    self.parent->dispatch((MSG_Address_t){0,0}, (MSG_Address_t){UART, 1}, message);
+    MSG_Address_t default_src = {ANT, 0};
+    int src_submod = _find_paired(device);
+    if(src_submod >= 0){
+        default_src.submodule = (uint8_t)src_submod;
+        self.user_handler->on_message(device, default_src, message);
+    }else{
+        PRINTS("Unknown Source\r\n");
+        self.user_handler->on_unknown_device(device);
+    }
+    //DEBUG print them out too
+    self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
 }
 
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){

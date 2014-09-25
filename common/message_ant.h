@@ -48,6 +48,7 @@ typedef struct{
     }cmd;
     union{
         hlo_ant_role role;
+        hlo_ant_device_t device;
     }param;
 }MSG_ANTCommand_t;
 
