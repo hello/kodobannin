@@ -11,6 +11,10 @@ branches:
     - master
     - integration
     - travis
+cache:
+    apt: true
+    directories:
+        - ./tools/gcc-arm-none-eabi-4_7-2013q3
 notification:
     email:
     - jchen@sayhello.com
