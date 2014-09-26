@@ -168,7 +168,7 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
         //TODO handle timeout on session
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
-            if(self.user && self.user->onmessage){
+            if(self.user && self.user->on_message){
                 self.user->on_message(device, ret_obj);
             }
             _reset_session_rx(session);
