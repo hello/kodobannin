@@ -84,9 +84,6 @@ typedef struct{
     /* Called when an unknown device initiates advertisement */
     void (*on_unknown_device)(const hlo_ant_device_t * id);
 
-    /* Called when a known and connected device sends a single frame message */
-    void (*on_control_message)(const hlo_ant_device_t * id, MSG_Address_t src, uint8_t control_type, const uint8_t * control_payload);
-
     void (*on_status_update)(const hlo_ant_device_t * * id, ANT_Status_t status);
 }MSG_ANTHandler_t;
 
