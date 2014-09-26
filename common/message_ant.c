@@ -1,7 +1,6 @@
 #include "message_ant.h"
 #include "util.h"
 
-#define DEFAULT_ANT_BOND_COUNT 4
 static struct{
     MSG_Central_t * parent;
     MSG_Base_t base;
