@@ -3,14 +3,6 @@
 #include "ant_driver.h"
 #include "ant_packet.h"
 
-#define ANT_DISCOVERY_CHANNEL 0
-
-//how often does each payload transmit
-#define ANT_DEFAULT_TRANSMIT_LIMIT 3
-
-//how often header transmits before the rest of payload
-#define ANT_DEFAULT_HEADER_TRANSMIT_LIMIT 5
-
 #define TF_CONDENSED_BUFFER_SIZE (3)
 
 /**
