@@ -91,23 +91,6 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 		parent->dispatch((MSG_Address_t){0, 0},(MSG_Address_t){ANT, 1}, message_data);
 		MSG_Base_ReleaseDataAtomic(message_data);
 	}
-
-
-	/* do not advertise if has at least one bond */
-	if(MSG_ANT_BondCount() == 0){
-		// let's save one variable in the stack.
-
-		message_data = MSG_Base_AllocateDataAtomic(sizeof(ANT_DiscoveryProfile_t));
-		if(message_data){
-			SET_DISCOVERY_PROFILE(message_data);
-			parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1}, message_data);
-			MSG_Base_ReleaseDataAtomic(message_data);
-		}
-	}else{
-		uint8_t ret = MSG_ANT_BondCount();
-		PRINTS("bonds = ");
-		PRINT_HEX(&ret, 1);
-	}
 #endif
 }
 
@@ -199,9 +182,6 @@ static void _on_wom_timer(void* context)
 
 static void _on_pill_pairing_guesture_detected(void){
     //TODO: send pairing request packets via ANT
-#ifdef ANT_ENABLE
-	MSG_SEND_CMD(parent, ANT, MSG_ANTCommand_t, ANT_ADVERTISE, NULL, 0);
-#endif
 }
 
 
