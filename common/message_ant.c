@@ -78,10 +78,12 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
     int src_submod = _find_paired(device);
     if(src_submod >= 0){
         default_src.submodule = (uint8_t)src_submod;
-        self.user_handler->on_message(device, default_src, message);
+        if(self.user_handler && self.user_handler->on_message)
+            self.user_handler->on_message(device, default_src, message);
     }else{
         PRINTS("Unknown Source\r\n");
-        self.user_handler->on_unknown_device(device);
+        if(self.user_handler && self.user_handler->on_unknown_device)
+            self.user_handler->on_unknown_device(device);
     }
     //DEBUG print them out too
     self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
