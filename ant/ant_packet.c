@@ -71,7 +71,6 @@ _acquire_session(const hlo_ant_device_t * device){
     }
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == 0){
-            PRINTS("Created session");
             self.entries[i].cid = cid;
             _reset_session_tx(&(self.entries[i]));
             _reset_session_rx(&(self.entries[i]));
