@@ -73,6 +73,7 @@ BUILD_DIR = build
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard protobuf/*.c) \
+	$(wildcard ant/*.c) \
 
 
 NRF_SRCS = \
@@ -119,6 +120,7 @@ INCS =  ./ \
 	./protobuf \
 	./common \
 	./drivers \
+	./ant \
 	
 
 

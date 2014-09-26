@@ -7,7 +7,7 @@
  **/
 
 typedef struct{
-    ANT_ChannelID_t id;
+    hlo_ant_device_t id;
     uint64_t full_uid;
     uint64_t reserved[2];
 }ANT_BondedDevice_t;

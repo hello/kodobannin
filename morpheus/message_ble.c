@@ -216,13 +216,15 @@ MSG_Status message_ble_remove_pill(const MSG_Data_t* pill_id_page)
             morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             return FAIL;
         }else{
-            memset(command_page->buf, 0, command_page->len);
-            MSG_ANTCommand_t* ant_command = (MSG_ANTCommand_t*)command_page->buf;
-            ant_command->cmd = ANT_REMOVE_DEVICE;
-            memcpy(ant_command->param.raw_data, &pill_id, sizeof(pill_id));
-
-            self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){ANT, 1}, command_page);
-            MSG_Base_ReleaseDataAtomic(command_page);
+/*
+ *            memset(command_page->buf, 0, command_page->len);
+ *            MSG_ANTCommand_t* ant_command = (MSG_ANTCommand_t*)command_page->buf;
+ *            ant_command->cmd = ANT_REMOVE_DEVICE;
+ *            memcpy(ant_command->param.raw_data, &pill_id, sizeof(pill_id));
+ *
+ *            self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){ANT, 1}, command_page);
+ *            MSG_Base_ReleaseDataAtomic(command_page);
+ */
         }
 #else
         // echo test

@@ -30,6 +30,8 @@
 #include "message_ant.h"
 #include "ant_devices.h"
 #include "antutil.h"
+#include "ant_driver.h"
+#include "ant_packet.h"
 #endif
 
 #include "message_time.h"
@@ -193,24 +195,22 @@ void pill_ble_load_modules(void){
 #endif
 
 #ifdef ANT_ENABLE
-		central->loadmod(MSG_ANT_Base(central, NULL));
+        central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
+        {
+            hlo_ant_role role = HLO_ANT_ROLE_PERIPHERAL;
+			hlo_ant_device_t id = {
+				.device_number = GET_UUID_16(),
+				.device_type = 0,
+				.transmit_type = 0
+			};
+            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
+			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id, sizeof(id));
+        }
 #endif
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
-#ifdef ANT_ENABLE
-		{
-			uint8_t role = ANT_DISCOVERY_PERIPHERAL;
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role, 1);
-		}
-		{
-			ANT_ChannelID_t id = {
-				.device_number = GET_UUID_16(),
-				.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
-				.transmit_type = 0
-			};
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id, sizeof(id));
-		}
-#endif
+
+	hlo_ant_init(HLO_ANT_ROLE_CENTRAL, hlo_ant_packet_init(NULL));
     }else{
         PRINTS("FAIL");
     }
