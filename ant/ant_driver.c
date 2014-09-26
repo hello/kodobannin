@@ -26,7 +26,7 @@ static struct{
 static int _find_open_channel_by_device(const hlo_ant_device_t * device, uint8_t begin, uint8_t end){
     uint8_t i;
     for(i = begin; i <= end; i++){
-        uint8_t status;
+        uint8_t status = STATUS_UNASSIGNED_CHANNEL;
         if(NRF_SUCCESS == sd_ant_channel_status_get(i, &status) && status > STATUS_UNASSIGNED_CHANNEL){
             uint16_t dev_num;
             uint8_t dud;
@@ -122,10 +122,9 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
 int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
+    int ret;
     if(ch >= begin){
-        sd_ant_channel_close(ch);
-        sd_ant_channel_unassign(ch);
-        return 0;
+        return sd_ant_channel_close(ch);
     }
     return -1;
     
@@ -214,6 +213,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             break;
         case EVENT_CHANNEL_CLOSED:
             //_handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            sd_ant_channel_unassign(ant_channel);
             break;
         default:
             break;
