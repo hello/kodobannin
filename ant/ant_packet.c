@@ -152,7 +152,7 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
             MSG_Base_AcquireDataAtomic(sent_obj);
             //reset to prepare ahead of time if user has any more data to be sent
             _reset_session_tx(session);
-            if(self.user)
+            if(self.user && self.user->on_message_sent)
                 self.user->on_message_sent(device, sent_obj);
             MSG_Base_ReleaseDataAtomic(sent_obj);
             return;
@@ -165,9 +165,10 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
 static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session){
+        //TODO handle timeout on session
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
-            if(self.user){
+            if(self.user && self.user->onmessage){
                 self.user->on_message(device, ret_obj);
             }
             _reset_session_rx(session);
