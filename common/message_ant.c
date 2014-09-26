@@ -91,6 +91,7 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){
     //get next queued tx message
     PRINTS("Message Sent!\r\n");
+    hlo_ant_disconnect(device);
 }
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler){
