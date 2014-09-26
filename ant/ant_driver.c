@@ -67,6 +67,9 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
         .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0
     };
+    uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
+    sd_ant_stack_reset();
+    sd_ant_network_address_set(0,network_key);
     hlo_ant_device_t device = {0};
     if(!user){
         return -1;
