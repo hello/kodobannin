@@ -51,7 +51,7 @@ static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 void create_bond(const ANT_BondedDevice_t * id){
 	PRINTS("ID FOUND = ");
 	PRINT_HEX(&id->full_uid,2);
-	//MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id->id, sizeof(id->id));
+	MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id->id, sizeof(id->id));
 }
 
 
