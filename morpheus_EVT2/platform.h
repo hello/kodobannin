@@ -27,12 +27,12 @@ enum {
 #define PLATFORM_HAS_SSPI
 
 enum {
-    GSPI_nCS  = 21,
-    GSPI_SCLK = 25,
-    GSPI_MOSI = 23,
-    GSPI_MISO = 22,
+    SSPI_nCS  = 21,
+    SSPI_SCLK = 25,
+    SSPI_MOSI = 23,
+    SSPI_MISO = 22,
 
-    GSPI_INT = 24,
+    SSPI_INT = 24,
 };
 
 // general purpose CCU SPI interface
