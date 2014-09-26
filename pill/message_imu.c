@@ -46,13 +46,13 @@ static MSG_Base_t base;
 
 
 static struct imu_settings _settings = {
-	.active_wom_threshold = 80,
-    .inactive_wom_threshold = 35,
-	.inactive_sampling_rate = IMU_HZ_1_95,  //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50; IMU_HZ_3_91; IMU_HZ_1_95; IMU_HZ_0_98
+	.active_wom_threshold = IMU_ACTIVE_WOM,
+    .inactive_wom_threshold = IMU_INACTIVE_WOM,
+	.inactive_sampling_rate = IMU_INACTIVE_FREQ,  //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50; IMU_HZ_7_81; IMU_HZ_3_91; IMU_HZ_1_95; IMU_HZ_0_98
 #ifdef IMU_DYNAMIC_SAMPLING
-    .active_sampling_rate = IMU_HZ_31_25, //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50; IMU_HZ_3_91; IMU_HZ_1_95; IMU_HZ_0_98
+    .active_sampling_rate = IMU_ACTIVE_FREQ, //IMU_HZ_15_63; IMU_HZ_31_25; IMU_HZ_62_50; IMU_HZ_7_81; IMU_HZ_3_91; IMU_HZ_1_95; IMU_HZ_0_98
 #else
-    .active_sampling_rate = IMU_HZ_15_63,
+    .active_sampling_rate = IMU_CONSTANT_FREQ,
 #endif
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
     .accel_range = IMU_ACCEL_RANGE_2G,
