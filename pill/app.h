@@ -22,7 +22,9 @@ enum {
 
 
 //#define BONDING_REQUIRED
-#define DATA_SCIENCE_TASK
+//#define DATA_SCIENCE_TASK
+#define IMU_DYNAMIC_SAMPLING
+
 
 
 /*
@@ -86,6 +88,7 @@ enum {
  */
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
+#define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
 
 
 

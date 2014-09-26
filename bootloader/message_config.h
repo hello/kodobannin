@@ -20,7 +20,6 @@
 
 #define MSG_CENTRAL_MODULE_NUM  10
 
-
 #ifdef ANT_STACK_SUPPORT_REQD
 void ant_handler(ant_evt_t * p_ant_evt);
 

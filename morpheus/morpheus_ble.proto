@@ -27,6 +27,10 @@ message MorpheusCommand {
 	    MORPHEUS_COMMAND_ERROR = 13;  // if you receive this, that means something goes wrong.
 	    MORPHEUS_COMMAND_PAIR_SENSE = 14;
 	    MORPHEUS_COMMAND_UNPAIR_PILL = 15;
+	    MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN = 16;
+	    MORPHEUS_COMMAND_PILL_DATA = 17;
+	    MORPHEUS_COMMAND_PILL_HEARTBEAT = 18;
+	    MORPHEUS_COMMAND_PILL_DFU_BEGIN = 19;
 	}
 	required int32 version = 1;
 	required CommandType type = 2;
@@ -36,4 +40,7 @@ message MorpheusCommand {
 	optional string wifiName = 6;
 	optional string wifiSSID = 7;
 	optional string wifiPassword = 8;
+	optional int32 batteryLevel = 9;
+	optional int32 uptime = 10;
+	optional int32 motionData = 11;
 }

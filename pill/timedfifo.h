@@ -5,6 +5,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "platform.h"
 #include "app.h"
@@ -21,10 +22,8 @@
 #ifdef DATA_SCIENCE_TASK
 #define TF_BUFFER_SIZE (9 * 60)
 #else
-#define TF_BUFFER_SIZE (4 * 60)
+#define TF_BUFFER_SIZE (2 * 60)
 #endif
-
-#define TF_CONDENSED_BUFFER_SIZE (3)
 
 typedef int32_t tf_unit_t;  // Good job, this is a keen design!
 
@@ -37,18 +36,11 @@ typedef struct{
     tf_unit_t data[TF_BUFFER_SIZE];
 }__attribute__((packed)) tf_data_t;
 
-typedef struct{
-    uint8_t version;
-    uint8_t reserved[3];
-    uint64_t UUID;
-    uint64_t time;
-    tf_unit_t data[TF_CONDENSED_BUFFER_SIZE];
-}__attribute__((packed)) tf_data_condensed_t;
-
 
 void TF_Initialize(const struct hlo_ble_time * init_time);
 void TF_TickOneSecond(uint64_t monotonic_time);
 tf_unit_t TF_GetCurrent(void);
 void TF_SetCurrent(tf_unit_t val);
 tf_data_t * TF_GetAll(void);
-void TF_GetCondensed(tf_data_condensed_t * buf);
+bool TF_GetCondensed(uint32_t* buf, uint8_t length);
+uint8_t get_tick();

@@ -4,6 +4,7 @@
 
 #include <app_error.h>
 #include "message_uart.h"
+#include "hello_dfu.h"
 
 extern const uint8_t hex[16];
 
@@ -22,12 +23,17 @@ extern const uint8_t hex[16];
 #define PRINT_HEX(a,b) MSG_Uart_PrintHex(a,b) 
 #define PRINTS(a) MSG_Uart_Prints(a)
 #define PRINTC(a) {}
+#define SIMPRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
+#define SIMPRINTS(a) simple_uart_putstring((const uint8_t *)a)
+#define SIMPRINTC(a) simple_uart_put(a)
 #else //---------------------------------------------------
 #define PRINT_HEX(a,b) {}
 #define PRINTS(a) {}
 #define PRINTC(a) {}
 #define simple_uart_config(a,b,c,d,e) {}
-#define printf(a, ...) {}
+#define SIMPRINT_HEX(a,b) {}
+#define SIMPRINTS(a) {}
+#define SIMPRINTC(a) {}
 #endif //===================================================
 
 void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);
@@ -42,6 +48,11 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 #define GET_UUID_32() (NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1])
 #define GET_UUID_16() ((uint16_t) (GET_UUID_32() & 0xFFFF)^((GET_UUID_32() >> 16) & 0xFFFF))
 
+#define REBOOT_TO_DFU() do{\
+								if(NRF_SUCCESS == sd_power_gpregret_set((uint32_t)GPREGRET_FORCE_DFU_ON_BOOT_MASK)){\
+									NVIC_SystemReset();\
+								}\
+							}while(0)
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);

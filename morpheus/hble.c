@@ -27,10 +27,11 @@
 #include "hble.h"
 
 #include "morpheus_gatt.h"
-#include "message_ble.h"
+#include "morpheus_ble.h"
 
-//static hble_evt_handler_t _user_ble_evt_handler;
-//static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
+extern uint8_t hello_type;
+static uint16_t _morpheus_service_handle;
+
 static ble_gap_sec_params_t _sec_params;
 
 static bool _pairing_mode = false;
@@ -40,13 +41,21 @@ static int16_t  _last_bond_central_id;
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
-
-	clear_pill_pairing_state();
+    // Reset transmission layer, clean out error states.
+	morpheus_ble_transmission_layer_reset();
 #ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
     nrf_delay_ms(100);
     hble_advertising_start();
+
+#ifndef ANT_ENABLE
+    if(MSG_Base_HasMemoryLeak()){
+        PRINTS("Possible memory leak detected!\r\n");
+    }else{
+        PRINTS("No memory leak.\r\n");
+    }
+#endif
 }
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
@@ -61,7 +70,9 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 
     switch(ble_evt->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
-    // When new connection comes in, always set it back to non-pairing mode.
+        // Reset transmission layer, clean out error states.
+        morpheus_ble_transmission_layer_reset();
+        // When new connection comes in, always set it back to non-pairing mode.
         hble_set_advertising_mode(false);
         break;
     case BLE_GAP_EVT_DISCONNECTED:
@@ -494,4 +505,33 @@ void hble_params_init(char* device_name)
         _sec_params.max_key_size = SEC_PARAM_MAX_KEY_SIZE;
     }
 
+}
+
+
+void hble_services_init(void)
+{
+    // 1. Initialize HELLO UUID
+    hlo_ble_init();  
+
+    // 2. Add service
+    ble_uuid_t pill_service_uuid = {
+        .type = hello_type,
+        .uuid = BLE_UUID_MORPHEUS_SVC ,
+    };
+
+    APP_OK(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &pill_service_uuid, &_morpheus_service_handle));
+
+    // 3. Initialize Morpheus' BLE transmission layer
+    morpheus_ble_transmission_layer_init();
+
+    // 4. Add characteristics, attach them to transmission layer
+    hlo_ble_char_write_request_add(0xBEEB, &morpheus_ble_write_handler, sizeof(struct hlo_ble_packet));
+    hlo_ble_char_notify_add(0xB00B);
+
+    hlo_ble_char_notify_add(0xFEE1);
+    
+    hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
+
+    
+    
 }

@@ -11,3 +11,8 @@
 
 /// Initialize and start the watchdog timer (WDT), with the timeout specified in seconds. If the WDT doesn't receive a heartbeat from the application via watchdog_pet(), the system will reboot. THE DEBUG INTERFACE WILL BE DISABLED AFTER THIS FUNCTION IS CALLED.
 void watchdog_init(unsigned seconds, bool pauseTimerWhileCPUSleeping);
+
+//automiacally kick the watchdog
+//call this after init
+//seconds value should be shorter than the watchdog timer to account for task delays etc
+void watchdog_task_start(unsigned int seconds);
