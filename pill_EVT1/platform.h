@@ -3,10 +3,10 @@
 #pragma once
 
 #ifdef ANT_STACK_SUPPORT_REQD
-#define ANT_ENABLE
+//#define ANT_ENABLE
 #endif
 
-//#define BLE_ENABLE
+#define BLE_ENABLE
 //#define BATTERY_SERVICE_ENABLE
 //#define DEBUG_BATT_LVL
 

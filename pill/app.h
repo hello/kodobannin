@@ -22,7 +22,7 @@ enum {
 
 
 //#define BONDING_REQUIRED
-//#define DATA_SCIENCE_TASK
+#define DATA_SCIENCE_TASK
 #define IMU_DYNAMIC_SAMPLING
 
 /*

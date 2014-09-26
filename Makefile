@@ -11,6 +11,7 @@ APPS = bootloader morpheus pill $(TEST_APPS)
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
 S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1 morpheus_EVT2
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
+UNAME := $(shell uname)
 
 # product aliases
 
@@ -73,6 +74,7 @@ HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard protobuf/*.c) \
 
+
 NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/templates/system_nrf51.c \
 	nRF51_SDK/nrf51422/Source/app_common/app_timer.c \
@@ -100,6 +102,9 @@ DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
 	$(wildcard drivers/battery.c) \
 
+#ifeq ($(USE_SDK_BONDMNGR), 1)
+#	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
+#endif
 
 SRCS = $(HELLO_SRCS) $(NRF_SRCS) $(DRIVER_SRCS)
 
@@ -206,9 +211,13 @@ define rule-product
 
 .PHONY: $1+$2
 $1+$2: $(BUILD_DIR)/$1+$2.bin
+$1+$2: $(BUILD_DIR)/$1+$2.hex
 
 $(BUILD_DIR)/$1+$2.bin: $(BUILD_DIR)/$1+$2.elf
 	$(OBJCOPY) -O binary $$< $$@
+
+$(BUILD_DIR)/$1+$2.hex: $(BUILD_DIR)/$1+$2.elf
+	$(OBJCOPY) -O ihex $$< $$@
 
 $(BUILD_DIR)/$1+$2/%.o: %.c | $(CC)
 	@mkdir -p $$(dir $$@)
@@ -285,8 +294,14 @@ $(foreach platform, $(PLATFORMS),$(foreach app, $(APPS), $(eval $(call rule-prod
 
 # downloading required dependencies (GCC, J-Link)
 
+ifeq ($(UNAME), Linux)
+GCC_PACKAGE_BASENAME = gcc-arm-none-eabi-4_7-2013q3-20130916-linux.tar.bz2
+GCC_PACKAGE_URL = https://launchpadlibrarian.net/151487636/$(GCC_PACKAGE_BASENAME)
+endif
+ifeq ($(UNAME), Darwin)
 GCC_PACKAGE_BASENAME = gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2
 GCC_PACKAGE_URL = https://launchpadlibrarian.net/151487551/$(GCC_PACKAGE_BASENAME)
+endif
 
 .INTERMEDIATE: $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
 $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME):
@@ -295,7 +310,8 @@ $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME):
 
 $(DEFAULT_GCC_ROOT)/bin/$(PREFIX)gcc: | $(CURDIR)/tools/$(GCC_PACKAGE_BASENAME)
 	$(info [UNTARRING GCC...])
-	@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-mac.tar.bz2)
+	@(cd $(CURDIR)/tools && tar jxf $(GCC_PACKAGE_BASENAME))
+#@(cd $(CURDIR)/tools && tar jxf gcc-arm-none-eabi-4_7-2013q3-20130916-linux.tar.bz2)
 # submodule inits
 
 GIT_SUBMODULE_DEPENDENCY_FILES = $(SOFTDEVICE_SRC) micro-ecc/README.md nRF51422/Documentation/index.html $(CURDIR)/tools/JLink_MacOSX_V474/JLinkExe.command
