@@ -439,6 +439,7 @@ void hble_params_init(char* device_name)
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
 
+        /*
         size_t hex_device_id_len = 0;
         uint64_t device_id = 0;
         memcpy(&device_id, NRF_FICR->DEVICEID, sizeof(device_id));
@@ -450,9 +451,13 @@ void hble_params_init(char* device_name)
 
         char hex_device_id[hex_device_id_len];
         hble_uint64_to_hex_device_id(device_id, hex_device_id, &hex_device_id_len);
+        */
 
-        ble_srv_ascii_to_utf8(&dis_init.serial_num_str, hex_device_id);
-        
+#ifndef ANT_ENABLE
+        ble_srv_ascii_to_utf8(&dis_init.serial_num_str, "78:31:c1:ba:84:46");  // For iOS app testing
+#else
+        ble_srv_ascii_to_utf8(&dis_init.serial_num_str, "Not Yet Implemented");  // TODO: Fetch from buttom board
+#endif        
 
         BLE_GAP_CONN_SEC_MODE_SET_OPEN(&dis_init.dis_attr_md.read_perm);
         BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&dis_init.dis_attr_md.write_perm);
