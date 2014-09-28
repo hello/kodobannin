@@ -63,3 +63,5 @@ void imu_reset();
 uint8_t imu_clear_interrupt_status();
 
 void imu_spi_enable();
+void imu_enable();
+void imu_diable();

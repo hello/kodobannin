@@ -279,7 +279,8 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
         base.send = _send;
         base.type = IMU;
         base.typestr = name;
-
+        imu_enable();
+        
 #ifdef IMU_DYNAMIC_SAMPLING
 		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
 			_settings.inactive_sampling_rate, _settings.accel_range, _settings.inactive_wom_threshold))

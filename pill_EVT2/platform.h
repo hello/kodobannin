@@ -39,6 +39,7 @@ enum {
 // MCU_RXD  P19      // 27 P0.19
 
 #define PLATFORM_HAS_IMU
+#define PLATFORM_HAS_IMU_VDD_CONTROL
 
 enum {
     IMU_VDD_EN   = 20,
