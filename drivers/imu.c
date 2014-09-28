@@ -676,7 +676,6 @@ inline void imu_disable()
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
     nrf_gpio_cfg_output(IMU_VDD_EN);
     nrf_gpio_pin_write(IMU_VDD_EN, 1);
-    nrf_gpio_pin_clear(IMU_VDD_EN);
 #endif
 }
 
