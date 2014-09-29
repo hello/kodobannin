@@ -68,8 +68,9 @@ _uart_event_handler(app_uart_evt_t * evt){
                         app_uart_put('\n');
                         app_uart_put('\r');
                         if(self.rx_buf){
-                            //execute command
                             self.rx_buf->buf[self.rx_index] = '\0';
+                            //dispatch command to main context
+                            self.parent->dispatch((MSG_Address_t){UART,1},(MSG_Address_t){CLI,0}, self.rx_buf);
                             MSG_Base_ReleaseDataAtomic(self.rx_buf);
                             self.rx_buf = NULL;
                         }
