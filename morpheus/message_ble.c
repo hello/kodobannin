@@ -410,6 +410,7 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
 static void _start_morpheus_dfu_process(void)
 {
     // TODO: Begin DFU here.
+    REBOOT_TO_DFU();
 }
 
 static void _start_pill_dfu_process(uint64_t pill_id)
