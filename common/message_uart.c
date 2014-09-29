@@ -88,7 +88,7 @@ _uart_event_handler(app_uart_evt_t * evt){
                             self.rx_buf = MSG_Base_AllocateDataAtomic(MSG_UART_COMMAND_MAX_SIZE);
                             self.rx_index = 0;
                         }
-                        //work on buffer
+                        //write directly on buffer
                         if(self.rx_buf && self.rx_index < self.rx_buf->len - 1){
                             self.rx_buf->buf[self.rx_index++] = c;
                             app_uart_put(c);
