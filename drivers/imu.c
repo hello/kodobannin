@@ -663,6 +663,24 @@ inline void imu_spi_disable()
 	spi_disable(&_spi_context);
 }
 
+inline void imu_power_on()
+{
+#ifdef PLATFORM_HAS_IMU_VDD_CONTROL
+    nrf_gpio_cfg_output(IMU_VDD_EN);
+    //nrf_gpio_pin_write(IMU_VDD_EN, 0);
+    nrf_gpio_pin_clear(IMU_VDD_EN); // Equal to nrf_gpio_pin_write(IMU_VDD_EN, 0);
+#endif
+}
+
+inline void imu_power_off()
+{
+#ifdef PLATFORM_HAS_IMU_VDD_CONTROL
+    nrf_gpio_cfg_output(IMU_VDD_EN);
+    //nrf_gpio_pin_write(IMU_VDD_EN, 1);
+    nrf_gpio_pin_set(IMU_VDD_EN); // Should I ?
+#endif
+}
+
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 			uint8_t miso, uint8_t mosi, uint8_t sclk, 
 			uint8_t nCS, 
