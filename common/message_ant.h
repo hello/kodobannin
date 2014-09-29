@@ -51,19 +51,17 @@ typedef struct
     uint32_t uptime_sec;
 }__attribute__((packed)) pill_heartbeat_t;
 
+typedef enum {
+    ANT_PILL_DATA = 0,
+    ANT_PILL_HEARTBEAT
+}MSG_ANT_PillDataType_t;
+
 typedef struct{
-    enum {
-        ANT_PILL_DATA = 0,
-        ANT_PILL_HEARTBEAT
-    } type;
+    uint8_t type; //payload type using MSG_ANT_PillDataType;
     uint8_t version;
-    uint8_t reserved[2];
+    uint16_t payload_len;
     uint64_t UUID;
-    //uint64_t time;  // Morpheus should attch time, pill don't keep track of time anymore.
-    union {
-        uint32_t data[TF_CONDENSED_BUFFER_SIZE];
-        pill_heartbeat_t heartbeat_data;
-    } payload;
+    uint8_t payload[0];
 }__attribute__((packed)) MSG_ANT_PillData_t;
 
 /**

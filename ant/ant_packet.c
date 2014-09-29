@@ -5,6 +5,16 @@
 #define CID2UID(cid) (cid)
 #define UID2CID(uid) ((uint16_t)uid)
 #define PACKET_INTEGRITY_CHECK(buf) (buf[1] != 0 && buf[0] <= buf[1])
+#define DEFAULT_ANT_RETRANSMIT_COUNT 3
+#define DEFAULT_ANT_HEADER_RETRANSMIT_COUNT 5
+
+#ifndef ANT_RETRANSMIT_COUNT
+#define ANT_RETRANSMIT_COUNT DEFAULT_ANT_RETRANSMIT_COUNT
+#endif
+
+#ifndef ANT_HEADER_TRANSMIT_COUNT
+#define ANT_HEADER_TRANSMIT_COUNT DEFAULT_ANT_HEADER_RETRANSMIT_COUNT
+#endif
 
 typedef struct{
     uint8_t page;
@@ -49,7 +59,7 @@ _reset_session_tx(hlo_ant_packet_session_t * session){
     }
     //TODO: trick to sendbunch of headers before the body is to use negative number
     session->tx_obj = NULL;
-    session->tx_count = -5;
+    session->tx_count = ANT_HEADER_TRANSMIT_COUNT * -1;
 }
 static inline DECREF
 _reset_session_rx(hlo_ant_packet_session_t * session){
@@ -132,7 +142,7 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
         if(session->tx_count < 0){
             //copy header to prime transmission
             memcpy(out_buffer, &session->tx_header, 8);
-        }else if(session->tx_count < (session->tx_header.page_count * 2)){
+        }else if(session->tx_count < (session->tx_header.page_count * ANT_RETRANSMIT_COUNT)){
             uint16_t mod = session->tx_count % session->tx_header.page_count;
             if(mod == 0){
                 memcpy(out_buffer, &session->tx_header, 8);
@@ -193,6 +203,7 @@ int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * ms
     if(msg){
         hlo_ant_packet_session_t * session = _acquire_session(device);
         if(session){
+            _reset_session_tx(session);
             session->tx_obj = msg;
             MSG_Base_AcquireDataAtomic(msg);
             session->tx_header.size = msg->len;
