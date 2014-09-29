@@ -112,7 +112,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
             if(!status)
             {
                 PRINTS("Encoding protobuf failed, error: ");
-                PRINTS(PB_GET_ERROR(&stream));
+                PRINTS(PB_GET_ERROR(&out_stream));
                 PRINTS("\r\n");
                 
             }else{
