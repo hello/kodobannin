@@ -8,9 +8,6 @@ static struct{
     bool initialized;
     char cmdbuf[MSG_UART_COMMAND_MAX_SIZE];
     uint8_t cmdbuf_index;
-    MSG_Data_t * tx_queue[8];
-    MSG_Data_t * current_tx;
-    uint8_t * tx_ptr;
     app_uart_comm_params_t uart_params;
 }self;
 static char * name = "UART";
