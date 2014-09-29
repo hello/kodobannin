@@ -78,22 +78,23 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         morpheus_command.deviceId.funcs.encode = _encode_pill_command_string_fields;
         morpheus_command.deviceId.arg = &pill_data->UUID;
 
+        //TODO it may be a good idea to check len from the msg
         switch(pill_data->type){
             case ANT_PILL_DATA:
             {
                 morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
                 morpheus_command.has_motionData = true;
-                morpheus_command.motionData = pill_data->payload.data[TF_CONDENSED_BUFFER_SIZE - 1];
+                morpheus_command.motionData = pill_data->payload[TF_CONDENSED_BUFFER_SIZE - 1];
             }
             break;
             case ANT_PILL_HEARTBEAT:
             {
                 morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
                 morpheus_command.has_batteryLevel = true;
-                morpheus_command.batteryLevel = pill_data->payload.heartbeat_data.battery_level;
+                morpheus_command.batteryLevel = ((pill_heartbeat_t*)pill_data->payload)->battery_level;
 
                 morpheus_command.has_uptime = true;
-                morpheus_command.uptime = pill_data->payload.heartbeat_data.uptime_sec;
+                morpheus_command.uptime = ((pill_heartbeat_t*)pill_data->payload)->uptime_sec;
             }
             break;
             default:
@@ -111,7 +112,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
             if(!status)
             {
                 PRINTS("Encoding protobuf failed, error: ");
-                PRINTS(PB_GET_ERROR(&stream));
+                PRINTS(PB_GET_ERROR(&out_stream));
                 PRINTS("\r\n");
                 
             }else{

@@ -3,4 +3,6 @@ morpheus+morpheus_EVT1
 morpheus+morpheus_EVT2
 bootloader+pill_EVT1
 bootloader+morpheus_EVT1
-bootloader+morpheus_EVT2
+pill+pill_EVT2
+morpheus+morpheus_EVT2
+
