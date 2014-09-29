@@ -5,6 +5,11 @@
 #define CID2UID(cid) (cid)
 #define UID2CID(uid) ((uint16_t)uid)
 #define PACKET_INTEGRITY_CHECK(buf) (buf[1] != 0 && buf[0] <= buf[1])
+#define DEFAULT_ANT_RETRANSMIT_COUNT 3
+
+#ifndef ANT_RETRANSMIT_COUNT
+#define ANT_RETRANSMIT_COUNT DEFAULT_ANT_RETRANSMIT_COUNT
+#endif
 
 typedef struct{
     uint8_t page;
@@ -132,7 +137,7 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
         if(session->tx_count < 0){
             //copy header to prime transmission
             memcpy(out_buffer, &session->tx_header, 8);
-        }else if(session->tx_count < (session->tx_header.page_count * 2)){
+        }else if(session->tx_count < (session->tx_header.page_count * ANT_RETRANSMIT_COUNT)){
             uint16_t mod = session->tx_count % session->tx_header.page_count;
             if(mod == 0){
                 memcpy(out_buffer, &session->tx_header, 8);
