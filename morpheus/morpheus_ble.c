@@ -51,7 +51,7 @@ static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 void create_bond(const ANT_BondedDevice_t * id){
 	PRINTS("ID FOUND = ");
 	PRINT_HEX(&id->full_uid,2);
-	MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id->id, sizeof(id->id));
+	MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id->id, sizeof(id->id));
 }
 
 
@@ -378,20 +378,17 @@ void morpheus_load_modules(void){
 #endif
 		central->loadmod(MSG_BLE_Base(central));
 #ifdef ANT_ENABLE
-		central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
-
-		//MSG_Base_BufferTest();
-		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);
-		{
-			uint8_t role = ANT_DISCOVERY_CENTRAL;
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,1);
-		}
-		{
-			ANT_BondMgrInit();
-			ANT_BondMgrForEach(create_bond);
-		}
+        central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
+        {
+            hlo_ant_role role = HLO_ANT_ROLE_CENTRAL;
+            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
+        }
+        {
+            ANT_BondMgrInit();
+            ANT_BondMgrForEach(create_bond);
+        }
 #endif
-
+        MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);
     }else{
         PRINTS("FAIL");
     }

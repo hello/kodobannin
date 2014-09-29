@@ -44,15 +44,16 @@ _flush(void){
 
 #ifdef ANT_STACK_SUPPORT_REQD
 static void _send_available_data_ant(){
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + TF_CONDENSED_BUFFER_SIZE);
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
         ant_data->version = 0x1;
         ant_data->type = ANT_PILL_DATA;
         ant_data->UUID = GET_UUID_64();
+        ant_data->payload_len = TF_CONDENSED_BUFFER_SIZE;
 
-        if(TF_GetCondensed(ant_data->payload.data, TF_CONDENSED_BUFFER_SIZE))
+        if(TF_GetCondensed(ant_data->payload, TF_CONDENSED_BUFFER_SIZE))
         {
           self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
         }else{
@@ -68,18 +69,17 @@ static void _send_heartbeat_data_ant(){
     // I packed all the struct and I am not sure it will work as expected.
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
     if(data_page){
-        memset(&data_page->buf, 0, sizeof(data_page->len));
+        pill_heartbeat_t heartbeat = (pill_heartbeat_t){
+            .battery_level = 100,
+            .uptime_sec = self.uptime
+        };
+        memset(&data_page->buf, 0, sizeof(data_page->len) + sizeof(pill_heartbeat_t));
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
         ant_data->version = 0x1;
         ant_data->type = ANT_PILL_HEARTBEAT;
         ant_data->UUID = GET_UUID_64();
-        ant_data->payload.heartbeat_data = (pill_heartbeat_t){ 
-                    .battery_level = 100, 
-                    .uptime_sec = self.uptime 
-                    };  // fake batter level, TODO: get the actual value after EVT2
-
+        memcpy(ant_data->payload, &heartbeat, sizeof(heartbeat));
         self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
-
         MSG_Base_ReleaseDataAtomic(data_page);
     }
 }

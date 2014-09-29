@@ -58,7 +58,7 @@ static bool _encode_pill_command_string_fields(pb_ostream_t *stream, const pb_fi
 }
 
 
-static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_t * msg){
+static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
     if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
     {
         PRINTS("Acquire data error.\r\n");
@@ -78,22 +78,23 @@ static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_
         morpheus_command.deviceId.funcs.encode = _encode_pill_command_string_fields;
         morpheus_command.deviceId.arg = &pill_data->UUID;
 
+        //TODO it may be a good idea to check len from the msg
         switch(pill_data->type){
             case ANT_PILL_DATA:
             {
                 morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
                 morpheus_command.has_motionData = true;
-                morpheus_command.motionData = pill_data->payload.data[TF_CONDENSED_BUFFER_SIZE - 1];
+                morpheus_command.motionData = pill_data->payload[TF_CONDENSED_BUFFER_SIZE - 1];
             }
             break;
             case ANT_PILL_HEARTBEAT:
             {
                 morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
                 morpheus_command.has_batteryLevel = true;
-                morpheus_command.batteryLevel = pill_data->payload.heartbeat_data.battery_level;
+                morpheus_command.batteryLevel = ((pill_heartbeat_t*)pill_data->payload)->battery_level;
 
                 morpheus_command.has_uptime = true;
-                morpheus_command.uptime = pill_data->payload.heartbeat_data.uptime_sec;
+                morpheus_command.uptime = ((pill_heartbeat_t*)pill_data->payload)->uptime_sec;
             }
             break;
             default:
@@ -125,16 +126,10 @@ static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_
     MSG_Base_ReleaseDataAtomic(msg);
 }
 
-static void _on_unknown_device(const ANT_ChannelID_t * id){
-    if(self.pair_enable){
-        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, id, sizeof(*id));
-    }
+static void _on_unknown_device(const hlo_ant_device_t * id){
 }
 
-static void _on_control_message(const ANT_ChannelID_t * id, MSG_Address_t src, uint8_t control_type, const uint8_t * control_payload){
-    
-}
-static void _on_status_update(const ANT_ChannelID_t * id, ANT_Status_t  status){
+static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
     switch(status){
         default:
             break;
@@ -181,7 +176,6 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     static MSG_ANTHandler_t handler = {
         .on_message = _on_message,
         .on_unknown_device = _on_unknown_device,
-        .on_control_message = _on_control_message,
         .on_status_update = _on_status_update,
     };
     self.parent = central;
