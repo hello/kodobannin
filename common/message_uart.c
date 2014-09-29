@@ -69,6 +69,7 @@ _uart_event_handler(app_uart_evt_t * evt){
                         app_uart_put('\r');
                         if(self.rx_buf){
                             //execute command
+                            self.rx_buf->buf[self.rx_index] = '\0';
                             MSG_Base_ReleaseDataAtomic(self.rx_buf);
                             self.rx_buf = NULL;
                         }
@@ -88,7 +89,7 @@ _uart_event_handler(app_uart_evt_t * evt){
                             self.rx_index = 0;
                         }
                         //work on buffer
-                        if(self.rx_buf && self.rx_index < self.rx_buf->len){
+                        if(self.rx_buf && self.rx_index < self.rx_buf->len - 1){
                             self.rx_buf->buf[self.rx_index++] = c;
                             app_uart_put(c);
                         }
