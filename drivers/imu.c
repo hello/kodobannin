@@ -737,8 +737,6 @@ int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode,
 		return err;
 	}
 
-    _register_write(IMU_VDD_EN, 0);
-
 	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
 	// page 43
 

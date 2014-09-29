@@ -3,10 +3,10 @@
 #pragma once
 
 #ifdef ANT_STACK_SUPPORT_REQD
-#define ANT_ENABLE
+//#define ANT_ENABLE
 #endif
 
-//#define BLE_ENABLE
+#define BLE_ENABLE
 //#define BATTERY_SERVICE_ENABLE
 //#define DEBUG_BATT_LVL
 
@@ -45,8 +45,8 @@ enum {
     IMU_VDD_EN   = 20,
 
     IMU_SPI_nCS  = 16,
-    IMU_SPI_SCLK = 12,
-    IMU_SPI_MOSI = 14,
+    IMU_SPI_SCLK = 14,
+    IMU_SPI_MOSI = 12,
     IMU_SPI_MISO = 10,
 
     IMU_INT = 23,
