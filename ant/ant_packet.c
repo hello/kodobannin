@@ -193,6 +193,7 @@ int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * ms
     if(msg){
         hlo_ant_packet_session_t * session = _acquire_session(device);
         if(session){
+            _reset_session_tx(session);
             session->tx_obj = msg;
             MSG_Base_AcquireDataAtomic(msg);
             session->tx_header.size = msg->len;
