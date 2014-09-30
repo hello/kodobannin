@@ -12,7 +12,7 @@
 #include <nrf_gpio.h>
 #include <string.h>
 #include <app_gpiote.h>
-#include <imu.h>
+#include "imu.h"
 
 #include "message_imu.h"
 #include "mpu_6500_registers.h"
@@ -182,6 +182,20 @@ static void _on_wom_timer(void* context)
 
 static void _on_pill_pairing_guesture_detected(void){
     //TODO: send pairing request packets via ANT
+#ifdef ANT_ENABLE
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
+    if(data_page){
+        memset(&data_page->buf, 0, sizeof(data_page->len));
+        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        ant_data->version = ANT_PROTOCOL_VER;
+        ant_data->type = ANT_PILL_SHAKING;
+        ant_data->UUID = GET_UUID_64();
+        parent->dispatch((MSG_Address_t){IMU,1}, (MSG_Address_t){ANT,1}, data_page);
+        MSG_Base_ReleaseDataAtomic(data_page);
+    }
+#endif
+
+    
 }
 
 

@@ -48,7 +48,7 @@ static void _send_available_data_ant(){
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
-        ant_data->version = 0x1;
+        ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_DATA;
         ant_data->UUID = GET_UUID_64();
         ant_data->payload_len = TF_CONDENSED_BUFFER_SIZE;
@@ -75,7 +75,7 @@ static void _send_heartbeat_data_ant(){
         };
         memset(&data_page->buf, 0, sizeof(data_page->len) + sizeof(pill_heartbeat_t));
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
-        ant_data->version = 0x1;
+        ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_HEARTBEAT;
         ant_data->UUID = GET_UUID_64();
         memcpy(ant_data->payload, &heartbeat, sizeof(heartbeat));
