@@ -38,6 +38,7 @@
 
 #include "nrf.h"
 #include "timedfifo.h"
+#include "cli_user.h"
 
 
 extern uint8_t hello_type;
@@ -194,6 +195,7 @@ void pill_ble_load_modules(void){
 		central->loadmod(MSG_IMU_Init(central));
 #endif
 
+        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #ifdef ANT_ENABLE
         hlo_ant_init(HLO_ANT_ROLE_CENTRAL, hlo_ant_packet_init(NULL));
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
