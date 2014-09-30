@@ -63,9 +63,8 @@ static MSG_Data_t *
 _dequeue_tx(void){
     MSG_Data_t * ret = MSG_Base_DequeueAtomic(self.tx_queue);
 #ifdef PLATFORM_HAS_SSPI
-    if(self.tx_queue->elements && SSPI_INT != 0){
-        PRINTS("Set\r\n");
-        nrf_gpio_cfg_output(SSPI_INT);
+    if(!self.tx_queue->elements && SSPI_INT != 0){
+        //PRINTS("LOW\r\n");
         nrf_gpio_pin_clear(SSPI_INT);
     }
 #endif
@@ -84,8 +83,7 @@ _queue_tx(MSG_Data_t * o){
     }
 #ifdef PLATFORM_HAS_SSPI
     if(SSPI_INT != 0){
-        PRINTS("HIGH\r\n");
-        nrf_gpio_cfg_output(SSPI_INT);
+        //PRINTS("HIGH\r\n");
         nrf_gpio_pin_set(SSPI_INT);
     }
 #endif
@@ -258,9 +256,9 @@ _init(){
     }
 #ifdef PLATFORM_HAS_SSPI
     if(SSPI_INT != 0){
+        //PRINTS("LOW");
         nrf_gpio_cfg_output(SSPI_INT);
         nrf_gpio_pin_clear(SSPI_INT);
-        //nrf_gpio_pin_set(SSPI_INT);
     }
 #endif
     self.dummy = MSG_Base_AllocateDataAtomic(230);
