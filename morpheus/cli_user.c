@@ -32,6 +32,30 @@ _handle_command(int argc, char * argv[]){
     if(argc > 1 && _strncmp(argv[0], "echo", strlen("echo")) == 0){
         PRINTS(argv[1]);
     }
+    if(argc > 1 && _strncmp(argv[0], "spi", strlen("spi")) == 0){
+        MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
+        if(data){
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){SSPI,1},//destination address, ANT
+                                    data);
+            //release message object after dispatch to prevent memory leak
+            MSG_Base_ReleaseDataAtomic(data);
+        }
+    }
+    if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
+        //Create a message object from uart string
+        MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
+        if(data){
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){ANT,1},//destination address, ANT
+                                    data);
+            //release message object after dispatch to prevent memory leak
+            MSG_Base_ReleaseDataAtomic(data);
+        }
+    }
+    if(argc > 1 && _strncmp(argv[0], "pair", strlen("pair")) == 0){
+        //Create a message object from uart string
+    }
 }
 
 MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){
