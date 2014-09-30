@@ -6,11 +6,8 @@ static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
     bool initialized;
-    char cmdbuf[MSG_UART_COMMAND_MAX_SIZE];
-    uint8_t cmdbuf_index;
-    MSG_Data_t * tx_queue[8];
-    MSG_Data_t * current_tx;
-    uint8_t * tx_ptr;
+    MSG_Data_t * rx_buf;
+    uint16_t rx_index;
     app_uart_comm_params_t uart_params;
 }self;
 static char * name = "UART";
@@ -58,16 +55,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     }
     return SUCCESS;
 }
-static MSG_Status
-_buf_to_msg_data(MSG_Data_t * out_msg_data){
-    if(out_msg_data){
-        out_msg_data->len = self.cmdbuf_index;
-        for(int i = 0; i < out_msg_data->len; i++){
-            out_msg_data->buf[i] = self.cmdbuf[i];
-        }
-    }
-    return SUCCESS;
-}
 static void
 _uart_event_handler(app_uart_evt_t * evt){
     uint8_t c;
@@ -78,34 +65,34 @@ _uart_event_handler(app_uart_evt_t * evt){
                 switch(c){
                     case '\r':
                     case '\n':
-                        if(self.cmdbuf_index){
-                            app_uart_put('\n');
-                            app_uart_put('\r');
-                            //execute command
-                            {
-                                MSG_Data_t * d = MSG_Base_AllocateDataAtomic(self.cmdbuf_index);
-                                _buf_to_msg_data(d);
-                                MSG_Base_ReleaseDataAtomic(d);
-                            }
-                            self.cmdbuf_index = 0;
+                        app_uart_put('\n');
+                        app_uart_put('\r');
+                        if(self.rx_buf){
+                            self.rx_buf->buf[self.rx_index] = '\0';
+                            //dispatch command to main context
+                            self.parent->dispatch((MSG_Address_t){UART,1},(MSG_Address_t){CLI,0}, self.rx_buf);
+                            MSG_Base_ReleaseDataAtomic(self.rx_buf);
+                            self.rx_buf = NULL;
                         }
                         break;
                     case '\b':
                     case '\177': // backspace
-                        if(self.cmdbuf_index){
+                        if(self.rx_index){
                             app_uart_put('\b');
                             app_uart_put(' ');
                             app_uart_put('\b');
-                            self.cmdbuf_index--;
+                            self.rx_index--;
                         }
                         break;
                     default:
-                        //app_uart_put(c);
-                        if(self.cmdbuf_index < MSG_UART_COMMAND_MAX_SIZE - 1){
-                            self.cmdbuf[self.cmdbuf_index] = c;
-                            app_uart_put(self.cmdbuf[self.cmdbuf_index]);
-
-                            self.cmdbuf_index++;
+                        if(!self.rx_buf){
+                            self.rx_buf = MSG_Base_AllocateDataAtomic(MSG_UART_COMMAND_MAX_SIZE);
+                            self.rx_index = 0;
+                        }
+                        //write directly on buffer
+                        if(self.rx_buf && self.rx_index < self.rx_buf->len - 1){
+                            self.rx_buf->buf[self.rx_index++] = c;
+                            app_uart_put(c);
                         }
                         break;
                 }
@@ -128,7 +115,7 @@ _uart_event_handler(app_uart_evt_t * evt){
 static MSG_Status
 _init(void){
     uint32_t err;
-    APP_UART_FIFO_INIT(&self.uart_params, 32, 256, _uart_event_handler, APP_IRQ_PRIORITY_LOW, err);
+    APP_UART_FIFO_INIT(&self.uart_params, 16, 256, _uart_event_handler, APP_IRQ_PRIORITY_LOW, err);
     if(!err){
         self.initialized = 1;
         return SUCCESS;
