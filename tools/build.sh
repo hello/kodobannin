@@ -13,5 +13,7 @@ build_targ()
 
 #clean_repo
 while read p; do
-    build_targ $p
+    if [ -n "$p" ]; then
+        build_targ $p
+    fi
 done < $builds
