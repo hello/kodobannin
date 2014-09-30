@@ -195,6 +195,7 @@ void pill_ble_load_modules(void){
 #endif
 
 #ifdef ANT_ENABLE
+        hlo_ant_init(HLO_ANT_ROLE_CENTRAL, hlo_ant_packet_init(NULL));
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
         {
             hlo_ant_role role = HLO_ANT_ROLE_PERIPHERAL;
@@ -206,11 +207,12 @@ void pill_ble_load_modules(void){
             MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id, sizeof(id));
         }
+
 #endif
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 
-	hlo_ant_init(HLO_ANT_ROLE_CENTRAL, hlo_ant_packet_init(NULL));
+	    
     }else{
         PRINTS("FAIL");
     }

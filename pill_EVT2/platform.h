@@ -6,7 +6,7 @@
 #define ANT_ENABLE
 #endif
 
-#define BLE_ENABLE
+//#define BLE_ENABLE
 //#define BATTERY_SERVICE_ENABLE
 //#define DEBUG_BATT_LVL
 
