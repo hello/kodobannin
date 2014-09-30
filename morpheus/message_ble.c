@@ -400,10 +400,12 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
     command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
     command.version = PROTOBUF_VERSION;
-    if(morpheus_ble_reply_protobuf(&command))
-    {
-        _led_pairing_mode();
-    }
+    /*
+     *if(morpheus_ble_reply_protobuf(&command))
+     *{
+     *    _led_pairing_mode();
+     *}
+     */
 
 }
 
@@ -428,8 +430,16 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
     {
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
             _morpheus_switch_mode(true);
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+            }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+            }
             _morpheus_switch_mode(false);
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
