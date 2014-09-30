@@ -2,6 +2,11 @@
 #include <string.h>
 #include "util.h"
 #include "message_cli.h"
+/**
+ * much code copy pasted from
+ * https://code.google.com/p/embox/source/browse/trunk/embox/src/lib/shell/tokenizer.c?r=6132
+ * TODO: add quote supports
+ **/
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
