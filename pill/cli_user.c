@@ -17,7 +17,7 @@ _strncmp(const char * s1, const char *s2, uint32_t n){
     return 0;
 }
 static void
-_handle_command(int argc, char * argv[], void * ctx){
+_handle_command(int argc, char * argv[]){
     /*
      * stub code
      */
