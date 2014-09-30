@@ -32,6 +32,18 @@ _handle_command(int argc, char * argv[], void * ctx){
     if(argc > 1 && _strncmp(argv[0], "echo", strlen("echo")) == 0){
         PRINTS(argv[1]);
     }
+    //dispatch message through ANT
+    if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
+        //Create a message object from uart string
+        MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
+        if(data){
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){ANT,1},//destination address, ANT
+                                    data);
+            //release message object after dispatch to prevent memory leak
+            MSG_Base_ReleaseDataAtomic(data);
+        }
+    }
 }
 
 MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){
