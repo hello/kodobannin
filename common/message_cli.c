@@ -51,7 +51,7 @@ static int
 _tokenize(char * string, char **argv){
     int argc = 0;
     char * token;
-    while(*string != '\0'){
+    while(*string != '\0' && argc < CLI_MAX_ARGS){
         argv[argc++] = (token = _next_token(&string));
         if(*string){
             *string++ = '\0';
