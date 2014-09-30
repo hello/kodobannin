@@ -99,11 +99,9 @@ _close_session(hlo_ant_packet_session_t * session){
 static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_packet_t * packet){
    uint16_t offset = (packet->page - 1) * 6; 
    //make sure the offset does not exceed the length
-   if(offset + 6 <= payload->len){
-       uint8_t i;
-       for(i = 0; i < 6; i++){
-           payload->buf[offset + i] = packet->payload[i];
-       }
+   uint8_t i;
+   for(i = 0; i < (payload->len - offset); i++){
+       payload->buf[offset + i] = packet->payload[i];
    }
    return 0;
 }
@@ -142,7 +140,7 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
         if(session->tx_count < 0){
             //copy header to prime transmission
             memcpy(out_buffer, &session->tx_header, 8);
-        }else if(session->tx_count < ((session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)){
+        }else if(session->tx_count < ( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT) ){
             uint16_t mod = session->tx_count % (session->tx_header.page_count+1);
             if(mod == 0){
                 memcpy(out_buffer, &session->tx_header, 8);
@@ -154,6 +152,8 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
                 for(i = 0; i < 6; i++){
                     if(offset + i < session->tx_obj->len){
                         out_buffer[2+i] = session->tx_obj->buf[offset+i];
+                    }else{
+                        out_buffer[2+i] = 0;
                     }
                 }
             }
