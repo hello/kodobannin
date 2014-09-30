@@ -377,7 +377,7 @@ void morpheus_load_modules(void){
 		central->loadmod(MSG_SSPI_Base(&spi_params,central));
 #endif
 		central->loadmod(MSG_BLE_Base(central));
-        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(NULL)));
+        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #ifdef ANT_ENABLE
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
         {
