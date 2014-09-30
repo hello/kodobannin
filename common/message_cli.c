@@ -5,7 +5,7 @@
 static struct{
     MSG_Base_t base;
     MSG_Central_t * parent;
-    MSG_CliUserListener_t * user;
+    MSG_CliUserListener_t user;
 }self;
 static char * name = "CLI";
 
@@ -72,8 +72,8 @@ _handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
      *    PRINTS("\r\n");
      *}
      */
-    if(self.user && self.user->handle_command){
-        self.user->handle_command(argc, argv);
+    if(self.user.handle_command){
+        self.user.handle_command(argc, argv, self.user.user_ctx);
     }
     return SUCCESS;
 
@@ -88,6 +88,6 @@ MSG_Base_t * MSG_Cli_Base(const MSG_Central_t * parent, const MSG_CliUserListene
     self.base.type = CLI;
     self.base.typestr = name;
     self.parent = parent;
-    self.user = user;
+    self.user = *user;
     return &self.base;
 }
