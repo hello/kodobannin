@@ -66,28 +66,28 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
     }
 
 
-    self.parent->dispatch(src, (MSG_Address_t){UART,1}, msg);
-    if(src.module == TIME && src.submodule == 1){
-        // TODO, this shit needs to be tested on CC3200 side.
-        MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+    // TODO, this shit needs to be tested on CC3200 side.
+    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
 
-        MorpheusCommand morpheus_command;
-        memset(&morpheus_command, 0, sizeof(MorpheusCommand));
+    MorpheusCommand morpheus_command;
+    memset(&morpheus_command, 0, sizeof(MorpheusCommand));
 
-        morpheus_command.version = PROTOBUF_VERSION;
-        morpheus_command.deviceId.funcs.encode = _encode_pill_command_string_fields;
-        morpheus_command.deviceId.arg = &pill_data->UUID;
+    morpheus_command.version = PROTOBUF_VERSION;
+    morpheus_command.deviceId.funcs.encode = _encode_pill_command_string_fields;
+    morpheus_command.deviceId.arg = &pill_data->UUID;
 
-        //TODO it may be a good idea to check len from the msg
-        switch(pill_data->type){
-            case ANT_PILL_DATA:
+    //TODO it may be a good idea to check len from the msg
+    PRINTS("Dtype = ");
+    PRINT_HEX(&pill_data->type, sizeof(pill_data->type));
+    switch(pill_data->type){
+        case ANT_PILL_DATA:
             {
                 morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
                 morpheus_command.has_motionData = true;
                 morpheus_command.motionData = pill_data->payload[TF_CONDENSED_BUFFER_SIZE - 1];
             }
             break;
-            case ANT_PILL_HEARTBEAT:
+        case ANT_PILL_HEARTBEAT:
             {
                 morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
                 morpheus_command.has_batteryLevel = true;
@@ -97,36 +97,37 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                 morpheus_command.uptime = ((pill_heartbeat_t*)pill_data->payload)->uptime_sec;
             }
             break;
-            default:
+        default:
             break;
-        }
+    }
 
-        MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
+    MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
 
-        if(!proto_page){
-            PRINTS("No memory for convert protobuf.\r\n");
+    if(!proto_page){
+        PRINTS("No memory for convert protobuf.\r\n");
+    }else{
+
+        pb_ostream_t out_stream = pb_ostream_from_buffer(proto_page->buf, proto_page->len);
+        bool status = pb_encode(&out_stream, MorpheusCommand_fields, &morpheus_command);
+        if(!status)
+        {
+            PRINTS("Encoding protobuf failed, error: ");
+            PRINTS(PB_GET_ERROR(&out_stream));
+            PRINTS("\r\n");
+
         }else{
-
-            pb_ostream_t out_stream = pb_ostream_from_buffer(proto_page->buf, proto_page->len);
-            bool status = pb_encode(&out_stream, MorpheusCommand_fields, &morpheus_command);
-            if(!status)
-            {
-                PRINTS("Encoding protobuf failed, error: ");
-                PRINTS(PB_GET_ERROR(&out_stream));
-                PRINTS("\r\n");
-                
-            }else{
-                self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
-            }
-
-            MSG_Base_ReleaseDataAtomic(proto_page);
+            self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
+            self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
         }
+
+        MSG_Base_ReleaseDataAtomic(proto_page);
     }
 
     MSG_Base_ReleaseDataAtomic(msg);
 }
 
 static void _on_unknown_device(const hlo_ant_device_t * id){
+    //MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, id, sizeof(*id));
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
