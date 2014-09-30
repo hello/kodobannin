@@ -1,7 +1,7 @@
 #pragma once
 #include "message_base.h"
 
-#define CLI_MAX_ARGS 3
+#define CLI_MAX_ARGS 5
 
 typedef struct{
     void (*handle_command)(int argc, char * argv[]);
