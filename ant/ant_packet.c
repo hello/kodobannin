@@ -142,8 +142,8 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
         if(session->tx_count < 0){
             //copy header to prime transmission
             memcpy(out_buffer, &session->tx_header, 8);
-        }else if(session->tx_count < (session->tx_header.page_count * ANT_RETRANSMIT_COUNT)){
-            uint16_t mod = session->tx_count % session->tx_header.page_count;
+        }else if(session->tx_count < ((session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)){
+            uint16_t mod = session->tx_count % (session->tx_header.page_count+1);
             if(mod == 0){
                 memcpy(out_buffer, &session->tx_header, 8);
             }else{
