@@ -72,8 +72,8 @@ _handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
      *    PRINTS("\r\n");
      *}
      */
-    if(self.user){
-        self.handle_command(argc, argv);
+    if(self.user && self.user->handle_command){
+        self.user->handle_command(argc, argv);
     }
     return SUCCESS;
 
