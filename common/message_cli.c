@@ -73,7 +73,7 @@ _handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
      *}
      */
     if(self.user.handle_command){
-        self.user.handle_command(argc, argv, self.user.user_ctx);
+        self.user.handle_command(argc, argv);
     }
     return SUCCESS;
 

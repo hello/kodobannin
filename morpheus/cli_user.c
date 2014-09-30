@@ -36,7 +36,6 @@ _handle_command(int argc, char * argv[], void * ctx){
 
 MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){
     self.listener.handle_command = _handle_command;
-    self.listener.user_ctx = ctx;
     self.parent = parent;
     return &self.listener;
 }
