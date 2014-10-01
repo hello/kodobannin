@@ -127,7 +127,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
     if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
-        self.pair_enable = 0;
         self.staging_bond = (ANT_BondedDevice_t){
             .id = *_id,
             .full_uid = pill_data->UUID,
