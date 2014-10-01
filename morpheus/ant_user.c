@@ -77,8 +77,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
     morpheus_command.deviceId.arg = &pill_data->UUID;
 
     //TODO it may be a good idea to check len from the msg
-    PRINTS("Dtype = ");
-    PRINT_HEX(&pill_data->type, sizeof(pill_data->type));
     switch(pill_data->type){
         case ANT_PILL_DATA:
             {
