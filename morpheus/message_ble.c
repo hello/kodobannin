@@ -106,6 +106,7 @@ static void _register_pill(){
                 if(compact_page){
                     memcpy(compact_page->buf, data_page->buf, protobuf_len);
                     message_ble_route_data_to_cc3200(compact_page);
+                    morpheus_ble_reply_protobuf(&pairing_command);
                     MSG_Base_ReleaseDataAtomic(compact_page);
                 }else{
                     morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
