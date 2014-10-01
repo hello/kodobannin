@@ -86,7 +86,7 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
             self.user_handler->on_unknown_device(device, message);
     }
     //DEBUG print them out too
-    self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
+    //self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
 }
 
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){
