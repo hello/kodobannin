@@ -105,7 +105,7 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
    	
    	char str[stream->bytes_left + 1];
     memset(str, 0, stream->bytes_left + 1);
-    
+
     if (!pb_read(stream, str, stream->bytes_left))
     {
         return false;
@@ -144,7 +144,15 @@ bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, siz
     command->wifiPassword.arg = NULL;
 
     pb_istream_t stream = pb_istream_from_buffer(raw, len);
-    return pb_decode(&stream, MorpheusCommand_fields, command);
+    bool status = pb_decode(&stream, MorpheusCommand_fields, command);
+    if (!status)
+    {
+        PRINTS("Decoding protobuf failed, error: ");
+        PRINTS(PB_GET_ERROR(&stream));
+        PRINTS("\r\n");
+    }
+
+    return status;
 }
 
 

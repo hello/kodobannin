@@ -37,27 +37,6 @@ static MSG_Status _flush(void){
     return SUCCESS;
 }
 
-static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
-{
-    if(*arg == NULL)
-    {
-        return false;
-    }
-
-    MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
-    MSG_Base_AcquireDataAtomic(buffer_page);
-    char* str = buffer_page->buf;
-    
-    bool ret = false;
-    if (pb_encode_tag_for_field(stream, field))
-    {
-        ret = pb_encode_string(stream, (uint8_t*)str, strlen(str));
-    }
-
-    MSG_Base_ReleaseDataAtomic(buffer_page);
-    return ret;
-}
-
 
 static void _register_pill(){
     if(self.pill_pairing_request.account_id && self.pill_pairing_request.device_id){
@@ -388,12 +367,9 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
     command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
     command.version = PROTOBUF_VERSION;
-    /*
-     *if(morpheus_ble_reply_protobuf(&command))
-     *{
-     *    _led_pairing_mode();
-     *}
-     */
+#ifdef ANT_ENABLE
+    morpheus_ble_reply_protobuf(&command);
+#endif    
 
 }
 
@@ -421,10 +397,16 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
             _morpheus_switch_mode(false);
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
@@ -433,6 +415,7 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
