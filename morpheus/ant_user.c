@@ -15,6 +15,7 @@ static struct{
     volatile uint8_t pair_enable;
     volatile uint64_t dfu_pill_id;
     app_timer_id_t commit_timer;
+    ANT_BondedDevice_t staging_bond;
 }self;
 
 static void _commit_pairing(void * ctx){
@@ -23,18 +24,22 @@ static void _commit_pairing(void * ctx){
 
 
 static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
-    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
+    if(!msg)
     {
-        PRINTS("Acquire data error.\r\n");
+        PRINTS("Data error.\r\n");
         return;
     }
 
-
-    self.parent->dispatch(src, (MSG_Address_t){UART,1}, msg);
+    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
+    {
+        PRINTS("Internal error.\r\n");
+        return;
+    }
 
     if(src.module == TIME && src.submodule == 1){
         // TODO, this shit needs to be tested on CC3200 side.
         MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+
 
         MorpheusCommand morpheus_command;
         memset(&morpheus_command, 0, sizeof(MorpheusCommand));
@@ -91,6 +96,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         if(morpheus_ble_encode_protobuf(&morpheus_command, proto_page->buf, &proto_len))
                         {
                             self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
+                            self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
                         }
                         MSG_Base_ReleaseDataAtomic(proto_page);
                     }else{
@@ -111,7 +117,15 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
     MSG_Base_ReleaseDataAtomic(msg);
 }
 
-static void _on_unknown_device(const hlo_ant_device_t * id){
+static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
+    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+    if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
+        self.staging_bond = (ANT_BondedDevice_t){
+            .id = *_id,
+            .full_uid = pill_data->UUID,
+        };
+        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, _id, sizeof(*_id));
+    }
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
@@ -121,37 +135,23 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
         case ANT_STATUS_DISCONNECTED:
             break;
         case ANT_STATUS_CONNECTED:
-            PRINTS("DEVICE CONNECTED\r\n");
-
-            if(self.pair_enable)
-            {
+            if(id->device_number == self.staging_bond.id.device_number){
+                PRINTS("DEVICE CONNECTED\r\n");
+                PRINTS("Staging match");
                 MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
                 if(obj){
                     MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
-                    cmd->param.pill_uid = 0x12345678;  // TODO: change to real production code?
+                    cmd->param.pill_uid = self.staging_bond.full_uid;
                     cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                    self.parent->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){BLE, 0}, obj);
+                    self.parent->dispatch( (MSG_Address_t){ANT,0}, (MSG_Address_t){BLE, 0}, obj);
                     MSG_Base_ReleaseDataAtomic(obj);
                 }
                 {
-                    ANT_BondedDevice_t dev = {
-                        .id = *id,
-                        .full_uid = id->device_number,
-                    };
-                    ANT_BondMgrAdd(&dev);
+                    ANT_BondMgrAdd(&self.staging_bond);
+                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
                 }
-
-                // Send a message back to pill
-                // Notify it is paired and tell it flash the LED.
-
-                // Timer?
-                app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
-            }
-
-            if(self.dfu_pill_id)
-            {
-                // Send DFU message to pill.
-                // tell the pill to erase it's setting flash and enter DFU mode.
+            }else{
+                PRINTS("Staging Mismatch");
             }
             break;
     }

@@ -83,6 +83,6 @@ bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command);
 bool morpheus_ble_reply_protobuf_error(uint32_t error_type);
 void morpheus_ble_on_notify_completed(void* data, void* data_page);
 void morpheus_ble_on_notify_failed(void* data_page);
-bool morpheus_ble_decode_protobuf(MorpheusCommand* command);
+bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, size_t len);
 bool morpheus_ble_encode_protobuf(MorpheusCommand* command, char* raw, size_t* len);
 void morpheus_ble_free_protobuf(MorpheusCommand* command);

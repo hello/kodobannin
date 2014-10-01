@@ -29,6 +29,7 @@
 #include "ant_devices.h"
 #include "ant_bondmgr.h"
 #include "ant_user.h"
+#include "cli_user.h"
 
 // To generate the protobuf download nanopb
 // Generate C code: ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
@@ -41,7 +42,6 @@ static MSG_Data_t* _protobuf_buffer;
 static uint8_t _end_seq;
 static uint8_t _seq_expected;
 static uint16_t _protobuf_len;
-static uint8_t _last_straw[10];
 
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
@@ -80,7 +80,7 @@ static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t
         return false;
     }
 
-    MSG_Data_t buffer_page = (MSG_Data_t*)*arg;
+    MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
     char* str = buffer_page->buf;
     
@@ -103,7 +103,9 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
         return false;
     }
    	
-   	char str[stream->bytes_left + 1] = {0};
+   	char str[stream->bytes_left + 1];
+    memset(str, 0, stream->bytes_left + 1);
+    
     if (!pb_read(stream, str, stream->bytes_left))
     {
         return false;

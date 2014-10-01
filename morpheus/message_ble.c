@@ -44,7 +44,7 @@ static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t
         return false;
     }
 
-    MSG_Data_t buffer_page = (MSG_Data_t*)*arg;
+    MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
     char* str = buffer_page->buf;
     
@@ -83,6 +83,7 @@ static void _register_pill(){
                 // Route data to CC3200, CC3200 is expected to do the registration on server.
                 // Once the registration is done, CC3200 should send the same command back.
                 message_ble_route_data_to_cc3200(compact_page);
+
             }else{
                 morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
             }
@@ -155,6 +156,8 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                         // TODO: Set the morpheus device id into BLE advertising data.
                         // Jimmy need this
                     }
+                    break;
+                    default:
                     break;
                 }
                 morpheus_ble_free_protobuf(&command);
@@ -385,10 +388,12 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
     command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
     command.version = PROTOBUF_VERSION;
-    if(morpheus_ble_reply_protobuf(&command))
-    {
-        _led_pairing_mode();
-    }
+    /*
+     *if(morpheus_ble_reply_protobuf(&command))
+     *{
+     *    _led_pairing_mode();
+     *}
+     */
 
 }
 
@@ -413,6 +418,10 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
     {
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
             _morpheus_switch_mode(true);
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+            }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
             _morpheus_switch_mode(false);
