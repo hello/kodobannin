@@ -73,15 +73,37 @@ static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
 	return false;
 }
 
+static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
+{
+    if(*arg == NULL)
+    {
+        return false;
+    }
+
+    MSG_Data_t buffer_page = (MSG_Data_t*)*arg;
+    MSG_Base_AcquireDataAtomic(buffer_page);
+    char* str = buffer_page->buf;
+    
+    bool ret = false;
+    if (pb_encode_tag_for_field(stream, field))
+    {
+        ret = pb_encode_string(stream, (uint8_t*)str, strlen(str));
+    }
+
+    MSG_Base_ReleaseDataAtomic(buffer_page);
+    return ret;
+}
+
+
 static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     /* We could read block-by-block to avoid the large buffer... */
-    if (stream->bytes_left > PROTOBUF_MAX_LEN - 1)
+    if (stream->bytes_left > PROTOBUF_MAX_LEN - 1 || stream->bytes_left == 0)
     {
         return false;
     }
    	
-   	char str[PROTOBUF_MAX_LEN] = {0};
+   	char str[stream->bytes_left + 1] = {0};
     if (!pb_read(stream, str, stream->bytes_left))
     {
         return false;
@@ -91,6 +113,124 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
 	*arg = string_page;
 
     return true;
+}
+
+bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, size_t len)
+{
+    if(!command)
+    {
+        PRINTS("Invalid buffer\r\n");
+        return false;
+    }
+
+    memset(command, 0, sizeof(MorpheusCommand));
+
+    
+    command->accountId.funcs.decode = _decode_string_field;
+    command->accountId.arg = NULL;
+
+    command->deviceId.funcs.decode = _decode_string_field;
+    command->deviceId.arg = NULL;
+
+    command->wifiName.funcs.decode = _decode_string_field;
+    command->wifiName.arg = NULL;
+
+    command->wifiSSID.funcs.decode = _decode_string_field;
+    command->wifiSSID.arg = NULL;
+
+    command->wifiPassword.funcs.decode = _decode_string_field;
+    command->wifiPassword.arg = NULL;
+
+    pb_istream_t stream = pb_istream_from_buffer(raw, len);
+    return pb_decode(&stream, MorpheusCommand_fields, command);
+}
+
+
+bool morpheus_ble_encode_protobuf(MorpheusCommand* command, char* raw, size_t* len)
+{
+    if(!command)
+    {
+        PRINTS("Invalid buffer\r\n");
+        return false;
+    }
+
+    if(command->accountId.arg && NULL == command->accountId.funcs.encode)
+    {
+        command->accountId.funcs.encode = _encode_command_string_fields;
+    }
+
+    if(command->deviceId.arg && NULL == command->deviceId.funcs.encode)
+    {
+        command->deviceId.funcs.encode = _encode_command_string_fields;
+    }
+
+    if(command->wifiName.arg && NULL == command->wifiName.funcs.encode)
+    {
+        command->wifiName.funcs.encode = _encode_command_string_fields;
+    }
+
+    if(command->wifiSSID.arg && NULL == command->wifiSSID.funcs.encode)
+    {
+        command->wifiSSID.funcs.encode = _encode_command_string_fields;
+    }
+
+    if(command->wifiPassword.arg && NULL == command->wifiPassword.funcs.encode)
+    {
+        command->wifiPassword.funcs.encode = _encode_command_string_fields;
+    }
+
+    pb_ostream_t out_stream = {0};
+    if(raw)
+    {
+        out_stream = pb_ostream_from_buffer(raw, *len);
+    }
+
+    bool status = pb_encode(&out_stream, MorpheusCommand_fields, command);
+
+    if(status)
+    {
+        *len = out_stream.bytes_written;
+    }else{
+        PRINTS("encode protobuf failed: ");
+        PRINTS(PB_GET_ERROR(&out_stream));
+        PRINTS("\r\n");
+    }
+
+    return status;
+}
+
+
+void morpheus_ble_free_protobuf(MorpheusCommand* command)
+{
+    if(command->accountId.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->accountId.arg);
+        command->accountId.arg = NULL;
+    }
+
+    if(command->deviceId.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->deviceId.arg);
+        command->deviceId.arg = NULL;
+    }
+
+    if(command->wifiName.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->wifiName.arg);
+        command->wifiName.arg = NULL;
+    }
+
+    if(command->wifiSSID.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->wifiSSID.arg);
+        command->wifiSSID.arg = NULL;
+    }
+
+    if(command->wifiPassword.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->wifiPassword.arg);
+        command->wifiPassword.arg = NULL;
+    }
 }
 
 
@@ -111,17 +251,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
 */
 
 	MorpheusCommand command;
-	memset(&command, 0, sizeof(command));
-
-	
-	command.accountId.funcs.decode = _decode_string_field;
-	command.accountId.arg = NULL;
-
-	command.deviceId.funcs.decode = _decode_string_field;
-	command.deviceId.arg = NULL;
-
-	pb_istream_t stream = pb_istream_from_buffer(data_page->buf, data_page->len);
-    bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
+    bool status = morpheus_ble_decode_protobuf(&command, data_page->buf, data_page->len);
 	
 
     if (!status)
@@ -133,15 +263,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
 
 		message_ble_on_protobuf_command(data_page, &command);
 
-		if(command.accountId.arg)
-		{
-			MSG_Base_ReleaseDataAtomic(command.accountId.arg);
-		}
-
-		if(command.deviceId.arg)
-		{
-			MSG_Base_ReleaseDataAtomic(command.deviceId.arg);
-		}
+		morpheus_ble_free_protobuf(&command);
 	}
 
 	// Don't forget to release the data_page.
@@ -265,25 +387,28 @@ void morpheus_ble_on_notify_failed(void* data_page)
 }
 
 bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
-	MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
-	memset(heap_page->buf, 0, heap_page->len);
-
-	pb_ostream_t stream = pb_ostream_from_buffer(heap_page->buf, heap_page->len);
-	bool status = pb_encode(&stream, MorpheusCommand_fields, morpheus_command);
-    
-    if(status)
+    size_t protobuf_len = 0;
+    if(!morpheus_ble_encode_protobuf(morpheus_command, NULL, protobuf_len))
     {
-    	size_t protobuf_len = stream.bytes_written;
-		hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
-			&(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, heap_page});
-	}else{
-		PRINTS("encode protobuf failed: ");
-		PRINTS(PB_GET_ERROR(&stream));
-		PRINTS("\r\n");
-		MSG_Base_ReleaseDataAtomic(heap_page);
-	}
+        return false;
+    }
 
-	return status;
+    if(protobuf_len > PROTOBUF_MAX_LEN)
+    {
+        PRINTS("Protobuf too large.\r\n");
+        return false;
+    }
+
+    MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+    memset(heap_page->buf, 0, heap_page->len);
+    if(morpheus_ble_encode_protobuf(morpheus_command, heap_page->buf, protobuf_len))
+    {
+        hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
+            &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, heap_page});
+        return true;
+    }
+
+    return false;
 }
 
 bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
@@ -296,24 +421,22 @@ bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
     morpheus_command.has_error = true;
     morpheus_command.error = error_type;
 
-    // We shall NOT use morpheus_ble_reply_protobuf to reply error
-    // because when out of memory happens, the heap will not be available
-    memset(_last_straw, 0, sizeof(_last_straw));
-
-    pb_ostream_t stream = pb_ostream_from_buffer(_last_straw, sizeof(_last_straw));
-	bool status = pb_encode(&stream, MorpheusCommand_fields, &morpheus_command);
-    
-    if(status)
+    size_t len = 0;
+    if(!morpheus_ble_encode_protobuf(&morpheus_command, NULL, &len))
     {
-    	size_t protobuf_len = stream.bytes_written;
-		hlo_ble_notify(0xB00B, _last_straw, protobuf_len, NULL);
-	}else{
-		PRINTS("encode protobuf failed: ");
-		PRINTS(PB_GET_ERROR(&stream));
-		PRINTS("\r\n");
-	}
+        return false;
+    }
 
-	return status;
+    char buffer[len];
+    memset(buffer, 0, sizeof(buffer));
+    if(morpheus_ble_encode_protobuf(&morpheus_command, buffer, &len))
+    {
+        hlo_ble_notify(0xB00B, buffer, len, NULL);
+    }else{
+        return false;
+    }
+
+	return true;
 }
 
 void morpheus_ble_transmission_layer_init()

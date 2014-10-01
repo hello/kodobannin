@@ -39,38 +39,23 @@ static MSG_Status _flush(void){
 
 static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
 {
-    char* str = NULL;
-
-    switch(field->tag)
+    if(*arg == NULL)
     {
-        case MorpheusCommand_deviceId_tag:
-        {
-            if(!self.pill_pairing_request.device_id)
-            {
-                return false;
-            }
-
-            str = self.pill_pairing_request.device_id->buf;
-        }
-        break;
-
-        case MorpheusCommand_accountId_tag:
-        {
-            if(!self.pill_pairing_request.account_id)
-            {
-                return false;
-            }
-
-            str = self.pill_pairing_request.account_id->buf;
-        }
-        break;
-    }
-    
-    
-    if (!pb_encode_tag_for_field(stream, field))
         return false;
+    }
 
-    return pb_encode_string(stream, (uint8_t*)str, strlen(str));
+    MSG_Data_t buffer_page = (MSG_Data_t*)*arg;
+    MSG_Base_AcquireDataAtomic(buffer_page);
+    char* str = buffer_page->buf;
+    
+    bool ret = false;
+    if (pb_encode_tag_for_field(stream, field))
+    {
+        ret = pb_encode_string(stream, (uint8_t*)str, strlen(str));
+    }
+
+    MSG_Base_ReleaseDataAtomic(buffer_page);
+    return ret;
 }
 
 
@@ -78,47 +63,30 @@ static void _register_pill(){
     if(self.pill_pairing_request.account_id && self.pill_pairing_request.device_id){
         // now we have both the user's account id and pill id
         // compose the pairing request protobuf and send the shit to CC3200.
-        MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
 
-        if(!data_page){
-            PRINTS("No memory\r\n");
-            morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+        MorpheusCommand pairing_command;
+        memset(&pairing_command, 0, sizeof(pairing_command));
+
+        pairing_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL;
+        pairing_command.version = PROTOBUF_VERSION;
+        pairing_command.deviceId.arg = self.pill_pairing_request.device_id;
+        pairing_command.accountId.arg = self.pill_pairing_request.account_id;
+
+        size_t protobuf_len = 0;
+        if(!morpheus_ble_encode_protobuf(&pairing_command, NULL, &protobuf_len))
+        {
+            morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
         }else{
-            memset(data_page->buf, 0, data_page->len);
-
-            MorpheusCommand pairing_command;
-            memset(&pairing_command, 0, sizeof(pairing_command));
-
-            pairing_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL;
-            pairing_command.version = PROTOBUF_VERSION;
-            pairing_command.deviceId.funcs.encode = _encode_command_string_fields;
-            pairing_command.accountId.funcs.encode = _encode_command_string_fields;
-
-            pb_ostream_t out_stream = pb_ostream_from_buffer(data_page->buf, data_page->len);
-            bool status = pb_encode(&out_stream, MorpheusCommand_fields, &pairing_command);
-            
-            if(status)
+            MSG_Data_t* compact_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+            if(morpheus_ble_encode_protobuf(&pairing_command, compact_page->buf, &protobuf_len))
             {
-                PRINTS("Register\r\n");
-
-                size_t protobuf_len = out_stream.bytes_written;
-                MSG_Data_t* compact_page = MSG_Base_AllocateDataAtomic(protobuf_len);
-                if(compact_page){
-                    memcpy(compact_page->buf, data_page->buf, protobuf_len);
-                    message_ble_route_data_to_cc3200(compact_page);
-                    MSG_Base_ReleaseDataAtomic(compact_page);
-                }else{
-                    morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
-                }
-
+                // Route data to CC3200, CC3200 is expected to do the registration on server.
+                // Once the registration is done, CC3200 should send the same command back.
+                message_ble_route_data_to_cc3200(compact_page);
             }else{
-                PRINTS("encode protobuf failed: ");
-                PRINTS(PB_GET_ERROR(&out_stream));
-                PRINTS("\r\n");
                 morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
-                
             }
-            MSG_Base_ReleaseDataAtomic(data_page);
+            MSG_Base_ReleaseDataAtomic(compact_page);
         }
 
     }else{
@@ -175,9 +143,26 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
 
     }else{
         MSG_Base_AcquireDataAtomic(data);
-        // protobuf, dump the thing straight back?
-        hlo_ble_notify(0xB00B, data->buf, data->len,
+
+        if(src.module == SSPI){
+            MorpheusCommand command;
+            if(morpheus_ble_decode_protobuf(&command, data->buf, data->len))
+            {
+                switch(command.type)
+                {
+                    case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+                    {
+                        // TODO: Set the morpheus device id into BLE advertising data.
+                        // Jimmy need this
+                    }
+                    break;
+                }
+                morpheus_ble_free_protobuf(&command);
+            }
+            // protobuf, dump the thing straight back?
+            hlo_ble_notify(0xB00B, data->buf, data->len,
                 &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+        }
     }
 }
 
