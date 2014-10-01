@@ -59,9 +59,9 @@ static bool _encode_pill_command_string_fields(pb_ostream_t *stream, const pb_fi
 
 
 static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
-    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
+    if(!msg)
     {
-        PRINTS("Acquire data error.\r\n");
+        PRINTS("Data error.\r\n");
         return;
     }
 
@@ -98,7 +98,8 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
             }
             break;
         default:
-            break;
+            //do not send unknown packet to CC
+            return;
     }
 
     MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
@@ -122,8 +123,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 
         MSG_Base_ReleaseDataAtomic(proto_page);
     }
-
-    MSG_Base_ReleaseDataAtomic(msg);
 }
 
 static void _on_unknown_device(const hlo_ant_device_t * id){
