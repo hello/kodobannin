@@ -131,6 +131,14 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
         default:
             break;
         case ANT_STATUS_DISCONNECTED:
+            {
+                ANT_BondedDevice_t * device = ANT_BondMgrQuery(id);
+                if(device){
+                    PRINTS("DEVICE REMOVED\r\n");
+                    ANT_BondMgrRemove(device);
+                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
+                }
+            }
             break;
         case ANT_STATUS_CONNECTED:
             if(id->device_number == self.staging_bond.id.device_number){

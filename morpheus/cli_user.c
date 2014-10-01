@@ -57,6 +57,10 @@ _handle_command(int argc, char * argv[]){
         PRINTS("Pairing");
         ANT_UserSetPairing(1);
     }
+    if(_strncmp(argv[0], "unpair", strlen("unpair")) == 0){
+        PRINTS("Unpairing");
+        ANT_UserSetPairing(0);
+    }
 }
 
 MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){

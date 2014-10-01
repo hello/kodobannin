@@ -67,6 +67,16 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener));
                 break;
             case ANT_REMOVE_DEVICE:
+                {
+                    int i = _find_paired(&antcmd->param.device);
+                    if(i >= 0){
+                        hlo_ant_device_t * dev = &self.paired_devices[(uint8_t)i];
+                        dev->device_number = 0;
+                        if(self.user_handler && self.user_handler->on_status_update){
+                            self.user_handler->on_status_update(&antcmd->param.device, ANT_STATUS_DISCONNECTED);
+                        }
+                    }
+                }
                 break;
             case ANT_ADD_DEVICE:
                 {

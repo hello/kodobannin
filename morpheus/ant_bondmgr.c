@@ -214,6 +214,7 @@ uint32_t ANT_BondMgrRemove(const ANT_BondedDevice_t * p_bond){
             }
         }
     }
+    PRINTS("Device not found\r\n");
     return 1;
 }
 void ANT_BondMgrForEach(ANT_BondMgrCB cb){
