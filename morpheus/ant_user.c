@@ -127,6 +127,7 @@ static void _on_unknown_device(const hlo_ant_device_t * id, MSG_Data_t * msg){
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
     if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
         MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, id, sizeof(*id));
+        self.pair_enable = 0;
     }
 }
 
@@ -138,25 +139,21 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
             break;
         case ANT_STATUS_CONNECTED:
             PRINTS("DEVICE CONNECTED\r\n");
-
-            if(self.pair_enable)
+            MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
+            if(obj){
+                MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
+                cmd->param.pill_uid = 0x12345678;  // TODO: change to real production code?
+                cmd->cmd = BLE_ACK_DEVICE_ADDED;
+                self.parent->dispatch( (MSG_Address_t){ANT,0}, (MSG_Address_t){BLE, 1}, obj);
+                MSG_Base_ReleaseDataAtomic(obj);
+            }
             {
-                MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
-                if(obj){
-                    MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
-                    cmd->param.pill_uid = 0x12345678;  // TODO: change to real production code?
-                    cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                    self.parent->dispatch( (MSG_Address_t){ANT,0}, (MSG_Address_t){BLE, 1}, obj);
-                    MSG_Base_ReleaseDataAtomic(obj);
-                }
-                {
-                    ANT_BondedDevice_t dev = {
-                        .id = *id,
-                        .full_uid = id->device_number,
-                    };
-                    ANT_BondMgrAdd(&dev);
-                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
-                }
+                ANT_BondedDevice_t dev = {
+                    .id = *id,
+                    .full_uid = id->device_number,
+                };
+                ANT_BondMgrAdd(&dev);
+                app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
             }
             break;
     }
