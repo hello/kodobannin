@@ -19,6 +19,7 @@ typedef struct{
 }ANT_BondMgr_t;
 
 static ANT_BondMgr_t self;
+static volatile int dirty;
 static void bm_pstorage_cb_handler(pstorage_handle_t * handle,
                                    uint8_t             op_code,
                                    uint32_t            result,
@@ -162,11 +163,16 @@ static uint32_t _commit_block(const ANT_BondedDevice_t * p_bond, pstorage_size_t
 }
 uint32_t ANT_BondMgrCommit(void){
     uint32_t m_crc_bond_info, i;
-    //TODO only commit if dirty
-    ANT_BondMgr_EraseAll();
-    for(i = 0; i < self.bond_count; i++){
-        _commit_block(&self.devices[i], i);
+    if(dirty){
+        ANT_BondMgr_EraseAll();
+        for(i = 0; i < self.bond_count; i++){
+            _commit_block(&self.devices[i], i);
+        }
+        dirty = 0;
+    }else{
+        PRINTS("No Need to recommit\r\n");
     }
+    return 0;
 }
 
 uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
@@ -185,6 +191,7 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
             }
         }
         self.devices[self.bond_count] = *p_bond;
+        dirty = 1;
     }
     self.bond_count++;
     return NRF_SUCCESS;
@@ -192,7 +199,22 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
 uint32_t ANT_BondMgrRemove(const ANT_BondedDevice_t * p_bond){
     //swap with the last bondcount
     //TODO implement
-    return 0;
+    if(self.bond_count){
+        int i;
+        ANT_BondedDevice_t * tmp = &self.devices[self.bond_count - 1];
+        for(i = 0; i < ANT_BOND_MANAGER_DATA_COUNT; i++){
+            if(self.devices[i].full_uid == p_bond->full_uid){
+                PRINTS("Erasing ID");
+                PRINT_HEX(&self.devices[i].id.device_number, 2);
+                PRINTS("\r\n");
+                self.devices[i] = *tmp;
+                self.bond_count--;
+                dirty = 1;
+                return 0;
+            }
+        }
+    }
+    return 1;
 }
 void ANT_BondMgrForEach(ANT_BondMgrCB cb){
     int i;
