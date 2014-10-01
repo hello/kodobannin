@@ -124,7 +124,11 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 }
 
 static void _on_unknown_device(const hlo_ant_device_t * id, MSG_Data_t * msg){
-    //MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, id, sizeof(*id));
+    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+    if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
+
+        self.pair_enable = 0;
+    }
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
