@@ -106,6 +106,7 @@ static void _register_pill(){
                 if(compact_page){
                     memcpy(compact_page->buf, data_page->buf, protobuf_len);
                     message_ble_route_data_to_cc3200(compact_page);
+                    morpheus_ble_reply_protobuf(&pairing_command);
                     MSG_Base_ReleaseDataAtomic(compact_page);
                 }else{
                     morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
@@ -400,10 +401,12 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
     command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
     command.version = PROTOBUF_VERSION;
-    if(morpheus_ble_reply_protobuf(&command))
-    {
-        _led_pairing_mode();
-    }
+    /*
+     *if(morpheus_ble_reply_protobuf(&command))
+     *{
+     *    _led_pairing_mode();
+     *}
+     */
 
 }
 
@@ -428,6 +431,10 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
     {
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
             _morpheus_switch_mode(true);
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+            }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
             _morpheus_switch_mode(false);

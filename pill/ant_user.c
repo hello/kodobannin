@@ -7,7 +7,7 @@ static struct{
 static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
 }
 
-static void _on_unknown_device(const hlo_ant_device_t * id){
+static void _on_unknown_device(const hlo_ant_device_t * id, MSG_Data_t * msg){
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){

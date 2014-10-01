@@ -56,7 +56,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                     int i = _find_empty();
                     if(i >= 0){
                         self.paired_devices[(uint8_t)i] = antcmd->param.device;
-                        PRINTS("Paired\r\n");
+                        if(self.user_handler && self.user_handler->on_status_update){
+                            self.user_handler->on_status_update(&antcmd->param.device, ANT_STATUS_CONNECTED);
+                        }
                     }
                 }
                 break;
@@ -83,10 +85,10 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
     }else{
         PRINTS("Unknown Source\r\n");
         if(self.user_handler && self.user_handler->on_unknown_device)
-            self.user_handler->on_unknown_device(device);
+            self.user_handler->on_unknown_device(device, message);
     }
     //DEBUG print them out too
-    self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
+    //self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
 }
 
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){
