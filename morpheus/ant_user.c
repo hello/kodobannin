@@ -149,9 +149,9 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
                 MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
                 if(obj){
                     MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
-                    cmd->param.pill_uid = 0x12345678;  // TODO: change to real production code?
+                    cmd->param.pill_uid = self.staging_bond.full_uid;
                     cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                    self.parent->dispatch( (MSG_Address_t){ANT,0}, (MSG_Address_t){BLE, 1}, obj);
+                    self.parent->dispatch( (MSG_Address_t){ANT,0}, (MSG_Address_t){BLE, 0}, obj);
                     MSG_Base_ReleaseDataAtomic(obj);
                 }
                 {
