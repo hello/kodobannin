@@ -217,6 +217,15 @@ uint32_t ANT_BondMgrRemove(const ANT_BondedDevice_t * p_bond){
     PRINTS("Device not found\r\n");
     return 1;
 }
+ANT_BondedDevice_t * ANT_BondMgrQuery(const hlo_ant_device_t * id){
+    int i;
+    for(i = 0; i < self.bond_count; i++){
+        if(self.devices[i].id.device_number == id->device_number){
+            return &self.devices[i];
+        }
+    }
+    return NULL;
+}
 void ANT_BondMgrForEach(ANT_BondMgrCB cb){
     int i;
     for(i = 0; i < self.bond_count; i++){
