@@ -100,15 +100,15 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
     if(!message) return;
     MSG_Address_t default_addr = {ANT,0};
 
-    MSG_Data_t * msg = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANTCommand_t));
-    if(msg){
-        MSG_ANTCommand_t * parcel = (MSG_ANTCommand_t*)msg->buf;
+    MSG_Data_t * parcel = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANTCommand_t));
+    if(parcel){
+        MSG_ANTCommand_t * command = (MSG_ANTCommand_t*)parcel->buf;
         MSG_Base_AcquireDataAtomic(message);
-        parcel->cmd = ANT_HANDLE_MESSAGE;
-        parcel->param.handle_message.device = *device;
-        parcel->param.handle_message.message = message;
-        self.parent->dispatch(default_addr, default_addr, msg);
-        MSG_Base_ReleaseDataAtomic(msg);
+        command->cmd = ANT_HANDLE_MESSAGE;
+        command->param.handle_message.device = *device;
+        command->param.handle_message.message = message;
+        self.parent->dispatch(default_addr, default_addr, parcel);
+        MSG_Base_ReleaseDataAtomic(parcel);
     }
 
 }
