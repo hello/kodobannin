@@ -83,7 +83,7 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
     }else{
         PRINTS("Unknown Source\r\n");
         if(self.user_handler && self.user_handler->on_unknown_device)
-            self.user_handler->on_unknown_device(device);
+            self.user_handler->on_unknown_device(device, message);
     }
     //DEBUG print them out too
     self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
