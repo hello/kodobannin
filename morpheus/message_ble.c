@@ -437,10 +437,6 @@ void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const Morpheus
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
-            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
-            {
-                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
-            }
             _morpheus_switch_mode(false);
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
