@@ -20,6 +20,7 @@ static struct{
 
 static void _commit_pairing(void * ctx){
     PRINTS("\r\n======\r\nCOMMIT PAIRING\r\n======\r\n");
+    ANT_BondMgrCommit();
 }
 
 
