@@ -125,6 +125,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 }
 
 static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
+    PRINTS("Unknown Device ID:");
+    PRINT_HEX(&_id->device_number, 2);
+    PRINTS("\r\n");
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
     if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
         self.staging_bond = (ANT_BondedDevice_t){

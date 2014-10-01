@@ -47,7 +47,6 @@ static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * messag
         if(self.user_handler && self.user_handler->on_message)
             self.user_handler->on_message(device, default_src, message);
     }else{
-        PRINTS("Unknown Source\r\n");
         if(self.user_handler && self.user_handler->on_unknown_device)
             self.user_handler->on_unknown_device(device, message);
     }
