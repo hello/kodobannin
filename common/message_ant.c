@@ -52,8 +52,10 @@ static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * messag
             self.user_handler->on_unknown_device(device, message);
     }
     //DEBUG print them out too
-    PRINTS("RAW: =\r\n");
-    self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
+    /*
+     *PRINTS("RAW: =\r\n");
+     *self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
+     */
 }
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
