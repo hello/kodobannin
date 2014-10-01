@@ -55,7 +55,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         {
             PRINTS("Get pill id failed.\r\n");
         }else{
-            MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(buffer_len);
+            MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(buffer);
             if(!device_id_page)
             {
                 PRINTS("No memory.\r\n");
