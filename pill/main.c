@@ -40,6 +40,11 @@
 #include "util.h"
 #include "watchdog.h"
 
+#ifdef PLATFORM_HAS_VLED
+#include "led.h"
+#endif
+
+
 void twi_master_disable();
 
 void _start()
@@ -70,8 +75,13 @@ void _start()
     }
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
-    
+    led_power_on();
+
+    uint32_t power_reset_reason = 0;
+    sd_power_reset_reason_get(&power_reset_reason);
+
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
+
 
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
@@ -112,6 +122,8 @@ void _start()
     hble_update_battery_level();
     hble_advertising_start();
 #endif
+
+
 
     PRINTS("INIT DONE.\r\n");
 	watchdog_init(10,0);

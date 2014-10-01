@@ -37,6 +37,8 @@ static ble_gap_sec_params_t _sec_params;
 static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
+static char _hex_device_id[12];
+
 static int16_t  _last_bond_central_id; 
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
@@ -242,6 +244,12 @@ static void _advertising_data_init(uint8_t flags){
     ble_advdata_t advdata;
     ble_advdata_t scanrsp;
     ble_uuid_t adv_uuids[] = {_service_uuid};
+    uint8_array_t data_array = { .p_data = _hex_device_id, .size = sizeof(_hex_device_id) };
+
+
+    ble_advdata_service_data_t  srv_data = { 
+        .service_uuid = _service_uuid.uuid,
+        .data = data_array };
 
     PRINTS("Service UUID:");
     PRINT_HEX(&_service_uuid.uuid, sizeof(_service_uuid.uuid));
@@ -253,9 +261,13 @@ static void _advertising_data_init(uint8_t flags){
     advdata.include_appearance = true;
     advdata.flags.size = sizeof(flags);
     advdata.flags.p_data = &flags;
+
     memset(&scanrsp, 0, sizeof(scanrsp));
     scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
     scanrsp.uuids_complete.p_uuids = adv_uuids;
+    scanrsp.p_service_data_array = &srv_data;
+    scanrsp.service_data_count = 1;
+
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
 
@@ -263,6 +275,13 @@ static void _advertising_data_init(uint8_t flags){
 void hble_advertising_init(ble_uuid_t service_uuid)
 {
     _service_uuid = service_uuid;
+}
+
+void hble_set_hex_device_id(const char* hex_id, size_t len)
+{
+    size_t min_len = len < sizeof(_hex_device_id) ? len : sizeof(_hex_device_id);
+    memset(_hex_device_id, 0, sizeof(_hex_device_id));
+    memcpy(_hex_device_id, hex_id, min_len);
 }
 
 void hble_advertising_start()

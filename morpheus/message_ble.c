@@ -132,8 +132,44 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 {
                     case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
                     {
+                        PRINTS("BLE init command received\r\n");
+
                         // TODO: Set the morpheus device id into BLE advertising data.
                         // Jimmy need this
+                        if(command.deviceId.arg)
+                        {
+                            MSG_Data_t* data_page = (MSG_Data_t*)command.deviceId.arg;
+                            PRINTS("Raw device id:");
+                            PRINT_HEX(data_page->buf, data_page->len);
+                            PRINTS("\r\n");
+
+                            hble_set_hex_device_id(data_page->buf, data_page->len);
+                            hble_stack_init();
+
+#ifdef BONDING_REQUIRED   
+                            hble_bond_manager_init();
+#endif
+                            // append something to device name
+                            char device_name[strlen(BLE_DEVICE_NAME)+4];
+                            memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+                            uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
+                            device_name[strlen(BLE_DEVICE_NAME)] = '-';
+                            device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
+                            device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
+                            device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+                            hble_params_init(device_name);
+                            hble_services_init();
+
+                            ble_uuid_t service_uuid = {
+                                .type = hello_type,
+                                .uuid = BLE_UUID_MORPHEUS_SVC
+                            };
+
+                            hble_advertising_init(service_uuid);
+                            hble_advertising_start();
+                        }else{
+                            PRINTS("INIT Error, no device id presented.");
+                        }
                     }
                     break;
                     default:
@@ -291,6 +327,65 @@ static MSG_Status _init(){
 
     // Tests
     // self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
+    MorpheusCommand get_device_id_command;
+    memset(&get_device_id_command, 0, sizeof(get_device_id_command));
+    get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
+    get_device_id_command.version = PROTOBUF_VERSION;
+
+#ifdef ANT_ENABLE
+    size_t protobuf_len = 0;
+    if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
+    {
+        return FAIL;
+    }
+
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+    if(!data_page)
+    {
+        PRINTS("No memory.\r\n");
+        return FAIL;
+    }
+
+    memset(data_page->buf, 0, data_page->len);
+    if(!morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
+    {   
+        MSG_Base_ReleaseDataAtomic(data_page);
+        return FAIL;
+    }
+
+    self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data_page);
+    MSG_Base_ReleaseDataAtomic(data_page);
+#else
+
+    char* fake_device_id = "0123456789ab";
+    MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(fake_device_id);
+    get_device_id_command.deviceId.arg = device_id_page;
+
+    size_t protobuf_len = 0;
+    if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
+    {
+        return FAIL;
+    }
+
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+    if(!data_page)
+    {
+        PRINTS("No memory.\r\n");
+        return FAIL;
+    }
+
+    memset(data_page->buf, 0, data_page->len);
+    if(!morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
+    {   
+        MSG_Base_ReleaseDataAtomic(data_page);
+        return FAIL;
+    }
+
+    self.parent->dispatch((MSG_Address_t){SSPI, 1},(MSG_Address_t){BLE, 1}, data_page);
+    MSG_Base_ReleaseDataAtomic(data_page);
+
+#endif
+
     return SUCCESS;
 }
 

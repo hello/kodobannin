@@ -3,10 +3,10 @@
 #pragma once
 
 #ifdef ANT_STACK_SUPPORT_REQD
-#define ANT_ENABLE
+//#define ANT_ENABLE
 #endif
 
-//#define BLE_ENABLE
+#define BLE_ENABLE
 //#define BATTERY_SERVICE_ENABLE
 //#define DEBUG_BATT_LVL
 
@@ -100,8 +100,8 @@ enum {
     VLED_VDD_EN  = 17,
     VRGB_ENABLE  = 11,
 
-    VRGB_SELECT  =  9,
-    VRGB_ADJUST  =  8,
+    VRGB_SELECT  =  8,
+    VRGB_ADJUST  =  9,
     VRGB_SENSE   =  4,
 
     LED3_SENSE   =  3,
