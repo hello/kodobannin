@@ -36,11 +36,16 @@ typedef struct{
         ANT_SET_ROLE,//sets device role
         ANT_REMOVE_DEVICE,
         ANT_ADD_DEVICE,
+        ANT_HANDLE_MESSAGE,
         ANT_END_CMD,
     }cmd;
     union{
         hlo_ant_role role;
         hlo_ant_device_t device;
+        struct{
+            hlo_ant_device_t device;
+            MSG_Data_t * message;
+        }handle_message;
     }param;
 }MSG_ANTCommand_t;
 
