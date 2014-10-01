@@ -83,7 +83,7 @@ typedef struct{
     /* Called when an unknown device initiates advertisement */
     void (*on_unknown_device)(const hlo_ant_device_t * id, MSG_Data_t * msg);
 
-    void (*on_status_update)(const hlo_ant_device_t * * id, ANT_Status_t status);
+    void (*on_status_update)(const hlo_ant_device_t * id, ANT_Status_t status);
 }MSG_ANTHandler_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);
