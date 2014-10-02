@@ -70,6 +70,7 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
     sd_ant_stack_reset();
     sd_ant_network_address_set(0,network_key);
+    APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
     hlo_ant_device_t device = {0};
     if(!user){
         return -1;
@@ -79,7 +80,6 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     if(role == HLO_ANT_ROLE_CENTRAL){
         PRINTS("Configured as ANT Central\r\n");
         APP_OK(_configure_channel(0, &phy, &device, 0)); 
-        APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
         sd_ant_rx_scan_mode_start(0);
     }
     return 0;
