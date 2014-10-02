@@ -58,8 +58,9 @@ _handle_command(int argc, char * argv[]){
         ANT_UserSetPairing(1);
     }
     if(_strncmp(argv[0], "unpair", strlen("unpair")) == 0){
-        PRINTS("Unpairing");
+        PRINTS("Unpairing All");
         ANT_UserSetPairing(0);
+        ANT_BondMgr_EraseAll();
     }
 }
 
