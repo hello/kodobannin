@@ -75,10 +75,10 @@ void _start()
     }
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
-    led_power_on();
-
-    uint32_t power_reset_reason = 0;
-    sd_power_reset_reason_get(&power_reset_reason);
+    
+#ifdef PLATFORM_HAS_VLED
+    led_power_off();
+#endif
 
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
