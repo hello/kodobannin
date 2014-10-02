@@ -23,7 +23,7 @@
 #include "util.h"
 #include "pill_gatt.h"
 
-#ifdef HAS_BATTERY_SERVICE
+#ifdef PLATFORM_HAS_VERSION
 #include "battery.h"
 #endif
 
