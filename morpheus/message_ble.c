@@ -70,7 +70,7 @@ static void _register_pill(){
         }
 
     }else{
-        PRINTS("Invalid pairing state\r\n");
+        PRINTS("BT: Invalid pairing state\r\n");
     }
 
     _release_pending_resources();

@@ -53,8 +53,14 @@ _handle_command(int argc, char * argv[]){
             MSG_Base_ReleaseDataAtomic(data);
         }
     }
-    if(argc > 1 && _strncmp(argv[0], "pair", strlen("pair")) == 0){
-        //Create a message object from uart string
+    if(_strncmp(argv[0], "pair", strlen("pair")) == 0){
+        PRINTS("Pairing");
+        ANT_UserSetPairing(1);
+    }
+    if(_strncmp(argv[0], "unpair", strlen("unpair")) == 0){
+        PRINTS("Unpairing All");
+        ANT_UserSetPairing(0);
+        ANT_BondMgr_EraseAll();
     }
 }
 
