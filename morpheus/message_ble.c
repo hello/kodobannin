@@ -341,7 +341,7 @@ static MSG_Status _init(){
     get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
     get_device_id_command.version = PROTOBUF_VERSION;
 
-#ifdef ANT_ENABLE
+#ifdef ANT_ENABLE  // TODO: use another macro
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
     {
@@ -362,7 +362,7 @@ static MSG_Status _init(){
         return FAIL;
     }
 
-    self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data_page);
+    self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data_page);
     MSG_Base_ReleaseDataAtomic(data_page);
 #else
 
@@ -390,7 +390,7 @@ static MSG_Status _init(){
         return FAIL;
     }
 
-    self.parent->dispatch((MSG_Address_t){SSPI, 1},(MSG_Address_t){BLE, 1}, data_page);
+    self.parent->dispatch((MSG_Address_t){SSPI, 1},(MSG_Address_t){BLE, 0}, data_page);
     MSG_Base_ReleaseDataAtomic(data_page);
 
 #endif

@@ -33,6 +33,7 @@
 #include "nrf51_bitfields.h"
 #include "softdevice_handler.h"
 #include "battery.h"
+#include "gpio_nor.h"
 
 
 
@@ -47,6 +48,17 @@
 
 
 static batter_measure_callback_t _battery_measure_callback;
+
+
+
+
+inline void battery_module_power_off()
+{
+    NRF_ADC->ENABLE = ADC_ENABLE_ENABLE_Disabled;
+    gpio_input_disconnect(VBAT_SENSE);
+    gpio_cfg_d0s1_output_disconnect(VBAT_VER_EN);  // on: 0
+}
+
 
 static inline uint8_t _battery_level_in_percent(const uint16_t mvolts)
 {
@@ -115,12 +127,25 @@ void ADC_IRQHandler(void)
             _battery_measure_callback(batt_lvl_in_micro_volts, percentage_batt_lvl);
         }
     }
+
+    /*
+    NRF_ADC->CONFIG = (ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos) | 
+        (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos) | 
+        (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos) | 
+        (ADC_CONFIG_PSEL_Disabled << ADC_CONFIG_PSEL_Pos) | 
+        (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
+        */
+    battery_module_power_off();
+    
     
 }
 
 
+
+
 void start_battery_measurement(batter_measure_callback_t callback)
 {
+
     if(callback)
     {
         _battery_measure_callback = callback;
@@ -128,13 +153,17 @@ void start_battery_measurement(batter_measure_callback_t callback)
 
     uint32_t err_code;
 
+    gpio_cfg_s0s1_output_connect(VBAT_VER_EN, 0);
+    nrf_gpio_cfg_input(VBAT_SENSE, NRF_GPIO_PIN_NOPULL);
+
+
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
     NRF_ADC->CONFIG     = (ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos)     |
-                          (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos)  |
-                          (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos)  |
-                          (ADC_CONFIG_PSEL_AnalogInput6 << ADC_CONFIG_PSEL_Pos)    |
-                          (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
+                        (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos)  |
+                        (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos)  |
+                        (ADC_CONFIG_PSEL_AnalogInput6 << ADC_CONFIG_PSEL_Pos)    |
+                        (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
   // NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
     NRF_ADC->EVENTS_END = 0;
     NRF_ADC->ENABLE     = ADC_ENABLE_ENABLE_Enabled;
