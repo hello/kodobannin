@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "platform.h"
 #include "battery_config.h"
 #include "nordic_common.h"
 #include "nrf.h"
