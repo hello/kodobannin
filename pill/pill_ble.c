@@ -198,7 +198,6 @@ void pill_ble_load_modules(void){
 
         central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #ifdef ANT_ENABLE
-        hlo_ant_init(HLO_ANT_ROLE_CENTRAL, hlo_ant_packet_init(NULL));
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
         {
             hlo_ant_role role = HLO_ANT_ROLE_PERIPHERAL;
