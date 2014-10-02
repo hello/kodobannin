@@ -56,8 +56,10 @@ static batter_measure_callback_t _battery_measure_callback;
 inline void battery_module_power_off()
 {
     NRF_ADC->ENABLE = ADC_ENABLE_ENABLE_Disabled;
+#ifdef PLATFORM_HAS_VERSION
     gpio_input_disconnect(VBAT_SENSE);
     gpio_cfg_d0s1_output_disconnect(VBAT_VER_EN);  // on: 0
+#endif
 }
 
 
@@ -153,10 +155,10 @@ void start_battery_measurement(batter_measure_callback_t callback)
     }
 
     uint32_t err_code;
-
+#ifdef PLATFORM_HAS_VERSION
     gpio_cfg_s0s1_output_connect(VBAT_VER_EN, 0);
     nrf_gpio_cfg_input(VBAT_SENSE, NRF_GPIO_PIN_NOPULL);
-
+#endif
 
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
