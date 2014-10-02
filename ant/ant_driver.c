@@ -92,7 +92,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
     if(ch >= begin){
-        PRINTS("Channel already open!\r\n");
+        PRINTS("ANT: Channel already open!\r\n");
         return 0;
     }else{
         //open channel
@@ -124,7 +124,14 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
     int ch = _find_open_channel_by_device(device, begin,7);
     int ret;
     if(ch >= begin){
-        return sd_ant_channel_close(ch);
+        PRINTS("Closing Channel = ");
+        PRINT_HEX(&ch, 1);
+        PRINTS("\r\n");
+        if(self.role == HLO_ANT_ROLE_CENTRAL){
+            return sd_ant_channel_unassign(ch);
+        }else{
+            return sd_ant_channel_close(ch);
+        }
     }
     return -1;
     
@@ -212,7 +219,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("XX\r\n");
             break;
         case EVENT_CHANNEL_CLOSED:
-            //_handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            PRINTS("X");
             sd_ant_channel_unassign(ant_channel);
             break;
         default:
