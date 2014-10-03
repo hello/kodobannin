@@ -124,19 +124,7 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
     }
     return FAIL;
 }
-//a, b, c := 128bit
-//returns a xor b
-static void
-_aes128_xor(uint8_t * a, uint8_t * b, uint8_t * out_c){
-    (uint32_t*)a32 = (uint32_t*)a;
-    (uint32_t*)b32 = (uint32_t*)b;
-    (uint32_t*)c32 = (uint32_t*)out_c;
-    c[0] = a32[0] ^ b32[0];
-    c[1] = a32[1] ^ b32[1];
-    c[2] = a32[2] ^ b32[2];
-    c[3] = a32[3] ^ b32[3];
-}
-MSG_Data_t * INCREF MSG_Base_AllocateDataAES128Atomic(MSG_Base_t * orig, uint8_t * key, uint8_t * IV, uint64_t UID){
+MSG_Data_t * INCREF MSG_Base_AllocateDataAES128Atomic(MSG_Base_t * orig, uint8_t * key, uint8_t * IV){
     return NULL;
 }
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
