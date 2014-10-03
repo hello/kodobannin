@@ -335,6 +335,7 @@ void hble_stack_init()
 
 bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_t* len)
 {
+	uint8_t * ptr = (uint8_t*)&device_id;
     if(!len)
     {
         return false;
@@ -352,8 +353,8 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
     size_t index = 0;
     for(size_t i = 0; i < sizeof(device_id); i++)
     {
-        //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
-        uint8_t num = (&device_id)[i];
+        uint8_t num = ptr[i];
+		
             
         uint8_t ret = num / 16;
         uint8_t remain = num % 16;
