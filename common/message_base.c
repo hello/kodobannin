@@ -136,6 +136,10 @@ _aes128_xor(uint8_t * a, uint8_t * b, uint8_t * out_c){
     c[2] = a32[2] ^ b32[2];
     c[3] = a32[3] ^ b32[3];
 }
+static void
+_cbc_step(uint8_t * input, uint8_t * data, uint8_t * out_data){
+
+}
 
 MSG_Data_t * INCREF MSG_Base_AllocateDataAES128Atomic(MSG_Base_t * orig, uint8_t * key, uint8_t * IV, uint64_t * UID){
     uint32_t new_size = sizeof(*UID) + 16 + (orig->len/16 + 1) * 16;
@@ -147,8 +151,13 @@ MSG_Data_t * INCREF MSG_Base_AllocateDataAES128Atomic(MSG_Base_t * orig, uint8_t
     PRINT_HEX(&new_size->len, 2);
     PRINTS("\r\n");
     if(data){
+        MSG_EncryptedPayload_t * payload = (MSG_EncryptedPayload_t*)data->buf;
         memset(data->buf, 0, data->len);
+        payload->UID = *UID;
+        memcpy(payload->IV, IV, 16);
+        return data;
     }
+
 
 
     return NULL;
