@@ -29,6 +29,7 @@ typedef void(*batter_measure_callback_t)(uint32_t batt_level_milli_volts, uint8_
 /**@brief Function for making the ADC start a battery level conversion.
  */
 void start_battery_measurement(batter_measure_callback_t callback);
+void battery_module_power_off();
 
 #endif // BATTERY_H__
 

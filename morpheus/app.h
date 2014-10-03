@@ -26,6 +26,8 @@ enum {
 #define PROTOBUF_VERSION		(0)
 #define PROTOBUF_MAX_LEN        (100)
 
+#define DEVICE_ID_SIZE          6
+
 #ifdef DEBUG_SERIAL
 #define PB_NO_ERRMSG
 #endif

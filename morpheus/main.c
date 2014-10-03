@@ -63,29 +63,6 @@ _start()
     morpheus_load_modules();
 
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
-    hble_stack_init();
-
-#ifdef BONDING_REQUIRED   
-    hble_bond_manager_init();
-#endif
-    // append something to device name
-    char device_name[strlen(BLE_DEVICE_NAME)+4];
-    memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-    uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-    device_name[strlen(BLE_DEVICE_NAME)] = '-';
-    device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-    device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-    device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-    hble_params_init(device_name);
-    hble_services_init();
-
-    ble_uuid_t service_uuid = {
-        .type = hello_type,
-        .uuid = BLE_UUID_MORPHEUS_SVC
-    };
-
-    hble_advertising_init(service_uuid);
-    hble_advertising_start();
 
 	watchdog_init(10,0);
 	watchdog_task_start(5);
