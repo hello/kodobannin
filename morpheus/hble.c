@@ -37,6 +37,8 @@ static ble_gap_sec_params_t _sec_params;
 static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
+static uint64_t _device_id;
+
 static int16_t  _last_bond_central_id; 
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
@@ -243,6 +245,14 @@ static void _advertising_data_init(uint8_t flags){
     ble_advdata_t scanrsp;
     ble_uuid_t adv_uuids[] = {_service_uuid};
 
+    //uint8_t data[1] = {0xAA};
+    uint8_array_t data_array = { .p_data = &_device_id, .size = DEVICE_ID_SIZE };
+
+
+    ble_advdata_service_data_t  srv_data = { 
+        .service_uuid = _service_uuid.uuid,
+        .data = data_array };
+
     PRINTS("Service UUID:");
     PRINT_HEX(&_service_uuid.uuid, sizeof(_service_uuid.uuid));
     PRINTS("\r\n");
@@ -253,9 +263,13 @@ static void _advertising_data_init(uint8_t flags){
     advdata.include_appearance = true;
     advdata.flags.size = sizeof(flags);
     advdata.flags.p_data = &flags;
+
     memset(&scanrsp, 0, sizeof(scanrsp));
     scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
     scanrsp.uuids_complete.p_uuids = adv_uuids;
+    scanrsp.p_service_data_array = &srv_data;
+    scanrsp.service_data_count = 1;
+
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
 
@@ -340,7 +354,7 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
         return false;
     }
 
-    if(!hex_device_id || sizeof(device_id) * 2 + 1 < (*len))
+    if(!hex_device_id || ((*len) - 1) % 2 != 0)
     {
         *len = sizeof(device_id) * 2 + 1;
         return false;
@@ -348,20 +362,25 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
 
     memset(hex_device_id, 0, *len);
     const char* hex_table = "0123456789ABCDEF";
+    size_t actual_len = ((*len) - 1) / 2;
+    /*
+    PRINT_HEX(&device_id, actual_len);
+    PRINTS("\r\n");
+    */
     
+    uint8_t* ptr = &device_id;
+
     size_t index = 0;
-    for(size_t i = 0; i < sizeof(device_id); i++)
+    for(size_t i = 0; i < actual_len; i++)
     {
         //sprintf(hex_device_id + i * 2, "%02X", NRF_FICR->DEVICEID[i]);  //Fark not even sprintf in s310..
-        uint8_t num = (&device_id)[i];
-            
-        uint8_t ret = num / 16;
-        uint8_t remain = num % 16;
 
-        hex_device_id[index++] = hex_table[ret];
-        hex_device_id[index++] = hex_table[remain];
+        hex_device_id[index++] = hex_table[0xF & (*ptr >> 4)];
+        hex_device_id[index++] = hex_table[0xF & *ptr++];
         
     }
+
+    PRINTS("\r\n");
 
     return true;
 }
@@ -374,7 +393,7 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
     }
 
     uint16_t hex_len = strlen(hex_device_id);
-    if(hex_len != sizeof(uint64_t) * 2)
+    if(hex_len % 2 != 0)
     {
         return false;
     }
@@ -385,7 +404,7 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 
     uint8_t index = 0;
 
-    for(uint8_t i = 0; i < sizeof(uint64_t); i++)
+    for(uint8_t i = 0; i < hex_len / 2; i++)
     {
         uint8_t multiplier = 0;
         uint8_t remain = 0;
@@ -412,8 +431,9 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 
 }
 
-void hble_params_init(char* device_name)
+void hble_params_init(const char* device_name, uint64_t device_id)
 {
+    _device_id = device_id;
     // initialize GAP parameters
     {
         ble_gap_conn_sec_mode_t sec_mode;
@@ -439,25 +459,26 @@ void hble_params_init(char* device_name)
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
 
-        /*
-        size_t hex_device_id_len = 0;
-        uint64_t device_id = 0;
-        memcpy(&device_id, NRF_FICR->DEVICEID, sizeof(device_id));
-        hble_uint64_to_hex_device_id(device_id, NULL, &hex_device_id_len);
+        char hex_device_id[DEVICE_ID_SIZE * 2 + 1];
+        memset(hex_device_id, 0, sizeof(hex_device_id));
+        size_t device_id_size = sizeof(hex_device_id);
 
-        PRINTS("Device id hex string array size: ");
-        PRINT_HEX(&hex_device_id_len, sizeof(hex_device_id_len));
+        PRINTS("integer device id: ");
+        PRINT_HEX(&_device_id, DEVICE_ID_SIZE);
         PRINTS("\r\n");
 
-        char hex_device_id[hex_device_id_len];
-        hble_uint64_to_hex_device_id(device_id, hex_device_id, &hex_device_id_len);
-        */
+        if(!hble_uint64_to_hex_device_id(_device_id, hex_device_id, &device_id_size))
+        {
+            PRINTS("Decode device id failed!\r\n");
+            // If device id decode failed, morpheus should not start.
+            APP_ASSERT(0);
+        }
 
-#ifndef ANT_ENABLE
-        ble_srv_ascii_to_utf8(&dis_init.serial_num_str, "78:31:c1:ba:84:46");  // For iOS app testing
-#else
-        ble_srv_ascii_to_utf8(&dis_init.serial_num_str, "Not Yet Implemented");  // TODO: Fetch from buttom board
-#endif        
+        PRINTS("Device id hex: ");
+        PRINTS(hex_device_id);
+        PRINTS("\r\n");
+
+        ble_srv_ascii_to_utf8(&dis_init.serial_num_str, hex_device_id);  
 
         BLE_GAP_CONN_SEC_MODE_SET_OPEN(&dis_init.dis_attr_md.read_perm);
         BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&dis_init.dis_attr_md.write_perm);

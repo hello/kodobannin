@@ -100,8 +100,8 @@ enum {
     VLED_VDD_EN  = 17,
     VRGB_ENABLE  = 11,
 
-    VRGB_SELECT  =  9,
-    VRGB_ADJUST  =  8,
+    VRGB_SELECT  =  8,
+    VRGB_ADJUST  =  9,
     VRGB_SENSE   =  4,
 
     LED3_SENSE   =  3,
