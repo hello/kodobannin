@@ -136,21 +136,7 @@ _aes128_xor(uint8_t * a, uint8_t * b, uint8_t * out_c){
     c[2] = a32[2] ^ b32[2];
     c[3] = a32[3] ^ b32[3];
 }
-
 MSG_Data_t * INCREF MSG_Base_AllocateDataAES128Atomic(MSG_Base_t * orig, uint8_t * key, uint8_t * IV, uint64_t * UID){
-    uint32_t new_size = sizeof(*UID) + 16 + (orig->len/16 + 1) * 16;
-    MSG_Data_t * data = MSG_Base_AllocateDataAtomic(new_size);
-    PRINTS("Input size = ");
-    PRINT_HEX(&orig->len, 2);
-    PRINTS("\r\n");
-    PRINTS("Output size = ");
-    PRINT_HEX(&new_size->len, 2);
-    PRINTS("\r\n");
-    if(data){
-        memset(data->buf, 0, data->len);
-    }
-
-
     return NULL;
 }
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
