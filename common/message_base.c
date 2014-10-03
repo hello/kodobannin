@@ -124,9 +124,6 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
     }
     return FAIL;
 }
-MSG_Data_t * INCREF MSG_Base_AllocateDataAES128Atomic(MSG_Base_t * orig, uint8_t * key, uint8_t * IV){
-    return NULL;
-}
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
     if(d){
         CRITICAL_REGION_ENTER();
