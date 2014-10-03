@@ -136,7 +136,7 @@ _aes128_xor(uint8_t * a, uint8_t * b, uint8_t * out_c){
     c[2] = a32[2] ^ b32[2];
     c[3] = a32[3] ^ b32[3];
 }
-MSG_Data_t * INCREF MSG_Base_AllocateDataAES128Atomic(MSG_Base_t * orig, uint8_t * key, uint8_t * IV, uint64_t UID){
+MSG_Data_t * INCREF MSG_Base_AllocateDataAES128Atomic(MSG_Base_t * orig, uint8_t * key, uint8_t * IV, uint64_t * UID){
     return NULL;
 }
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
