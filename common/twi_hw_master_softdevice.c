@@ -21,6 +21,7 @@
 #include "nrf_gpio.h"
 
 #include "nrf_soc.h"
+#include <nrf_sdm.h>
 
 /* Max cycles approximately to wait on RXDREADY and TXDREADY event,
  * This is optimized way instead of using timers, this is not power aware. */
@@ -92,21 +93,31 @@ static bool twi_master_write(uint8_t *data, uint8_t data_length, bool issue_stop
 static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_condition)
 {
     uint32_t timeout = MAX_TIMEOUT_LOOPS;   /* max loops to wait for RXDREADY event*/
+    uint8_t sd_enabled = 0;
+    sd_softdevice_is_enabled(&sd_enabled);
 
     if (data_length == 0)
     {
-        /* Return false for requesting data of size 0 */
-        return false;
+      /* Return false for requesting data of size 0 */
+      return false;
     }
     else if (data_length == 1)
+    {
+      if(sd_enabled)
       {
           sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_STOP);
-          // NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+      }else{
+          NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+      }
     }
     else
     {
+      if(sd_enabled)
+      {
         sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_SUSPEND);
-        // NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
+      }else{
+        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
+      }
     }
 
     sd_ppi_channel_enable_set(PPI_CHENSET_CH0_Msk);
@@ -143,9 +154,13 @@ static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_
 
         /* Configure PPI to stop TWI master before we get last BB event */
         if (--data_length == 1)
-            {
-                sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_STOP);
-                // NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+        {
+          if(sd_enabled)
+          {
+            sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_STOP);
+          }else{
+            NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+          }
         }
 
         if (data_length == 0)
@@ -252,6 +267,8 @@ static bool twi_master_clear_bus(void)
  */
 bool twi_master_init(void)
 {
+    uint8_t sd_enabled = 0;
+    sd_softdevice_is_enabled(&sd_enabled);
     /* To secure correct signal levels on the pins used by the TWI
        master when the system is in OFF mode, and when the TWI master is
        disabled, these pins must be configured in the GPIO peripheral.
@@ -275,11 +292,27 @@ bool twi_master_init(void)
     NRF_TWI1->PSELSCL         = TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER;
     NRF_TWI1->PSELSDA         = TWI_MASTER_CONFIG_DATA_PIN_NUMBER;
     NRF_TWI1->FREQUENCY       = TWI_FREQUENCY_FREQUENCY_K100 << TWI_FREQUENCY_FREQUENCY_Pos;
-    sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_SUSPEND);
-    // NRF_PPI->CH[0].EEP        = (uint32_t)&NRF_TWI1->EVENTS_BB;
-    // NRF_PPI->CH[0].TEP        = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
-    sd_ppi_channel_enable_clr(PPI_CHENCLR_CH0_Msk);
-    NRF_TWI1->ENABLE          = TWI_ENABLE_ENABLE_Enabled << TWI_ENABLE_ENABLE_Pos;
+
+    if(sd_enabled)
+    {
+      uint32_t err_code = 0;
+      err_code = sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_SUSPEND);
+      if(err_code != NRF_SUCCESS)
+      {
+        return false;
+      }
+      
+      err_code = sd_ppi_channel_enable_clr(PPI_CHENCLR_CH0_Msk);
+      if(err_code != NRF_SUCCESS)
+      {
+        return false;
+      }
+    }else{
+      NRF_PPI->CH[0].EEP        = (uint32_t)&NRF_TWI1->EVENTS_BB;
+      NRF_PPI->CH[0].TEP        = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
+    }
+
+    NRF_TWI1->ENABLE = TWI_ENABLE_ENABLE_Enabled << TWI_ENABLE_ENABLE_Pos;
 
     return twi_master_clear_bus();
 }
@@ -290,7 +323,7 @@ void twi_master_disable()
             (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) \
           | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
           | (GPIO_PIN_CNF_PULL_Disabled    << GPIO_PIN_CNF_PULL_Pos)  \
-          | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos) \
+          | (GPIO_PIN_CNF_INPUT_Disconnect  << GPIO_PIN_CNF_INPUT_Pos) \
           | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);
 
 
@@ -298,7 +331,7 @@ void twi_master_disable()
         (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) \
       | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
       | (GPIO_PIN_CNF_PULL_Disabled    << GPIO_PIN_CNF_PULL_Pos)  \
-      | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos) \
+      | (GPIO_PIN_CNF_INPUT_Disconnect  << GPIO_PIN_CNF_INPUT_Pos) \
       | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);
 
     NRF_TWI1->ENABLE = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos;

@@ -40,21 +40,14 @@
 #include "util.h"
 #include "watchdog.h"
 
-#ifdef PLATFORM_HAS_VLED
 #include "led.h"
-#endif
-
-#ifdef PLATFORM_HAS_VERSION
 #include "battery.h"
-#endif
 
-static app_timer_id_t _led_blink_timer;
-static uint8_t _blink_count;
+#include <twi_master.h>
 
-static void _init_modules()
+static void _init_rf_modules()
 {
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
-
 
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
@@ -99,34 +92,33 @@ static void _init_modules()
 }
 
 
-void _load_watchdog()
+static void _load_watchdog()
 {
     watchdog_init(10,0);
     watchdog_task_start(5);
 }
 
-static void _led_blink_all(void* ctx)
+static void _led_blink_finished()
 {
-    if(_blink_count % 2 == 0)
-    {
-        led_power_on();
-        led_all_colors_on();
-    }else{
-        led_power_off();
+    //_init_rf_modules();
 
-        if(_blink_count == 5)
-        {
-            APP_OK(app_timer_stop(_led_blink_timer));
-            _init_modules();
-        }
-    }
-
-    _blink_count++;
 }
+
+
 
 void _start()
 {
+    //battery_module_power_off();
+    //imu_power_on();
+    //imu_power_off();
+    //led_power_off();
+
+    //led_power_on();
+    //led_all_colors_on();
+
+    
     //BOOL_OK(twi_master_init());
+    
     
 
     {
@@ -153,25 +145,52 @@ void _start()
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     
+    //gpio_cfg_s0s1_output_connect(VRGB_ENABLE, 0);   // on: 1
 
-    _load_watchdog();
 
-#ifdef PLATFORM_HAS_VERSION
-    //battery_module_power_off();
-#endif
+    /*
+    {
+        uint8_t data = 0x0;
 
-#ifdef PLATFORM_HAS_VLED
+        uint16_t int16 = 0;
+        uint8_t size_16 = sizeof(int16);
+
+        uint8_t device_addr_write = 0xAA;
+        
+        BOOL_OK(twi_master_init());
+        uint8_t out_data[2] = {0};
+
+        if(twi_master_transfer(device_addr_write, 
+            &data, 
+            sizeof(data), 
+            TWI_ISSUE_STOP))
+        {
+
+            
+            bool ret = twi_master_transfer(0xAB, 
+                out_data, 
+                sizeof(out_data), 
+                TWI_ISSUE_STOP);
+        }
+    }
+    */
     led_power_on();
+    led_all_colors_on();
+
+    _init_rf_modules();
+
+    led_all_colors_off();
     led_power_off();
 
-    APP_OK(app_timer_create(&_led_blink_timer, APP_TIMER_MODE_REPEATED, _led_blink_all));
 
-    _blink_count = 0;
-    APP_OK(app_timer_start(_led_blink_timer, LED_INIT_LIGHTUP_INTERAVL, NULL));
+
+    //led_power_on();
+    //led_power_off();
+
+    led_flash(0, 4, NULL);    
+    //_load_watchdog();
     
-#else
-    _init_modules();
-#endif
+
 
     
 	
