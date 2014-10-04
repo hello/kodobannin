@@ -102,6 +102,7 @@ DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
 	$(wildcard drivers/battery.c) \
 	$(wildcard drivers/gpio_nor.c) \
+	$(wildcard drivers/pwm.c) \
 
 
 SRCS = $(HELLO_SRCS) $(NRF_SRCS) $(DRIVER_SRCS)

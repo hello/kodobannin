@@ -25,6 +25,8 @@
 #include "antutil.h"
 #endif
 
+#include "led.h"
+
 #include <watchdog.h>
 
 
@@ -244,11 +246,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 					}
 
 					mag = _aggregate_motion_data(values, sizeof(values));
-#ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
+
 					ShakeDetect(mag);
-					//_dispatch_motion_data_via_ant(values, sizeof(values));
 					
-#endif
 
 #ifdef IMU_DYNAMIC_SAMPLING        
                     app_timer_cnt_get(&_last_active_time);

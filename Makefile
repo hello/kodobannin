@@ -103,6 +103,7 @@ DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
 	$(wildcard drivers/battery.c) \
 	$(wildcard drivers/gpio_nor.c) \
+	$(wildcard drivers/pwm.c) \
 
 #ifeq ($(USE_SDK_BONDMNGR), 1)
 #	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
@@ -172,7 +173,7 @@ clean:
 
 
 # compile flags
-DEBUG = 0
+DEBUG = 1
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
