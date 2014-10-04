@@ -195,6 +195,9 @@ static void _on_pill_pairing_guesture_detected(void){
     }
 #endif
 
+    PRINTS("Shake detected\r\n");
+    led_flash(0, 1, NULL);
+
     
 }
 
@@ -203,10 +206,10 @@ static MSG_Status _init(void){
 	//harder
 	//ShakeDetectReset(15000000000, 5);
 	//easier to trigger
-#ifdef DEBUG_SERIAL
+#ifndef DEBUG_SERIAL
 	ShakeDetectReset(15000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
 #else
-    ShakeDetectReset(10000000);
+    ShakeDetectReset(1000000);
 #endif
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
 
