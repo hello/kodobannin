@@ -203,7 +203,11 @@ static MSG_Status _init(void){
 	//harder
 	//ShakeDetectReset(15000000000, 5);
 	//easier to trigger
-	ShakeDetectReset(1000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+#ifdef DEBUG_SERIAL
+	ShakeDetectReset(15000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+#else
+    ShakeDetectReset(10000000);
+#endif
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
 
     return SUCCESS;
