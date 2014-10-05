@@ -150,7 +150,14 @@ void ADC_IRQHandler(void)
     
 }
 
-
+void battery_module_power_on()
+{
+#ifdef PLATFORM_HAS_VERSION
+    gpio_input_disconnect(VMCU_SENSE);
+    gpio_cfg_s0s1_output_connect(VBAT_VER_EN, 0);
+    nrf_gpio_cfg_input(VBAT_SENSE, NRF_GPIO_PIN_NOPULL);
+#endif
+}
 
 
 void start_battery_measurement(batter_measure_callback_t callback)
@@ -162,11 +169,7 @@ void start_battery_measurement(batter_measure_callback_t callback)
     }
 
     uint32_t err_code;
-#ifdef PLATFORM_HAS_VERSION
-    gpio_input_disconnect(VMCU_SENSE);
-    gpio_cfg_s0s1_output_connect(VBAT_VER_EN, 0);
-    nrf_gpio_cfg_input(VBAT_SENSE, NRF_GPIO_PIN_NOPULL);
-#endif
+
 
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;

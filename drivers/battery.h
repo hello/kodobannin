@@ -30,6 +30,7 @@ typedef void(*batter_measure_callback_t)(uint32_t batt_level_milli_volts, uint8_
  */
 void start_battery_measurement(batter_measure_callback_t callback);
 void battery_module_power_off();
+void battery_module_power_on();
 
 #endif // BATTERY_H__
 
