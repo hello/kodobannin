@@ -40,6 +40,7 @@ typedef enum {
 
 uint32_t pwm_init(PWM_Channel_Count num_channels, uint32_t *gpios, PWM_Mode mode);
 uint32_t pwm_set_value(PWM_Channel channel, uint32_t value);
+void pwm_disable();
 
 // Test func
 void pwm_test();
