@@ -102,7 +102,7 @@ static void _sd_led_init()
 {
     led_power_on();
     nrf_delay_ms(10);
-    //led_power_off();
+    led_power_off();
 }
 
 static void _led_blink_finished()
@@ -190,7 +190,7 @@ void _start()
 
 
     //led_power_on();
-    //_init_rf_modules();
+    _init_rf_modules();
     //led_power_off();
     
     
