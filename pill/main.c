@@ -98,6 +98,13 @@ static void _load_watchdog()
     watchdog_task_start(5);
 }
 
+static void _sd_led_init()
+{
+    led_power_on();
+    nrf_delay_ms(10);
+    led_power_off();
+}
+
 static void _led_blink_finished()
 {
     //_init_rf_modules();
@@ -108,18 +115,51 @@ static void _led_blink_finished()
 
 void _start()
 {
-    //battery_module_power_off();
-    //imu_power_on();
-    //imu_power_off();
-    //led_power_off();
+    
+    battery_module_power_off();
+    uint8_t succeed_addr = 0;
+    
+    /*
+    {
+        battery_module_power_on();
 
-    //led_power_on();
-    //led_all_colors_on();
+        BOOL_OK(twi_master_init());
 
-    
-    //BOOL_OK(twi_master_init());
-    
-    
+        //DEVICE_TYPE 0x0001 Reports the device type 0x0421
+        // 4.1.13 SHUTDOWN: 0x001C, based on http://www.ti.com/lit/ug/sluuac5a/sluuac5a.pdf
+        uint8_t data_addr[2] = {0x01, 0x00};
+        
+        uint8_t out_data[2] = {0};
+        int8_t device_addr = 0b1010101;
+
+        //for(uint8_t device_addr = 0x00; device_addr < 0xFF; device_addr++)
+        {
+            bool cmd_ret = twi_master_transfer(device_addr << 1, 
+                &data_addr[0], 
+                2, 
+                TWI_ISSUE_STOP);
+            nrf_delay_us(66);
+            
+            
+            if(cmd_ret)
+            {
+                
+                cmd_ret = twi_master_transfer(device_addr << 1 | TWI_READ_BIT , 
+                    &out_data[0], 
+                    sizeof(out_data), 
+                    TWI_ISSUE_STOP);
+                
+
+                succeed_addr = 1;
+            }else{
+                
+            }
+        }
+
+        twi_master_disable();
+        battery_module_power_off();
+    }
+    */
 
     {
         enum {
@@ -145,50 +185,104 @@ void _start()
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     
-    //gpio_cfg_s0s1_output_connect(VRGB_ENABLE, 0);   // on: 1
-
-
-    /*
-    {
-        uint8_t data = 0x0;
-
-        uint16_t int16 = 0;
-        uint8_t size_16 = sizeof(int16);
-
-        uint8_t device_addr_write = 0xAA;
-        
-        BOOL_OK(twi_master_init());
-        uint8_t out_data[2] = {0};
-
-        if(twi_master_transfer(device_addr_write, 
-            &data, 
-            sizeof(data), 
-            TWI_ISSUE_STOP))
-        {
-
-            
-            bool ret = twi_master_transfer(0xAB, 
-                out_data, 
-                sizeof(out_data), 
-                TWI_ISSUE_STOP);
-        }
-    }
-    */
-    led_power_on();
-    led_all_colors_on();
-
-    _init_rf_modules();
-
-    led_all_colors_off();
-    led_power_off();
-
+    //_init_rf_modules();
+    _sd_led_init();
 
 
     //led_power_on();
+    _init_rf_modules();
     //led_power_off();
+    
+    
+    /*
+    if(!succeed_addr)
+    {
+        battery_module_power_on();
+        BOOL_OK(twi_master_init());
+
+        //DEVICE_TYPE 0x0001 Reports the device type 0x0421
+        uint8_t data_addr[2] = {0x00, 0x01};
+        uint8_t cmd_data[2] = {0x01, 0x00};
+        
+        uint8_t out_data[2] = {0};
+        int8_t device_addr = 0b1010101;
+
+        bool cmd_ret = twi_master_transfer(device_addr << 1, 
+            &data_addr[0], 
+            1, 
+            TWI_DONT_ISSUE_STOP);
+        cmd_ret &= twi_master_transfer(device_addr << 1, 
+            &cmd_data[0], 
+            1, 
+            TWI_ISSUE_STOP);
+
+        cmd_ret = twi_master_transfer(device_addr << 1, 
+            &data_addr[1], 
+            1, 
+            TWI_DONT_ISSUE_STOP);
+        cmd_ret &= twi_master_transfer(device_addr << 1, 
+            &cmd_data[1], 
+            1, 
+            TWI_ISSUE_STOP);
+
+
+        if(cmd_ret)
+        {
+            
+            cmd_ret = twi_master_transfer(device_addr << 1 | TWI_READ_BIT , 
+                &out_data[0], 
+                sizeof(out_data), 
+                TWI_ISSUE_STOP);
+
+            PRINTS("TWI Reads: ");
+            PRINT_HEX(out_data, sizeof(out_data));
+            PRINTS("\r\n");
+
+        }else{
+            PRINTS("TWI Write failed, device_addr: ");
+            PRINT_HEX(&device_addr, sizeof(device_addr));
+            PRINTS(", data addr: ");
+            PRINT_HEX(&data_addr, sizeof(data_addr));
+            PRINTS("\r\n");
+            nrf_delay_ms(100);
+        }
+
+        PRINTS("LOOP TEST DONE\r\n");
+        twi_master_disable();
+        battery_module_power_off();
+    }else{
+        PRINTS("HARDWARE TWI READ SUCCESS\r\n");
+    }
+
+    
+    if(succeed_addr)
+    {
+        PRINTS("GAUGE SENSOR OFF!\r\n");
+    }
+    */
+
+    /*
+    led_power_on();
+    int i = 0;
+    while(true){
+        if(i % 2 == 0){
+            led_all_colors_on();
+
+        }else{
+            led_all_colors_off();
+        }
+
+        nrf_delay_ms(100);
+        i++;
+    }
+    led_power_off();
+    */
+    
+    
+    
 
     led_flash(0, 4, NULL);    
-    //_load_watchdog();
+    _load_watchdog();
     
 
 

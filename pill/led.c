@@ -20,7 +20,7 @@ static volatile uint8_t _blink_count;
 void led_power_on()
 {
 #ifdef PLATFORM_HAS_VLED
-    gpio_cfg_s0s1_output_connect(VLED_VDD_EN, 0);  // on: 0  VDD on
+    gpio_cfg_d0s1_opendrain_output_connect(VLED_VDD_EN, 0, NRF_GPIO_PIN_PULLDOWN);  // on: 0  VDD on
     gpio_cfg_s0s1_output_connect(VRGB_ENABLE, 1);  // on: 1  Boost on
 
     // 1 + NRF_GPIO_PIN_PULLUP  = RED ONLY + NO PWM ADJUST <- VERY TINY RED
@@ -101,8 +101,8 @@ void led_power_off()
     
     {
         // VDD off and disconnect
-        gpio_cfg_s0s1_output_connect(VLED_VDD_EN, 1);
-        gpio_cfg_d0s1_output_disconnect(VLED_VDD_EN);
+        //gpio_cfg_d0s1_opendrain_output_connect(VLED_VDD_EN, 1, NRF_GPIO_PIN_PULLDOWN);
+        gpio_cfg_d0s1_output_disconnect_pull(VLED_VDD_EN, NRF_GPIO_PIN_PULLDOWN);
     }
 
 #endif    

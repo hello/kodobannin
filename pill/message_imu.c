@@ -180,7 +180,12 @@ static void _on_wom_timer(void* context)
     }
 }
 
-
+static app_timer_id_t _flash_timer_1;
+static void _blink_leds(void* ctx)
+{
+    PRINTS("timer start\r\n");
+    led_flash(0, 1, NULL);
+}
 
 static void _on_pill_pairing_guesture_detected(void){
     //TODO: send pairing request packets via ANT
@@ -199,8 +204,16 @@ static void _on_pill_pairing_guesture_detected(void){
 
     PRINTS("Shake detected\r\n");
     led_flash(0, 1, NULL);
-
     
+    //APP_OK(app_timer_start(_flash_timer_1, APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER), NULL));
+
+    /*
+    led_power_on();
+    led_all_colors_on();
+    nrf_delay_ms(100);
+    led_all_colors_off();
+    led_power_off();
+    */
 }
 
 
@@ -211,9 +224,10 @@ static MSG_Status _init(void){
 #ifndef DEBUG_SERIAL
 	ShakeDetectReset(15000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
 #else
-    ShakeDetectReset(1000000);
+    ShakeDetectReset(1000);
 #endif
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
+    //APP_OK(app_timer_create(&_flash_timer_1, APP_TIMER_MODE_SINGLE_SHOT, _blink_leds));
 
     return SUCCESS;
 }
@@ -283,10 +297,10 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
         imu_power_on();
         
 #ifdef IMU_DYNAMIC_SAMPLING
-		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
+		if(!imu_init_low_power(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
 			_settings.inactive_sampling_rate, _settings.accel_range, _settings.inactive_wom_threshold))
 #else
-        if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
+        if(!imu_init_low_power(SPI_Channel_0, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
             _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
 #endif
 		{
