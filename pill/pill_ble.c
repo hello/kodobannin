@@ -193,7 +193,7 @@ void pill_ble_load_modules(void){
 #endif
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
-		central->loadmod(MSG_IMU_Init(central));
+		//central->loadmod(MSG_IMU_Init(central));
 #endif
 
         
