@@ -20,6 +20,7 @@ static struct{
 
 static void _commit_pairing(void * ctx){
     PRINTS("\r\n======\r\nCOMMIT PAIRING\r\n======\r\n");
+    ANT_BondMgrCommit();
 }
 
 
@@ -36,42 +37,41 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         return;
     }
 
-    if(src.module == TIME && src.submodule == 1){
-        // TODO, this shit needs to be tested on CC3200 side.
-        MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+    // TODO, this shit needs to be tested on CC3200 side.
+    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
 
 
-        MorpheusCommand morpheus_command;
-        memset(&morpheus_command, 0, sizeof(MorpheusCommand));
+    MorpheusCommand morpheus_command;
+    memset(&morpheus_command, 0, sizeof(MorpheusCommand));
 
-        morpheus_command.version = PROTOBUF_VERSION;
+    morpheus_command.version = PROTOBUF_VERSION;
 
-        uint64_t device_id = pill_data->UUID;
-        char buffer[17];  // 17 = 8 * 2 + 1
-        memset(buffer, 0, 17);
-        size_t buffer_len = sizeof(buffer);
+    uint64_t device_id = pill_data->UUID;
+    char buffer[17];  // 17 = 8 * 2 + 1
+    memset(buffer, 0, 17);
+    size_t buffer_len = sizeof(buffer);
 
-        if(!hble_uint64_to_hex_device_id(device_id, buffer, &buffer_len))
+    if(!hble_uint64_to_hex_device_id(device_id, buffer, &buffer_len))
+    {
+        PRINTS("Get pill id failed.\r\n");
+    }else{
+        MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(buffer);
+        if(!device_id_page)
         {
-            PRINTS("Get pill id failed.\r\n");
+            PRINTS("No memory.\r\n");
         }else{
-            MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(buffer);
-            if(!device_id_page)
-            {
-                PRINTS("No memory.\r\n");
-            }else{
-                morpheus_command.deviceId.arg = device_id_page;
+            morpheus_command.deviceId.arg = device_id_page;
 
-                //TODO it may be a good idea to check len from the msg
-                switch(pill_data->type){
-                    case ANT_PILL_DATA:
+            //TODO it may be a good idea to check len from the msg
+            switch(pill_data->type){
+                case ANT_PILL_DATA:
                     {
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
                         morpheus_command.has_motionData = true;
                         morpheus_command.motionData = pill_data->payload[TF_CONDENSED_BUFFER_SIZE - 1];
                     }
                     break;
-                    case ANT_PILL_HEARTBEAT:
+                case ANT_PILL_HEARTBEAT:
                     {
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
                         morpheus_command.has_batteryLevel = true;
@@ -82,42 +82,40 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                     }
                     break;
 
-                    default:
+                default:
                     break;
-                }
-
-                size_t proto_len = 0;
-                if(morpheus_ble_encode_protobuf(&morpheus_command, NULL, &proto_len))
-                {
-                    MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
-                    if(proto_page)
-                    {
-                        memset(proto_page->buf, 0, proto_page->len);
-                        if(morpheus_ble_encode_protobuf(&morpheus_command, proto_page->buf, &proto_len))
-                        {
-                            self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
-                            self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
-                        }
-                        MSG_Base_ReleaseDataAtomic(proto_page);
-                    }else{
-                        PRINTS("No memory\r\n");
-                    }
-                }
-
-                MSG_Base_ReleaseDataAtomic(device_id_page);
-                // if(device_id_page)
             }
 
-            //if(hble_uint64_to_hex_device_id(device_id, buffer, &buffer_len))
+            size_t proto_len = 0;
+            if(morpheus_ble_encode_protobuf(&morpheus_command, NULL, &proto_len))
+            {
+                MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
+                if(proto_page)
+                {
+                    memset(proto_page->buf, 0, proto_page->len);
+                    if(morpheus_ble_encode_protobuf(&morpheus_command, proto_page->buf, &proto_len))
+                    {
+                        self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
+                        self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
+                    }
+                    MSG_Base_ReleaseDataAtomic(proto_page);
+                }else{
+                    PRINTS("No memory\r\n");
+                }
+            }
+
+            MSG_Base_ReleaseDataAtomic(device_id_page);
         }
 
-        //if(src.module == TIME && src.submodule == 1)
     }
 
     MSG_Base_ReleaseDataAtomic(msg);
 }
 
 static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
+    PRINTS("Unknown Device ID:");
+    PRINT_HEX(&_id->device_number, 2);
+    PRINTS("\r\n");
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
     if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
         self.staging_bond = (ANT_BondedDevice_t){
@@ -133,6 +131,14 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
         default:
             break;
         case ANT_STATUS_DISCONNECTED:
+            {
+                ANT_BondedDevice_t * device = ANT_BondMgrQuery(id);
+                if(device){
+                    PRINTS("DEVICE REMOVED\r\n");
+                    ANT_BondMgrRemove(device);
+                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
+                }
+            }
             break;
         case ANT_STATUS_CONNECTED:
             if(id->device_number == self.staging_bond.id.device_number){

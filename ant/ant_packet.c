@@ -38,6 +38,7 @@ typedef struct{
     hlo_ant_header_packet_t tx_header;
     MSG_Data_t * rx_obj;
     int16_t tx_count;
+    uint16_t tx_stretch;
     MSG_Data_t * tx_obj;
 }hlo_ant_packet_session_t;
 
@@ -60,6 +61,7 @@ _reset_session_tx(hlo_ant_packet_session_t * session){
     //TODO: trick to sendbunch of headers before the body is to use negative number
     session->tx_obj = NULL;
     session->tx_count = ANT_HEADER_TRANSMIT_COUNT * -1;
+    session->tx_stretch = 0;
 }
 static inline DECREF
 _reset_session_rx(hlo_ant_packet_session_t * session){
@@ -140,7 +142,7 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
         if(session->tx_count < 0){
             //copy header to prime transmission
             memcpy(out_buffer, &session->tx_header, 8);
-        }else if(session->tx_count < ( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT) ){
+        }else if(session->tx_count < (( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)) + (session->tx_stretch >> 1)){
             uint16_t mod = session->tx_count % (session->tx_header.page_count+1);
             if(mod == 0){
                 memcpy(out_buffer, &session->tx_header, 8);
@@ -182,6 +184,9 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
                 self.user->on_message(device, ret_obj);
             }
             _reset_session_rx(session);
+        }
+        if(session->rx_obj && session->tx_obj){
+            session->tx_stretch++;
         }
     }else{
         //no more sessions available

@@ -24,6 +24,9 @@ uint32_t ANT_BondMgrCommit(void);
 //removes from cache(does not write to flash)
 uint32_t ANT_BondMgrRemove(const ANT_BondedDevice_t * id);
 
+//Queries the entry by ant id
+ANT_BondedDevice_t * ANT_BondMgrQuery(const hlo_ant_device_t * id);
+
 //erases all from flash
 uint32_t ANT_BondMgr_EraseAll(void);
 
