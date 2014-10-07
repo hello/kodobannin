@@ -2,7 +2,6 @@
 
 #include <app_timer.h>
 
-#include "app.h"
 #include "platform.h"
 #include "util.h"
 #include "nrf_gpio.h"
@@ -76,6 +75,7 @@ bool led_flash(uint32_t color_rgb, uint8_t count, led_callback_t on_finished)
 
 void led_all_colors_on()
 {
+#ifdef PLATFORM_HAS_VLED
     nrf_gpio_cfg_output(LED3_ENABLE);
     nrf_gpio_pin_clear(LED3_ENABLE);
 
@@ -84,10 +84,12 @@ void led_all_colors_on()
 
     nrf_gpio_cfg_output(LED1_ENABLE);
     nrf_gpio_pin_clear(LED1_ENABLE);
+#endif
 }
 
 void led_all_colors_off()
 {
+#ifdef PLATFORM_HAS_VLED
     nrf_gpio_cfg_output(LED3_ENABLE);
     nrf_gpio_pin_set(LED3_ENABLE);
 
@@ -96,10 +98,12 @@ void led_all_colors_off()
 
     nrf_gpio_cfg_output(LED1_ENABLE);
     nrf_gpio_pin_set(LED1_ENABLE);
+#endif
 }
 
 void led_power_on()
 {
+#ifdef PLATFORM_HAS_VLED
     PRINTS("LED adjust for soft start\r\n");
     nrf_gpio_cfg_output(VRGB_ADJUST);
     nrf_gpio_pin_set(VRGB_ADJUST);  // write 1
@@ -212,11 +216,13 @@ void led_power_on()
  */
 
     PRINTS("LED power exit w/delay.\r\n");
+#endif
 }
 
 
 void led_power_off()
 {
+#ifdef PLATFORM_HAS_VLED
     nrf_gpio_cfg_output(VLED_VDD_EN);
     nrf_gpio_pin_set(VLED_VDD_EN);
     //gpio_cfg_d0s1_output_disconnect(VLED_VDD_EN);
@@ -224,6 +230,7 @@ void led_power_off()
     nrf_gpio_cfg_output(VRGB_ENABLE);
     nrf_gpio_pin_clear(VRGB_ENABLE);
     //gpio_cfg_d0s1_output_disconnect(VRGB_ENABLE);
+#endif
 }
 
 
