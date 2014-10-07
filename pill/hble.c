@@ -196,18 +196,20 @@ static void _advertising_data_init(uint8_t flags){
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
 
-static void _on_battery_level_measured(uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
+static void _on_battery_level_measured(uint8_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
 {
+
     PRINTS("Battery level measured,  Voltage:");
     PRINT_HEX(&batt_level_milli_volts, sizeof(batt_level_milli_volts));
     PRINTS(", Percentage: ");
     PRINT_HEX(&percentage_battery_level, sizeof(percentage_battery_level));
+    PRINTS(", ADC: ");
+    PRINT_HEX(&adc_result, sizeof(adc_result));
     PRINTS("\r\n");
-#ifdef DEBUG_BATT_LVL
-    hlo_ble_notify(0xD00D, &batt_level_milli_volts, sizeof(batt_level_milli_volts), NULL);
-#endif
 
-    uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, percentage_battery_level);
+    battery_module_power_off();
+
+    uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, adc_result);
     if ((err_code != NRF_SUCCESS) &&
         (err_code != NRF_ERROR_INVALID_STATE) &&
         (err_code != BLE_ERROR_NO_TX_BUFFERS) &&
@@ -215,6 +217,8 @@ static void _on_battery_level_measured(uint32_t batt_level_milli_volts, uint8_t 
     {
         APP_ERROR_HANDLER(err_code);
     }
+
+    
 }
 
 
@@ -300,8 +304,8 @@ void hble_stack_init()
 
 void hble_update_battery_level()
 {
-#ifdef HAS_BATTERY_SERVICE
-    start_battery_measurement(_on_battery_level_measured);
+#ifdef PLATFORM_HAS_VERSION
+    battery_measurement_begin(_on_battery_level_measured);
 #endif
 }
 

@@ -203,17 +203,11 @@ static void _on_pill_pairing_guesture_detected(void){
 #endif
 
     PRINTS("Shake detected\r\n");
-    led_flash(0, 1, NULL);
+    //led_flash(0, 1, NULL);
     
     //APP_OK(app_timer_start(_flash_timer_1, APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER), NULL));
 
-    /*
-    led_power_on();
-    led_all_colors_on();
-    nrf_delay_ms(100);
-    led_all_colors_off();
-    led_power_off();
-    */
+    hble_update_battery_level();
 }
 
 
@@ -224,7 +218,7 @@ static MSG_Status _init(void){
 #ifndef DEBUG_SERIAL
 	ShakeDetectReset(15000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
 #else
-    ShakeDetectReset(1000);
+    ShakeDetectReset(100000000);
 #endif
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
     //APP_OK(app_timer_create(&_flash_timer_1, APP_TIMER_MODE_SINGLE_SHOT, _blink_leds));

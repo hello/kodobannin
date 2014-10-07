@@ -111,6 +111,24 @@ static void _led_blink_finished()
 
 }
 
+static void _on_battery_level_measured(uint8_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
+{
+
+    PRINTS("adc_result:");
+    PRINT_HEX(&adc_result, sizeof(adc_result));
+    PRINTS("\r\n");
+
+    PRINTS("batt_lvl_in_milli_volts:");
+    PRINT_HEX(&batt_level_milli_volts, sizeof(batt_level_milli_volts));
+    PRINTS("\r\n");
+
+    PRINTS("percentage_batt_lvl:");
+    PRINT_HEX(&percentage_battery_level, sizeof(percentage_battery_level));
+    PRINTS("\r\n");
+
+    battery_module_power_off();
+}
+
 
 
 void _start()
@@ -186,7 +204,7 @@ void _start()
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     
     //_init_rf_modules();
-    _sd_led_init();
+    //_sd_led_init();
 
 
     //led_power_on();
@@ -277,6 +295,7 @@ void _start()
     }
     led_power_off();
     */
+    
     /*
     while(true)
     {
@@ -292,7 +311,18 @@ void _start()
     
     
 
-    led_flash(0, 4, NULL);    
+    //led_flash(0, 4, NULL);
+
+    /*
+    battery_module_power_on();
+
+    while(true)
+    {
+        start_battery_measurement(_on_battery_level_measured);
+        nrf_delay_ms(3000);
+    }
+    */
+
     _load_watchdog();
     
 

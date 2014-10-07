@@ -43,8 +43,7 @@
  * @param[in]  ADC_VALUE   ADC result.
  * @retval     Result converted to millivolts.
  */
-#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)\
-        ((((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS) / 255) * ADC_PRE_SCALING_COMPENSATION)
+#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)   ((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS / 255 * ADC_PRE_SCALING_COMPENSATION)
 //#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)     ((((ADC_REF_VOLTAGE_IN_MILLIVOLTS)))
 
 
@@ -117,24 +116,11 @@ void ADC_IRQHandler(void)
         uint32_t battery_milvolt = adc_result;
         uint32_t batt_lvl_in_micro_volts = ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
         uint8_t percentage_batt_lvl     = _battery_level_in_percent(batt_lvl_in_micro_volts / 1000);
-
-        /*
-        PRINTS("adc_result:");
-        PRINT_HEX(&adc_result, sizeof(adc_result));
-        PRINTS("\r\n");
-
-        PRINTS("batt_lvl_in_milli_volts:");
-        PRINT_HEX(&batt_lvl_in_milli_volts, sizeof(batt_lvl_in_milli_volts));
-        PRINTS("\r\n");
-
-        PRINTS("percentage_batt_lvl:");
-        PRINT_HEX(&percentage_batt_lvl, sizeof(percentage_batt_lvl));
-        PRINTS("\r\n");
-        */
+        
 
         if(_battery_measure_callback)  // I assume there is no race condition here.
         {
-            _battery_measure_callback(batt_lvl_in_micro_volts, percentage_batt_lvl);
+            _battery_measure_callback(adc_result, batt_lvl_in_micro_volts, percentage_batt_lvl);
         }
     }
 
@@ -160,7 +146,7 @@ void battery_module_power_on()
 }
 
 
-void start_battery_measurement(batter_measure_callback_t callback)
+uint32_t battery_measurement_begin(batter_measure_callback_t callback)
 {
 
     if(callback)
@@ -176,7 +162,7 @@ void start_battery_measurement(batter_measure_callback_t callback)
     NRF_ADC->CONFIG     = (ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos)     |
                         (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos)  |
                         (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos)  |
-                        (ADC_CONFIG_PSEL_AnalogInput6 << ADC_CONFIG_PSEL_Pos)    |
+                        (ADC_CONFIG_PSEL_AnalogInput7 << ADC_CONFIG_PSEL_Pos)    |
                         (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
   // NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
     NRF_ADC->EVENTS_END = 0;
@@ -195,6 +181,8 @@ void start_battery_measurement(batter_measure_callback_t callback)
     
     NRF_ADC->EVENTS_END  = 0;    // Stop any running conversions.
     NRF_ADC->TASKS_START = 1;
+
+    return err_code;
 }
 
 /**
