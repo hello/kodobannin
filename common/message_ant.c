@@ -99,12 +99,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         int idx = dst.submodule - 1;
         //donp't have queue atm, dropping extra data for now
         if(self.paired_devices[idx].device_number){
-            hlo_ant_device_t dev = {
-                .device_number = self.paired_devices[idx].device_number,
-                .device_type = 0,
-                .transmit_type = 0
-            };
-            int ret = hlo_ant_packet_send_message(&dev, data);
+            int ret = hlo_ant_packet_send_message(&self.paired_devices[idx], data);
         }
     }
     return SUCCESS;
