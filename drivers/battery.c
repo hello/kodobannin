@@ -110,7 +110,7 @@ void ADC_IRQHandler(void)
     if (NRF_ADC->EVENTS_END != 0)
     {
         NRF_ADC->EVENTS_END     = 0;
-        uint8_t adc_result      = NRF_ADC->RESULT;
+        uint16_t adc_result      = NRF_ADC->RESULT;
         NRF_ADC->TASKS_STOP     = 1;
 
         uint32_t battery_milvolt = adc_result;
@@ -159,7 +159,7 @@ uint32_t battery_measurement_begin(batter_measure_callback_t callback)
 
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
-    NRF_ADC->CONFIG     = (ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos)     |
+    NRF_ADC->CONFIG     = (ADC_CONFIG_RES_10bit << ADC_CONFIG_RES_Pos)     |
                         (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos)  |
                         (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos)  |
                         (ADC_CONFIG_PSEL_AnalogInput7 << ADC_CONFIG_PSEL_Pos)    |
