@@ -118,16 +118,11 @@ static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
     PRINTS("\r\n");
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
     if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
-        hlo_ant_device_t dev = (hlo_ant_device_t){
-            .device_number = _id->device_number,
-            .transmit_type = 0, // don't care
-            .device_type = 0
-        };
         self.staging_bond = (ANT_BondedDevice_t){
-            .id = dev,
+            .id = *_id,
             .full_uid = pill_data->UUID,
         };
-        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &dev, sizeof(dev));
+        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, _id, sizeof(*_id));
     }
 }
 
