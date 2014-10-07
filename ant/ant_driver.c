@@ -64,7 +64,8 @@ static int
 _configure_channel_as_central(uint8_t channel,const hlo_ant_channel_phy_t * phy,  const hlo_ant_device_t * device, uint8_t ext_fields){
     int ret = 0;
     ret += sd_ant_channel_assign(channel, phy->channel_type, phy->network, ext_fields);
-    ret += sd_ant_channel_id_set(channel, device->device_number, 0, 0);
+    //ret += sd_ant_channel_id_set(channel, device->device_number, device->device_type, device->transmit_type);
+    ret += sd_ant_channel_id_set(channel, device->device_number, device->device_type, device->transmit_type);
     return ret;
 }
 int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
