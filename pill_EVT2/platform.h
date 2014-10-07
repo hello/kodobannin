@@ -7,8 +7,6 @@
 #endif
 
 //#define BLE_ENABLE
-//#define BATTERY_SERVICE_ENABLE
-//#define DEBUG_BATT_LVL
 
 /*
 // This is from EVT1, not used
@@ -23,15 +21,13 @@ enum {
 
 */
 
-
-
 #define PLATFORM_HAS_SERIAL
 
 enum {
     SERIAL_TX_PIN = 18,
     SERIAL_RX_PIN = 19,
-    SERIAL_CTS_PIN = 0,
-    SERIAL_RTS_PIN = 0,
+    SERIAL_CTS_PIN = 31,
+    SERIAL_RTS_PIN = 31,
 };
 
 // uart serial diagnostic port

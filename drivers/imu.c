@@ -11,6 +11,7 @@
 #include <string.h>
 #include <app_gpiote.h>
 
+#include "gpio_nor.h"
 #include "imu.h"
 #include "mpu_6500_registers.h"
 #include "sensor_data.h"
@@ -666,18 +667,16 @@ inline void imu_spi_disable()
 inline void imu_power_on()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-    nrf_gpio_cfg_output(IMU_VDD_EN);
-    //nrf_gpio_pin_write(IMU_VDD_EN, 0);
-    nrf_gpio_pin_clear(IMU_VDD_EN); // Equal to nrf_gpio_pin_write(IMU_VDD_EN, 0);
+    gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 0);
 #endif
 }
 
 inline void imu_power_off()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-    nrf_gpio_cfg_output(IMU_VDD_EN);
-    //nrf_gpio_pin_write(IMU_VDD_EN, 1);
-    nrf_gpio_pin_set(IMU_VDD_EN); // Should I ?
+    gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 1);
+    gpio_cfg_d0s1_output_disconnect(IMU_VDD_EN);
+
 #endif
 }
 

@@ -19,6 +19,11 @@ void ShakeDetectReset(uint32_t threshold){
     _reset();
 }
 
+static inline void _on_shake(void * p_event_data, uint16_t event_size)
+{
+    PRINTS("On shake\r\n");
+    self._shake_detection_callback();
+}
 
 void ShakeDetectDecWindow(void){
 
@@ -31,7 +36,8 @@ void ShakeDetectDecWindow(void){
         // sliding window ends, reset all the counter
         if(self.cnt >= SHAKING_DATA_COUNT_THRESHOLD){ // The user shakes hard enough and long enough
             if(self._shake_detection_callback){
-                self._shake_detection_callback();
+                app_sched_event_put(NULL, 0, _on_shake);
+                //self._shake_detection_callback();
             }
         }
         _reset();

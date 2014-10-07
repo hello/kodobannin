@@ -1,5 +1,3 @@
-// vi:noet:sw=4 ts=4
-
 /* Copyright (c) 2009 Nordic Semiconductor. All Rights Reserved.
  *
  * The information contained herein is property of Nordic Semiconductor ASA.
@@ -20,9 +18,7 @@
 #include "nrf_delay.h"
 #include "nrf_gpio.h"
 
-#include "nrf_soc.h"
-
-/* Max cycles approximately to wait on RXDREADY and TXDREADY event,
+/* Max cycles approximately to wait on RXDREADY and TXDREADY event, 
  * This is optimized way instead of using timers, this is not power aware. */
 #define MAX_TIMEOUT_LOOPS             (20000UL)        /**< MAX while loops to wait for RXD/TXD event */
 
@@ -39,7 +35,7 @@ static bool twi_master_write(uint8_t *data, uint8_t data_length, bool issue_stop
     NRF_TWI1->TXD           = *data++;
     NRF_TWI1->TASKS_STARTTX = 1;
 
-    /** @snippet [TWI HW master write] */
+    /** @snippet [TWI HW master write] */            
     while (true)
     {
         while(NRF_TWI1->EVENTS_TXDSENT == 0 && NRF_TWI1->EVENTS_ERROR == 0 && (--timeout))
@@ -49,17 +45,17 @@ static bool twi_master_write(uint8_t *data, uint8_t data_length, bool issue_stop
 
         if (timeout == 0 || NRF_TWI1->EVENTS_ERROR != 0)
         {
-          // Recover the peripheral as indicated by PAN 56: "TWI: TWI module lock-up." found at
-          // Product Anomaly Notification document found at
+          // Recover the peripheral as indicated by PAN 56: "TWI: TWI module lock-up." found at 
+          // Product Anomaly Notification document found at 
           // https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822/#Downloads
           NRF_TWI1->EVENTS_ERROR = 0;
-          NRF_TWI1->ENABLE       = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos;
-          NRF_TWI1->POWER        = 0;
-          nrf_delay_us(5);
-          NRF_TWI1->POWER        = 1;
+          NRF_TWI1->ENABLE       = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos; 
+          NRF_TWI1->POWER        = 0; 
+          nrf_delay_us(5); 
+          NRF_TWI1->POWER        = 1; 
           NRF_TWI1->ENABLE       = TWI_ENABLE_ENABLE_Enabled << TWI_ENABLE_ENABLE_Pos;
 
-          (void)twi_master_init();
+          (void)twi_master_init();          
 
           return false;
         }
@@ -71,23 +67,23 @@ static bool twi_master_write(uint8_t *data, uint8_t data_length, bool issue_stop
 
         NRF_TWI1->TXD = *data++;
     }
-    /** @snippet [TWI HW master write] */
-
-    if (issue_stop_condition)
-    {
-        NRF_TWI1->EVENTS_STOPPED = 0;
-        NRF_TWI1->TASKS_STOP     = 1;
-        /* Wait until stop sequence is sent */
-        while(NRF_TWI1->EVENTS_STOPPED == 0)
-        {
+    /** @snippet [TWI HW master write] */            
+    
+    if (issue_stop_condition) 
+    { 
+        NRF_TWI1->EVENTS_STOPPED = 0; 
+        NRF_TWI1->TASKS_STOP     = 1; 
+        /* Wait until stop sequence is sent */ 
+        while(NRF_TWI1->EVENTS_STOPPED == 0) 
+        { 
             // Do nothing.
-        }
+        } 
     }
     return true;
 }
 
 
-/** @brief Function for read by twi_master.
+/** @brief Function for read by twi_master. 
  */
 static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_condition)
 {
@@ -99,43 +95,41 @@ static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_
         return false;
     }
     else if (data_length == 1)
-      {
-          sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_STOP);
-          // NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+    {
+        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
     }
     else
     {
-        sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_SUSPEND);
-        // NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
+        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
     }
-
-    sd_ppi_channel_enable_set(PPI_CHENSET_CH0_Msk);
+    
+    NRF_PPI->CHENSET          = PPI_CHENSET_CH0_Msk;
     NRF_TWI1->EVENTS_RXDREADY = 0;
     NRF_TWI1->TASKS_STARTRX   = 1;
-
-    /** @snippet [TWI HW master read] */
+    
+    /** @snippet [TWI HW master read] */                
     while (true)
     {
         while(NRF_TWI1->EVENTS_RXDREADY == 0 && NRF_TWI1->EVENTS_ERROR == 0 && (--timeout))
-        {
+        {    
             // Do nothing.
         }
         NRF_TWI1->EVENTS_RXDREADY = 0;
 
         if (timeout == 0 || NRF_TWI1->EVENTS_ERROR != 0)
         {
-          // Recover the peripheral as indicated by PAN 56: "TWI: TWI module lock-up." found at
-          // Product Anomaly Notification document found at
+          // Recover the peripheral as indicated by PAN 56: "TWI: TWI module lock-up." found at 
+          // Product Anomaly Notification document found at 
           // https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822/#Downloads
           NRF_TWI1->EVENTS_ERROR = 0;
-          NRF_TWI1->ENABLE       = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos;
-          NRF_TWI1->POWER        = 0;
-          nrf_delay_us(5);
-          NRF_TWI1->POWER        = 1;
+          NRF_TWI1->ENABLE       = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos; 
+          NRF_TWI1->POWER        = 0; 
+          nrf_delay_us(5); 
+          NRF_TWI1->POWER        = 1; 
           NRF_TWI1->ENABLE       = TWI_ENABLE_ENABLE_Enabled << TWI_ENABLE_ENABLE_Pos;
 
-          (void)twi_master_init();
-
+          (void)twi_master_init();          
+          
           return false;
         }
 
@@ -143,9 +137,8 @@ static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_
 
         /* Configure PPI to stop TWI master before we get last BB event */
         if (--data_length == 1)
-            {
-                sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_STOP);
-                // NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+        {
+            NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
         }
 
         if (data_length == 0)
@@ -153,13 +146,13 @@ static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_
             break;
         }
 
-        // Recover the peripheral as indicated by PAN 56: "TWI: TWI module lock-up." found at
-        // Product Anomaly Notification document found at
+        // Recover the peripheral as indicated by PAN 56: "TWI: TWI module lock-up." found at 
+        // Product Anomaly Notification document found at 
         // https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822/#Downloads
-        nrf_delay_us(20);
+        nrf_delay_us(20);      
         NRF_TWI1->TASKS_RESUME = 1;
     }
-    /** @snippet [TWI HW master read] */
+    /** @snippet [TWI HW master read] */                    
 
     /* Wait until stop sequence is sent */
     while(NRF_TWI1->EVENTS_STOPPED == 0)
@@ -168,7 +161,7 @@ static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_
     }
     NRF_TWI1->EVENTS_STOPPED = 0;
 
-    sd_ppi_channel_enable_clr(PPI_CHENCLR_CH0_Msk);
+    NRF_PPI->CHENCLR = PPI_CHENCLR_CH0_Msk;
     return true;
 }
 
@@ -186,19 +179,19 @@ static bool twi_master_clear_bus(void)
     bool bus_clear;
     uint32_t clk_pin_config;
     uint32_t data_pin_config;
-
+        
     // Save and disable TWI hardware so software can take control over the pins.
     twi_state        = NRF_TWI1->ENABLE;
     NRF_TWI1->ENABLE = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos;
-
+    
     clk_pin_config                                        =  \
-            NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER];
+            NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER];    
     NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER] =   \
             (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) \
           | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
           | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)  \
           | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos) \
-          | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);
+          | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);    
 
     data_pin_config                                      = \
         NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_DATA_PIN_NUMBER];
@@ -207,8 +200,8 @@ static bool twi_master_clear_bus(void)
       | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
       | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)  \
       | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos) \
-      | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);
-
+      | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);    
+      
     TWI_SDA_HIGH();
     TWI_SCL_HIGH();
     TWI_DELAY();
@@ -222,7 +215,7 @@ static bool twi_master_clear_bus(void)
         uint_fast8_t i;
         bus_clear = false;
 
-        // Clock max 18 pulses worst case scenario(9 for master to send the rest of command and 9
+        // Clock max 18 pulses worst case scenario(9 for master to send the rest of command and 9 
         // for slave to respond) to SCL line and wait for SDA come high.
         for (i=18; i--;)
         {
@@ -238,7 +231,7 @@ static bool twi_master_clear_bus(void)
             }
         }
     }
-
+    
     NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER] = clk_pin_config;
     NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_DATA_PIN_NUMBER]  = data_pin_config;
 
@@ -247,13 +240,35 @@ static bool twi_master_clear_bus(void)
     return bus_clear;
 }
 
+void twi_master_disable()
+{
+  
+    NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER] =   \
+            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) \
+          | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
+          | (GPIO_PIN_CNF_PULL_Disabled    << GPIO_PIN_CNF_PULL_Pos)  \
+          | (GPIO_PIN_CNF_INPUT_Disconnect  << GPIO_PIN_CNF_INPUT_Pos) \
+          | (GPIO_PIN_CNF_DIR_Input     << GPIO_PIN_CNF_DIR_Pos);
+
+
+    NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_DATA_PIN_NUMBER] = \
+        (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) \
+      | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
+      | (GPIO_PIN_CNF_PULL_Disabled    << GPIO_PIN_CNF_PULL_Pos)  \
+      | (GPIO_PIN_CNF_INPUT_Disconnect  << GPIO_PIN_CNF_INPUT_Pos) \
+      | (GPIO_PIN_CNF_DIR_Input     << GPIO_PIN_CNF_DIR_Pos);
+      
+    // https://devzone.nordicsemi.com/question/5813/ready-to-development-twi-application-while-using-softdevice/
+    NRF_TWI1->ENABLE = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos;
+}
+
 
 /** @brief Function for initializing the twi_master.
  */
 bool twi_master_init(void)
 {
     /* To secure correct signal levels on the pins used by the TWI
-       master when the system is in OFF mode, and when the TWI master is
+       master when the system is in OFF mode, and when the TWI master is 
        disabled, these pins must be configured in the GPIO peripheral.
     */
     NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER] =     \
@@ -261,55 +276,34 @@ bool twi_master_init(void)
       | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
       | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)  \
       | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos) \
-      | (GPIO_PIN_CNF_DIR_Input      << GPIO_PIN_CNF_DIR_Pos);
+      | (GPIO_PIN_CNF_DIR_Input      << GPIO_PIN_CNF_DIR_Pos);   
 
     NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_DATA_PIN_NUMBER] =      \
         (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) \
       | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
       | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)  \
       | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos) \
-      | (GPIO_PIN_CNF_DIR_Input      << GPIO_PIN_CNF_DIR_Pos);
+      | (GPIO_PIN_CNF_DIR_Input      << GPIO_PIN_CNF_DIR_Pos);    
 
     NRF_TWI1->EVENTS_RXDREADY = 0;
     NRF_TWI1->EVENTS_TXDSENT  = 0;
     NRF_TWI1->PSELSCL         = TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER;
     NRF_TWI1->PSELSDA         = TWI_MASTER_CONFIG_DATA_PIN_NUMBER;
     NRF_TWI1->FREQUENCY       = TWI_FREQUENCY_FREQUENCY_K100 << TWI_FREQUENCY_FREQUENCY_Pos;
-    sd_ppi_channel_assign(0, &NRF_TWI1->EVENTS_BB, &NRF_TWI1->TASKS_SUSPEND);
-    // NRF_PPI->CH[0].EEP        = (uint32_t)&NRF_TWI1->EVENTS_BB;
-    // NRF_PPI->CH[0].TEP        = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
-    sd_ppi_channel_enable_clr(PPI_CHENCLR_CH0_Msk);
+    NRF_PPI->CH[0].EEP        = (uint32_t)&NRF_TWI1->EVENTS_BB;
+    NRF_PPI->CH[0].TEP        = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
+    NRF_PPI->CHENCLR          = PPI_CHENCLR_CH0_Msk;
     NRF_TWI1->ENABLE          = TWI_ENABLE_ENABLE_Enabled << TWI_ENABLE_ENABLE_Pos;
 
     return twi_master_clear_bus();
 }
 
-void twi_master_disable()
-{
-    NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER] =   \
-            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) \
-          | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
-          | (GPIO_PIN_CNF_PULL_Disabled    << GPIO_PIN_CNF_PULL_Pos)  \
-          | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos) \
-          | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);
-
-
-    NRF_GPIO->PIN_CNF[TWI_MASTER_CONFIG_DATA_PIN_NUMBER] = \
-        (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) \
-      | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos) \
-      | (GPIO_PIN_CNF_PULL_Disabled    << GPIO_PIN_CNF_PULL_Pos)  \
-      | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos) \
-      | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);
-
-    NRF_TWI1->ENABLE = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos;
-}
-
 
 /** @brief  Function for transfer by twi_master.
- */
-bool twi_master_transfer(uint8_t   address,
-                         uint8_t * data,
-                         uint8_t   data_length,
+ */ 
+bool twi_master_transfer(uint8_t   address, 
+                         uint8_t * data, 
+                         uint8_t   data_length, 
                          bool      issue_stop_condition)
 {
     bool transfer_succeeded = false;
