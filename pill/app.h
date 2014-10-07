@@ -65,14 +65,14 @@ enum {
 #define SECOND_10_MS_UNITS                   100
 // Minimum acceptable connection interval (0.5 seconds),
 // Connection interval uses 1.25 ms units
-#define MIN_CONN_INTERVAL                    (5 * TWENTY_MS_1_25_MS_UNITS)
+#define MIN_CONN_INTERVAL                    (3 * TWENTY_MS_1_25_MS_UNITS)
 // Maximum acceptable connection interval (1 second), Connection interval uses 1.25 ms units.
-#define MAX_CONN_INTERVAL                    (5 * TWENTY_MS_1_25_MS_UNITS)
+#define MAX_CONN_INTERVAL                    (3 * TWENTY_MS_1_25_MS_UNITS)
 
 // Slave latency. */
 #define SLAVE_LATENCY                        1
 // Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units
-#define CONN_SUP_TIMEOUT                     (2 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
+#define CONN_SUP_TIMEOUT                     (4 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
 
 #define TX_POWER_LEVEL						(-8)
 

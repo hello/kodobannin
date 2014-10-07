@@ -203,11 +203,11 @@ static void _on_pill_pairing_guesture_detected(void){
 #endif
 
     PRINTS("Shake detected\r\n");
-    //led_flash(0, 1, NULL);
+    led_flash(0, 1, NULL);
     
     //APP_OK(app_timer_start(_flash_timer_1, APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER), NULL));
 
-    hble_update_battery_level();
+    //hble_update_battery_level();
 }
 
 

@@ -311,7 +311,7 @@ void _start()
     
     
 
-    //led_flash(0, 4, NULL);
+    led_flash(0, 4, NULL);
 
     /*
     battery_module_power_on();
