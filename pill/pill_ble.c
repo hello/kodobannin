@@ -26,6 +26,9 @@
 #include "message_app.h"
 #include "message_uart.h"
 
+#ifdef ANT_STACK_SUPPORT_REQD
+#include <ant_parameters.h>
+#endif
 #ifdef ANT_ENABLE
 #include "message_ant.h"
 #include "ant_devices.h"
@@ -197,14 +200,13 @@ void pill_ble_load_modules(void){
 
         central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #ifdef ANT_ENABLE
-        hlo_ant_init(HLO_ANT_ROLE_CENTRAL, hlo_ant_packet_init(NULL));
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
         {
             hlo_ant_role role = HLO_ANT_ROLE_PERIPHERAL;
 			hlo_ant_device_t id = {
 				.device_number = GET_UUID_16(),
-				.device_type = 0,
-				.transmit_type = 0
+				.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
+				.transmit_type = 1
 			};
             MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
 			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id, sizeof(id));

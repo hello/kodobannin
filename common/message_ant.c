@@ -98,7 +98,10 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     }else if(dst.submodule <= DEFAULT_ANT_BOND_COUNT){
         int idx = dst.submodule - 1;
         //donp't have queue atm, dropping extra data for now
-        hlo_ant_packet_send_message(&self.paired_devices[idx], data);
+        if(self.paired_devices[idx].device_number){
+            int ret = hlo_ant_packet_send_message(&self.paired_devices[idx], data);
+            //TODO user status update on error
+        }
     }
     return SUCCESS;
 }

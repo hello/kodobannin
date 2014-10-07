@@ -60,6 +60,14 @@ _configure_channel(uint8_t channel,const hlo_ant_channel_phy_t * phy,  const hlo
     ret += sd_ant_channel_rx_search_timeout_set(channel, 0);
     return ret;
 }
+static int
+_configure_channel_as_central(uint8_t channel,const hlo_ant_channel_phy_t * phy,  const hlo_ant_device_t * device, uint8_t ext_fields){
+    int ret = 0;
+    ret += sd_ant_channel_assign(channel, phy->channel_type, phy->network, ext_fields);
+    //ret += sd_ant_channel_id_set(channel, device->device_number, device->device_type, device->transmit_type);
+    ret += sd_ant_channel_id_set(channel, device->device_number, device->device_type, device->transmit_type);
+    return ret;
+}
 int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     hlo_ant_channel_phy_t phy = {
         .period = 273,
@@ -77,9 +85,9 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     self.role = role;
     self.event_listener = user;
     if(role == HLO_ANT_ROLE_CENTRAL){
+        APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
         PRINTS("Configured as ANT Central\r\n");
         APP_OK(_configure_channel(0, &phy, &device, 0)); 
-        APP_OK(sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_DEVICE_ID | ANT_LIB_CONFIG_MESG_OUT_INC_RSSI | ANT_LIB_CONFIG_MESG_OUT_INC_TIME_STAMP));
         sd_ant_rx_scan_mode_start(0);
     }
     return 0;
@@ -92,7 +100,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
     if(ch >= begin){
-        PRINTS("Channel already open!\r\n");
+        PRINTS("ANT: Channel already open!\r\n");
         return 0;
     }else{
         //open channel
@@ -102,14 +110,16 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
                 //TODO set period properly based on deivce number
                 .period = 1092,
                 .frequency = 66,
-                .channel_type = (self.role==HLO_ANT_ROLE_CENTRAL)?CHANNEL_TYPE_SLAVE:CHANNEL_TYPE_MASTER,
+                .channel_type = CHANNEL_TYPE_MASTER,
                 .network = 0
             };
-            APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, 0));
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
+                APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, 0));
                 APP_OK(sd_ant_channel_open((uint8_t)new_ch));
             }else{
-                //as master, we dont connect, but instead start by sending a dud message
+                //as central, we dont connect, but instead start by sending a dud message
+                phy.channel_type = CHANNEL_TYPE_SLAVE;
+                APP_OK(_configure_channel_as_central((uint8_t)new_ch, &phy, device, 0));
                 uint8_t message[8] = {0};
                 sd_ant_broadcast_message_tx((uint8_t)new_ch, sizeof(message), message);
             }
@@ -124,7 +134,14 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
     int ch = _find_open_channel_by_device(device, begin,7);
     int ret;
     if(ch >= begin){
-        return sd_ant_channel_close(ch);
+        PRINTS("Closing Channel = ");
+        PRINT_HEX(&ch, 1);
+        PRINTS("\r\n");
+        if(self.role == HLO_ANT_ROLE_CENTRAL){
+            return sd_ant_channel_unassign(ch);
+        }else{
+            return sd_ant_channel_close(ch);
+        }
     }
     return -1;
     
@@ -141,7 +158,7 @@ _handle_rx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
         if(ext.ucExtMesgBF & MSG_EXT_ID_MASK){
             device = (hlo_ant_device_t){
                 .device_number = *((uint16_t*)extbytes),
-                .device_type = extbytes[4],
+                .device_type = extbytes[2],
                 .transmit_type = extbytes[3]
             };
         }else{
@@ -212,7 +229,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             PRINTS("XX\r\n");
             break;
         case EVENT_CHANNEL_CLOSED:
-            //_handle_channel_closure(&ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            PRINTS("X");
             sd_ant_channel_unassign(ant_channel);
             break;
         default:
