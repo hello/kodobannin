@@ -110,7 +110,7 @@ void ADC_IRQHandler(void)
     if (NRF_ADC->EVENTS_END != 0)
     {
         NRF_ADC->EVENTS_END     = 0;
-        uint16_t adc_result      = NRF_ADC->RESULT;
+        adc_t adc_result      = NRF_ADC->RESULT;
         NRF_ADC->TASKS_STOP     = 1;
 
         uint32_t battery_milvolt = adc_result;

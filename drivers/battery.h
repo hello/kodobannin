@@ -24,7 +24,8 @@
 #ifndef BATTERY_H__
 #define BATTERY_H__
 
-typedef void(*batter_measure_callback_t)(uint16_t adc, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level);
+typedef uint16_t adc_t;
+typedef void(*batter_measure_callback_t)(adc_t adc, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level);
 
 /**@brief Function for making the ADC start a battery level conversion.
  */

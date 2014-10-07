@@ -111,73 +111,12 @@ static void _led_blink_finished()
 
 }
 
-static void _on_battery_level_measured(uint8_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
-{
-
-    PRINTS("adc_result:");
-    PRINT_HEX(&adc_result, sizeof(adc_result));
-    PRINTS("\r\n");
-
-    PRINTS("batt_lvl_in_milli_volts:");
-    PRINT_HEX(&batt_level_milli_volts, sizeof(batt_level_milli_volts));
-    PRINTS("\r\n");
-
-    PRINTS("percentage_batt_lvl:");
-    PRINT_HEX(&percentage_battery_level, sizeof(percentage_battery_level));
-    PRINTS("\r\n");
-
-    battery_module_power_off();
-}
-
-
 
 void _start()
 {
     
     battery_module_power_off();
-    uint8_t succeed_addr = 0;
-    
-    /*
-    {
-        battery_module_power_on();
-
-        BOOL_OK(twi_master_init());
-
-        //DEVICE_TYPE 0x0001 Reports the device type 0x0421
-        // 4.1.13 SHUTDOWN: 0x001C, based on http://www.ti.com/lit/ug/sluuac5a/sluuac5a.pdf
-        uint8_t data_addr[2] = {0x01, 0x00};
-        
-        uint8_t out_data[2] = {0};
-        int8_t device_addr = 0b1010101;
-
-        //for(uint8_t device_addr = 0x00; device_addr < 0xFF; device_addr++)
-        {
-            bool cmd_ret = twi_master_transfer(device_addr << 1, 
-                &data_addr[0], 
-                2, 
-                TWI_ISSUE_STOP);
-            nrf_delay_us(66);
-            
-            
-            if(cmd_ret)
-            {
-                
-                cmd_ret = twi_master_transfer(device_addr << 1 | TWI_READ_BIT , 
-                    &out_data[0], 
-                    sizeof(out_data), 
-                    TWI_ISSUE_STOP);
-                
-
-                succeed_addr = 1;
-            }else{
-                
-            }
-        }
-
-        twi_master_disable();
-        battery_module_power_off();
-    }
-    */
+    _sd_led_init();
 
     {
         enum {
@@ -203,132 +142,15 @@ void _start()
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     
-    //_init_rf_modules();
-    //_sd_led_init();
-
-
-    //led_power_on();
     _init_rf_modules();
-    //led_power_off();
-    
-    
-    /*
-    if(!succeed_addr)
-    {
-        battery_module_power_on();
-        BOOL_OK(twi_master_init());
-
-        //DEVICE_TYPE 0x0001 Reports the device type 0x0421
-        uint8_t data_addr[2] = {0x00, 0x01};
-        uint8_t cmd_data[2] = {0x01, 0x00};
-        
-        uint8_t out_data[2] = {0};
-        int8_t device_addr = 0b1010101;
-
-        bool cmd_ret = twi_master_transfer(device_addr << 1, 
-            &data_addr[0], 
-            1, 
-            TWI_DONT_ISSUE_STOP);
-        cmd_ret &= twi_master_transfer(device_addr << 1, 
-            &cmd_data[0], 
-            1, 
-            TWI_ISSUE_STOP);
-
-        cmd_ret = twi_master_transfer(device_addr << 1, 
-            &data_addr[1], 
-            1, 
-            TWI_DONT_ISSUE_STOP);
-        cmd_ret &= twi_master_transfer(device_addr << 1, 
-            &cmd_data[1], 
-            1, 
-            TWI_ISSUE_STOP);
-
-
-        if(cmd_ret)
-        {
-            
-            cmd_ret = twi_master_transfer(device_addr << 1 | TWI_READ_BIT , 
-                &out_data[0], 
-                sizeof(out_data), 
-                TWI_ISSUE_STOP);
-
-            PRINTS("TWI Reads: ");
-            PRINT_HEX(out_data, sizeof(out_data));
-            PRINTS("\r\n");
-
-        }else{
-            PRINTS("TWI Write failed, device_addr: ");
-            PRINT_HEX(&device_addr, sizeof(device_addr));
-            PRINTS(", data addr: ");
-            PRINT_HEX(&data_addr, sizeof(data_addr));
-            PRINTS("\r\n");
-            nrf_delay_ms(100);
-        }
-
-        PRINTS("LOOP TEST DONE\r\n");
-        twi_master_disable();
-        battery_module_power_off();
-    }else{
-        PRINTS("HARDWARE TWI READ SUCCESS\r\n");
-    }
-
-    
-    if(succeed_addr)
-    {
-        PRINTS("GAUGE SENSOR OFF!\r\n");
-    }
-    */
-
-    /*
-    led_power_on();
-    int i = 0;
-    while(true){
-        if(i % 2 == 0){
-            led_all_colors_on();
-
-        }else{
-            led_all_colors_off();
-        }
-
-        nrf_delay_ms(100);
-        i++;
-    }
-    led_power_off();
-    */
-    
-    /*
-    while(true)
-    {
-        led_power_on();
-        led_all_colors_on();
-        nrf_delay_ms(2000);
-        //led_all_colors_off();
-        //led_power_off();
-        nrf_delay_ms(2000);
-    }
-    */
-    
-    
     
 
     led_flash(0, 4, NULL);
-
-    /*
-    battery_module_power_on();
-
-    while(true)
-    {
-        start_battery_measurement(_on_battery_level_measured);
-        nrf_delay_ms(3000);
-    }
-    */
 
     _load_watchdog();
     
 
 
-    
-	
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
