@@ -26,8 +26,10 @@
 #include "message_app.h"
 #include "message_uart.h"
 
-#ifdef ANT_ENABLE
+#ifdef ANT_STACK_SUPPORT_REQD
 #include <ant_parameters.h>
+#endif
+#ifdef ANT_ENABLE
 #include "message_ant.h"
 #include "ant_devices.h"
 #include "antutil.h"
