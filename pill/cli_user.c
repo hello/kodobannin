@@ -1,5 +1,6 @@
 #include "cli_user.h"
 #include "util.h"
+#include "led_booster_timer.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -43,6 +44,12 @@ _handle_command(int argc, char * argv[]){
             //release message object after dispatch to prevent memory leak
             MSG_Base_ReleaseDataAtomic(data);
         }
+    }
+    if(argc > 0 && _strncmp(argv[0], "lon", strlen("lon")) == 0){
+        led_booster_power_on();
+    }
+    if(argc > 0 && _strncmp(argv[0], "loff", strlen("loff")) == 0){
+        led_booster_power_off();
     }
 }
 
