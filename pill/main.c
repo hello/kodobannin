@@ -40,7 +40,6 @@
 #include "util.h"
 #include "watchdog.h"
 
-#include "led.h"
 #include "battery.h"
 
 #include <twi_master.h>
@@ -98,26 +97,12 @@ static void _load_watchdog()
     watchdog_task_start(5);
 }
 
-static void _sd_led_init()
-{
-    led_power_on();
-    nrf_delay_ms(10);
-    led_power_off();
-}
-
-static void _led_blink_finished()
-{
-    //_init_rf_modules();
-
-}
-
 
 void _start()
 {
     
     battery_module_power_off();
-    _sd_led_init();
-
+    
     {
         enum {
             SCHED_QUEUE_SIZE = 32,
@@ -143,9 +128,6 @@ void _start()
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     
     _init_rf_modules();
-    
-
-    led_flash(0, 4, NULL);
 
     _load_watchdog();
     
