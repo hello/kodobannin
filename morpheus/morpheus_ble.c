@@ -159,6 +159,7 @@ static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, v
     memset(buffer_page->buf, 0, stream->bytes_left);
     if (!pb_read(stream, buffer_page->buf, stream->bytes_left))
     {
+        MSG_Base_ReleaseDataAtomic(buffer_page);
         return false;
     }
 
