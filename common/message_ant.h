@@ -49,6 +49,10 @@ typedef struct{
     }param;
 }MSG_ANTCommand_t;
 
+typedef struct{
+    uint64_t nonce;
+    uint8_t payload[0];
+}MSG_ANT_EncryptedMotionData_t;
 
 typedef struct 
 {
@@ -68,7 +72,6 @@ typedef struct{
     uint8_t version;
     uint16_t payload_len;
     uint64_t UUID;
-    uint64_t nounce;
     uint8_t payload[0];
 }__attribute__((packed)) MSG_ANT_PillData_t;
 
