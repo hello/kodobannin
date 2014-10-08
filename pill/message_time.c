@@ -64,7 +64,7 @@ static void _send_available_data_ant(){
                 sd_rand_application_vector_get(nounce, (pool_size > sizeof(nounce)?sizeof(nounce):pool_size));
                 ant_data->nounce = *(uint64_t*)nounce;
                 ant_data->type = ANT_PILL_DATA_ENCRYPTED;
-                aes128_ctr_inplace(ant_data->payload, TF_CONDENSED_BUFFER_SIZE, key, nounce);
+                aes128_ctr_encrypt_inplace(ant_data->payload, TF_CONDENSED_BUFFER_SIZE, key, nounce);
             }else{
                 //pools closed
             }
