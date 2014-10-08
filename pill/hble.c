@@ -196,6 +196,7 @@ static void _advertising_data_init(uint8_t flags){
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
 
+
 static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
 {
 

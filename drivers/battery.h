@@ -27,6 +27,7 @@
 typedef uint16_t adc_t;
 typedef void(*batter_measure_callback_t)(adc_t adc, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level);
 
+
 /**@brief Function for making the ADC start a battery level conversion.
  */
 uint32_t battery_measurement_begin(batter_measure_callback_t callback);
