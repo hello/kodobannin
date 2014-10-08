@@ -15,7 +15,8 @@ _ctr_inc_ctr(nrf_ecb_hal_data_t * ecb){
 	ctr[1]++;
 }
 uint32_t
-aes128_ctr_inplace(uint8_t * message, uint32_t message_size, uint8_t * key, uint8_t * nounce){
+uint32_t
+aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, uint8_t * key, uint8_t * nounce){
 	nrf_ecb_hal_data_t ecb;
 	uint32_t * write_ptr = (uint32_t*)message;
 	uint32_t * read_ptr = (uint32_t*)ecb.ciphertext;
