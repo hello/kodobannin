@@ -47,6 +47,7 @@
 #ifdef PLATFORM_HAS_VERSION
 #include "battery.h"
 #endif
+#include "led_booster_timer.h"
 
 static app_timer_id_t _led_blink_timer;
 static uint8_t _blink_count;
@@ -123,7 +124,20 @@ static void _led_blink_all(void* ctx)
 
     _blink_count++;
 }
-
+//JACKSON TEST
+static void setup(){
+	PRINTS("LED SETUP\r\n");
+}
+static void teardown(){
+	PRINTS("LED TEARDOWN\r\n");
+}
+static void on_warm(){
+	PRINTS("LED WARMED UP\r\n");
+}
+static void on_cycle(led_booster_event_t event){
+	PRINTS("LED CYCLE\r\n");
+}
+//TEST END
 void _start()
 {
     //BOOL_OK(twi_master_init());
@@ -160,6 +174,15 @@ void _start()
     //battery_module_power_off();
 #endif
 
+	{
+		led_booster_context_t ctx = (led_booster_context_t){
+			.setup = setup,
+			.teardown = teardown,
+			.on_warm = on_warm,
+			.on_cycle = on_cycle,
+		};
+		led_booster_init(&ctx);
+	}
 #ifdef PLATFORM_HAS_VLED
     led_power_on();
     led_power_off();
