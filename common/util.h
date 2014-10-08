@@ -62,7 +62,9 @@ void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
 uint8_t memsum(void *start, unsigned len);
 
 //nounce is 64bits
-uint32_t aes128_ctr_inplace(uint8_t * message, uint32_t message_size, uint8_t * key, uint8_t * nounce);
+uint32_t aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce);
+uint32_t aes128_ctr_decrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce);
+const uint8_t * get_aes128_key(void);
 
 union int16_bits {
 	int16_t value;

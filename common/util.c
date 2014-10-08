@@ -14,8 +14,18 @@ _ctr_inc_ctr(nrf_ecb_hal_data_t * ecb){
 	uint64_t * ctr = (uint64_t*)(ecb->cleartext);
 	ctr[1]++;
 }
+const uint8_t *
+get_aes128_key(void){
+	static uint8_t key[16] = {0};
+	return key;
+}
 uint32_t
-aes128_ctr_inplace(uint8_t * message, uint32_t message_size, uint8_t * key, uint8_t * nounce){
+aes128_ctr_decrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce){
+	aes128_ctr_encrypt_inplace(message, message_size, key, nonce);
+	
+}
+uint32_t
+aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce){
 	nrf_ecb_hal_data_t ecb;
 	uint32_t * write_ptr = (uint32_t*)message;
 	uint32_t * read_ptr = (uint32_t*)ecb.ciphertext;
@@ -23,7 +33,7 @@ aes128_ctr_inplace(uint8_t * message, uint32_t message_size, uint8_t * key, uint
 	//set key
 	memcpy(ecb.key, key, AES128_BLOCK_SIZE);
 	//set counter
-	memcpy(ecb.cleartext, (uint8_t*)nounce, 8);
+	memcpy(ecb.cleartext, (uint8_t*)nonce, 8);
 	memset(ecb.cleartext+8, 0, 8);
 	while(message_size >= AES128_BLOCK_SIZE){
 		//do one operation
