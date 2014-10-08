@@ -55,7 +55,23 @@ static void _send_available_data_ant(){
 
         if(TF_GetCondensed(ant_data->payload, TF_CONDENSED_BUFFER_SIZE))
         {
-          self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
+#if 1
+            //TODO workaround until actual key
+            uint8_t key[16] = {0};
+            uint8_t pool_size = 0;
+            if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
+                uint8_t nounce[8] = {0};
+                sd_rand_application_vector_get(nounce, (pool_size > sizeof(nounce)?sizeof(nounce):pool_size));
+                ant_data->nounce = *(uint64_t*)nounce;
+                ant_data->type = ANT_PILL_DATA_ENCRYPTED;
+                aes128_ctr_inplace(ant_data->payload, TF_CONDENSED_BUFFER_SIZE, key, nounce);
+            }else{
+                //pools closed
+            }
+#endif
+            self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
+            self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
+
         }else{
             // Morpheus should fake data if there is nothing received for that minute.
         }

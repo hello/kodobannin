@@ -59,7 +59,8 @@ typedef struct
 typedef enum {
     ANT_PILL_DATA = 0,
     ANT_PILL_HEARTBEAT,
-    ANT_PILL_SHAKING
+    ANT_PILL_SHAKING,
+    ANT_PILL_DATA_ENCRYPTED
 }MSG_ANT_PillDataType_t;
 
 typedef struct{
@@ -67,6 +68,7 @@ typedef struct{
     uint8_t version;
     uint16_t payload_len;
     uint64_t UUID;
+    uint64_t nounce;
     uint8_t payload[0];
 }__attribute__((packed)) MSG_ANT_PillData_t;
 
