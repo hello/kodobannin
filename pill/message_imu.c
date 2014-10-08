@@ -178,8 +178,6 @@ static void _on_wom_timer(void* context)
     }
 }
 
-
-
 static void _on_pill_pairing_guesture_detected(void){
     //TODO: send pairing request packets via ANT
 #ifdef ANT_ENABLE
@@ -195,7 +193,7 @@ static void _on_pill_pairing_guesture_detected(void){
     }
 #endif
 
-    
+    PRINTS("Shake detected\r\n");
 }
 
 
@@ -203,8 +201,13 @@ static MSG_Status _init(void){
 	//harder
 	//ShakeDetectReset(15000000000, 5);
 	//easier to trigger
-	ShakeDetectReset(1000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+#ifndef DEBUG_SERIAL
+	ShakeDetectReset(15000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+#else
+    ShakeDetectReset(100000000);
+#endif
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
+    //APP_OK(app_timer_create(&_flash_timer_1, APP_TIMER_MODE_SINGLE_SHOT, _blink_leds));
 
     return SUCCESS;
 }
@@ -237,11 +240,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 					}
 
 					mag = _aggregate_motion_data(values, sizeof(values));
-#ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
+
 					ShakeDetect(mag);
-					//_dispatch_motion_data_via_ant(values, sizeof(values));
 					
-#endif
 
 #ifdef IMU_DYNAMIC_SAMPLING        
                     app_timer_cnt_get(&_last_active_time);

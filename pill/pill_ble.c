@@ -192,13 +192,14 @@ void pill_ble_load_modules(void){
 			UART_BAUDRATE_BAUDRATE_Baud38400
 		};
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
+        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #endif
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(MSG_IMU_Init(central));
 #endif
 
-        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
+        
 #ifdef ANT_ENABLE
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
         {

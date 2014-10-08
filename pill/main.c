@@ -40,21 +40,13 @@
 #include "util.h"
 #include "watchdog.h"
 
-#ifdef PLATFORM_HAS_VLED
-#include "led.h"
-#endif
-
-#ifdef PLATFORM_HAS_VERSION
 #include "battery.h"
-#endif
 
-static app_timer_id_t _led_blink_timer;
-static uint8_t _blink_count;
+#include <twi_master.h>
 
-static void _init_modules()
+static void _init_rf_modules()
 {
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
-
 
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
@@ -99,36 +91,18 @@ static void _init_modules()
 }
 
 
-void _load_watchdog()
+static void _load_watchdog()
 {
     watchdog_init(10,0);
     watchdog_task_start(5);
 }
 
-static void _led_blink_all(void* ctx)
-{
-    if(_blink_count % 2 == 0)
-    {
-        led_power_on();
-        led_all_colors_on();
-    }else{
-        led_power_off();
-
-        if(_blink_count == 5)
-        {
-            APP_OK(app_timer_stop(_led_blink_timer));
-            _init_modules();
-        }
-    }
-
-    _blink_count++;
-}
 
 void _start()
 {
-    //BOOL_OK(twi_master_init());
     
-
+    battery_module_power_off();
+    
     {
         enum {
             SCHED_QUEUE_SIZE = 32,
@@ -153,28 +127,12 @@ void _start()
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     
+    _init_rf_modules();
 
     _load_watchdog();
-
-#ifdef PLATFORM_HAS_VERSION
-    //battery_module_power_off();
-#endif
-
-#ifdef PLATFORM_HAS_VLED
-    led_power_on();
-    led_power_off();
-
-    APP_OK(app_timer_create(&_led_blink_timer, APP_TIMER_MODE_REPEATED, _led_blink_all));
-
-    _blink_count = 0;
-    APP_OK(app_timer_start(_led_blink_timer, LED_INIT_LIGHTUP_INTERAVL, NULL));
     
-#else
-    _init_modules();
-#endif
 
-    
-	
+
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

@@ -94,6 +94,27 @@ static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t
     return ret;
 }
 
+static bool _encode_command_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
+{
+    if(*arg == NULL)
+    {
+        return false;
+    }
+
+    MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
+    MSG_Base_AcquireDataAtomic(buffer_page);
+    char* str = buffer_page->buf;
+    
+    bool ret = false;
+    if (pb_encode_tag(stream, PB_WT_STRING, field))
+    {
+        ret = pb_encode_string(stream, (uint8_t*)str, buffer_page->len);
+    }
+
+    MSG_Base_ReleaseDataAtomic(buffer_page);
+    return ret;
+}
+
 
 static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
@@ -112,7 +133,36 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
     }
 
 	MSG_Data_t* string_page = MSG_Base_AllocateStringAtomic(str);
+    if(!string_page){
+        return false;
+    }
+
 	*arg = string_page;
+
+    return true;
+}
+
+static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
+{
+    /* We could read block-by-block to avoid the large buffer... */
+    if (stream->bytes_left > PROTOBUF_MAX_LEN - 1 || stream->bytes_left == 0)
+    {
+        return false;
+    }
+    
+    MSG_Data_t* buffer_page = MSG_Base_AllocateDataAtomic(stream->bytes_left);
+    if(!buffer_page)
+    {
+        return false;
+    }
+
+    memset(buffer_page->buf, 0, stream->bytes_left);
+    if (!pb_read(stream, buffer_page->buf, stream->bytes_left))
+    {
+        return false;
+    }
+
+    *arg = buffer_page;
 
     return true;
 }
@@ -142,6 +192,9 @@ bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, siz
 
     command->wifiPassword.funcs.decode = _decode_string_field;
     command->wifiPassword.arg = NULL;
+
+    command->motionDataEntrypted.funcs.decode = _decode_bytes_field;
+    command->motionDataEntrypted.arg = NULL;
 
     pb_istream_t stream = pb_istream_from_buffer(raw, len);
     bool status = pb_decode(&stream, MorpheusCommand_fields, command);
@@ -187,6 +240,11 @@ bool morpheus_ble_encode_protobuf(MorpheusCommand* command, char* raw, size_t* l
     if(command->wifiPassword.arg && NULL == command->wifiPassword.funcs.encode)
     {
         command->wifiPassword.funcs.encode = _encode_command_string_fields;
+    }
+
+    if(command->motionDataEntrypted.arg && NULL == command->motionDataEntrypted.funcs.encode)
+    {
+        command->motionDataEntrypted.funcs.encode = _encode_command_bytes_fields;
     }
 
     pb_ostream_t out_stream = {0};
@@ -240,6 +298,12 @@ void morpheus_ble_free_protobuf(MorpheusCommand* command)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiPassword.arg);
         command->wifiPassword.arg = NULL;
+    }
+
+    if(command->motionDataEntrypted.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->motionDataEntrypted.arg);
+        command->motionDataEntrypted.arg = NULL;
     }
 }
 

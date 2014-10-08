@@ -103,8 +103,9 @@ static void _timer_handler(void * ctx){
     {
         _send_heartbeat_data_ant();
     }
-    ShakeDetectDecWindow();
 #endif
+    
+    ShakeDetectDecWindow();
     
     if(self.user_cb){
         MSG_TimeCB_t * cb = &((MSG_TimeCommand_t*)(self.user_cb->buf))->param.wakeup_cb;

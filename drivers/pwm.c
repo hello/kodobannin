@@ -47,16 +47,19 @@ PWM_IRQHandler(void)
             nrf_gpiote_unconfig(pwm_gpiote_channel[i]);
             nrf_gpio_pin_write(pwm_io_ch[i], 0);
             pwm_running[i] = 0;
+            //PRINTS("RUNNING DONE WITH GPIO CLEAR\r\n");
         } else if (pwm_next_value[i] >= pwm_max_value) {
             nrf_gpiote_unconfig(pwm_gpiote_channel[i]);
             nrf_gpio_pin_write(pwm_io_ch[i], 1);
             pwm_running[i] = 0;
+            //PRINTS("RUNNING DONE GPIO SET\r\n");
         } else {
             PWM_TIMER->CC[i] = pwm_next_value[i] * 2;
             if(!pwm_running[i]) {
                 nrf_gpiote_task_config(pwm_gpiote_channel[i], pwm_io_ch[i], NRF_GPIOTE_POLARITY_TOGGLE, NRF_GPIOTE_INITIAL_VALUE_HIGH);
                 pwm_running[i] = 1;
             }
+            //PRINTS("RUNNING STARTED\r\n");
         }
     }
 
@@ -64,8 +67,7 @@ PWM_IRQHandler(void)
     PWM_TIMER->TASKS_START = 1;
 }
 
-int32_t
-ppi_enable_first_available_channel(volatile uint32_t *event_ptr, volatile uint32_t *task_ptr)
+int32_t ppi_enable_first_available_channel(volatile uint32_t *event_ptr, volatile uint32_t *task_ptr)
 {
     uint32_t channel_num;
     uint32_t chen;
@@ -81,8 +83,6 @@ ppi_enable_first_available_channel(volatile uint32_t *event_ptr, volatile uint32
         chen = NRF_PPI->CHEN;
     }
 
-    DEBUG("PPI chan msk: ", chen);
-    
     // Traverse the total list of channels
     for(channel_num = 0; channel_num < 16; channel_num++) {
         // Look for a channel that is not set
@@ -108,13 +108,23 @@ ppi_enable_first_available_channel(volatile uint32_t *event_ptr, volatile uint32
             NRF_PPI->CHENSET = (1 << channel_num);
         }
 
-        DEBUG("new PPI: ", channel_num);
         return channel_num;
     }
 }
 
-uint32_t
-pwm_init(PWM_Channel_Count num_channels, uint32_t *gpios, PWM_Mode mode) {
+void pwm_disable()
+{
+    for(uint8_t i = 0; i <= _chans; i++){
+        pwm_set_value(i, 0x00);
+        nrf_delay_ms(10);
+        NRF_GPIOTE->CONFIG[pwm_gpiote_channel[i]] = (GPIOTE_CONFIG_MODE_Disabled << GPIOTE_CONFIG_MODE_Pos);
+    }
+    
+    PWM_TIMER->TASKS_STOP = 1;
+
+}
+
+uint32_t pwm_init(PWM_Channel_Count num_channels, uint32_t *gpios, PWM_Mode mode) {
 	uint32_t i;
     uint32_t err;
     uint8_t sd_enabled = 0;
@@ -196,6 +206,7 @@ const uint8_t sin_table[] = {0, 0,1,2,4,6,9,12,16,20,24,29,35,40,   46, 53, 59, 
            232,236,240,244,247,250,252,254,255,255,255,255,255,254,252,250,247,244,240,236,232,227,221,216,210,203,197,190,182,175,168,160,152,144,136,128,120,112,104,
            96,88,81,74,66,59,   53, 46, 40, 35, 29,24,  20, 16, 12, 9,  6,  4,  2,1,0};
 
+/*
 void
 pwm_test() {
     uint32_t err_code;
@@ -221,3 +232,4 @@ pwm_test() {
         nrf_delay_us(8000);
     }
 }
+*/
