@@ -64,6 +64,7 @@ uint8_t memsum(void *start, unsigned len);
 //nounce is 64bits
 uint32_t aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, uint8_t * key, uint8_t * nounce);
 uint32_t aes128_ctr_decrypt_inplace(uint8_t * message, uint32_t message_size, uint8_t * key, uint8_t * nounce);
+const uint8_t * get_aes128_key(void);
 
 union int16_bits {
 	int16_t value;
