@@ -44,34 +44,29 @@ _flush(void){
 
 #ifdef ANT_STACK_SUPPORT_REQD
 static void _send_available_data_ant(){
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + TF_CONDENSED_BUFFER_SIZE);
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(MSG_ANT_EncryptedMotionData_t) + TF_CONDENSED_BUFFER_SIZE);
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        MSG_ANT_EncryptedMotionData_t * motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
         ant_data->version = ANT_PROTOCOL_VER;
-        ant_data->type = ANT_PILL_DATA;
+        ant_data->type = ANT_PILL_DATA_ENCRYPTED;
         ant_data->UUID = GET_UUID_64();
-        ant_data->payload_len = TF_CONDENSED_BUFFER_SIZE;
+        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t) + TF_CONDENSED_BUFFER_SIZE;
 
-        if(TF_GetCondensed(ant_data->payload, TF_CONDENSED_BUFFER_SIZE))
+        if(TF_GetCondensed(motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
         {
-#if 1
-            //TODO workaround until actual key
-            uint8_t key[16] = {0};
             uint8_t pool_size = 0;
             if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
-                uint8_t nounce[8] = {0};
-                sd_rand_application_vector_get(nounce, (pool_size > sizeof(nounce)?sizeof(nounce):pool_size));
-                ant_data->nounce = *(uint64_t*)nounce;
-                ant_data->type = ANT_PILL_DATA_ENCRYPTED;
-                aes128_ctr_encrypt_inplace(ant_data->payload, TF_CONDENSED_BUFFER_SIZE, key, nounce);
+                uint8_t nonce[8] = {0};
+                sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce)?sizeof(nonce):pool_size));
+                aes128_ctr_encrypt_inplace(motion_data->payload, TF_CONDENSED_BUFFER_SIZE, get_aes128_key(), nonce);
+                memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
+                self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
+                self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
             }else{
                 //pools closed
             }
-#endif
-            self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
-            self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
-
         }else{
             // Morpheus should fake data if there is nothing received for that minute.
         }
