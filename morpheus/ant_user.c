@@ -71,6 +71,19 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         morpheus_command.motionData = pill_data->payload[TF_CONDENSED_BUFFER_SIZE - 1];
                     }
                     break;
+                case ANT_PILL_DATA_ENCRYPTED:
+                    {
+                        // TODO: Jackson please test this
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
+                        MSG_Data_t* encrypted_data = MSG_Base_AllocateDataAtomic(sizeof(pill_data->nounce) +
+                            pill_data->payload_len);
+                        memset(encrypted_data->buf, 0, encrypted_data->len);
+                        memcpy(encrypted_data->buf, &pill_data->nounce, sizeof(pill_data->nounce));
+                        memcpy(&encrypted_data->buf[sizeof(pill_data->nounce)], pill_data->payload, pill_data->payload_len);
+
+                        morpheus_command.motionDataEntrypted.arg = encrypted_data;
+                    }
+                    break;
                 case ANT_PILL_HEARTBEAT:
                     {
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
@@ -108,7 +121,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         }
 
     }
-
+    morpheus_ble_free_protobuf(&morpheus_command);
     MSG_Base_ReleaseDataAtomic(msg);
 }
 
