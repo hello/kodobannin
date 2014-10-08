@@ -65,6 +65,14 @@ bool MSG_Base_HasMemoryLeak(void){
 
 
 
+MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
+    MSG_Data_t * dupe = MSG_Base_AllocateDataAtomic(orig->len);
+    if(dupe){
+        memcpy(dupe->buf, orig->buf, orig->len);
+        return dupe;
+    }
+    return NULL;
+}
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     MSG_Data_t * ret = NULL;
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
