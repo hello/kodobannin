@@ -3,7 +3,7 @@
 #include "ant_driver.h"
 #include "ant_packet.h"
 
-#define TF_CONDENSED_BUFFER_SIZE (3)
+#define TF_CONDENSED_BUFFER_SIZE (1)
 
 /**
  *
