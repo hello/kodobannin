@@ -154,9 +154,16 @@ $(SOFTDEVICE_UICR):: $(SOFTDEVICE_SRC)
 	openssl sha1 -binary $< > $@
 	stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
 
+#this only works with unmodified nordic bootloader settings
+#layouts:
+#2 bytes bank0
+#2 bytes crcbank0
+#4 bytes bank1(contains padding)
+#4 bytes bank0_size
 %.crc: %.bin $(CURDIR)/tools/crc16
-	$(CURDIR)/tools/crc16 $< | xxd -r -p | dd conv=swab 2> /dev/null > $@
-	echo ff ff ff ff | xxd -r -p >> $@
+	echo 01 00 | xxd -r -p >> $@
+	$(CURDIR)/tools/crc16 $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
+	echo ff ff ff ff| xxd -r -p >> $@
 	stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
 	echo 00 00 | xxd -r -p >> $@
 
