@@ -90,6 +90,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 
                         morpheus_command.has_uptime = true;
                         morpheus_command.uptime = ((pill_heartbeat_t*)pill_data->payload)->uptime_sec;
+
+                        morpheus_command.has_firmwareVersion = true;
+                        morpheus_command.firmwareVersion = ((pill_heartbeat_t*)pill_data->payload)->firmware_version;
                     }
                     break;
 

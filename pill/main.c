@@ -97,7 +97,6 @@ static void _load_watchdog()
     watchdog_task_start(5);
 }
 
-
 void _start()
 {
     
@@ -128,7 +127,6 @@ void _start()
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     
     _init_rf_modules();
-
     _load_watchdog();
     
 
