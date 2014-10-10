@@ -44,11 +44,11 @@ _flush(void){
 
 #ifdef ANT_STACK_SUPPORT_REQD
 static void _send_available_data_ant(){
-    size_t rawDataSize = TF_CONDENSED_BUFFER_SIZE * sizeof(tf_uinit_t);
+    size_t rawDataSize = TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t);
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
         sizeof(MSG_ANT_EncryptedMotionData_t) + // Encrypted info headers (nonce)
         rawDataSize);  // Raw/encrypted data
-    
+
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
