@@ -76,16 +76,25 @@ static inline hlo_ant_packet_session_t *
 _acquire_session(const hlo_ant_device_t * device){
     int i;
     uint16_t cid = device->device_number;
+    //look for existing session
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == cid){
             return &(self.entries[i]);
         }
     }
+    //look for new session
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == 0){
             self.entries[i].cid = cid;
             _reset_session_tx(&(self.entries[i]));
             _reset_session_rx(&(self.entries[i]));
+            return &(self.entries[i]);
+        }
+    }
+    //look for sessions with no tx or rx objects(expired session)
+    for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
+        if(self.entries[i].cid != 0 && !self.entries[i].rx_obj && !self.entries[i].tx_obj){
+            self.entries[i].cid = cid;
             return &(self.entries[i]);
         }
     }
