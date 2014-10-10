@@ -44,7 +44,7 @@ enum {
 #define IMU_INACTIVE_FREQ    (IMU_HZ_1_95)
 #define IMU_INACTIVE_WOM     (55)
 
-#define IMU_ACTIVE_FREQ      (IMU_HZ_7_81)
+#define IMU_ACTIVE_FREQ      (IMU_HZ_15_63)
 #define IMU_ACTIVE_WOM       (80)
 
 #define IMU_CONSTANT_FREQ    (IMU_HZ_15_63)
