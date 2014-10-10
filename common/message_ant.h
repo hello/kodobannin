@@ -3,7 +3,7 @@
 #include "ant_driver.h"
 #include "ant_packet.h"
 
-#define TF_CONDENSED_BUFFER_SIZE (3)
+#define TF_CONDENSED_BUFFER_SIZE (1)
 
 /**
  *
@@ -57,6 +57,7 @@ typedef struct{
 typedef struct 
 {
     uint8_t battery_level;
+    uint8_t firmware_version;
     uint32_t uptime_sec;
 }__attribute__((packed)) pill_heartbeat_t;
 
