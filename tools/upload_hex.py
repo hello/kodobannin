@@ -30,13 +30,19 @@ def percent_cb(complete, total):
 def upload(commit_info = "limbo"):
     bucket = conn.lookup("hello-firmware")
     if bucket:
+        #delete latest key
+        for key in bucket.list(prefix=BUILD_LATEST_KEY):
+            print "Deleting Key: " + key.name
+            key.delete()
+        #upload
         hexes = find_hexes("build")
         for h in hexes:
             k = Key(bucket)
             k.key = os.path.join(BUILD_BASE_KEY, commit_info, extract_name(h))
             k.set_contents_from_filename(h, cb = percent_cb, num_cb=10)
-            k.key = os.path.join(BUILD_LATEST_KEY, commit_info, extract_name(h))
-            k.set_contents_from_filename(h, cb = percent_cb, num_cb=10)
+            kl = Key(bucket)
+            kl.key = os.path.join(BUILD_LATEST_KEY, commit_info, extract_name(h))
+            kl.set_contents_from_filename(h, cb = percent_cb, num_cb=10)
         print "Uploads finished"
         return True
     else:
