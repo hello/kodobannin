@@ -521,7 +521,7 @@ static void _start_pill_dfu_process(uint64_t pill_id)
     ant_pill_dfu_begin(pill_id);
 }
 
-void message_ble_on_protobuf_command(const MSG_Data_t* data_page, const MorpheusCommand* command)
+void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusCommand* command)
 {
     MSG_Base_AcquireDataAtomic(data_page);
     // A protobuf actually occupy multiple pages..
