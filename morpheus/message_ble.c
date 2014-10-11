@@ -344,6 +344,8 @@ static MSG_Status _init(){
     get_device_id_command.version = PROTOBUF_VERSION;
 
 #ifdef ANT_ENABLE  // TODO: use another macro
+
+    /*
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
     {
@@ -366,6 +368,34 @@ static MSG_Status _init(){
 
     self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data_page);
     MSG_Base_ReleaseDataAtomic(data_page);
+    */
+
+    hble_stack_init();
+
+#ifdef BONDING_REQUIRED   
+    hble_bond_manager_init();
+#endif
+    // append something to device name
+    char device_name[strlen(BLE_DEVICE_NAME)+4];
+    memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+    uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
+    device_name[strlen(BLE_DEVICE_NAME)] = '-';
+    device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
+    device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
+    device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+    hble_params_init(device_name, 0);
+    hble_services_init();
+
+    ble_uuid_t service_uuid = {
+        .type = hello_type,
+        .uuid = BLE_UUID_MORPHEUS_SVC
+    };
+
+    hble_advertising_init(service_uuid);
+    
+    hble_advertising_start();
+
+    
 #else
 
     char* fake_device_id = "0123456789AB";
