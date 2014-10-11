@@ -39,7 +39,7 @@ static bool _pairing_mode = false;
 static ble_uuid_t _service_uuid;
 static uint64_t _device_id;
 
-static int16_t  _last_bond_central_id; 
+static int16_t  _last_bond_central_id;
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {

@@ -34,7 +34,6 @@ struct hlo_ble_notify_context {
 
 static struct hlo_ble_notify_context _notify_context;
 
-
 struct uuid_handler {
     uint16_t uuid;
     uint16_t value_handle;
@@ -48,7 +47,7 @@ uint8_t hello_type;
 static struct uuid_handler _uuid_handlers[MAX_CHARACTERISTICS];
 static struct uuid_handler* _p_uuid_handler = _uuid_handlers;
 
-static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
+static volatile uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 
 static void
 _char_add(const uint16_t uuid,
@@ -212,6 +211,15 @@ _dispatch_write(ble_evt_t *event) {
 }
 
 static bool _dispatch_packet(struct hlo_ble_packet * t){
+    if(_connection_handle == BLE_CONN_HANDLE_INVALID)
+    {
+        if(_notify_context.callback_info.on_failed)
+        {
+            _notify_context.callback_info.on_failed(_notify_context.callback_info.callback_data);
+        }
+        return false;
+    }
+
 	uint16_t mlen = (t->sequence_number == _notify_context.total - 1 ? _notify_context.last_len : 20);
 	ble_gatts_hvx_params_t hvx_params = {
 		.handle = _notify_context.characteristic_handle,
@@ -296,7 +304,11 @@ static inline uint8_t _last_packet_len(uint16_t length){
 
 void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, const struct hlo_ble_operation_callbacks* callback_info)
 {
-	if(length == 0) return;
+	if(length == 0)
+    {
+        return;
+    }
+
     _notify_context = (struct hlo_ble_notify_context) {
         .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
         .seq = 0,

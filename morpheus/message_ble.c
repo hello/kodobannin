@@ -182,13 +182,15 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                     }
                     break;
                     default:
+                    // protobuf, dump the thing straight back?
+                    hlo_ble_notify(0xB00B, data->buf, data->len,
+                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
                     break;
                 }
                 morpheus_ble_free_protobuf(&command);
             }
-            // protobuf, dump the thing straight back?
-            hlo_ble_notify(0xB00B, data->buf, data->len,
-                &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+            
+            
         }
     }
 }
