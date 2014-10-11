@@ -309,6 +309,15 @@ void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length
         return;
     }
 
+    if(_connection_handle == BLE_CONN_HANDLE_INVALID)
+    {
+        if(callback_info->on_failed)
+        {
+            callback_info->on_failed(callback_info->callback_data);
+        }
+        return;
+    }
+
     _notify_context = (struct hlo_ble_notify_context) {
         .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
         .seq = 0,
