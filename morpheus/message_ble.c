@@ -78,14 +78,25 @@ static void _register_pill(){
 
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
     if(!data){
+        PRINTS("Data is NULL\r\n");
         return FAIL;
     }
+
+    PRINTS("Enter _on_data_arrival\r\n");
+    MSG_Base_AcquireDataAtomic(data);
+
     MSG_BLECommand_t * cmd = (MSG_BLECommand_t *)data->buf;
-    if(dst.submodule == 0){
+
+    // As a user of the stack, we should not assume anything about the source and destination
+    // target, always check, or we will have bug like this.
+    if(dst.submodule == 0 && dst.module == BLE && src.module == ANT){
+        PRINTS("ANT to BLE Command received\r\n");
+
         switch(cmd->cmd){
             default:
             case BLE_PING:
                 break;
+                /*
             case BLE_ACK_DEVICE_REMOVED:
                 {
                     // Reply to the phone the pill in whitelist has been deleted
@@ -119,80 +130,107 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                     }
                 }
                 break;
+                */
         }
 
-    }else{
-        MSG_Base_AcquireDataAtomic(data);
+    }
+    
 
-        if(src.module == SSPI){
-            MorpheusCommand command;
-            if(morpheus_ble_decode_protobuf(&command, data->buf, data->len))
+    if(src.module == SSPI && dst.submodule == 0 && dst.module == BLE){
+        PRINTS("SPI to BLE Command received\r\n");
+
+        MorpheusCommand command;
+        if(morpheus_ble_decode_protobuf(&command, data->buf, data->len))
+        {
+            switch(command.type)
             {
-                switch(command.type)
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
                 {
-                    case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+                    PRINTS("BLE init command received\r\n");
+
+                    // TODO: Set the morpheus device id into BLE advertising data.
+                    // Jimmy need this
+                    if(command.deviceId.arg)
                     {
-                        PRINTS("BLE init command received\r\n");
+                        MSG_Data_t* data_page = (MSG_Data_t*)command.deviceId.arg;
+                        PRINTS("Raw device id:");
+                        PRINT_HEX(data_page->buf, data_page->len);
+                        PRINTS("\r\n");
 
-                        // TODO: Set the morpheus device id into BLE advertising data.
-                        // Jimmy need this
-                        if(command.deviceId.arg)
+                        nrf_delay_ms(100);
+
+                        uint64_t device_id = 0;
+                        
+                        if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
                         {
-                            MSG_Data_t* data_page = (MSG_Data_t*)command.deviceId.arg;
-                            PRINTS("Raw device id:");
-                            PRINT_HEX(data_page->buf, data_page->len);
-                            PRINTS("\r\n");
+                            PRINTS("Get device id failed.\r\n");
+                            APP_ASSERT(0);
+                        }
+                        
 
-                            uint64_t device_id = 0;
-                            
-                            if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
-                            {
-                                PRINTS("Get device id failed.\r\n");
-                                APP_ASSERT(0);
-                            }
-                            
-
-                            hble_stack_init();
+                        hble_stack_init();
 
 #ifdef BONDING_REQUIRED   
-                            hble_bond_manager_init();
+                        hble_bond_manager_init();
 #endif
-                            // append something to device name
-                            char device_name[strlen(BLE_DEVICE_NAME)+4];
-                            memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-                            uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-                            device_name[strlen(BLE_DEVICE_NAME)] = '-';
-                            device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-                            device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-                            device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-                            hble_params_init(device_name, device_id);
-                            hble_services_init();
+                        // append something to device name
+                        char device_name[strlen(BLE_DEVICE_NAME)+4];
+                        memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+                        uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
+                        device_name[strlen(BLE_DEVICE_NAME)] = '-';
+                        device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
+                        device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
+                        device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+                        hble_params_init(device_name, device_id);
+                        hble_services_init();
 
-                            ble_uuid_t service_uuid = {
-                                .type = hello_type,
-                                .uuid = BLE_UUID_MORPHEUS_SVC
-                            };
+                        ble_uuid_t service_uuid = {
+                            .type = hello_type,
+                            .uuid = BLE_UUID_MORPHEUS_SVC
+                        };
 
-                            hble_advertising_init(service_uuid);
-                            
-                            hble_advertising_start();
-                        }else{
-                            PRINTS("INIT Error, no device id presented.");
-                        }
+                        hble_advertising_init(service_uuid);
+                        
+                        hble_advertising_start();
+                    }else{
+                        PRINTS("INIT Error, no device id presented.");
                     }
-                    break;
-                    default:
-                    // protobuf, dump the thing straight back?
-                    hlo_ble_notify(0xB00B, data->buf, data->len,
-                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
-                    break;
+
+                    morpheus_ble_free_protobuf(&command);
+                    
+
                 }
-                morpheus_ble_free_protobuf(&command);
+                break;
+
+                default:
+                {
+                // protobuf, dump the thing straight back?
+                PRINTS("Protobuf to PHONE\r\n");
+
+                morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
+                hlo_ble_notify(0xB00B, data->buf, data->len,
+                    &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+
+                return;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
+                }
             }
-            
+        }else{
+            // if(morpheus_ble_decode_protobuf(&command, data->buf, data->len))
+            // decode failed.
+            PRINTS("Protobuf decode failed\r\n");
+            morpheus_ble_free_protobuf(&command);
             
         }
+        
+        
     }
+
+
+    PRINTS("TEST ASYNC\r\n");
+    MSG_Base_ReleaseDataAtomic(data);
+
+
+    
 }
 
 
@@ -323,11 +361,15 @@ MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
                         morpheus_ble_on_notify_failed, 
                         data
                     });
-#endif
+        // DO NOT release data because callback will do it.
+#else
         MSG_Base_ReleaseDataAtomic(data);
+#endif
+        
         
         return SUCCESS;
     }else{
+        PRINTS("Acquire data failed, cannot route data to cc3200\r\n");
         return FAIL;
     }
 }
@@ -345,7 +387,7 @@ static MSG_Status _init(){
 
 #ifdef ANT_ENABLE  // TODO: use another macro
 
-    /*
+    
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
     {
@@ -368,43 +410,31 @@ static MSG_Status _init(){
 
     self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data_page);
     MSG_Base_ReleaseDataAtomic(data_page);
-    */
-
-    hble_stack_init();
-
-#ifdef BONDING_REQUIRED   
-    hble_bond_manager_init();
-#endif
-    // append something to device name
-    char device_name[strlen(BLE_DEVICE_NAME)+4];
-    memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-    uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-    device_name[strlen(BLE_DEVICE_NAME)] = '-';
-    device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-    device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-    device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-    hble_params_init(device_name, 0);
-    hble_services_init();
-
-    ble_uuid_t service_uuid = {
-        .type = hello_type,
-        .uuid = BLE_UUID_MORPHEUS_SVC
-    };
-
-    hble_advertising_init(service_uuid);
-    
-    hble_advertising_start();
 
     
 #else
+    
+    if(MSG_Base_HasMemoryLeak()){
+        PRINTS("Checkpoint 1 !!!!!!!!!!Possible memory leak detected!!!!!\r\n");
+    }else{
+        PRINTS("Checkpoint 1 No memory leak.\r\n");
+    }
+
 
     char* fake_device_id = "0123456789AB";
     MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(fake_device_id);
+    if(!device_id_page)
+    {
+        PRINTS("No memory.\r\n");
+        return FAIL;
+    }
+
     get_device_id_command.deviceId.arg = device_id_page;
 
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
     {
+        MSG_Base_ReleaseDataAtomic(device_id_page);
         return FAIL;
     }
 
@@ -412,18 +442,25 @@ static MSG_Status _init(){
     if(!data_page)
     {
         PRINTS("No memory.\r\n");
+        MSG_Base_ReleaseDataAtomic(device_id_page);
         return FAIL;
     }
 
     memset(data_page->buf, 0, data_page->len);
     if(!morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
     {   
+        MSG_Base_ReleaseDataAtomic(device_id_page);
         MSG_Base_ReleaseDataAtomic(data_page);
         return FAIL;
     }
 
     self.parent->dispatch((MSG_Address_t){SSPI, 1},(MSG_Address_t){BLE, 0}, data_page);
+
+    MSG_Base_ReleaseDataAtomic(device_id_page);
     MSG_Base_ReleaseDataAtomic(data_page);
+    PRINTS("Debug SPI init command sent\r\n");
+
+    
 
 #endif
 
@@ -525,6 +562,9 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
 {
     MSG_Base_AcquireDataAtomic(data_page);
     // A protobuf actually occupy multiple pages..
+    PRINTS("data_page addr: ");
+    PRINT_HEX(&data_page, sizeof(data_page));
+    PRINTS("\r\n");
 
     switch(command->type)
     {

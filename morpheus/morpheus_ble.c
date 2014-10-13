@@ -275,36 +275,42 @@ void morpheus_ble_free_protobuf(MorpheusCommand* command)
     {
         MSG_Base_ReleaseDataAtomic(command->accountId.arg);
         command->accountId.arg = NULL;
+        PRINTS("MorpheusCommand->accountId released\r\n");
     }
 
     if(command->deviceId.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->deviceId.arg);
         command->deviceId.arg = NULL;
+        PRINTS("MorpheusCommand->deviceId released\r\n");
     }
 
     if(command->wifiName.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiName.arg);
         command->wifiName.arg = NULL;
+        PRINTS("MorpheusCommand->wifiName released\r\n");
     }
 
     if(command->wifiSSID.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiSSID.arg);
         command->wifiSSID.arg = NULL;
+        PRINTS("MorpheusCommand->wifiSSID released\r\n");
     }
 
     if(command->wifiPassword.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiPassword.arg);
         command->wifiPassword.arg = NULL;
+        PRINTS("MorpheusCommand->wifiPassword released\r\n");
     }
 
     if(command->motionDataEntrypted.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->motionDataEntrypted.arg);
         command->motionDataEntrypted.arg = NULL;
+        PRINTS("MorpheusCommand->motionDataEntrypted released\r\n");
     }
 }
 
@@ -324,25 +330,20 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
 	PRINT_HEX(data_page->buf, data_page->len);
 	PRINTS("\r\n");
 */
+    /*
+    PRINTS("data_page addr in _on_packet_arrival:");
+    PRINT_HEX(&data_page, sizeof(data_page));
+    PRINTS("\r\n");
+    */
 
 	MorpheusCommand command;
-    bool status = morpheus_ble_decode_protobuf(&command, data_page->buf, data_page->len);
-	
-
-    if (!status)
-    {
-        PRINTS("Decoding protobuf failed, error: ");
-        PRINTS(PB_GET_ERROR(&stream));
-        PRINTS("\r\n");
-    }else{
-
-        {
-            //need to do this otherwise the page pointer might get optimized out
-            MSG_Data_t* page = *(MSG_Data_t**)event_data;
-            message_ble_on_protobuf_command(page, &command);
-            morpheus_ble_free_protobuf(&command);
-        }
-	}
+    if(morpheus_ble_decode_protobuf(&command, data_page->buf, data_page->len)){
+        // Becareful, we should either redefine another data_page here
+        // or use *(MSG_Data_t**)event_data straight to make sure
+        // the data_page pointer will not get optimized out.
+        message_ble_on_protobuf_command(*(MSG_Data_t**)event_data, &command);
+        morpheus_ble_free_protobuf(&command);
+    }
 
 	// Don't forget to release the data_page.
 	MSG_Base_ReleaseDataAtomic(data_page);
@@ -558,6 +559,7 @@ void morpheus_load_modules(void){
 		};
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
+        nrf_delay_ms(100);
 #endif
 
 #ifdef PLATFORM_HAS_SSPI
@@ -594,4 +596,5 @@ void morpheus_load_modules(void){
     }else{
         PRINTS("FAIL");
     }
+
 }
