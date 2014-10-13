@@ -179,10 +179,10 @@ clean:
 DEBUG = 0
 
 ifeq ($(DEBUG), 1)
-OPTFLAGS=-Os -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
+OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
-OPTFLAGS=-Os -g -DuECC_ASM=2
+OPTFLAGS=-O0 -DuECC_ASM=2
 endif
 
 NRFREV=NRF51422_QFAA_ED

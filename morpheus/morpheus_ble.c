@@ -82,6 +82,7 @@ static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t
 
     MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
+    PRINTS("Lock memory in _encode_command_string_fields\r\n"); nrf_delay_ms(1);
     char* str = buffer_page->buf;
     
     bool ret = false;
@@ -91,6 +92,7 @@ static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t
     }
 
     MSG_Base_ReleaseDataAtomic(buffer_page);
+    PRINTS("Unlock memory in _encode_command_string_fields\r\n"); nrf_delay_ms(1);
     return ret;
 }
 
@@ -103,6 +105,7 @@ static bool _encode_command_bytes_fields(pb_ostream_t *stream, const pb_field_t 
 
     MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
+    PRINTS("Lock memory in _encode_command_bytes_fields\r\n"); nrf_delay_ms(1);
     char* str = buffer_page->buf;
     
     bool ret = false;
@@ -112,6 +115,7 @@ static bool _encode_command_bytes_fields(pb_ostream_t *stream, const pb_field_t 
     }
 
     MSG_Base_ReleaseDataAtomic(buffer_page);
+    PRINTS("Unlock memory in _encode_command_bytes_fields\r\n"); nrf_delay_ms(1);
     return ret;
 }
 
@@ -133,6 +137,7 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
     }
 
 	MSG_Data_t* string_page = MSG_Base_AllocateStringAtomic(str);
+    PRINTS("malloc in _decode_string_field\r\n"); nrf_delay_ms(1);
     if(!string_page){
         return false;
     }
@@ -151,6 +156,8 @@ static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, v
     }
     
     MSG_Data_t* buffer_page = MSG_Base_AllocateDataAtomic(stream->bytes_left);
+    PRINTS("malloc in _decode_bytes_field\r\n"); nrf_delay_ms(1);
+
     if(!buffer_page)
     {
         return false;
@@ -160,6 +167,7 @@ static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, v
     if (!pb_read(stream, buffer_page->buf, stream->bytes_left))
     {
         MSG_Base_ReleaseDataAtomic(buffer_page);
+        PRINTS("free in _decode_bytes_field\r\n"); nrf_delay_ms(1);
         return false;
     }
 
@@ -275,36 +283,42 @@ void morpheus_ble_free_protobuf(MorpheusCommand* command)
     {
         MSG_Base_ReleaseDataAtomic(command->accountId.arg);
         command->accountId.arg = NULL;
+        PRINTS("MorpheusCommand->accountId released\r\n");
     }
 
     if(command->deviceId.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->deviceId.arg);
         command->deviceId.arg = NULL;
+        PRINTS("MorpheusCommand->deviceId released\r\n"); nrf_delay_ms(2);
     }
 
     if(command->wifiName.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiName.arg);
         command->wifiName.arg = NULL;
+        PRINTS("MorpheusCommand->wifiName released\r\n");
     }
 
     if(command->wifiSSID.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiSSID.arg);
         command->wifiSSID.arg = NULL;
+        PRINTS("MorpheusCommand->wifiSSID released\r\n");
     }
 
     if(command->wifiPassword.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiPassword.arg);
         command->wifiPassword.arg = NULL;
+        PRINTS("MorpheusCommand->wifiPassword released\r\n");
     }
 
     if(command->motionDataEntrypted.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->motionDataEntrypted.arg);
         command->motionDataEntrypted.arg = NULL;
+        PRINTS("MorpheusCommand->motionDataEntrypted released\r\n");
     }
 }
 
@@ -324,22 +338,20 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
 	PRINT_HEX(data_page->buf, data_page->len);
 	PRINTS("\r\n");
 */
+    /*
+    PRINTS("data_page addr in _on_packet_arrival:");
+    PRINT_HEX(&data_page, sizeof(data_page));
+    PRINTS("\r\n");
+    */
 
 	MorpheusCommand command;
-    bool status = morpheus_ble_decode_protobuf(&command, data_page->buf, data_page->len);
-	
-
-    if (!status)
-    {
-        PRINTS("Decoding protobuf failed, error: ");
-        PRINTS(PB_GET_ERROR(&stream));
-        PRINTS("\r\n");
-    }else{
-
-		message_ble_on_protobuf_command(data_page, &command);
-
-		morpheus_ble_free_protobuf(&command);
-	}
+    if(morpheus_ble_decode_protobuf(&command, data_page->buf, data_page->len)){
+        // Becareful, we should either redefine another data_page here
+        // or use *(MSG_Data_t**)event_data straight to make sure
+        // the data_page pointer will not get optimized out.
+        message_ble_on_protobuf_command(data_page, &command);
+        morpheus_ble_free_protobuf(&command);
+    }
 
 	// Don't forget to release the data_page.
 	MSG_Base_ReleaseDataAtomic(data_page);
@@ -555,6 +567,7 @@ void morpheus_load_modules(void){
 		};
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
+        nrf_delay_ms(100);
 #endif
 
 #ifdef PLATFORM_HAS_SSPI
@@ -574,7 +587,11 @@ void morpheus_load_modules(void){
 		};
 		central->loadmod(MSG_SSPI_Base(&spi_params,central));
 #endif
+
+#ifdef BLE_ENABLE
 		central->loadmod(MSG_BLE_Base(central));
+#endif 
+
         central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #ifdef ANT_ENABLE
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
@@ -591,4 +608,5 @@ void morpheus_load_modules(void){
     }else{
         PRINTS("FAIL");
     }
+
 }
