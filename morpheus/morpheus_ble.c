@@ -543,7 +543,7 @@ void morpheus_ble_transmission_layer_reset()
 	_seq_expected = 0;
 	_end_seq = 0;
 	_protobuf_len = 0;
-	if(!_protobuf_buffer)
+	if(_protobuf_buffer)
 	{
 		MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
 	}
