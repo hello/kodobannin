@@ -5,6 +5,8 @@
 #define REG_READ_FROM_SSPI  0
 #define REG_WRITE_TO_SSPI 1
 #define TEST_STR "RELLO"
+//actual size is about 4 bytes smaller than the multiplier
+#define SSPI_QUEUE_SIZE (4 * sizeof(MSG_Data_t *))
 typedef enum{
     IDLE = 0,
     READING,
@@ -46,6 +48,7 @@ static struct{
      * Only one queue_tx right now
      */
     uint8_t dummy[4];
+    uint8_t tx_queue_buffer[SSPI_QUEUE_SIZE]
     MSG_Queue_t * tx_queue;
 }self;
 
@@ -261,12 +264,7 @@ _init(){
     }
 #endif
     self.current_state = _reset();
-    {
-        MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
-        if(tmp){
-            self.tx_queue = MSG_Base_InitQueue(tmp->buf, tmp->len);
-        }
-    }
+    self.tx_queue = MSG_Base_InitQueue(self.tx_queue_buffer, sizeof(self.tx_queue_buffer));
     return SUCCESS;
 
 }
