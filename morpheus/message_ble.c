@@ -24,6 +24,7 @@ static struct{
     MSG_Central_t * parent;
     struct pill_pairing_request pill_pairing_request;
     app_timer_id_t timer_id;
+    app_timer_id_t boot_timer;
 } self;
 
 
@@ -374,9 +375,14 @@ MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
     }
 }
 
-static MSG_Status _init(){
-    self.pill_pairing_request = (struct pill_pairing_request){0};
-    app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
+static void _request_device_id(void* context)
+{
+    if(hble_get_device_id() != 0){
+        PRINTS("Boot completed!\r\n");
+        return;
+    }else{
+        PRINTS("No device_id detected, retry...\r\n");
+    }
 
     // Tests
     // self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
@@ -391,29 +397,50 @@ static MSG_Status _init(){
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
     {
-        return FAIL;
+        PRINTS("Failed to encode protobuf. Retry to boot...\r\n");
+    }else{
+
+        MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+        if(!data_page)
+        {
+            PRINTS("No memory. Retry to boot...\r\n");
+            
+        }else{
+
+            memset(data_page->buf, 0, data_page->len);
+            if(morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
+            {
+                self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data_page);
+            }
+            MSG_Base_ReleaseDataAtomic(data_page);
+        }
     }
 
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
-    if(!data_page)
-    {
-        PRINTS("No memory.\r\n");
-        return FAIL;
-    }
+    app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
+#endif
+}
 
-    memset(data_page->buf, 0, data_page->len);
-    if(!morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
-    {   
-        MSG_Base_ReleaseDataAtomic(data_page);
-        return FAIL;
-    }
+static MSG_Status _init(){
+    self.pill_pairing_request = (struct pill_pairing_request){0};
+    app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
+    
 
-    self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data_page);
-    MSG_Base_ReleaseDataAtomic(data_page);
+    
+
+#ifdef ANT_ENABLE  // TODO: use another macro
+
+    app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _request_device_id);
+    app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
 
     
 #else
     
+    // Tests
+    // self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
+    MorpheusCommand get_device_id_command;
+    memset(&get_device_id_command, 0, sizeof(get_device_id_command));
+    get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
+    get_device_id_command.version = PROTOBUF_VERSION;
 
     char* fake_device_id = "0123456789AB";
     MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(fake_device_id);
