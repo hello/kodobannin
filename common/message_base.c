@@ -130,7 +130,7 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
         PRINTS("+");
         return SUCCESS;
     }
-    PRINTS("AcquireData FAILED! Cannot malloc NULL\r\n");
+    PRINTS("*******************************AcquireData FAILED! Cannot malloc NULL******************\r\n");
     nrf_delay_ms(10);
 
     //APP_ASSERT(0);
