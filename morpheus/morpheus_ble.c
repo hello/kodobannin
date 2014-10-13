@@ -336,9 +336,12 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
         PRINTS("\r\n");
     }else{
 
-		message_ble_on_protobuf_command(data_page, &command);
-
-		morpheus_ble_free_protobuf(&command);
+        {
+            //need to do this otherwise the page pointer might get optimized out
+            MSG_Data_t* page = *(MSG_Data_t**)event_data;
+            message_ble_on_protobuf_command(page, &command);
+            morpheus_ble_free_protobuf(&command);
+        }
 	}
 
 	// Don't forget to release the data_page.
