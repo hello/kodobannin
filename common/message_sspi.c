@@ -48,7 +48,7 @@ static struct{
      * Only one queue_tx right now
      */
     uint8_t dummy[4];
-    uint8_t tx_queue_buffer[SSPI_QUEUE_SIZE]
+    uint8_t tx_queue_buffer[SSPI_QUEUE_SIZE];
     MSG_Queue_t * tx_queue;
 }self;
 
@@ -131,7 +131,7 @@ _handle_transaction(){
             break;
         case WRITE_TX_CTX:
             //PRINTS("@WRITE TX LEN\r\n");
-            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy, sizeof(self.transaction.context_reg), sizeof(dummy));
+            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy, sizeof(self.transaction.context_reg), sizeof(self.dummy));
             self.transaction.state = WRITE_TX_BUF;
             break;
         case WAIT_READ_RX_BUF:
