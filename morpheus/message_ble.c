@@ -153,52 +153,58 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 {
                     PRINTS("BLE init command received\r\n");
 
-                    // TODO: Set the morpheus device id into BLE advertising data.
-                    // Jimmy need this
-                    if(command.deviceId.arg)
+                    if(hble_get_device_id() != 0)
                     {
-                        MSG_Data_t* data_page = (MSG_Data_t*)command.deviceId.arg;
-                        PRINTS("Raw device id:");
-                        PRINT_HEX(data_page->buf, data_page->len);
-                        PRINTS("\r\n");
-
-                        nrf_delay_ms(100);
-
-                        uint64_t device_id = 0;
-                        
-                        if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
-                        {
-                            PRINTS("Get device id failed.\r\n");
-                            APP_ASSERT(0);
-                        }
-                        
-
-                        hble_stack_init();
-
-#ifdef BONDING_REQUIRED   
-                        hble_bond_manager_init();
-#endif
-                        // append something to device name
-                        char device_name[strlen(BLE_DEVICE_NAME)+4];
-                        memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-                        uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-                        device_name[strlen(BLE_DEVICE_NAME)] = '-';
-                        device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-                        device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-                        device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-                        hble_params_init(device_name, device_id);
-                        hble_services_init();
-
-                        ble_uuid_t service_uuid = {
-                            .type = hello_type,
-                            .uuid = BLE_UUID_MORPHEUS_SVC
-                        };
-
-                        hble_advertising_init(service_uuid);
-                        
-                        hble_advertising_start();
+                        PRINTS("BLE already initialized!\r\n");
                     }else{
-                        PRINTS("INIT Error, no device id presented.");
+
+                        // TODO: Set the morpheus device id into BLE advertising data.
+                        // Jimmy need this
+                        if(command.deviceId.arg)
+                        {
+                            MSG_Data_t* data_page = (MSG_Data_t*)command.deviceId.arg;
+                            PRINTS("Raw device id:");
+                            PRINT_HEX(data_page->buf, data_page->len);
+                            PRINTS("\r\n");
+
+                            nrf_delay_ms(100);
+
+                            uint64_t device_id = 0;
+                            
+                            if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
+                            {
+                                PRINTS("Get device id failed.\r\n");
+                                APP_ASSERT(0);
+                            }
+                            
+
+                            hble_stack_init();
+
+    #ifdef BONDING_REQUIRED   
+                            hble_bond_manager_init();
+    #endif
+                            // append something to device name
+                            char device_name[strlen(BLE_DEVICE_NAME)+4];
+                            memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+                            uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
+                            device_name[strlen(BLE_DEVICE_NAME)] = '-';
+                            device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
+                            device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
+                            device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+                            hble_params_init(device_name, device_id);
+                            hble_services_init();
+
+                            ble_uuid_t service_uuid = {
+                                .type = hello_type,
+                                .uuid = BLE_UUID_MORPHEUS_SVC
+                            };
+
+                            hble_advertising_init(service_uuid);
+                            
+                            hble_advertising_start();
+                        }else{
+                            PRINTS("INIT Error, no device id presented.");
+                        }
                     }
 
                     morpheus_ble_free_protobuf(&command);
