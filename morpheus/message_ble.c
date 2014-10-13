@@ -79,11 +79,18 @@ static void _register_pill(){
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
     if(!data){
         PRINTS("Data is NULL\r\n");
-        return FAIL;
+        APP_ASSERT(0);
     }
 
     PRINTS("Enter _on_data_arrival\r\n");
-    MSG_Base_AcquireDataAtomic(data);
+    if(SUCCESS != MSG_Base_AcquireDataAtomic(data))
+    {
+        PRINTS("WTF!\r\n");
+        return FAIL;
+    }
+
+    PRINTS("MSG_Base_AcquireDataAtomic(data);\r\n"); nrf_delay_ms(10);
+
 
     MSG_BLECommand_t * cmd = (MSG_BLECommand_t *)data->buf;
 
@@ -228,8 +235,15 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
 
     PRINTS("TEST ASYNC\r\n");
     MSG_Base_ReleaseDataAtomic(data);
+    PRINTS("MSG_Base_ReleaseDataAtomic(data);\r\n"); nrf_delay_ms(5);
 
+    if(MSG_Base_HasMemoryLeak()){
+        PRINTS("Checkpoint 2 !!!!!!!!!!Possible memory leak detected!!!!!\r\n");
+    }else{
+        PRINTS("Checkpoint 2 No memory leak.\r\n");
+    }
 
+    nrf_delay_ms(100);
     
 }
 
@@ -375,7 +389,7 @@ MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
 }
 
 static MSG_Status _init(){
-    self.pill_pairing_request = (struct pill_pairing_request){};
+    self.pill_pairing_request = (struct pill_pairing_request){0};
     app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
 
     // Tests
@@ -423,6 +437,8 @@ static MSG_Status _init(){
 
     char* fake_device_id = "0123456789AB";
     MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(fake_device_id);
+    PRINTS("MSG_Base_AllocateStringAtomic\r\n"); nrf_delay_ms(10);
+
     if(!device_id_page)
     {
         PRINTS("No memory.\r\n");
@@ -437,8 +453,10 @@ static MSG_Status _init(){
         MSG_Base_ReleaseDataAtomic(device_id_page);
         return FAIL;
     }
+    PRINTS("morpheus_ble_encode_protobuf NULL\r\n"); nrf_delay_ms(10);
 
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+    PRINTS("MSG_Base_AllocateDataAtomic\r\n"); nrf_delay_ms(10);
     if(!data_page)
     {
         PRINTS("No memory.\r\n");
@@ -453,11 +471,18 @@ static MSG_Status _init(){
         MSG_Base_ReleaseDataAtomic(data_page);
         return FAIL;
     }
+    PRINTS("morpheus_ble_encode_protobuf\r\n"); nrf_delay_ms(10);
 
+    PRINTS("Begin SSPI dispatch\r\n"); nrf_delay_ms(10);
     self.parent->dispatch((MSG_Address_t){SSPI, 1},(MSG_Address_t){BLE, 0}, data_page);
+    PRINTS("End SSPI dispatch\r\n"); nrf_delay_ms(10);
 
     MSG_Base_ReleaseDataAtomic(device_id_page);
+    PRINTS("MSG_Base_ReleaseDataAtomic(device_id_page)\r\n"); nrf_delay_ms(10);
+
     MSG_Base_ReleaseDataAtomic(data_page);
+    PRINTS("MSG_Base_ReleaseDataAtomic(data_page)\r\n"); nrf_delay_ms(10);
+
     PRINTS("Debug SPI init command sent\r\n");
 
     
