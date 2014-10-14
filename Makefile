@@ -164,8 +164,7 @@ $(SOFTDEVICE_UICR):: $(SOFTDEVICE_SRC)
 	echo 01 00 | xxd -r -p >> $@
 	$(CURDIR)/tools/crc16 $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
 	echo ff ff ff ff| xxd -r -p >> $@
-	stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
-	echo 00 00 | xxd -r -p >> $@
+	stat -f "%.8Xz" $< | sed -E 's/(..)(..)(..)(..)/\4\3\2\1/' | xxd -r -p | dd 2> /dev/null >> $@
 
 
 # gdb support
