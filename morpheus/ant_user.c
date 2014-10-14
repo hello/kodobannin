@@ -1,6 +1,7 @@
 #include "ant_user.h"
 #include "message_uart.h"
 #include "message_ble.h"
+#include "morpheus_ble.h"
 #include "util.h"
 #include "ant_bondmgr.h"
 #include "app_timer.h"
@@ -84,15 +85,19 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                     break;
                 case ANT_PILL_HEARTBEAT:
                     {
+                        pill_heartbeat_t heartbeat = {0};
+                        memcpy(&heartbeat, pill_data->payload, sizeof(pill_heartbeat_t));
+
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
                         morpheus_command.has_batteryLevel = true;
-                        morpheus_command.batteryLevel = ((pill_heartbeat_t*)pill_data->payload)->battery_level;
+                        morpheus_command.batteryLevel = heartbeat.battery_level;
 
                         morpheus_command.has_uptime = true;
-                        morpheus_command.uptime = ((pill_heartbeat_t*)pill_data->payload)->uptime_sec;
+                        morpheus_command.uptime = heartbeat.uptime_sec;
 
                         morpheus_command.has_firmwareVersion = true;
-                        morpheus_command.firmwareVersion = ((pill_heartbeat_t*)pill_data->payload)->firmware_version;
+                        morpheus_command.firmwareVersion = heartbeat.firmware_version;
+                        PRINTS("ANT Pill Heartbeat Received.\r\n");
                     }
                     break;
 
