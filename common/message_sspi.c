@@ -5,8 +5,6 @@
 #define REG_READ_FROM_SSPI  0
 #define REG_WRITE_TO_SSPI 1
 #define TEST_STR "RELLO"
-//actual size is about 4 bytes smaller than the multiplier
-#define SSPI_QUEUE_SIZE (4 * sizeof(MSG_Data_t *))
 typedef enum{
     IDLE = 0,
     READING,
@@ -47,8 +45,7 @@ static struct{
     /*
      * Only one queue_tx right now
      */
-    uint8_t dummy[4];
-    uint8_t tx_queue_buffer[SSPI_QUEUE_SIZE];
+    MSG_Data_t * dummy;
     MSG_Queue_t * tx_queue;
 }self;
 
@@ -131,7 +128,7 @@ _handle_transaction(){
             break;
         case WRITE_TX_CTX:
             //PRINTS("@WRITE TX LEN\r\n");
-            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy, sizeof(self.transaction.context_reg), sizeof(self.dummy));
+            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy->buf, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
             self.transaction.state = WRITE_TX_BUF;
             break;
         case WAIT_READ_RX_BUF:
@@ -142,18 +139,18 @@ _handle_transaction(){
                 self.transaction.state = FIN_READ;
             }else{
                 //no buffer wat do?
-                spi_slave_buffers_set(self.dummy, self.dummy, 0, 0);
+                spi_slave_buffers_set(self.dummy->buf, self.dummy->buf, 0, 0);
                 self.transaction.state = FIN_READ;
             }
             break;
         case WRITE_TX_BUF:
             //PRINTS("@WRITE TX BUF\r\n");
             if(self.transaction.payload){
-                spi_slave_buffers_set(self.transaction.payload->buf, self.dummy, self.transaction.context_reg.length, sizeof(self.dummy));
+                spi_slave_buffers_set(self.transaction.payload->buf, self.dummy->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
                 self.transaction.state = FIN_WRITE;
             }else{
                 //no buffer wat do?
-                spi_slave_buffers_set(self.dummy, self.dummy, 0, 0);
+                spi_slave_buffers_set(self.dummy->buf, self.dummy->buf, 0, 0);
                 self.transaction.state = FIN_WRITE;
             }
             break;
@@ -194,6 +191,7 @@ _handle_transaction(){
 
 static MSG_Status
 _destroy(void){
+    MSG_Base_ReleaseDataAtomic(self.dummy);
     return SUCCESS;
 }
 static MSG_Status
@@ -220,6 +218,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 
 static void
 _spi_evt_handler(spi_slave_evt_t event){
+    uint8_t swap;
+    char t[3] = {0};
+    uint32_t ret = 0;
     switch(event.evt_type){
         case SPI_SLAVE_BUFFERS_SET_DONE:
             break;
@@ -247,6 +248,7 @@ _spi_evt_handler(spi_slave_evt_t event){
 }
 static MSG_Status
 _init(){
+    uint32_t ret;
     if(spi_slave_init(&self.config) || 
             spi_slave_evt_handler_register(_spi_evt_handler)){
         PRINTS("SPI FAIL");
@@ -259,8 +261,14 @@ _init(){
         nrf_gpio_pin_clear(SSPI_INT);
     }
 #endif
+    self.dummy = MSG_Base_AllocateDataAtomic(230);
     self.current_state = _reset();
-    self.tx_queue = MSG_Base_InitQueue(self.tx_queue_buffer, sizeof(self.tx_queue_buffer));
+    {
+        MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
+        if(tmp){
+            self.tx_queue = MSG_Base_InitQueue(tmp->buf, tmp->len);
+        }
+    }
     return SUCCESS;
 
 }
