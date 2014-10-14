@@ -37,7 +37,7 @@ static ble_gap_sec_params_t _sec_params;
 static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
-static uint64_t _device_id;
+static volatile uint64_t _device_id;
 
 static int16_t  _last_bond_central_id;
 
@@ -531,6 +531,11 @@ void hble_params_init(const char* device_name, uint64_t device_id)
         _sec_params.max_key_size = SEC_PARAM_MAX_KEY_SIZE;
     }
 
+}
+
+uint64_t hble_get_device_id()
+{
+    return _device_id;
 }
 
 

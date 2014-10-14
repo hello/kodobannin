@@ -24,6 +24,7 @@ static struct{
     MSG_Central_t * parent;
     struct pill_pairing_request pill_pairing_request;
     app_timer_id_t timer_id;
+    app_timer_id_t boot_timer;
 } self;
 
 
@@ -89,9 +90,6 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         return FAIL;
     }
 
-    PRINTS("MSG_Base_AcquireDataAtomic(data);\r\n"); nrf_delay_ms(10);
-
-
     MSG_BLECommand_t * cmd = (MSG_BLECommand_t *)data->buf;
 
     // As a user of the stack, we should not assume anything about the source and destination
@@ -155,52 +153,58 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 {
                     PRINTS("BLE init command received\r\n");
 
-                    // TODO: Set the morpheus device id into BLE advertising data.
-                    // Jimmy need this
-                    if(command.deviceId.arg)
+                    if(hble_get_device_id() != 0)
                     {
-                        MSG_Data_t* data_page = (MSG_Data_t*)command.deviceId.arg;
-                        PRINTS("Raw device id:");
-                        PRINT_HEX(data_page->buf, data_page->len);
-                        PRINTS("\r\n");
-
-                        nrf_delay_ms(100);
-
-                        uint64_t device_id = 0;
-                        
-                        if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
-                        {
-                            PRINTS("Get device id failed.\r\n");
-                            APP_ASSERT(0);
-                        }
-                        
-
-                        hble_stack_init();
-
-#ifdef BONDING_REQUIRED   
-                        hble_bond_manager_init();
-#endif
-                        // append something to device name
-                        char device_name[strlen(BLE_DEVICE_NAME)+4];
-                        memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-                        uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-                        device_name[strlen(BLE_DEVICE_NAME)] = '-';
-                        device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-                        device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-                        device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-                        hble_params_init(device_name, device_id);
-                        hble_services_init();
-
-                        ble_uuid_t service_uuid = {
-                            .type = hello_type,
-                            .uuid = BLE_UUID_MORPHEUS_SVC
-                        };
-
-                        hble_advertising_init(service_uuid);
-                        
-                        hble_advertising_start();
+                        PRINTS("BLE already initialized!\r\n");
                     }else{
-                        PRINTS("INIT Error, no device id presented.");
+
+                        // TODO: Set the morpheus device id into BLE advertising data.
+                        // Jimmy need this
+                        if(command.deviceId.arg)
+                        {
+                            MSG_Data_t* data_page = (MSG_Data_t*)command.deviceId.arg;
+                            PRINTS("Raw device id:");
+                            PRINT_HEX(data_page->buf, data_page->len);
+                            PRINTS("\r\n");
+
+                            nrf_delay_ms(100);
+
+                            uint64_t device_id = 0;
+                            
+                            if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
+                            {
+                                PRINTS("Get device id failed.\r\n");
+                                APP_ASSERT(0);
+                            }
+                            
+
+                            hble_stack_init();
+
+    #ifdef BONDING_REQUIRED   
+                            hble_bond_manager_init();
+    #endif
+                            // append something to device name
+                            char device_name[strlen(BLE_DEVICE_NAME)+4];
+                            memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+                            uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
+                            device_name[strlen(BLE_DEVICE_NAME)] = '-';
+                            device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
+                            device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
+                            device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+                            hble_params_init(device_name, device_id);
+                            hble_services_init();
+
+                            ble_uuid_t service_uuid = {
+                                .type = hello_type,
+                                .uuid = BLE_UUID_MORPHEUS_SVC
+                            };
+
+                            hble_advertising_init(service_uuid);
+                            
+                            hble_advertising_start();
+                        }else{
+                            PRINTS("INIT Error, no device id presented.");
+                        }
                     }
 
                     morpheus_ble_free_protobuf(&command);
@@ -212,7 +216,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 default:
                 {
                 // protobuf, dump the thing straight back?
-                PRINTS("Protobuf to PHONE\r\n");
+                PRINTS(">>>>>>>>>>>Protobuf to PHONE\r\n");
 
                 morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
                 hlo_ble_notify(0xB00B, data->buf, data->len,
@@ -232,18 +236,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         
     }
 
-
-    PRINTS("TEST ASYNC\r\n");
     MSG_Base_ReleaseDataAtomic(data);
-    PRINTS("MSG_Base_ReleaseDataAtomic(data);\r\n"); nrf_delay_ms(5);
-
-    if(MSG_Base_HasMemoryLeak()){
-        PRINTS("Checkpoint 2 !!!!!!!!!!Possible memory leak detected!!!!!\r\n");
-    }else{
-        PRINTS("Checkpoint 2 No memory leak.\r\n");
-    }
-
-    nrf_delay_ms(100);
     
 }
 
@@ -388,9 +381,14 @@ MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
     }
 }
 
-static MSG_Status _init(){
-    self.pill_pairing_request = (struct pill_pairing_request){0};
-    app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
+static void _request_device_id(void* context)
+{
+    if(hble_get_device_id() != 0){
+        PRINTS("Boot completed!\r\n");
+        return;
+    }else{
+        PRINTS("No device_id detected, retry...\r\n");
+    }
 
     // Tests
     // self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
@@ -405,39 +403,52 @@ static MSG_Status _init(){
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
     {
-        return FAIL;
+        PRINTS("Failed to encode protobuf. Retry to boot...\r\n");
+    }else{
+
+        MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+        if(!data_page)
+        {
+            PRINTS("No memory. Retry to boot...\r\n");
+            
+        }else{
+
+            memset(data_page->buf, 0, data_page->len);
+            if(morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
+            {
+                self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data_page);
+            }
+            MSG_Base_ReleaseDataAtomic(data_page);
+        }
     }
 
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
-    if(!data_page)
-    {
-        PRINTS("No memory.\r\n");
-        return FAIL;
-    }
+    app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
+#endif
+}
 
-    memset(data_page->buf, 0, data_page->len);
-    if(!morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
-    {   
-        MSG_Base_ReleaseDataAtomic(data_page);
-        return FAIL;
-    }
+static MSG_Status _init(){
+    self.pill_pairing_request = (struct pill_pairing_request){0};
+    app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
+    
 
-    self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data_page);
-    MSG_Base_ReleaseDataAtomic(data_page);
+    
 
+#ifdef ANT_ENABLE  // TODO: use another macro
+
+    app_timer_create(&self.boot_timer, APP_TIMER_MODE_SINGLE_SHOT, _request_device_id);
+    _request_device_id(NULL);
     
 #else
     
-    if(MSG_Base_HasMemoryLeak()){
-        PRINTS("Checkpoint 1 !!!!!!!!!!Possible memory leak detected!!!!!\r\n");
-    }else{
-        PRINTS("Checkpoint 1 No memory leak.\r\n");
-    }
-
+    // Tests
+    // self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
+    MorpheusCommand get_device_id_command;
+    memset(&get_device_id_command, 0, sizeof(get_device_id_command));
+    get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
+    get_device_id_command.version = PROTOBUF_VERSION;
 
     char* fake_device_id = "0123456789AB";
     MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(fake_device_id);
-    PRINTS("MSG_Base_AllocateStringAtomic\r\n"); nrf_delay_ms(10);
 
     if(!device_id_page)
     {
@@ -453,10 +464,8 @@ static MSG_Status _init(){
         MSG_Base_ReleaseDataAtomic(device_id_page);
         return FAIL;
     }
-    PRINTS("morpheus_ble_encode_protobuf NULL\r\n"); nrf_delay_ms(10);
 
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
-    PRINTS("MSG_Base_AllocateDataAtomic\r\n"); nrf_delay_ms(10);
     if(!data_page)
     {
         PRINTS("No memory.\r\n");
@@ -471,18 +480,12 @@ static MSG_Status _init(){
         MSG_Base_ReleaseDataAtomic(data_page);
         return FAIL;
     }
-    PRINTS("morpheus_ble_encode_protobuf\r\n"); nrf_delay_ms(10);
-
-    PRINTS("Begin SSPI dispatch\r\n"); nrf_delay_ms(10);
+    
     self.parent->dispatch((MSG_Address_t){SSPI, 1},(MSG_Address_t){BLE, 0}, data_page);
-    PRINTS("End SSPI dispatch\r\n"); nrf_delay_ms(10);
-
+    
     MSG_Base_ReleaseDataAtomic(device_id_page);
-    PRINTS("MSG_Base_ReleaseDataAtomic(device_id_page)\r\n"); nrf_delay_ms(10);
-
     MSG_Base_ReleaseDataAtomic(data_page);
-    PRINTS("MSG_Base_ReleaseDataAtomic(data_page)\r\n"); nrf_delay_ms(10);
-
+    
     PRINTS("Debug SPI init command sent\r\n");
 
     
@@ -613,6 +616,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
@@ -621,19 +625,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
             _erase_bonded_users();
-            break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
-        {
-            MSG_Data_t* account_id_page = command->accountId.arg;
-            if(account_id_page){
-                
-                message_ble_pill_pairing_begin(account_id_page);
-                PRINTS("Account id: ");
-                PRINTS(account_id_page->buf);
-                PRINTS("\r\n");
-                
-            }
-        }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
         {
