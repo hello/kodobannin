@@ -194,8 +194,8 @@ _handle_transaction(){
         //    self.parent->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){UART, 1}, self.transaction.payload);
 
             if(self.transaction.payload){
-                self.transaction.payload = NULL;
                 MSG_Base_ReleaseDataAtomic(self.transaction.payload);
+                self.transaction.payload = NULL;
             }
             //only releasing now
             return _reset();
@@ -209,8 +209,8 @@ _handle_transaction(){
              */
             //send and release
             if(self.transaction.payload){
-                self.transaction.payload = NULL;
                 MSG_Base_ReleaseDataAtomic(self.transaction.payload);
+                self.transaction.payload = NULL;
             }
             return _reset();
         case TXRX_ERROR:
