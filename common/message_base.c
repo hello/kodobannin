@@ -130,9 +130,7 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
         PRINTS("+");
         return SUCCESS;
     }
-    PRINTS("*******************************AcquireData FAILED! Cannot malloc NULL******************\r\n");
-    nrf_delay_ms(10);
-
+    PRINTS("AcquireData FAILED! Cannot malloc NULL\r\n");
     //APP_ASSERT(0);
     return FAIL;
 }
@@ -154,8 +152,7 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
         };
         return SUCCESS;
     }else{
-        PRINTS("*************************Release FAILED! Cannot free NULL****************************\r\n");
-        nrf_delay_ms(10);
+        PRINTS("Release FAILED! Cannot free NULL\r\n");
         //APP_ASSERT(0);
         return FAIL;
     }
