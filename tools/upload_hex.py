@@ -14,7 +14,7 @@ S3_ROOT = "hello-firmware"
 conn = S3Connection(S3_ACCESS_ID, S3_SECRET_KEY)
 
 def find_hexes(bin_dir):
-    return glob.glob(os.path.join(bin_dir, "*.hex"))
+    return glob.glob(os.path.join(bin_dir, "*.hex")) + glob.glob(os.path.join(bin_dir, "*.crc"))
 
 
 def extract_name(hex_path):
