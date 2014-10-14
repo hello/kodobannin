@@ -86,6 +86,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                 case ANT_PILL_HEARTBEAT:
                     {
                         pill_heartbeat_t heartbeat = {0};
+                        // http://dbp-consulting.com/StrictAliasing.pdf
                         memcpy(&heartbeat, pill_data->payload, sizeof(pill_heartbeat_t));
 
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
