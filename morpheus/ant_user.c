@@ -70,6 +70,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
                         morpheus_command.has_motionData = true;
                         morpheus_command.motionData = pill_data->payload[TF_CONDENSED_BUFFER_SIZE - 1];
+                        PRINTS("ANT Pill Data Received.\r\n");
                     }
                     break;
                 case ANT_PILL_DATA_ENCRYPTED:
@@ -81,6 +82,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         memcpy(encrypted_data->buf, pill_data->payload, pill_data->payload_len);
 
                         morpheus_command.motionDataEntrypted.arg = encrypted_data;
+                        PRINTS("ANT Encrypted Pill Data Received.\r\n");
                     }
                     break;
                 case ANT_PILL_HEARTBEAT:

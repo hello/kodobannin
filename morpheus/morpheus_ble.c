@@ -463,7 +463,7 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 }
 
 
-void morpheus_ble_on_notify_completed(void* data, void* data_page)
+void morpheus_ble_on_notify_completed(const void* data, void* data_page)
 {
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 }
