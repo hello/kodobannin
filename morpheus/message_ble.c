@@ -436,8 +436,7 @@ static MSG_Status _init(){
 #ifdef ANT_ENABLE  // TODO: use another macro
 
     app_timer_create(&self.boot_timer, APP_TIMER_MODE_SINGLE_SHOT, _request_device_id);
-    app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
-
+    _request_device_id(NULL);
     
 #else
     
