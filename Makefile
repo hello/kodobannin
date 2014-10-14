@@ -160,7 +160,8 @@ $(SOFTDEVICE_UICR):: $(SOFTDEVICE_SRC)
 #2 bytes crcbank0
 #4 bytes bank1(contains padding)
 #4 bytes bank0_size
-%.crc: %.bin $(CURDIR)/tools/crc16
+
+%.crc: %.bin tools/crc16
 	echo 01 00 | xxd -r -p >> $@
 	$(CURDIR)/tools/crc16 $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
 	echo ff ff ff ff| xxd -r -p >> $@
@@ -225,8 +226,7 @@ define rule-product
 .PHONY: $1+$2
 $1+$2: $(BUILD_DIR)/$1+$2.bin
 $1+$2: $(BUILD_DIR)/$1+$2.hex
-$1+$2: $(BUILD_DIR)/$1+$2.crc
-$1+$2: tools/crc16
+$1+$2: tools/crc16 $(BUILD_DIR)/$1+$2.crc
 
 $(BUILD_DIR)/$1+$2.bin: $(BUILD_DIR)/$1+$2.elf
 	$(OBJCOPY) -O binary $$< $$@
