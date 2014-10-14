@@ -109,7 +109,7 @@ static bool _encode_command_bytes_fields(pb_ostream_t *stream, const pb_field_t 
     char* str = buffer_page->buf;
     
     bool ret = false;
-    if (pb_encode_tag(stream, PB_WT_STRING, field))
+    if (pb_encode_tag(stream, PB_WT_STRING, field->tag))
     {
         ret = pb_encode_string(stream, (uint8_t*)str, buffer_page->len);
     }
