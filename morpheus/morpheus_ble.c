@@ -344,7 +344,7 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
     PRINTS("\r\n");
     */
 
-	MorpheusCommand command;
+	MorpheusCommand command = {0};
     if(morpheus_ble_decode_protobuf(&command, data_page->buf, data_page->len)){
         // Becareful, we should either redefine another data_page here
         // or use *(MSG_Data_t**)event_data straight to make sure
@@ -475,7 +475,7 @@ void morpheus_ble_on_notify_failed(void* data_page)
 
 bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
     size_t protobuf_len = 0;
-    if(!morpheus_ble_encode_protobuf(morpheus_command, NULL, protobuf_len))
+    if(!morpheus_ble_encode_protobuf(morpheus_command, NULL, &protobuf_len))
     {
         return false;
     }
@@ -487,8 +487,13 @@ bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
     }
 
     MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+    if(!heap_page)
+    {
+        PRINTS("Not enough memory!\r\n");
+        return false;
+    }
     memset(heap_page->buf, 0, heap_page->len);
-    if(morpheus_ble_encode_protobuf(morpheus_command, heap_page->buf, protobuf_len))
+    if(morpheus_ble_encode_protobuf(morpheus_command, heap_page->buf, &protobuf_len))
     {
         hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
             &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, heap_page});
@@ -567,7 +572,6 @@ void morpheus_load_modules(void){
 		};
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
-        nrf_delay_ms(100);
 #endif
 
 #ifdef PLATFORM_HAS_SSPI
