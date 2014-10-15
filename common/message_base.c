@@ -110,7 +110,9 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
 //TODO
 //this method is unsafe, switch to strncpy later
 MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str){
-    if(!str) return NULL;
+    if(!str){
+        return NULL;
+    }
     uint32_t n = strlen(str)+1;
     MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(n);
     if(ret){
