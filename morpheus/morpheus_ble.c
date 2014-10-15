@@ -122,26 +122,31 @@ static bool _encode_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, 
 
 static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
+    PRINTS("string length: ");
+    PRINT_HEX(&stream->bytes_left, sizeof(stream->bytes_left));
+    PRINTS("\r\n");
+
     /* We could read block-by-block to avoid the large buffer... */
     if (stream->bytes_left > PROTOBUF_MAX_LEN - 1 || stream->bytes_left == 0)
     {
         return false;
     }
    	
-   	char str[stream->bytes_left + 1];
-    memset(str, 0, stream->bytes_left + 1);
-
-    if (!pb_read(stream, str, stream->bytes_left))
-    {
-        return false;
-    }
-
-	MSG_Data_t* string_page = MSG_Base_AllocateStringAtomic(str);
-    PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
+    MSG_Data_t* string_page = MSG_Base_AllocateDataAtomic(stream->bytes_left + 1);
     if(!string_page){
+        PRINTS("No memory when decoding string field\r\n");
         return false;
     }
 
+    memset(string_page->buf, 0, string_page->len);
+
+    if (!pb_read(stream, string_page->buf, stream->bytes_left))
+    {
+        MSG_Base_ReleaseDataAtomic(string_page);
+        return false;
+    }
+	
+    PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
 	*arg = string_page;
 
     return true;

@@ -163,8 +163,8 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                         if(command.deviceId.arg)
                         {
                             MSG_Data_t* data_page = (MSG_Data_t*)command.deviceId.arg;
-                            PRINTS("Raw device id:");
-                            PRINT_HEX(data_page->buf, data_page->len);
+                            PRINTS("Hex device id:");
+                            PRINTS(data_page->buf);
                             PRINTS("\r\n");
 
                             nrf_delay_ms(100);
@@ -614,7 +614,15 @@ static void _pair_morpheus(MorpheusCommand* command)
             pair_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE;
             pair_command.version = PROTOBUF_VERSION;
             pair_command.accountId.arg = command->accountId.arg;
+            PRINTS("account id: ");
+            PRINTS(((MSG_Data_t*)pair_command.accountId.arg)->buf);
+            PRINTS("\r\n");
+
             pair_command.deviceId.arg = device_id_page;
+
+            PRINTS("device id: ");
+            PRINTS(((MSG_Data_t*)pair_command.deviceId.arg)->buf);
+            PRINTS("\r\n");
 
             size_t proto_len = 0;
             if(!morpheus_ble_encode_protobuf(&pair_command, NULL, &proto_len))
