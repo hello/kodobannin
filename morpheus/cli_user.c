@@ -53,14 +53,17 @@ _handle_command(int argc, char * argv[]){
             MSG_Base_ReleaseDataAtomic(data);
         }
     }
-    if(_strncmp(argv[0], "pair", strlen("pair")) == 0){
-        PRINTS("Pairing");
-        ANT_UserSetPairing(1);
+    if(_strncmp(argv[0], "resume", strlen("resume")) == 0){
+        PRINTS("Resume radio = ");
+        int32_t ret = hlo_ant_resume_radio();
+        PRINT_HEX(&ret, 4);
+        PRINTS("\r\n");
     }
-    if(_strncmp(argv[0], "unpair", strlen("unpair")) == 0){
-        PRINTS("Unpairing All");
-        ANT_UserSetPairing(0);
-        ANT_BondMgr_EraseAll();
+    if(_strncmp(argv[0], "pause", strlen("pause")) == 0){
+        PRINTS("Pause radio = ");
+        int32_t ret = hlo_ant_pause_radio();
+        PRINT_HEX(&ret, 4);
+        PRINTS("\r\n");
     }
 }
 

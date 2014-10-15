@@ -238,4 +238,30 @@ void ant_handler(ant_evt_t * p_ant_evt){
 
 }
 
+int32_t hlo_ant_pause_radio(void){
+    uint8_t status;
+    if(self.role == HLO_ANT_ROLE_CENTRAL){
+        //TODO only handle radio for central currently
+        //Potential issues include pending tx on other channels
+        if( NRF_SUCCESS == sd_ant_channel_status_get(0, &status) && status != STATUS_UNASSIGNED_CHANNEL){
+            return sd_ant_channel_close(0);
+        }else{
+            return -1;
+        }
+    }
+    return 0;
+}
+int32_t hlo_ant_resume_radio(void){
+    uint8_t status;
+    if(self.role == HLO_ANT_ROLE_CENTRAL){
+        //TODO only handle radio for central currently
+        //Potential issues include pending tx on other channels
+        if( NRF_SUCCESS == sd_ant_channel_status_get(0, &status) && status == STATUS_UNASSIGNED_CHANNEL){
+            return hlo_ant_init(HLO_ANT_ROLE_CENTRAL,self.event_listener);
+        }else{
+            return -1;
+        }
+    }
+    return 0;
+}
 #endif
