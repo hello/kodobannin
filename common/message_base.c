@@ -111,8 +111,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
 //this method is unsafe, switch to strncpy later
 MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str){
     if(!str) return NULL;
-    int n = strlen(str)+1;
-    n = MIN(MSG_BASE_DATA_BUFFER_SIZE, n);
+    uint32_t n = strlen(str)+1;
     MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(n);
     if(ret){
         memcpy(ret->buf, str, n);
