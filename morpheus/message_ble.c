@@ -587,6 +587,67 @@ static void _start_pill_dfu_process(uint64_t pill_id)
     ant_pill_dfu_begin(pill_id);
 }
 
+static void _pair_morpheus(MorpheusCommand* command)
+{
+    if(!command->accountId.arg)
+    {
+        PRINTS("No account id for pairing!\r\n");
+        return;
+    }else{
+        MSG_Base_AcquireDataAtomic(command->accountId.arg);
+    }
+
+    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(17);
+    if(!device_id_page)
+    {
+        PRINTS("Not enough memory.\r\n");
+        morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+    }else{
+        memset(device_id_page->buf, 0, device_id_page->len);
+        size_t device_id_len = device_id_page->len;
+
+        if(hble_uint64_to_hex_device_id(hble_get_device_id(), device_id_page->buf, &device_id_len))
+        {
+            MorpheusCommand pair_command;
+            memset(&pair_command, 0, sizeof(MorpheusCommand));
+
+            pair_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE;
+            pair_command.version = PROTOBUF_VERSION;
+            pair_command.accountId.arg = command->accountId.arg;
+            pair_command.deviceId.arg = device_id_page;
+
+            size_t proto_len = 0;
+            if(!morpheus_ble_encode_protobuf(&pair_command, NULL, &proto_len))
+            {
+                morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
+            }else{
+                MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
+                if(!proto_len){
+                    PRINTS("Not enough memory.\r\n");
+                    morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+                }else{
+                    morpheus_ble_encode_protobuf(&pair_command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
+                    if(message_ble_route_data_to_cc3200(proto_page) == FAIL)
+                    {
+                        PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                        morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+                    }
+                    MSG_Base_ReleaseDataAtomic(proto_page);
+                }
+
+            }
+
+        }else{
+            PRINTS("Convert device id failed\r\n");
+            morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
+        }
+
+        MSG_Base_ReleaseDataAtomic(device_id_page);
+    }
+
+    MSG_Base_ReleaseDataAtomic(command->accountId.arg);
+}
+
 void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusCommand* command)
 {
     MSG_Base_AcquireDataAtomic(data_page);
@@ -616,13 +677,15 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
+            _pair_morpheus(command);
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
             _erase_bonded_users();
