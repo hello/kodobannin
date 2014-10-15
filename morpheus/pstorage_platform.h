@@ -15,6 +15,8 @@
 /** @file
  *  This header contains defines with respect persistent storage that are specific to
  *  persistent storage implementation and application use case.
+ *  CODE PAGE SIZE in FICR for nrf514 is 0x400
+ *  CODE SIZE is 0x100
  */
 #ifndef PSTORAGE_PL_H__
 #define PSTORAGE_PL_H__
