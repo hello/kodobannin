@@ -86,5 +86,7 @@ void morpheus_ble_on_notify_failed(void* data_page);
 
 bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, size_t len);
 bool morpheus_ble_encode_protobuf(MorpheusCommand* command, char* raw, size_t* len);
-
+void morpheus_ble_remove_decode_funcs(MorpheusCommand* command);
+void morpheus_ble_assign_decode_funcs(MorpheusCommand* command);
+void morpheus_ble_assign_encode_funcs(MorpheusCommand* command);
 void morpheus_ble_free_protobuf(MorpheusCommand* command);
