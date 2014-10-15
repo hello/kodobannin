@@ -26,6 +26,7 @@
 
 #include "hble.h"
 
+#include "ant_driver.h"
 #include "morpheus_gatt.h"
 #include "morpheus_ble.h"
 
@@ -45,11 +46,20 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
 	morpheus_ble_transmission_layer_reset();
+
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_pause_radio());
+    nrf_delay_ms(100);
+#endif
+
 #ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
     nrf_delay_ms(100);
     hble_advertising_start();
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_resume_radio());
+#endif
 
 #ifndef ANT_ENABLE
     if(MSG_Base_HasMemoryLeak()){
@@ -62,8 +72,15 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
+
     nrf_delay_ms(100);  // Due to nRF51 release note
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_pause_radio());
+#endif
     hble_advertising_start();
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_resume_radio());
+#endif
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
@@ -385,6 +402,15 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
     return true;
 }
 
+static char upper_case_hex_digit(char hex_ascii){
+    if(hex_ascii >= 0x61 && hex_ascii <= 0x7A)
+    {
+        return hex_ascii - (0x61 - 0x41);  // 'a' - 'A'
+    }
+
+    return hex_ascii;
+}
+
 bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id)
 {
     if(!hex_device_id || !device_id)
@@ -412,12 +438,12 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 
         for(uint8_t j = 0; j < hex_table_len; j++)
         {
-            if(hex_table[j] == hex_device_id[i * 2])
+            if(hex_table[j] == upper_case_hex_digit(hex_device_id[i * 2]))
             {
                 multiplier = j;
             }
 
-            if(hex_table[j] == hex_device_id[i * 2 + 1])
+            if(hex_table[j] == upper_case_hex_digit(hex_device_id[i * 2 + 1]))
             {
                 remain = j;
             }
