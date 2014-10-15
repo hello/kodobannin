@@ -17,6 +17,7 @@
  *  persistent storage implementation and application use case.
  *  CODE PAGE SIZE in FICR for nrf514 is 0x400
  *  CODE SIZE is 0x100
+ *  check memory.ld for number of usable code pages
  */
 #ifndef PSTORAGE_PL_H__
 #define PSTORAGE_PL_H__
