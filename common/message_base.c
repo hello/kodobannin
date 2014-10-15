@@ -203,6 +203,7 @@ MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size){
         //minimum of one element is required
         ret = NULL;
     }else{
+        memset(mem, 0, size);
         ret = (MSG_Queue_t *)mem;
         ret->capacity = (size - sizeof(MSG_Queue_t)) / sizeof(MSG_Data_t *);
         ret->elements = 0;
