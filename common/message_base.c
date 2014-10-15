@@ -110,9 +110,10 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
 //TODO
 //this method is unsafe, switch to strncpy later
 MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str){
-    if(!str) return NULL;
-    int n = strlen(str)+1;
-    n = MIN(MSG_BASE_DATA_BUFFER_SIZE, n);
+    if(!str){
+        return NULL;
+    }
+    uint32_t n = strlen(str)+1;
     MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(n);
     if(ret){
         memcpy(ret->buf, str, n);
@@ -204,6 +205,7 @@ MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size){
         //minimum of one element is required
         ret = NULL;
     }else{
+        memset(mem, 0, size);
         ret = (MSG_Queue_t *)mem;
         ret->capacity = (size - sizeof(MSG_Queue_t)) / sizeof(MSG_Data_t *);
         ret->elements = 0;
