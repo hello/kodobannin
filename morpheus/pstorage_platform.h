@@ -24,9 +24,10 @@
 #include <stdint.h>
 
 #define PSTORAGE_FLASH_PAGE_SIZE    ((uint16_t)NRF_FICR->CODEPAGESIZE)   /**< Size of one flash page. */
+#define BOOTLOADER_LOCATION         (0x36000)
 #define PSTORAGE_FLASH_EMPTY_MASK    0xFFFFFFFF                          /**< Bit mask that defines an empty address in flash. */
 
-#define PSTORAGE_FLASH_PAGE_END		NRF_FICR->CODESIZE
+#define PSTORAGE_FLASH_PAGE_END	(BOOTLOADER_LOCATION/PSTORAGE_FLASH_PAGE_SIZE)	
 
 
 #define PSTORAGE_MAX_APPLICATIONS   3                                                           /**< Maximum number of applications that can be registered with the module, configurable based on system requirements. */
