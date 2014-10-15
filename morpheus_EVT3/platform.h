@@ -3,6 +3,7 @@
 // platform.h (ver 9/25/14) morpheus EVT2 pin assignments
 
 #pragma once
+#define NC 32
 
 #define BLE_ENABLE
 #define ANT_ENABLE
@@ -13,8 +14,8 @@
 enum {
     SERIAL_TX_PIN = 19,
     SERIAL_RX_PIN = 17,
-    SERIAL_CTS_PIN = 0,
-    SERIAL_RTS_PIN = 0,
+    SERIAL_CTS_PIN = 20, //unconnected
+    SERIAL_RTS_PIN = 18, //unconnected
 };
 
 // uart serial diagnostic port
@@ -88,8 +89,8 @@ enum {
 enum {
     CCU_TX_PIN = 20,
     CCU_RX_PIN = 18,
-    CCU_CTS_PIN = 0,
-    CCU_RTS_PIN = 0,
+    CCU_CTS_PIN = NC,
+    CCU_RTS_PIN = NC,
 };
 
 // cross connect UART serial port

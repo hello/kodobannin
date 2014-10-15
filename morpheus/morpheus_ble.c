@@ -625,13 +625,13 @@ void morpheus_load_modules(void){
 
 #ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
-			SERIAL_RX_PIN,
-			SERIAL_TX_PIN,
-			SERIAL_RTS_PIN,
-			SERIAL_CTS_PIN,
-    		APP_UART_FLOW_CONTROL_ENABLED,
-			0,
-			UART_BAUDRATE_BAUDRATE_Baud38400
+            SERIAL_RX_PIN,
+            SERIAL_TX_PIN,
+            SERIAL_RTS_PIN,
+            SERIAL_CTS_PIN,
+            APP_UART_FLOW_CONTROL_DISABLED,
+            0,
+            UART_BAUDRATE_BAUDRATE_Baud38400
 		};
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
