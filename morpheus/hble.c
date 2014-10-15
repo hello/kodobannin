@@ -46,14 +46,20 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
 	morpheus_ble_transmission_layer_reset();
+
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_pause_radio());
+    nrf_delay_ms(100);
+#endif
+
 #ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
     nrf_delay_ms(100);
+    hble_advertising_start();
 #ifdef ANT_ENABLE
     APP_OK(hlo_ant_resume_radio());
 #endif
-    hble_advertising_start();
 
 #ifndef ANT_ENABLE
     if(MSG_Base_HasMemoryLeak()){
@@ -66,8 +72,15 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
+
     nrf_delay_ms(100);  // Due to nRF51 release note
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_pause_radio());
+#endif
     hble_advertising_start();
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_resume_radio());
+#endif
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
@@ -76,9 +89,6 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 
     switch(ble_evt->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
-#ifdef ANT_ENABLE
-        APP_OK(hlo_ant_pause_radio());
-#endif
         // Reset transmission layer, clean out error states.
         morpheus_ble_transmission_layer_reset();
         // When new connection comes in, always set it back to non-pairing mode.
