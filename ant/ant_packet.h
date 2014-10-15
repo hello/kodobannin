@@ -6,7 +6,7 @@
 #include "message_base.h"
 
 #ifndef ANT_PACKET_MAX_CONCURRENT_SESSIONS
-#define ANT_PACKET_MAX_CONCURRENT_SESSIONS 8
+#define ANT_PACKET_MAX_CONCURRENT_SESSIONS 4
 #endif
 
 typedef struct{

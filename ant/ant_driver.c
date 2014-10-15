@@ -249,7 +249,7 @@ int32_t hlo_ant_pause_radio(void){
             return -1;
         }
     }
-    return 0;
+    return NRF_SUCCESS;
 }
 int32_t hlo_ant_resume_radio(void){
     uint8_t status;
@@ -262,6 +262,6 @@ int32_t hlo_ant_resume_radio(void){
             return -1;
         }
     }
-    return 0;
+    return NRF_SUCCESS;
 }
 #endif
