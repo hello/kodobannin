@@ -41,38 +41,88 @@ static ble_uuid_t _service_uuid;
 static volatile uint64_t _device_id;
 
 static int16_t  _last_bond_central_id;
+static app_timer_id_t _delay_timer;
+static uint8_t _task;
+
+
+static void _delay_tasks(void* context)
+{
+    PRINTS("task: ");
+    PRINT_HEX(&_task, sizeof(_task));
+    PRINTS("\r\n");
+
+    switch(_task)
+    {
+        case 0:
+        {
+#ifdef ANT_ENABLE
+            APP_OK(hlo_ant_pause_radio());
+            PRINTS("ANT Radio stop\r\n");
+#endif
+            _task = 1;
+            APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
+        }
+        break;
+        case 1: //disconnect
+        {
+#ifdef BONDING_REQUIRED
+            APP_OK(ble_bondmngr_bonded_centrals_store());
+#endif
+            
+            _task = 2;
+            APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
+            PRINTS("bond saved\r\n");
+        }
+        break;
+        case 2:
+        {
+
+            hble_advertising_start();
+            _task = 3;
+            APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
+            PRINTS("adv restarted\r\n");
+        }
+        break;
+        case 3: // resume ant
+        {
+#ifdef ANT_ENABLE
+            //nrf_delay_ms(100);
+            APP_OK(hlo_ant_resume_radio());
+#endif
+            _task = 4;
+            APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
+            PRINTS("ant resumed\r\n");
+        }
+        break;
+        case 4:  // ant resumed
+        {
+#ifndef ANT_ENABLE
+            if(MSG_Base_HasMemoryLeak()){
+                PRINTS("Possible memory leak detected!\r\n");
+            }else{
+                PRINTS("No memory leak.\r\n");
+            }
+#endif
+        }
+        break;
+        default:
+        break;
+    }
+}
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
 	morpheus_ble_transmission_layer_reset();
+    _task = 0;
+    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), NULL));
+    PRINTS("delay task started\r\n");
 
-#ifdef ANT_ENABLE
-    APP_OK(hlo_ant_pause_radio());
-    nrf_delay_ms(100);
-#endif
-
-#ifdef BONDING_REQUIRED
-    APP_OK(ble_bondmngr_bonded_centrals_store());
-#endif
-    nrf_delay_ms(100);
-    hble_advertising_start();
-#ifdef ANT_ENABLE
-    APP_OK(hlo_ant_resume_radio());
-#endif
-
-#ifndef ANT_ENABLE
-    if(MSG_Base_HasMemoryLeak()){
-        PRINTS("Possible memory leak detected!\r\n");
-    }else{
-        PRINTS("No memory leak.\r\n");
-    }
-#endif
 }
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
-
+/*
     nrf_delay_ms(100);  // Due to nRF51 release note
 #ifdef ANT_ENABLE
     APP_OK(hlo_ant_pause_radio());
@@ -81,6 +131,10 @@ static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 #ifdef ANT_ENABLE
     APP_OK(hlo_ant_resume_radio());
 #endif
+*/
+    _task = 0;
+    //nrf_delay_ms(100);
+    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), NULL));
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
@@ -361,6 +415,8 @@ void hble_stack_init()
 
     // Register with the SoftDevice handler module for BLE events.
     APP_OK(softdevice_sys_evt_handler_set(_on_sys_evt));
+
+    APP_OK(app_timer_create(&_delay_timer, APP_TIMER_MODE_SINGLE_SHOT, _delay_tasks));
 
 }
 
