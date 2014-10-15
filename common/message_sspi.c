@@ -4,7 +4,6 @@
 
 #define REG_READ_FROM_SSPI  0
 #define REG_WRITE_TO_SSPI 1
-#define TEST_STR "RELLO"
 typedef enum{
     IDLE = 0,
     READING,
