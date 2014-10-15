@@ -73,7 +73,7 @@ static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
 	return false;
 }
 
-static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
+static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
 {
     if(*arg == NULL)
     {
@@ -82,7 +82,7 @@ static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t
 
     MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
-    PRINTS("Lock memory in _encode_command_string_fields\r\n");// nrf_delay_ms(1);
+    PRINTS("Lock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
     char* str = buffer_page->buf;
     
     bool ret = false;
@@ -92,11 +92,11 @@ static bool _encode_command_string_fields(pb_ostream_t *stream, const pb_field_t
     }
 
     MSG_Base_ReleaseDataAtomic(buffer_page);
-    PRINTS("Unlock memory in _encode_command_string_fields\r\n");// nrf_delay_ms(1);
+    PRINTS("Unlock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
     return ret;
 }
 
-static bool _encode_command_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
+static bool _encode_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
 {
     if(*arg == NULL)
     {
@@ -105,7 +105,7 @@ static bool _encode_command_bytes_fields(pb_ostream_t *stream, const pb_field_t 
 
     MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
-    PRINTS("Lock memory in _encode_command_bytes_fields\r\n");// nrf_delay_ms(1);
+    PRINTS("Lock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
     char* str = buffer_page->buf;
     
     bool ret = false;
@@ -115,7 +115,7 @@ static bool _encode_command_bytes_fields(pb_ostream_t *stream, const pb_field_t 
     }
 
     MSG_Base_ReleaseDataAtomic(buffer_page);
-    PRINTS("Unlock memory in _encode_command_bytes_fields\r\n");// nrf_delay_ms(1);
+    PRINTS("Unlock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
     return ret;
 }
 
@@ -176,6 +176,111 @@ static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, v
     return true;
 }
 
+void morpheus_ble_assign_decode_funcs(MorpheusCommand* command)
+{
+    if(NULL == command->accountId.funcs.decode)
+    {
+        command->accountId.funcs.decode = _decode_string_field;
+        command->accountId.arg = NULL;
+    }
+
+    if(NULL == command->deviceId.funcs.decode)
+    {
+        command->deviceId.funcs.decode = _decode_string_field;
+        command->deviceId.arg = NULL;
+    }
+
+    if(NULL == command->wifiName.funcs.decode)
+    {
+        command->wifiName.funcs.decode = _decode_string_field;
+        command->wifiName.arg = NULL;
+    }
+
+    if(NULL == command->wifiSSID.funcs.decode)
+    {
+        command->wifiSSID.funcs.decode = _decode_string_field;
+        command->wifiSSID.arg = NULL;
+    }
+
+    if(NULL == command->wifiPassword.funcs.decode)
+    {
+        command->wifiPassword.funcs.decode = _decode_string_field;
+        command->wifiPassword.arg = NULL;
+    }
+
+    if(NULL == command->motionDataEntrypted.funcs.decode)
+    {
+        command->motionDataEntrypted.funcs.decode = _decode_bytes_field;
+        command->motionDataEntrypted.arg = NULL;
+    }
+}
+
+void morpheus_ble_remove_decode_funcs(MorpheusCommand* command)
+{
+    if(command->accountId.funcs.decode)
+    {
+        command->accountId.funcs.decode = NULL;
+    }
+
+    if(command->deviceId.funcs.decode)
+    {
+        command->deviceId.funcs.decode = NULL;
+    }
+
+    if(command->wifiName.funcs.decode)
+    {
+        command->wifiName.funcs.decode = NULL;
+    }
+
+    if(command->wifiSSID.funcs.decode)
+    {
+        command->wifiSSID.funcs.decode = NULL;
+    }
+
+    if(command->wifiPassword.funcs.decode)
+    {
+        command->wifiPassword.funcs.decode = NULL;
+    }
+
+    if(command->motionDataEntrypted.funcs.decode)
+    {
+        command->motionDataEntrypted.funcs.decode = NULL;
+    }
+}
+
+void morpheus_ble_assign_encode_funcs(MorpheusCommand* command)
+{
+    if(command->accountId.arg != NULL && command->accountId.funcs.encode == NULL)
+    {
+        command->accountId.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->deviceId.arg != NULL && command->deviceId.funcs.encode == NULL)
+    {
+        command->deviceId.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->wifiName.arg != NULL && command->wifiName.funcs.encode == NULL)
+    {
+        command->wifiName.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->wifiSSID.arg != NULL && command->wifiSSID.funcs.encode == NULL)
+    {
+        command->wifiSSID.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->wifiPassword.arg != NULL && command->wifiPassword.funcs.encode == NULL)
+    {
+        command->wifiPassword.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->motionDataEntrypted.arg != NULL && command->motionDataEntrypted.funcs.encode == NULL)
+    {
+        command->motionDataEntrypted.funcs.encode = _encode_bytes_fields;
+    }
+}
+
 bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, size_t len)
 {
     if(!command)
@@ -187,26 +292,12 @@ bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, siz
     memset(command, 0, sizeof(MorpheusCommand));
 
     
-    command->accountId.funcs.decode = _decode_string_field;
-    command->accountId.arg = NULL;
-
-    command->deviceId.funcs.decode = _decode_string_field;
-    command->deviceId.arg = NULL;
-
-    command->wifiName.funcs.decode = _decode_string_field;
-    command->wifiName.arg = NULL;
-
-    command->wifiSSID.funcs.decode = _decode_string_field;
-    command->wifiSSID.arg = NULL;
-
-    command->wifiPassword.funcs.decode = _decode_string_field;
-    command->wifiPassword.arg = NULL;
-
-    command->motionDataEntrypted.funcs.decode = _decode_bytes_field;
-    command->motionDataEntrypted.arg = NULL;
+    morpheus_ble_assign_decode_funcs(command);
 
     pb_istream_t stream = pb_istream_from_buffer(raw, len);
     bool status = pb_decode(&stream, MorpheusCommand_fields, command);
+
+    morpheus_ble_remove_decode_funcs(command);
     if (!status)
     {
         PRINTS("Decoding protobuf failed, error: ");
@@ -226,35 +317,7 @@ bool morpheus_ble_encode_protobuf(MorpheusCommand* command, char* raw, size_t* l
         return false;
     }
 
-    if(command->accountId.arg && NULL == command->accountId.funcs.encode)
-    {
-        command->accountId.funcs.encode = _encode_command_string_fields;
-    }
-
-    if(command->deviceId.arg && NULL == command->deviceId.funcs.encode)
-    {
-        command->deviceId.funcs.encode = _encode_command_string_fields;
-    }
-
-    if(command->wifiName.arg && NULL == command->wifiName.funcs.encode)
-    {
-        command->wifiName.funcs.encode = _encode_command_string_fields;
-    }
-
-    if(command->wifiSSID.arg && NULL == command->wifiSSID.funcs.encode)
-    {
-        command->wifiSSID.funcs.encode = _encode_command_string_fields;
-    }
-
-    if(command->wifiPassword.arg && NULL == command->wifiPassword.funcs.encode)
-    {
-        command->wifiPassword.funcs.encode = _encode_command_string_fields;
-    }
-
-    if(command->motionDataEntrypted.arg && NULL == command->motionDataEntrypted.funcs.encode)
-    {
-        command->motionDataEntrypted.funcs.encode = _encode_command_bytes_fields;
-    }
+    morpheus_ble_assign_encode_funcs(command);
 
     pb_ostream_t out_stream = {0};
     if(raw)
