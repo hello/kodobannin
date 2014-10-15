@@ -57,6 +57,11 @@ _start()
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 
+#ifdef PLATFORM_HAS_PMIC_EN
+#include "gpio_nor.h"
+	gpio_cfg_d0s1_output_disconnect_pull(PMIC_EN_3V3, NRF_GPIO_PIN_PULLUP);
+	gpio_cfg_d0s1_output_disconnect_pull(PMIC_EN_1V8, NRF_GPIO_PIN_PULLUP);
+#endif
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
 

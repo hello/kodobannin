@@ -4,7 +4,6 @@
 
 #define REG_READ_FROM_SSPI  0
 #define REG_WRITE_TO_SSPI 1
-#define TEST_STR "RELLO"
 typedef enum{
     IDLE = 0,
     READING,
@@ -45,7 +44,8 @@ static struct{
     /*
      * Only one queue_tx right now
      */
-    MSG_Data_t * dummy;
+    uint8_t dummy[4];
+    uint8_t tx_queue_buffer[4 * sizeof(MSG_Data_t *)];
     MSG_Queue_t * tx_queue;
 }self;
 
@@ -151,7 +151,7 @@ _handle_transaction(){
             /*
              *PRINTS("@WRITE TX LEN\r\n");
              */
-            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy->buf, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
+            spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy, sizeof(self.transaction.context_reg), sizeof(self.dummy));
             self.transaction.state = WRITE_TX_BUF;
             break;
         case WAIT_READ_RX_BUF:
@@ -164,7 +164,7 @@ _handle_transaction(){
                 self.transaction.state = FIN_READ;
             }else{
                 //no buffer wat do?
-                spi_slave_buffers_set(self.dummy->buf, self.dummy->buf, 0, 0);
+                spi_slave_buffers_set(self.dummy, self.dummy, 0, 0);
                 self.transaction.state = FIN_READ;
             }
             break;
@@ -173,11 +173,11 @@ _handle_transaction(){
              *PRINTS("@WRITE TX BUF\r\n");
              */
             if(self.transaction.payload){
-                spi_slave_buffers_set(self.transaction.payload->buf, self.dummy->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
+                spi_slave_buffers_set(self.transaction.payload->buf, self.dummy, self.transaction.context_reg.length, sizeof(self.dummy));
                 self.transaction.state = FIN_WRITE;
             }else{
                 //no buffer wat do?
-                spi_slave_buffers_set(self.dummy->buf, self.dummy->buf, 0, 0);
+                spi_slave_buffers_set(self.dummy, self.dummy, 0, 0);
                 self.transaction.state = FIN_WRITE;
             }
             break;
@@ -225,7 +225,6 @@ _handle_transaction(){
 
 static MSG_Status
 _destroy(void){
-    MSG_Base_ReleaseDataAtomic(self.dummy);
     return SUCCESS;
 }
 static MSG_Status
@@ -302,14 +301,8 @@ _init(){
         nrf_gpio_pin_clear(SSPI_INT);
     }
 #endif
-    self.dummy = MSG_Base_AllocateDataAtomic(230);
     self.current_state = _reset();
-    {
-        MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE);
-        if(tmp){
-            self.tx_queue = MSG_Base_InitQueue(tmp->buf, tmp->len);
-        }
-    }
+    self.tx_queue = MSG_Base_InitQueue(self.tx_queue_buffer, sizeof(self.tx_queue_buffer));
     return SUCCESS;
 
 }
