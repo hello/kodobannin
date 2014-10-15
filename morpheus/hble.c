@@ -96,13 +96,12 @@ static void _delay_tasks(void* context)
         break;
         case 4:  // ant resumed
         {
-#ifndef ANT_ENABLE
+
             if(MSG_Base_HasMemoryLeak()){
                 PRINTS("Possible memory leak detected!\r\n");
             }else{
                 PRINTS("No memory leak.\r\n");
             }
-#endif
         }
         break;
         default:
