@@ -402,6 +402,15 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
     return true;
 }
 
+static char upper_case_hex_digit(char hex_ascii){
+    if(hex_ascii >= 0x61 && hex_ascii <= 0x7A)
+    {
+        return hex_ascii - (0x61 - 0x41);  // 'a' - 'A'
+    }
+
+    return hex_ascii;
+}
+
 bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id)
 {
     if(!hex_device_id || !device_id)
@@ -429,12 +438,12 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 
         for(uint8_t j = 0; j < hex_table_len; j++)
         {
-            if(hex_table[j] == hex_device_id[i * 2])
+            if(hex_table[j] == upper_case_hex_digit(hex_device_id[i * 2]))
             {
                 multiplier = j;
             }
 
-            if(hex_table[j] == hex_device_id[i * 2 + 1])
+            if(hex_table[j] == upper_case_hex_digit(hex_device_id[i * 2 + 1]))
             {
                 remain = j;
             }
