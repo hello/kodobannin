@@ -38,6 +38,12 @@ static MSG_Status _flush(void){
     return SUCCESS;
 }
 
+static void _start_morpheus_dfu_process(void)
+{
+    // TODO: Begin DFU here.
+    REBOOT_TO_DFU();
+}
+
 
 static void _register_pill(){
     if(self.pill_pairing_request.account_id && self.pill_pairing_request.device_id){
@@ -579,11 +585,7 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
 
 }
 
-static void _start_morpheus_dfu_process(void)
-{
-    // TODO: Begin DFU here.
-    REBOOT_TO_DFU();
-}
+
 
 static void _start_pill_dfu_process(uint64_t pill_id)
 {
