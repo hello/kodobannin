@@ -361,7 +361,7 @@ MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
     if(SUCCESS == MSG_Base_AcquireDataAtomic(data)){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
 
-#ifndef ANT_ENABLE
+#ifndef HAS_CC3200
         // Echo test
         hlo_ble_notify(0xB00B, data->buf, data->len, 
                     &(struct hlo_ble_operation_callbacks){
@@ -398,7 +398,7 @@ static void _request_device_id(void* context)
     get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
     get_device_id_command.version = PROTOBUF_VERSION;
 
-#ifdef ANT_ENABLE  // TODO: use another macro
+#ifdef HAS_CC3200
 
     
     size_t protobuf_len = 0;
@@ -434,7 +434,7 @@ static MSG_Status _init(){
 
     
 
-#ifdef ANT_ENABLE  // TODO: use another macro
+#ifdef HAS_CC3200
 
     app_timer_create(&self.boot_timer, APP_TIMER_MODE_SINGLE_SHOT, _request_device_id);
     _request_device_id(NULL);
@@ -569,7 +569,7 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
     command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
     command.version = PROTOBUF_VERSION;
-#ifdef ANT_ENABLE
+#ifdef HAS_CC3200  // If don't have CC, the route_data_to_cc function will reply
     morpheus_ble_reply_protobuf(&command);
 #endif    
 

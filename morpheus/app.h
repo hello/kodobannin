@@ -21,6 +21,10 @@ enum {
 #define BLE_ORG_UNIQUE_ID     0x1337
 
 #define BONDING_REQUIRED
+
+#ifdef BONDING_REQUIRED
+#define MEMORY_BONDING
+#endif
  
 #define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D
 #define PROTOBUF_VERSION		(0)
@@ -36,7 +40,7 @@ enum {
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800
+#define APP_ADV_INTERVAL                     40
 
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           (0)
