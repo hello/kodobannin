@@ -34,7 +34,7 @@ _start()
 
     {
         enum {
-            SCHED_QUEUE_SIZE = 20,
+            SCHED_QUEUE_SIZE = 16,
             SCHED_MAX_EVENT_DATA_SIZE = MAX(APP_TIMER_SCHED_EVT_SIZE, BLE_STACK_HANDLER_SCHED_EVT_SIZE),
         };
 
@@ -55,7 +55,10 @@ _start()
     }
 
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
+
+#ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
+#endif
 
 #ifdef PLATFORM_HAS_PMIC_EN
 #include "gpio_nor.h"
@@ -64,6 +67,7 @@ _start()
 #endif
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
+    nrf_delay_ms(100);
 
     morpheus_load_modules();
 

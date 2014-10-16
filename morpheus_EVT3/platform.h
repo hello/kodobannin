@@ -7,6 +7,7 @@
 
 #define BLE_ENABLE
 #define ANT_ENABLE
+#define HAS_CC3200
 #define MSG_BASE_USE_BIG_POOL
 
 #define PLATFORM_HAS_SERIAL
