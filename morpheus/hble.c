@@ -42,78 +42,140 @@ static volatile uint64_t _device_id;
 
 static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
-static uint8_t _task;
 
+
+#define MAX_DELAY_TASKS         5
+
+#define TASK_PAUSE_ANT          0   // task index for stop ant
+#define TASK_BOND_OP            1   // task index for bonding operations
+#define TASK_BLE_ADV_OP         2   // task index for restart BLE advertise
+#define TASK_RESUME_ANT         3   // task index for retsart ant
+#define TASK_MEM_CHECK          4   // task index for memory leak check
+
+
+static delay_task_t _tasks[MAX_DELAY_TASKS];
+static uint8_t _task_index;
+
+static void _delay_task_pause_ant()
+{
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_pause_radio());
+    PRINTS("ANT Radio stop\r\n");
+#endif
+}
+
+static void _delay_task_resume_ant()
+{
+#ifdef ANT_ENABLE
+    //nrf_delay_ms(100);
+    APP_OK(hlo_ant_resume_radio());
+#endif
+}
+
+static void _delay_task_store_bonds()
+{
+#ifdef BONDING_REQUIRED
+    APP_OK(ble_bondmngr_bonded_centrals_store());
+    PRINTS("bond saved\r\n");
+#endif
+}
+
+static void _delay_task_advertise_resume()
+{
+    hble_advertising_start();
+    PRINTS("adv restarted\r\n");
+}
+
+static void _delay_tasks_erase_bonds()
+{
+    PRINTS("Trying to erase paired centrals....\r\n");
+    APP_OK(ble_bondmngr_bonded_centrals_delete());
+    PRINTS("Erased\r\n");
+    nrf_delay_ms(100);
+    hble_bond_manager_init();
+}
+
+static void _delay_tasks_erase_other_bonds()
+{
+    if(!_last_bond_central_id)
+    {
+        PRINTS("Current user is not bonded!");
+        return;
+    }
+
+    PRINTS("Current central: ");
+    PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
+    PRINTS("\r\n");
+    
+    
+
+    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+    if(paired_users_count == 0)
+    {
+        PRINTS("No paired centrals found.\r\n");
+        return;
+    }
+
+    PRINTS("Paired central count: ");
+    PRINT_HEX(&paired_users_count, sizeof(paired_users_count));
+    PRINTS("\r\n");
+
+    uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
+    memset(bonded_central_list, 0, sizeof(bonded_central_list));
+
+    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, &paired_users_count));
+    for(int i = 0; i < paired_users_count; i++)
+    {
+        if(bonded_central_list[i] != _last_bond_central_id)
+        {
+            APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[i]));
+            PRINTS("Paired central ");
+            PRINT_HEX(&bonded_central_list[i], sizeof(bonded_central_list[i]));
+            PRINTS(" deleted.\r\n");
+        }
+    }
+}
+
+
+static void _delay_task_memory_checkpoint()
+{
+    if(MSG_Base_HasMemoryLeak()){
+        PRINTS("Possible memory leak detected!\r\n");
+    }else{
+        PRINTS("No memory leak.\r\n");
+    }
+}
 
 static void _delay_tasks(void* context)
 {
-    PRINTS("task: ");
-    PRINT_HEX(&_task, sizeof(_task));
-    PRINTS("\r\n");
-
-    switch(_task)
+    
+    if(_task_index == MAX_DELAY_TASKS)
     {
-        case 0:
-        {
-#ifdef ANT_ENABLE
-            APP_OK(hlo_ant_pause_radio());
-            PRINTS("ANT Radio stop\r\n");
-#endif
-            _task = 1;
-            APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
-        }
-        break;
-        case 1: //disconnect
-        {
-#ifdef BONDING_REQUIRED
-            APP_OK(ble_bondmngr_bonded_centrals_store());
-#endif
-            
-            _task = 2;
-            APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
-            PRINTS("bond saved\r\n");
-        }
-        break;
-        case 2:
-        {
-
-            hble_advertising_start();
-            _task = 3;
-            APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
-            PRINTS("adv restarted\r\n");
-        }
-        break;
-        case 3: // resume ant
-        {
-#ifdef ANT_ENABLE
-            //nrf_delay_ms(100);
-            APP_OK(hlo_ant_resume_radio());
-#endif
-            _task = 4;
-            APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
-            PRINTS("ant resumed\r\n");
-        }
-        break;
-        case 4:  // ant resumed
-        {
-
-            if(MSG_Base_HasMemoryLeak()){
-                PRINTS("Possible memory leak detected!\r\n");
-            }else{
-                PRINTS("No memory leak.\r\n");
-            }
-        }
-        break;
-        default:
-        break;
+        PRINTS("All delay tasks done\r\n");
+        _last_bond_central_id = 0;
+        _task_index = 0;
+        return;
     }
+
+    if(_tasks[_task_index])
+    {
+        _tasks[_task_index]();
+    }else{
+        PRINTS("All delay tasks done\r\n");
+        _last_bond_central_id = 0;
+        _task_index = 0;
+        return;
+    }
+    _task_index++;
+    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
+
 }
 
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
 	morpheus_ble_transmission_layer_reset();
-    _task = 0;
     APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), NULL));
     PRINTS("delay task started\r\n");
 
@@ -121,17 +183,13 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
-/*
-    nrf_delay_ms(100);  // Due to nRF51 release note
-#ifdef ANT_ENABLE
-    APP_OK(hlo_ant_pause_radio());
-#endif
-    hble_advertising_start();
-#ifdef ANT_ENABLE
-    APP_OK(hlo_ant_resume_radio());
-#endif
-*/
-    _task = 0;
+    delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
+        _delay_task_advertise_resume, 
+        _delay_task_resume_ant, 
+        _delay_task_memory_checkpoint,
+        NULL
+    };
+    memcpy(&_tasks, &tasks, sizeof(_tasks));
     //nrf_delay_ms(100);
     APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), NULL));
 }
@@ -142,10 +200,20 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 
     switch(ble_evt->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
+    {
         // Reset transmission layer, clean out error states.
         morpheus_ble_transmission_layer_reset();
         // When new connection comes in, always set it back to non-pairing mode.
         hble_set_advertising_mode(false);
+
+        // define the tasks that will be performed when user disconnect
+        delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
+            _delay_task_store_bonds, 
+            _delay_task_advertise_resume, 
+            _delay_task_resume_ant, 
+            _delay_task_memory_checkpoint};
+        memcpy(&_tasks, &tasks, sizeof(_tasks));
+    }
         break;
     case BLE_GAP_EVT_DISCONNECTED:
         app_sched_event_put(NULL, 0, _on_disconnect);
@@ -237,44 +305,12 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 
 void hble_erase_other_bonded_central()
 {
-    if(!_last_bond_central_id)
-    {
-        PRINTS("Current user is not bonded!");
-        return;
-    }
+    _tasks[TASK_BOND_OP] = _delay_tasks_erase_other_bonds;
+}
 
-    PRINTS("Current central: ");
-    PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
-    PRINTS("\r\n");
-    
-    
-
-    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
-    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
-    if(paired_users_count == 0)
-    {
-        PRINTS("No paired centrals found.\r\n");
-        return;
-    }
-
-    PRINTS("Paired central count: ");
-    PRINT_HEX(&paired_users_count, sizeof(paired_users_count));
-    PRINTS("\r\n");
-
-    uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
-    memset(bonded_central_list, 0, sizeof(bonded_central_list));
-
-    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, &paired_users_count));
-    for(int i = 0; i < paired_users_count; i++)
-    {
-        if(bonded_central_list[i] != _last_bond_central_id)
-        {
-            APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[i]));
-            PRINTS("Paired central ");
-            PRINT_HEX(&bonded_central_list[i], sizeof(bonded_central_list[i]));
-            PRINTS(" deleted.\r\n");
-        }
-    }
+void hble_erase_all_bonded_central()
+{
+    _tasks[TASK_BOND_OP] = _delay_tasks_erase_bonds;
 }
 
 

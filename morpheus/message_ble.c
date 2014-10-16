@@ -528,7 +528,6 @@ static void _erase_bonded_users(){
     PRINTS("Trying to erase paired centrals....\r\n");
 
     hble_erase_other_bonded_central();
-
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
     
