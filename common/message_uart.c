@@ -118,8 +118,13 @@ _init(void){
     {
         uint16_t uart_id = 0;
         app_uart_buffers_t buffers;
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+        static uint8_t rx_buf[128];
+        static uint8_t tx_buf[256];
+#else
         static uint8_t rx_buf[16];
         static uint8_t tx_buf[256];
+#endif
         buffers.rx_buf = rx_buf;
         buffers.rx_buf_size = sizeof(rx_buf);
         buffers.tx_buf = tx_buf;
