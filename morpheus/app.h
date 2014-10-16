@@ -23,7 +23,7 @@ enum {
 #define BONDING_REQUIRED
 
 #ifdef BONDING_REQUIRED
-#define MEMORY_BONDING
+#define IN_MEMORY_BONDING
 #endif
  
 #define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D

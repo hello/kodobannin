@@ -289,8 +289,6 @@ void hble_bond_manager_init()
 {
 
     ble_bondmngr_init_t bond_init_data;
-    bool bonds_delete = false;
-
     //PRINTS("pstorage_init() done.\r\n");
 
     memset(&bond_init_data, 0, sizeof(bond_init_data));
@@ -298,7 +296,11 @@ void hble_bond_manager_init()
     // Initialize the Bond Manager.
     bond_init_data.evt_handler             = _bond_evt_handler;
     bond_init_data.error_handler           = _bond_manager_error_handler;
-    bond_init_data.bonds_delete            = bonds_delete;
+#ifdef IN_MEMORY_BONDING
+    bond_init_data.bonds_delete            = true;
+#else
+    bond_init_data.bonds_delete            = false;
+#endif
 
     APP_OK(ble_bondmngr_init(&bond_init_data));
     //PRINTS("bond manager init.\r\n");
