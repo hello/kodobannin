@@ -54,7 +54,7 @@ _start()
         APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
     }
 
-    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM /*NRF_CLOCK_LFCLKSRC_XTAL_20_PPM*/, true);
+    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
 
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
@@ -68,7 +68,7 @@ _start()
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
     nrf_delay_ms(100);
-    
+
     morpheus_load_modules();
 
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
