@@ -627,7 +627,19 @@ void morpheus_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
     	central->loadmod(MSG_App_Base(central));
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+		app_uart_comm_params_t uart_params = {
+            CCU_RX_PIN,
+            CCU_TX_PIN,
+            CCU_CTS_PIN,
+            CCU_RTS_PIN,
+            APP_UART_FLOW_CONTROL_DISABLED,
+            0,
+            UART_BAUDRATE_BAUDRATE_Baud38400
+		};
 
+		central->loadmod(MSG_Uart_Base(&uart_params, central));
+#else
 #ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
             SERIAL_RX_PIN,
@@ -641,6 +653,8 @@ void morpheus_load_modules(void){
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #endif
+#endif
+
 
 #ifdef PLATFORM_HAS_SSPI
 		spi_slave_config_t spi_params = {
