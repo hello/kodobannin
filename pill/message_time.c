@@ -84,11 +84,12 @@ static void _send_heartbeat_data_ant(){
     // I packed all the struct and I am not sure it will work as expected.
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
     if(data_page){
-        pill_heartbeat_t heartbeat = (pill_heartbeat_t){
-            .battery_level = 100,
-            .uptime_sec = self.uptime,
-            .firmware_version = FIRMWARE_VERSION_8BIT,
-        };
+        pill_heartbeat_t heartbeat = {0};
+
+        heartbeat.battery_level = 100,
+        heartbeat.uptime_sec = self.uptime,
+        heartbeat.firmware_version = FIRMWARE_VERSION_8BIT,
+        
         memset(&data_page->buf, 0, sizeof(data_page->len) + sizeof(pill_heartbeat_t));
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
         ant_data->version = ANT_PROTOCOL_VER;
