@@ -117,7 +117,7 @@ _init(void){
     uint32_t err;
     {
         uint16_t uart_id = 0;
-        app_uart_buffers_t buffers;
+        app_uart_buffers_t buffers = {0};
 #ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
         static uint8_t rx_buf[128];
         static uint8_t tx_buf[256];
