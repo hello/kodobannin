@@ -13,8 +13,6 @@
 #endif
 
 
-#define HEARTBEAT_INTERVAL_SEC    (3600)
-
 static struct{
     MSG_Base_t base;
     bool initialized;
@@ -50,7 +48,7 @@ static void _send_available_data_ant(){
         rawDataSize);  // Raw/encrypted data
 
     if(data_page){
-        memset(&data_page->buf, 0, sizeof(data_page->len));
+        memset(&data_page->buf, 0, data_page->len);
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
         MSG_ANT_EncryptedMotionData_t * motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
         ant_data->version = ANT_PROTOCOL_VER;
@@ -82,14 +80,15 @@ static void _send_available_data_ant(){
 static void _send_heartbeat_data_ant(){
     // TODO: Jackson please do review & test this.
     // I packed all the struct and I am not sure it will work as expected.
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_heartbeat_t));
     if(data_page){
-        pill_heartbeat_t heartbeat = (pill_heartbeat_t){
-            .battery_level = 100,
-            .uptime_sec = self.uptime,
-            .firmware_version = FIRMWARE_VERSION_8BIT,
-        };
-        memset(&data_page->buf, 0, sizeof(data_page->len) + sizeof(pill_heartbeat_t));
+        pill_heartbeat_t heartbeat = {0};
+
+        heartbeat.battery_level = 100,
+        heartbeat.uptime_sec = self.uptime,
+        heartbeat.firmware_version = FIRMWARE_VERSION_8BIT,
+        
+        memset(&data_page->buf, 0, data_page->len);
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_HEARTBEAT;
