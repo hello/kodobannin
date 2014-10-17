@@ -115,7 +115,22 @@ _uart_event_handler(app_uart_evt_t * evt){
 static MSG_Status
 _init(void){
     uint32_t err;
-    APP_UART_FIFO_INIT(&self.uart_params, 16, 256, _uart_event_handler, APP_IRQ_PRIORITY_LOW, err);
+    {
+        uint16_t uart_id = 0;
+        app_uart_buffers_t buffers = {0};
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+        static uint8_t rx_buf[128];
+        static uint8_t tx_buf[256];
+#else
+        static uint8_t rx_buf[16];
+        static uint8_t tx_buf[256];
+#endif
+        buffers.rx_buf = rx_buf;
+        buffers.rx_buf_size = sizeof(rx_buf);
+        buffers.tx_buf = tx_buf;
+        buffers.tx_buf_size = sizeof(tx_buf);
+        err = app_uart_init(&self.uart_params, &buffers, _uart_event_handler, APP_IRQ_PRIORITY_LOW, &uart_id);
+    }
     if(!err){
         self.initialized = 1;
         return SUCCESS;
