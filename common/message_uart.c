@@ -8,7 +8,7 @@ static struct{
     bool initialized;
     MSG_Data_t * rx_buf;
     uint16_t rx_index;
-    app_uart_comm_params_t uart_params[2];
+    app_uart_comm_params_t uart_params;
 }self;
 static char * name = "UART";
 
@@ -129,7 +129,7 @@ _init(void){
         buffers.rx_buf_size = sizeof(rx_buf);
         buffers.tx_buf = tx_buf;
         buffers.tx_buf_size = sizeof(tx_buf);
-        err = app_uart_init(&self.uart_params[0], &buffers, _uart_event_handler, APP_IRQ_PRIORITY_LOW, &uart_id);
+        err = app_uart_init(&self.uart_params, &buffers, _uart_event_handler, APP_IRQ_PRIORITY_LOW, &uart_id);
     }
     if(!err){
         self.initialized = 1;
@@ -147,7 +147,7 @@ MSG_Base_t * MSG_Uart_Base(const app_uart_comm_params_t * params, const MSG_Cent
     self.base.type = UART;
     self.base.typestr = name;
     self.parent = parent;
-    self.uart_params[0] = *params;
+    self.uart_params = *params;
     return &self.base;
 
 }
