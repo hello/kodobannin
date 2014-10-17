@@ -123,7 +123,8 @@ static void _init_ble_stack(const MorpheusCommand* command)
             device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
             device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
             device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-            hble_params_init(device_name, device_id);
+            hble_params_init(device_name, device_id, command->firmwareVersion);
+            
             hble_services_init();
 
             ble_uuid_t service_uuid = {
