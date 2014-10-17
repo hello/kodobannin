@@ -13,8 +13,6 @@
 #endif
 
 
-#define HEARTBEAT_INTERVAL_SEC    (3600)
-
 static struct{
     MSG_Base_t base;
     bool initialized;
