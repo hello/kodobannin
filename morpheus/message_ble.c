@@ -604,7 +604,7 @@ static void _pair_morpheus(MorpheusCommand* command)
         MSG_Base_AcquireDataAtomic(command->accountId.arg);
     }
 
-    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(17);
+    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(13);  // Fark this is a mac address
     if(!device_id_page)
     {
         PRINTS("Not enough memory.\r\n");
