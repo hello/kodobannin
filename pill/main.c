@@ -40,37 +40,12 @@
 #include "util.h"
 #include "watchdog.h"
 
-void twi_master_disable();
+#include "battery.h"
 
-void _start()
+#include <twi_master.h>
+
+static void _init_rf_modules()
 {
-    //BOOL_OK(twi_master_init());
-    
-
-    {
-        enum {
-            SCHED_QUEUE_SIZE = 32,
-            SCHED_MAX_EVENT_DATA_SIZE = MAX(APP_TIMER_SCHED_EVT_SIZE, BLE_STACK_HANDLER_SCHED_EVT_SIZE),
-        };
-
-        APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
-    }
-
-    APP_TIMER_INIT(APP_TIMER_PRESCALER,
-                   APP_TIMER_MAX_TIMERS,
-                   APP_TIMER_OP_QUEUE_SIZE,
-                   true);
-
-    {
-        enum {
-            APP_GPIOTE_MAX_USERS = 8,
-        };
-
-        APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
-    }
-    
-    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
-    
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
 #ifdef ANT_ENABLE
@@ -112,10 +87,50 @@ void _start()
     hble_update_battery_level();
     hble_advertising_start();
 #endif
-
     PRINTS("INIT DONE.\r\n");
-	watchdog_init(10,0);
-	watchdog_task_start(5);
+}
+
+
+static void _load_watchdog()
+{
+    watchdog_init(10,0);
+    watchdog_task_start(5);
+}
+
+void _start()
+{
+    
+    battery_module_power_off();
+    
+    {
+        enum {
+            SCHED_QUEUE_SIZE = 32,
+            SCHED_MAX_EVENT_DATA_SIZE = MAX(APP_TIMER_SCHED_EVT_SIZE, BLE_STACK_HANDLER_SCHED_EVT_SIZE),
+        };
+
+        APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+    }
+
+    APP_TIMER_INIT(APP_TIMER_PRESCALER,
+                   APP_TIMER_MAX_TIMERS,
+                   APP_TIMER_OP_QUEUE_SIZE,
+                   true);
+
+    {
+        enum {
+            APP_GPIOTE_MAX_USERS = 8,
+        };
+
+        APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+    }
+    
+    SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
+    
+    _init_rf_modules();
+    _load_watchdog();
+    
+
+
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

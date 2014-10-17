@@ -12,7 +12,7 @@
 #include <nrf_gpio.h>
 #include <string.h>
 #include <app_gpiote.h>
-#include <imu.h>
+#include "imu.h"
 
 #include "message_imu.h"
 #include "mpu_6500_registers.h"
@@ -90,23 +90,6 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 		memcpy(message_data->buf, values, len);
 		parent->dispatch((MSG_Address_t){0, 0},(MSG_Address_t){ANT, 1}, message_data);
 		MSG_Base_ReleaseDataAtomic(message_data);
-	}
-
-
-	/* do not advertise if has at least one bond */
-	if(MSG_ANT_BondCount() == 0){
-		// let's save one variable in the stack.
-
-		message_data = MSG_Base_AllocateDataAtomic(sizeof(ANT_DiscoveryProfile_t));
-		if(message_data){
-			SET_DISCOVERY_PROFILE(message_data);
-			parent->dispatch((MSG_Address_t){0,0},(MSG_Address_t){ANT,1}, message_data);
-			MSG_Base_ReleaseDataAtomic(message_data);
-		}
-	}else{
-		uint8_t ret = MSG_ANT_BondCount();
-		PRINTS("bonds = ");
-		PRINT_HEX(&ret, 1);
 	}
 #endif
 }
@@ -195,13 +178,22 @@ static void _on_wom_timer(void* context)
     }
 }
 
-
-
 static void _on_pill_pairing_guesture_detected(void){
     //TODO: send pairing request packets via ANT
 #ifdef ANT_ENABLE
-	MSG_SEND_CMD(parent, ANT, MSG_ANTCommand_t, ANT_ADVERTISE, NULL, 0);
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
+    if(data_page){
+        memset(&data_page->buf, 0, sizeof(data_page->len));
+        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        ant_data->version = ANT_PROTOCOL_VER;
+        ant_data->type = ANT_PILL_SHAKING;
+        ant_data->UUID = GET_UUID_64();
+        parent->dispatch((MSG_Address_t){IMU,1}, (MSG_Address_t){ANT,1}, data_page);
+        MSG_Base_ReleaseDataAtomic(data_page);
+    }
 #endif
+
+    PRINTS("Shake detected\r\n");
 }
 
 
@@ -209,8 +201,13 @@ static MSG_Status _init(void){
 	//harder
 	//ShakeDetectReset(15000000000, 5);
 	//easier to trigger
-	ShakeDetectReset(1000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+#ifndef DEBUG_SERIAL
+	ShakeDetectReset(15000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+#else
+    ShakeDetectReset(100000000);
+#endif
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
+    //APP_OK(app_timer_create(&_flash_timer_1, APP_TIMER_MODE_SINGLE_SHOT, _blink_leds));
 
     return SUCCESS;
 }
@@ -243,11 +240,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 					}
 
 					mag = _aggregate_motion_data(values, sizeof(values));
-#ifdef ANT_ENABLE  // Not ANT_STACK_SUPPORT_REQD, because we still want to compile the Ant stack
+
 					ShakeDetect(mag);
-					//_dispatch_motion_data_via_ant(values, sizeof(values));
 					
-#endif
 
 #ifdef IMU_DYNAMIC_SAMPLING        
                     app_timer_cnt_get(&_last_active_time);
@@ -279,7 +274,8 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
         base.send = _send;
         base.type = IMU;
         base.typestr = name;
-
+        imu_power_on();
+        
 #ifdef IMU_DYNAMIC_SAMPLING
 		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
 			_settings.inactive_sampling_rate, _settings.accel_range, _settings.inactive_wom_threshold))

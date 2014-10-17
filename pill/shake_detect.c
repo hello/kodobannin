@@ -19,7 +19,6 @@ void ShakeDetectReset(uint32_t threshold){
     _reset();
 }
 
-
 void ShakeDetectDecWindow(void){
 
     //increase sliding window if started

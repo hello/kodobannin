@@ -8,8 +8,8 @@ all: b m
 TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
 APPS = bootloader morpheus pill $(TEST_APPS)
 
-S110_PLATFORMS = band_EVT3 pca10001 pca10000 pill_EVT1
-S310_PLATFORMS = pca10003 morpheus_EVT1 morpheus_EVT2
+S110_PLATFORMS = band_EVT3 pca10001 pca10000
+S310_PLATFORMS = pca10003 morpheus_EVT1 morpheus_EVT2 pill_EVT1 pill_EVT2
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 
 # product aliases
@@ -101,6 +101,8 @@ NRF_SRCS = \
 DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
 	$(wildcard drivers/battery.c) \
+	$(wildcard drivers/gpio_nor.c) \
+	$(wildcard drivers/pwm.c) \
 
 
 SRCS = $(HELLO_SRCS) $(NRF_SRCS) $(DRIVER_SRCS)

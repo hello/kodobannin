@@ -65,6 +65,14 @@ bool MSG_Base_HasMemoryLeak(void){
 
 
 
+MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
+    MSG_Data_t * dupe = MSG_Base_AllocateDataAtomic(orig->len);
+    if(dupe){
+        memcpy(dupe->buf, orig->buf, orig->len);
+        return dupe;
+    }
+    return NULL;
+}
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     MSG_Data_t * ret = NULL;
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
@@ -102,9 +110,10 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
 //TODO
 //this method is unsafe, switch to strncpy later
 MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str){
-    if(!str) return NULL;
-    int n = strlen(str);
-    n = MIN(MSG_BASE_DATA_BUFFER_SIZE, n);
+    if(!str){
+        return NULL;
+    }
+    uint32_t n = strlen(str)+1;
     MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(n);
     if(ret){
         memcpy(ret->buf, str, n);
@@ -122,8 +131,12 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
         PRINTS("+");
         return SUCCESS;
     }
+    PRINTS("AcquireData FAILED! Cannot malloc NULL\r\n");
+    //APP_ASSERT(0);
     return FAIL;
 }
+
+
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
     if(d){
         CRITICAL_REGION_ENTER();
@@ -140,6 +153,8 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
         };
         return SUCCESS;
     }else{
+        PRINTS("Release FAILED! Cannot free NULL\r\n");
+        //APP_ASSERT(0);
         return FAIL;
     }
 }
@@ -190,6 +205,7 @@ MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size){
         //minimum of one element is required
         ret = NULL;
     }else{
+        memset(mem, 0, size);
         ret = (MSG_Queue_t *)mem;
         ret->capacity = (size - sizeof(MSG_Queue_t)) / sizeof(MSG_Data_t *);
         ret->elements = 0;

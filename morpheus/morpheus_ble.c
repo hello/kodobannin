@@ -29,6 +29,7 @@
 #include "ant_devices.h"
 #include "ant_bondmgr.h"
 #include "ant_user.h"
+#include "cli_user.h"
 
 // To generate the protobuf download nanopb
 // Generate C code: ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
@@ -41,7 +42,6 @@ static MSG_Data_t* _protobuf_buffer;
 static uint8_t _end_seq;
 static uint8_t _seq_expected;
 static uint16_t _protobuf_len;
-static uint8_t _last_straw[10];
 
 static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
@@ -51,7 +51,7 @@ static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 void create_bond(const ANT_BondedDevice_t * id){
 	PRINTS("ID FOUND = ");
 	PRINT_HEX(&id->full_uid,2);
-	MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, &id->id, sizeof(id->id));
+	MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id->id, sizeof(id->id));
 }
 
 
@@ -73,24 +73,321 @@ static bool _is_valid_protobuf(const struct hlo_ble_packet* header_packet)
 	return false;
 }
 
+static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
+{
+    if(*arg == NULL)
+    {
+        return false;
+    }
+
+    MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
+    MSG_Base_AcquireDataAtomic(buffer_page);
+    PRINTS("Lock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
+    char* str = buffer_page->buf;
+    
+    bool ret = false;
+    if (pb_encode_tag_for_field(stream, field))
+    {
+        ret = pb_encode_string(stream, (uint8_t*)str, strlen(str));
+    }
+
+    MSG_Base_ReleaseDataAtomic(buffer_page);
+    PRINTS("Unlock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
+    return ret;
+}
+
+static bool _encode_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
+{
+    if(*arg == NULL)
+    {
+        return false;
+    }
+
+    MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
+    MSG_Base_AcquireDataAtomic(buffer_page);
+    PRINTS("Lock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
+    char* str = buffer_page->buf;
+    
+    bool ret = false;
+    if (pb_encode_tag(stream, PB_WT_STRING, field->tag))
+    {
+        ret = pb_encode_string(stream, (uint8_t*)str, buffer_page->len);
+    }
+
+    MSG_Base_ReleaseDataAtomic(buffer_page);
+    PRINTS("Unlock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
+    return ret;
+}
+
+
 static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
+    PRINTS("string length: ");
+    PRINT_HEX(&stream->bytes_left, sizeof(stream->bytes_left));
+    PRINTS("\r\n");
+
     /* We could read block-by-block to avoid the large buffer... */
-    if (stream->bytes_left > PROTOBUF_MAX_LEN - 1)
+    if (stream->bytes_left > PROTOBUF_MAX_LEN - 1 || stream->bytes_left == 0)
     {
         return false;
     }
    	
-   	char str[PROTOBUF_MAX_LEN] = {0};
-    if (!pb_read(stream, str, stream->bytes_left))
+    MSG_Data_t* string_page = MSG_Base_AllocateDataAtomic(stream->bytes_left + 1);
+    if(!string_page){
+        PRINTS("No memory when decoding string field\r\n");
+        return false;
+    }
+
+    memset(string_page->buf, 0, string_page->len);
+
+    if (!pb_read(stream, string_page->buf, stream->bytes_left))
+    {
+        MSG_Base_ReleaseDataAtomic(string_page);
+        return false;
+    }
+	
+    PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
+	*arg = string_page;
+
+    return true;
+}
+
+static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
+{
+    /* We could read block-by-block to avoid the large buffer... */
+    if (stream->bytes_left > PROTOBUF_MAX_LEN - 1 || stream->bytes_left == 0)
+    {
+        return false;
+    }
+    
+    MSG_Data_t* buffer_page = MSG_Base_AllocateDataAtomic(stream->bytes_left);
+    PRINTS("malloc in _decode_bytes_field\r\n");// nrf_delay_ms(1);
+
+    if(!buffer_page)
     {
         return false;
     }
 
-	MSG_Data_t* string_page = MSG_Base_AllocateStringAtomic(str);
-	*arg = string_page;
+    memset(buffer_page->buf, 0, stream->bytes_left);
+    if (!pb_read(stream, buffer_page->buf, stream->bytes_left))
+    {
+        MSG_Base_ReleaseDataAtomic(buffer_page);
+        PRINTS("free in _decode_bytes_field\r\n");// nrf_delay_ms(1);
+        return false;
+    }
+
+    *arg = buffer_page;
 
     return true;
+}
+
+void morpheus_ble_assign_decode_funcs(MorpheusCommand* command)
+{
+    if(NULL == command->accountId.funcs.decode)
+    {
+        command->accountId.funcs.decode = _decode_string_field;
+        command->accountId.arg = NULL;
+    }
+
+    if(NULL == command->deviceId.funcs.decode)
+    {
+        command->deviceId.funcs.decode = _decode_string_field;
+        command->deviceId.arg = NULL;
+    }
+
+    if(NULL == command->wifiName.funcs.decode)
+    {
+        command->wifiName.funcs.decode = _decode_string_field;
+        command->wifiName.arg = NULL;
+    }
+
+    if(NULL == command->wifiSSID.funcs.decode)
+    {
+        command->wifiSSID.funcs.decode = _decode_string_field;
+        command->wifiSSID.arg = NULL;
+    }
+
+    if(NULL == command->wifiPassword.funcs.decode)
+    {
+        command->wifiPassword.funcs.decode = _decode_string_field;
+        command->wifiPassword.arg = NULL;
+    }
+
+    if(NULL == command->motionDataEntrypted.funcs.decode)
+    {
+        command->motionDataEntrypted.funcs.decode = _decode_bytes_field;
+        command->motionDataEntrypted.arg = NULL;
+    }
+}
+
+void morpheus_ble_remove_decode_funcs(MorpheusCommand* command)
+{
+    if(command->accountId.funcs.decode)
+    {
+        command->accountId.funcs.decode = NULL;
+    }
+
+    if(command->deviceId.funcs.decode)
+    {
+        command->deviceId.funcs.decode = NULL;
+    }
+
+    if(command->wifiName.funcs.decode)
+    {
+        command->wifiName.funcs.decode = NULL;
+    }
+
+    if(command->wifiSSID.funcs.decode)
+    {
+        command->wifiSSID.funcs.decode = NULL;
+    }
+
+    if(command->wifiPassword.funcs.decode)
+    {
+        command->wifiPassword.funcs.decode = NULL;
+    }
+
+    if(command->motionDataEntrypted.funcs.decode)
+    {
+        command->motionDataEntrypted.funcs.decode = NULL;
+    }
+}
+
+void morpheus_ble_assign_encode_funcs(MorpheusCommand* command)
+{
+    if(command->accountId.arg != NULL && command->accountId.funcs.encode == NULL)
+    {
+        command->accountId.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->deviceId.arg != NULL && command->deviceId.funcs.encode == NULL)
+    {
+        command->deviceId.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->wifiName.arg != NULL && command->wifiName.funcs.encode == NULL)
+    {
+        command->wifiName.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->wifiSSID.arg != NULL && command->wifiSSID.funcs.encode == NULL)
+    {
+        command->wifiSSID.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->wifiPassword.arg != NULL && command->wifiPassword.funcs.encode == NULL)
+    {
+        command->wifiPassword.funcs.encode = _encode_string_fields;
+    }
+
+    if(command->motionDataEntrypted.arg != NULL && command->motionDataEntrypted.funcs.encode == NULL)
+    {
+        command->motionDataEntrypted.funcs.encode = _encode_bytes_fields;
+    }
+}
+
+bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, size_t len)
+{
+    if(!command)
+    {
+        PRINTS("Invalid buffer\r\n");
+        return false;
+    }
+
+    memset(command, 0, sizeof(MorpheusCommand));
+
+    
+    morpheus_ble_assign_decode_funcs(command);
+
+    pb_istream_t stream = pb_istream_from_buffer(raw, len);
+    bool status = pb_decode(&stream, MorpheusCommand_fields, command);
+
+    morpheus_ble_remove_decode_funcs(command);
+    if (!status)
+    {
+        PRINTS("Decoding protobuf failed, error: ");
+        PRINTS(PB_GET_ERROR(&stream));
+        PRINTS("\r\n");
+    }
+
+    return status;
+}
+
+
+bool morpheus_ble_encode_protobuf(MorpheusCommand* command, char* raw, size_t* len)
+{
+    if(!command)
+    {
+        PRINTS("Invalid buffer\r\n");
+        return false;
+    }
+
+    morpheus_ble_assign_encode_funcs(command);
+
+    pb_ostream_t out_stream = {0};
+    if(raw)
+    {
+        out_stream = pb_ostream_from_buffer(raw, *len);
+    }
+
+    bool status = pb_encode(&out_stream, MorpheusCommand_fields, command);
+
+    if(status)
+    {
+        *len = out_stream.bytes_written;
+    }else{
+        PRINTS("encode protobuf failed: ");
+        PRINTS(PB_GET_ERROR(&out_stream));
+        PRINTS("\r\n");
+    }
+
+    return status;
+}
+
+
+void morpheus_ble_free_protobuf(MorpheusCommand* command)
+{
+    if(command->accountId.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->accountId.arg);
+        command->accountId.arg = NULL;
+        PRINTS("MorpheusCommand->accountId released\r\n");
+    }
+
+    if(command->deviceId.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->deviceId.arg);
+        command->deviceId.arg = NULL;
+        PRINTS("MorpheusCommand->deviceId released\r\n");// nrf_delay_ms(2);
+    }
+
+    if(command->wifiName.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->wifiName.arg);
+        command->wifiName.arg = NULL;
+        PRINTS("MorpheusCommand->wifiName released\r\n");
+    }
+
+    if(command->wifiSSID.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->wifiSSID.arg);
+        command->wifiSSID.arg = NULL;
+        PRINTS("MorpheusCommand->wifiSSID released\r\n");
+    }
+
+    if(command->wifiPassword.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->wifiPassword.arg);
+        command->wifiPassword.arg = NULL;
+        PRINTS("MorpheusCommand->wifiPassword released\r\n");
+    }
+
+    if(command->motionDataEntrypted.arg)
+    {
+        MSG_Base_ReleaseDataAtomic(command->motionDataEntrypted.arg);
+        command->motionDataEntrypted.arg = NULL;
+        PRINTS("MorpheusCommand->motionDataEntrypted released\r\n");
+    }
 }
 
 
@@ -109,40 +406,20 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
 	PRINT_HEX(data_page->buf, data_page->len);
 	PRINTS("\r\n");
 */
+    /*
+    PRINTS("data_page addr in _on_packet_arrival:");
+    PRINT_HEX(&data_page, sizeof(data_page));
+    PRINTS("\r\n");
+    */
 
-	MorpheusCommand command;
-	memset(&command, 0, sizeof(command));
-
-	
-	command.accountId.funcs.decode = _decode_string_field;
-	command.accountId.arg = NULL;
-
-	command.deviceId.funcs.decode = _decode_string_field;
-	command.deviceId.arg = NULL;
-
-	pb_istream_t stream = pb_istream_from_buffer(data_page->buf, data_page->len);
-    bool status = pb_decode(&stream, MorpheusCommand_fields, &command);
-	
-
-    if (!status)
-    {
-        PRINTS("Decoding protobuf failed, error: ");
-        PRINTS(PB_GET_ERROR(&stream));
-        PRINTS("\r\n");
-    }else{
-
-		message_ble_on_protobuf_command(data_page, &command);
-
-		if(command.accountId.arg)
-		{
-			MSG_Base_ReleaseDataAtomic(command.accountId.arg);
-		}
-
-		if(command.deviceId.arg)
-		{
-			MSG_Base_ReleaseDataAtomic(command.deviceId.arg);
-		}
-	}
+	MorpheusCommand command = {0};
+    if(morpheus_ble_decode_protobuf(&command, data_page->buf, data_page->len)){
+        // Becareful, we should either redefine another data_page here
+        // or use *(MSG_Data_t**)event_data straight to make sure
+        // the data_page pointer will not get optimized out.
+        message_ble_on_protobuf_command(data_page, &command);
+        morpheus_ble_free_protobuf(&command);
+    }
 
 	// Don't forget to release the data_page.
 	MSG_Base_ReleaseDataAtomic(data_page);
@@ -254,7 +531,7 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 }
 
 
-void morpheus_ble_on_notify_completed(void* data, void* data_page)
+void morpheus_ble_on_notify_completed(const void* data, void* data_page)
 {
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 }
@@ -265,25 +542,33 @@ void morpheus_ble_on_notify_failed(void* data_page)
 }
 
 bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
-	MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
-	memset(heap_page->buf, 0, heap_page->len);
-
-	pb_ostream_t stream = pb_ostream_from_buffer(heap_page->buf, heap_page->len);
-	bool status = pb_encode(&stream, MorpheusCommand_fields, morpheus_command);
-    
-    if(status)
+    size_t protobuf_len = 0;
+    if(!morpheus_ble_encode_protobuf(morpheus_command, NULL, &protobuf_len))
     {
-    	size_t protobuf_len = stream.bytes_written;
-		hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
-			&(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, heap_page});
-	}else{
-		PRINTS("encode protobuf failed: ");
-		PRINTS(PB_GET_ERROR(&stream));
-		PRINTS("\r\n");
-		MSG_Base_ReleaseDataAtomic(heap_page);
-	}
+        return false;
+    }
 
-	return status;
+    if(protobuf_len > PROTOBUF_MAX_LEN)
+    {
+        PRINTS("Protobuf too large.\r\n");
+        return false;
+    }
+
+    MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(protobuf_len);
+    if(!heap_page)
+    {
+        PRINTS("Not enough memory!\r\n");
+        return false;
+    }
+    memset(heap_page->buf, 0, heap_page->len);
+    if(morpheus_ble_encode_protobuf(morpheus_command, heap_page->buf, &protobuf_len))
+    {
+        hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
+            &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, heap_page});
+        return true;
+    }
+
+    return false;
 }
 
 bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
@@ -296,24 +581,22 @@ bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
     morpheus_command.has_error = true;
     morpheus_command.error = error_type;
 
-    // We shall NOT use morpheus_ble_reply_protobuf to reply error
-    // because when out of memory happens, the heap will not be available
-    memset(_last_straw, 0, sizeof(_last_straw));
-
-    pb_ostream_t stream = pb_ostream_from_buffer(_last_straw, sizeof(_last_straw));
-	bool status = pb_encode(&stream, MorpheusCommand_fields, &morpheus_command);
-    
-    if(status)
+    size_t len = 0;
+    if(!morpheus_ble_encode_protobuf(&morpheus_command, NULL, &len))
     {
-    	size_t protobuf_len = stream.bytes_written;
-		hlo_ble_notify(0xB00B, _last_straw, protobuf_len, NULL);
-	}else{
-		PRINTS("encode protobuf failed: ");
-		PRINTS(PB_GET_ERROR(&stream));
-		PRINTS("\r\n");
-	}
+        return false;
+    }
 
-	return status;
+    char buffer[len];
+    memset(buffer, 0, sizeof(buffer));
+    if(morpheus_ble_encode_protobuf(&morpheus_command, buffer, &len))
+    {
+        hlo_ble_notify(0xB00B, buffer, len, NULL);
+    }else{
+        return false;
+    }
+
+	return true;
 }
 
 void morpheus_ble_transmission_layer_init()
@@ -333,7 +616,7 @@ void morpheus_ble_transmission_layer_reset()
 	_seq_expected = 0;
 	_end_seq = 0;
 	_protobuf_len = 0;
-	if(!_protobuf_buffer)
+	if(_protobuf_buffer)
 	{
 		MSG_Base_ReleaseDataAtomic(_protobuf_buffer);
 	}
@@ -347,13 +630,13 @@ void morpheus_load_modules(void){
 
 #ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
-			SERIAL_RX_PIN,
-			SERIAL_TX_PIN,
-			SERIAL_RTS_PIN,
-			SERIAL_CTS_PIN,
-    		APP_UART_FLOW_CONTROL_ENABLED,
-			0,
-			UART_BAUDRATE_BAUDRATE_Baud38400
+            SERIAL_RX_PIN,
+            SERIAL_TX_PIN,
+            SERIAL_RTS_PIN,
+            SERIAL_CTS_PIN,
+            APP_UART_FLOW_CONTROL_DISABLED,
+            0,
+            UART_BAUDRATE_BAUDRATE_Baud38400
 		};
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
@@ -376,23 +659,26 @@ void morpheus_load_modules(void){
 		};
 		central->loadmod(MSG_SSPI_Base(&spi_params,central));
 #endif
+
+#ifdef BLE_ENABLE
 		central->loadmod(MSG_BLE_Base(central));
+#endif 
+
+        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #ifdef ANT_ENABLE
-		central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
-
-		//MSG_Base_BufferTest();
-		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);
-		{
-			uint8_t role = ANT_DISCOVERY_CENTRAL;
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,1);
-		}
-		{
-			ANT_BondMgrInit();
-			ANT_BondMgrForEach(create_bond);
-		}
+        central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
+        {
+            hlo_ant_role role = HLO_ANT_ROLE_CENTRAL;
+            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
+        }
+        {
+            ANT_BondMgrInit();
+            ANT_BondMgrForEach(create_bond);
+        }
 #endif
-
+        MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);
     }else{
         PRINTS("FAIL");
     }
+
 }

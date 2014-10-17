@@ -9,7 +9,7 @@ TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
 APPS = bootloader morpheus pill $(TEST_APPS)
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
-S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1 morpheus_EVT2
+S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1 morpheus_EVT2 pill_EVT2 morpheus_EVT3
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 UNAME := $(shell uname)
 
@@ -73,6 +73,7 @@ BUILD_DIR = build
 HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard protobuf/*.c) \
+	$(wildcard ant/*.c) \
 
 
 NRF_SRCS = \
@@ -101,6 +102,11 @@ NRF_SRCS = \
 DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
 	$(wildcard drivers/battery.c) \
+	$(wildcard drivers/gpio_nor.c) \
+	$(wildcard drivers/pwm.c) \
+	#$(wildcard drivers/twi_hw_master_softdevice.c) \
+	#$(wildcard drivers/twi_hw_master.c) \
+	#$(wildcard drivers/twi_sw_master.c) \
 
 #ifeq ($(USE_SDK_BONDMNGR), 1)
 #	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
@@ -119,6 +125,7 @@ INCS =  ./ \
 	./protobuf \
 	./common \
 	./drivers \
+	./ant \
 	
 
 
@@ -147,11 +154,18 @@ $(SOFTDEVICE_UICR):: $(SOFTDEVICE_SRC)
 	openssl sha1 -binary $< > $@
 	stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
 
-%.crc: %.bin $(CURDIR)/tools/crc16
-	$(CURDIR)/tools/crc16 $< | xxd -r -p | dd conv=swab 2> /dev/null > $@
-	echo ff ff ff ff | xxd -r -p >> $@
-	stat -f "%Xz" $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
-	echo 00 00 | xxd -r -p >> $@
+#this only works with unmodified nordic bootloader settings
+#layouts:
+#2 bytes bank0
+#2 bytes crcbank0
+#4 bytes bank1(contains padding)
+#4 bytes bank0_size
+
+%.crc: %.bin tools/crc16
+	echo 01 00 | xxd -r -p >> $@
+	$(CURDIR)/tools/crc16 $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
+	echo ff ff ff ff| xxd -r -p >> $@
+	stat -f "%.8Xz" $< | sed -E 's/(..)(..)(..)(..)/\4\3\2\1/' | xxd -r -p | dd 2> /dev/null >> $@
 
 
 # gdb support
@@ -175,7 +189,7 @@ ifeq ($(DEBUG), 1)
 OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
-OPTFLAGS=-Os -g -DuECC_ASM=2
+OPTFLAGS=-O0 -DuECC_ASM=2
 endif
 
 NRFREV=NRF51422_QFAA_ED
@@ -212,6 +226,7 @@ define rule-product
 .PHONY: $1+$2
 $1+$2: $(BUILD_DIR)/$1+$2.bin
 $1+$2: $(BUILD_DIR)/$1+$2.hex
+$1+$2: tools/crc16 $(BUILD_DIR)/$1+$2.crc
 
 $(BUILD_DIR)/$1+$2.bin: $(BUILD_DIR)/$1+$2.elf
 	$(OBJCOPY) -O binary $$< $$@

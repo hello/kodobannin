@@ -93,6 +93,7 @@ typedef struct{
 
 MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(size_t size);
 MSG_Data_t * INCREF MSG_Base_AllocateStringAtomic(const char * str);
+MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig);
 MSG_Status MSG_Base_BufferTest(void);
 uint32_t MSG_Base_FreeCount(void);
 uint32_t MSG_Base_BigPoolFreeCount(void);

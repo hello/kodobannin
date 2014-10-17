@@ -1,6 +1,7 @@
 #include "ant_user.h"
 #include "message_uart.h"
 #include "message_ble.h"
+#include "morpheus_ble.h"
 #include "util.h"
 #include "ant_bondmgr.h"
 #include "app_timer.h"
@@ -15,163 +16,170 @@ static struct{
     volatile uint8_t pair_enable;
     volatile uint64_t dfu_pill_id;
     app_timer_id_t commit_timer;
+    ANT_BondedDevice_t staging_bond;
 }self;
 
 static void _commit_pairing(void * ctx){
     PRINTS("\r\n======\r\nCOMMIT PAIRING\r\n======\r\n");
-}
-
-static bool _encode_pill_command_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
-{
-    char* str = NULL;
-
-    switch(field->tag)
-    {
-        case MorpheusCommand_deviceId_tag:
-        {
-            // This would be the pill id in uint64_t
-            uint64_t* device_id_ptr = *arg;
-            if(!device_id_ptr)
-            {
-                return false;
-            }
-
-            char buffer[17];
-            str = buffer;
-
-            memset(buffer, 0, 17);
-            size_t buffer_len = sizeof(buffer);
-
-            if(!hble_uint64_to_hex_device_id(*device_id_ptr, buffer, &buffer_len))
-            {
-                PRINTS("Get pill id failed.\r\n");
-            }
-        }
-        break;
-    }
-    
-    
-    if (!pb_encode_tag_for_field(stream, field))
-        return false;
-
-    return pb_encode_string(stream, (uint8_t*)str, strlen(str));
+    ANT_BondMgrCommit();
 }
 
 
-static void _on_message(const ANT_ChannelID_t * id, MSG_Address_t src, MSG_Data_t * msg){
-    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
+static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
+    if(!msg)
     {
-        PRINTS("Acquire data error.\r\n");
+        PRINTS("Data error.\r\n");
         return;
     }
 
-
-    self.parent->dispatch(src, (MSG_Address_t){UART,1}, msg);
-    if(src.module == TIME && src.submodule == 1){
-        // TODO, this shit needs to be tested on CC3200 side.
-        MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
-
-        MorpheusCommand morpheus_command;
-        memset(&morpheus_command, 0, sizeof(MorpheusCommand));
-
-        morpheus_command.version = PROTOBUF_VERSION;
-        morpheus_command.deviceId.funcs.encode = _encode_pill_command_string_fields;
-        morpheus_command.deviceId.arg = &pill_data->UUID;
-
-        switch(pill_data->type){
-            case ANT_PILL_DATA:
-            {
-                morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
-                morpheus_command.has_motionData = true;
-                morpheus_command.motionData = pill_data->payload.data[TF_CONDENSED_BUFFER_SIZE - 1];
-            }
-            break;
-            case ANT_PILL_HEARTBEAT:
-            {
-                morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
-                morpheus_command.has_batteryLevel = true;
-                morpheus_command.batteryLevel = pill_data->payload.heartbeat_data.battery_level;
-
-                morpheus_command.has_uptime = true;
-                morpheus_command.uptime = pill_data->payload.heartbeat_data.uptime_sec;
-            }
-            break;
-            default:
-            break;
-        }
-
-        MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
-
-        if(!proto_page){
-            PRINTS("No memory for convert protobuf.\r\n");
-        }else{
-
-            pb_ostream_t out_stream = pb_ostream_from_buffer(proto_page->buf, proto_page->len);
-            bool status = pb_encode(&out_stream, MorpheusCommand_fields, &morpheus_command);
-            if(!status)
-            {
-                PRINTS("Encoding protobuf failed, error: ");
-                PRINTS(PB_GET_ERROR(&stream));
-                PRINTS("\r\n");
-                
-            }else{
-                self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
-            }
-
-            MSG_Base_ReleaseDataAtomic(proto_page);
-        }
+    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
+    {
+        PRINTS("Internal error.\r\n");
+        return;
     }
 
+    // TODO, this shit needs to be tested on CC3200 side.
+    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+
+
+    MorpheusCommand morpheus_command;
+    memset(&morpheus_command, 0, sizeof(MorpheusCommand));
+
+    morpheus_command.version = PROTOBUF_VERSION;
+
+    uint64_t device_id = pill_data->UUID;
+    char buffer[17];  // 17 = 8 * 2 + 1
+    memset(buffer, 0, 17);
+    size_t buffer_len = sizeof(buffer);
+
+    if(!hble_uint64_to_hex_device_id(device_id, buffer, &buffer_len))
+    {
+        PRINTS("Get pill id failed.\r\n");
+    }else{
+        MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(buffer);
+        if(!device_id_page)
+        {
+            PRINTS("No memory.\r\n");
+        }else{
+            morpheus_command.deviceId.arg = device_id_page;
+
+            //TODO it may be a good idea to check len from the msg
+            switch(pill_data->type){
+                case ANT_PILL_DATA:
+                    {
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
+                        morpheus_command.has_motionData = true;
+                        morpheus_command.motionData = pill_data->payload[TF_CONDENSED_BUFFER_SIZE - 1];
+                        PRINTS("ANT Pill Data Received.\r\n");
+                    }
+                    break;
+                case ANT_PILL_DATA_ENCRYPTED:
+                    {
+                        // TODO: Jackson please test this
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
+                        MSG_Data_t* encrypted_data = MSG_Base_AllocateDataAtomic(pill_data->payload_len);
+                        memset(encrypted_data->buf, 0, encrypted_data->len);
+                        memcpy(encrypted_data->buf, pill_data->payload, pill_data->payload_len);
+
+                        morpheus_command.motionDataEntrypted.arg = encrypted_data;
+                        PRINTS("ANT Encrypted Pill Data Received.\r\n");
+                    }
+                    break;
+                case ANT_PILL_HEARTBEAT:
+                    {
+                        pill_heartbeat_t heartbeat = {0};
+                        // http://dbp-consulting.com/StrictAliasing.pdf
+                        memcpy(&heartbeat, pill_data->payload, sizeof(pill_heartbeat_t));
+
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
+                        morpheus_command.has_batteryLevel = true;
+                        morpheus_command.batteryLevel = heartbeat.battery_level;
+
+                        morpheus_command.has_uptime = true;
+                        morpheus_command.uptime = heartbeat.uptime_sec;
+
+                        morpheus_command.has_firmwareVersion = true;
+                        morpheus_command.firmwareVersion = heartbeat.firmware_version;
+                        PRINTS("ANT Pill Heartbeat Received.\r\n");
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+
+            size_t proto_len = 0;
+            if(morpheus_ble_encode_protobuf(&morpheus_command, NULL, &proto_len))
+            {
+                MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
+                if(proto_page)
+                {
+                    memset(proto_page->buf, 0, proto_page->len);
+                    if(morpheus_ble_encode_protobuf(&morpheus_command, proto_page->buf, &proto_len))
+                    {
+                        self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
+                        self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
+                    }
+                    MSG_Base_ReleaseDataAtomic(proto_page);
+                }else{
+                    PRINTS("No memory\r\n");
+                }
+            }
+
+            MSG_Base_ReleaseDataAtomic(device_id_page);
+        }
+
+    }
+    morpheus_ble_free_protobuf(&morpheus_command);
     MSG_Base_ReleaseDataAtomic(msg);
 }
 
-static void _on_unknown_device(const ANT_ChannelID_t * id){
-    if(self.pair_enable){
-        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_CREATE_SESSION, id, sizeof(*id));
+static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
+    PRINTS("Unknown Device ID:");
+    PRINT_HEX(&_id->device_number, 2);
+    PRINTS("\r\n");
+    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+    if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
+        self.staging_bond = (ANT_BondedDevice_t){
+            .id = *_id,
+            .full_uid = pill_data->UUID,
+        };
+        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, _id, sizeof(*_id));
     }
 }
 
-static void _on_control_message(const ANT_ChannelID_t * id, MSG_Address_t src, uint8_t control_type, const uint8_t * control_payload){
-    
-}
-static void _on_status_update(const ANT_ChannelID_t * id, ANT_Status_t  status){
+static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
     switch(status){
         default:
             break;
         case ANT_STATUS_DISCONNECTED:
+            {
+                ANT_BondedDevice_t * device = ANT_BondMgrQuery(id);
+                if(device){
+                    PRINTS("DEVICE REMOVED\r\n");
+                    ANT_BondMgrRemove(device);
+                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
+                }
+            }
             break;
         case ANT_STATUS_CONNECTED:
-            PRINTS("DEVICE CONNECTED\r\n");
-
-            if(self.pair_enable)
-            {
+            if(id->device_number == self.staging_bond.id.device_number){
+                PRINTS("DEVICE CONNECTED\r\n");
+                PRINTS("Staging match");
                 MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
                 if(obj){
                     MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
-                    cmd->param.pill_uid = 0x12345678;  // TODO: change to real production code?
+                    cmd->param.pill_uid = self.staging_bond.full_uid;
                     cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                    self.parent->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){BLE, 0}, obj);
+                    self.parent->dispatch( (MSG_Address_t){ANT,0}, (MSG_Address_t){BLE, 0}, obj);
                     MSG_Base_ReleaseDataAtomic(obj);
                 }
                 {
-                    ANT_BondedDevice_t dev = {
-                        .id = *id,
-                        .full_uid = id->device_number,
-                    };
-                    ANT_BondMgrAdd(&dev);
+                    ANT_BondMgrAdd(&self.staging_bond);
+                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
                 }
-
-                // Send a message back to pill
-                // Notify it is paired and tell it flash the LED.
-
-                // Timer?
-                app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
-            }
-
-            if(self.dfu_pill_id)
-            {
-                // Send DFU message to pill.
-                // tell the pill to erase it's setting flash and enter DFU mode.
+            }else{
+                PRINTS("Staging Mismatch");
             }
             break;
     }
@@ -181,7 +189,6 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     static MSG_ANTHandler_t handler = {
         .on_message = _on_message,
         .on_unknown_device = _on_unknown_device,
-        .on_control_message = _on_control_message,
         .on_status_update = _on_status_update,
     };
     self.parent = central;

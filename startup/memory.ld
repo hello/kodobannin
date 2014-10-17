@@ -1,15 +1,20 @@
-/* Linker script to configure memory regions. */
+/* Linker script to configure memory regions.
+ *  CODE PAGE SIZE in FICR for nrf514 is 0x400
+ *  CODE SIZE is 0x100
+ *  FOr APP and APP Data, make sure they are aligned with multiple of CODE PAGE SIZE or N * 0x400
+ */
 MEMORY
 {
-  SOFTDEVICE (rx) : ORIGIN = 0x0, LENGTH = 0x20000 /* ~128K */
-  APP (rx) : ORIGIN = 0x20000, LENGTH = 0x12000 /* ~73K */
+  SOFTDEVICE (rx) : ORIGIN = 0x0, LENGTH = 0x20000 /* 0x80 pages */
+  APP (rx) : ORIGIN = 0x20000, LENGTH = 0x14000 /* 0x50 Pages */
   /* Persistent Storage */
-  APP_DATA (rw) : ORIGIN = 0x32000, LENGTH = 0x4000 /* 16K */
+  APP_DATA (rw) : ORIGIN = 0x34000, LENGTH = 0x2000 /* 0x8 pages */
   /* DFU_APP_DATA_RESERVED _can_ occupy space here if we wish; this
      may be a better idea than defining our own USER_DATA section,
      since it's SDK-supported. */
-  BOOTLOADER (rx) : ORIGIN = 0x36000, LENGTH = 0x8C00 /* ~35K */
-  USER_DATA (rw) : ORIGIN = 0x3EC00, LENGTH = 0x1400
+  BOOTLOADER (rx) : ORIGIN = 0x36000, LENGTH = 0x8C00 /*  0x23 pages */
+  USER_DATA (rw) : ORIGIN = 0x3EC00, LENGTH = 0x1400 /* 0x5 pages */
+  /* Make sure the total of the above are  of the TOTAL 100 pages */
   SOFTDEVICE_RAM (rwx): ORIGIN = 0x20000000, LENGTH = 0x2400
   RAM (rwx) : ORIGIN = 0x20002400, LENGTH = 0x1C00
 }

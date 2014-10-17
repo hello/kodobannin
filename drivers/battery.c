@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "platform.h"
 #include "battery_config.h"
 #include "nordic_common.h"
 #include "nrf.h"
@@ -33,6 +34,7 @@
 #include "nrf51_bitfields.h"
 #include "softdevice_handler.h"
 #include "battery.h"
+#include "gpio_nor.h"
 
 
 
@@ -41,12 +43,31 @@
  * @param[in]  ADC_VALUE   ADC result.
  * @retval     Result converted to millivolts.
  */
-#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)\
-        ((((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS) / 255) * ADC_PRE_SCALING_COMPENSATION)
+#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)   ((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS / 255 * ADC_PRE_SCALING_COMPENSATION)
 //#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)     ((((ADC_REF_VOLTAGE_IN_MILLIVOLTS)))
 
 
 static batter_measure_callback_t _battery_measure_callback;
+
+
+
+
+inline void battery_module_power_off()
+{
+    if(ADC_ENABLE_ENABLE_Disabled != NRF_ADC->ENABLE)
+    {
+        NRF_ADC->ENABLE = ADC_ENABLE_ENABLE_Disabled;
+    }
+#ifdef PLATFORM_HAS_VERSION
+    
+    gpio_cfg_s0s1_output_connect(VBAT_VER_EN, 1);
+    gpio_cfg_d0s1_output_disconnect(VBAT_VER_EN);  // on: 0
+
+    gpio_input_disconnect(VMCU_SENSE);
+    gpio_input_disconnect(VBAT_SENSE);
+#endif
+}
+
 
 static inline uint8_t _battery_level_in_percent(const uint16_t mvolts)
 {
@@ -89,38 +110,45 @@ void ADC_IRQHandler(void)
     if (NRF_ADC->EVENTS_END != 0)
     {
         NRF_ADC->EVENTS_END     = 0;
-        uint8_t adc_result      = NRF_ADC->RESULT;
+        adc_t adc_result      = NRF_ADC->RESULT;
         NRF_ADC->TASKS_STOP     = 1;
 
         uint32_t battery_milvolt = adc_result;
         uint32_t batt_lvl_in_micro_volts = ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
         uint8_t percentage_batt_lvl     = _battery_level_in_percent(batt_lvl_in_micro_volts / 1000);
-
-        /*
-        PRINTS("adc_result:");
-        PRINT_HEX(&adc_result, sizeof(adc_result));
-        PRINTS("\r\n");
-
-        PRINTS("batt_lvl_in_milli_volts:");
-        PRINT_HEX(&batt_lvl_in_milli_volts, sizeof(batt_lvl_in_milli_volts));
-        PRINTS("\r\n");
-
-        PRINTS("percentage_batt_lvl:");
-        PRINT_HEX(&percentage_batt_lvl, sizeof(percentage_batt_lvl));
-        PRINTS("\r\n");
-        */
+        
 
         if(_battery_measure_callback)  // I assume there is no race condition here.
         {
-            _battery_measure_callback(batt_lvl_in_micro_volts, percentage_batt_lvl);
+            _battery_measure_callback(adc_result, batt_lvl_in_micro_volts, percentage_batt_lvl);
         }
     }
+
+    /*
+    NRF_ADC->CONFIG = (ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos) | 
+        (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos) | 
+        (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos) | 
+        (ADC_CONFIG_PSEL_Disabled << ADC_CONFIG_PSEL_Pos) | 
+        (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
+        */
+    battery_module_power_off();
+    
     
 }
 
-
-void start_battery_measurement(batter_measure_callback_t callback)
+void battery_module_power_on()
 {
+#ifdef PLATFORM_HAS_VERSION
+    gpio_input_disconnect(VMCU_SENSE);
+    gpio_cfg_s0s1_output_connect(VBAT_VER_EN, 0);
+    nrf_gpio_cfg_input(VBAT_SENSE, NRF_GPIO_PIN_NOPULL);
+#endif
+}
+
+
+uint32_t battery_measurement_begin(batter_measure_callback_t callback)
+{
+
     if(callback)
     {
         _battery_measure_callback = callback;
@@ -128,13 +156,14 @@ void start_battery_measurement(batter_measure_callback_t callback)
 
     uint32_t err_code;
 
+
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
-    NRF_ADC->CONFIG     = (ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos)     |
-                          (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos)  |
-                          (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos)  |
-                          (ADC_CONFIG_PSEL_AnalogInput6 << ADC_CONFIG_PSEL_Pos)    |
-                          (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
+    NRF_ADC->CONFIG     = (ADC_CONFIG_RES_10bit << ADC_CONFIG_RES_Pos)     |
+                        (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos)  |
+                        (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos)  |
+                        (ADC_CONFIG_PSEL_AnalogInput7 << ADC_CONFIG_PSEL_Pos)    |
+                        (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
   // NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
     NRF_ADC->EVENTS_END = 0;
     NRF_ADC->ENABLE     = ADC_ENABLE_ENABLE_Enabled;
@@ -152,6 +181,8 @@ void start_battery_measurement(batter_measure_callback_t callback)
     
     NRF_ADC->EVENTS_END  = 0;    // Stop any running conversions.
     NRF_ADC->TASKS_START = 1;
+
+    return err_code;
 }
 
 /**

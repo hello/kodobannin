@@ -53,12 +53,18 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 									NVIC_SystemReset();\
 								}\
 							}while(0)
+#define AES128_BLOCK_SIZE 16
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
 
 /// Sums all the bytes from the start pointer for len bytes modulo 256, and returns 256 minus the result.
 uint8_t memsum(void *start, unsigned len);
+
+//nounce is 64bits
+uint32_t aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce);
+uint32_t aes128_ctr_decrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce);
+const uint8_t * get_aes128_key(void);
 
 union int16_bits {
 	int16_t value;
