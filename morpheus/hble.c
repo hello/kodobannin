@@ -495,7 +495,7 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
     return true;
 }
 
-static char upper_case_hex_digit(char hex_ascii){
+static char _upper_case_hex_digit(char hex_ascii){
     if(hex_ascii >= 0x61 && hex_ascii <= 0x7A)
     {
         return hex_ascii - (0x61 - 0x41);  // 'a' - 'A'
@@ -531,12 +531,12 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 
         for(uint8_t j = 0; j < hex_table_len; j++)
         {
-            if(hex_table[j] == upper_case_hex_digit(hex_device_id[i * 2]))
+            if(hex_table[j] == _upper_case_hex_digit(hex_device_id[i * 2]))
             {
                 multiplier = j;
             }
 
-            if(hex_table[j] == upper_case_hex_digit(hex_device_id[i * 2 + 1]))
+            if(hex_table[j] == _upper_case_hex_digit(hex_device_id[i * 2 + 1]))
             {
                 remain = j;
             }
@@ -550,7 +550,8 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 
 }
 
-void hble_params_init(const char* device_name, uint64_t device_id)
+
+void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3200_verion)
 {
     _device_id = device_id;
     // initialize GAP parameters
@@ -570,13 +571,47 @@ void hble_params_init(const char* device_name, uint64_t device_id)
         APP_OK(sd_ble_gap_tx_power_set(TX_POWER_LEVEL));
     }
 
-    //Device Info
     {
         ble_dis_init_t dis_init;
         memset(&dis_init, 0, sizeof(dis_init));
 
+        char mod_num[20] = {0};
+        
+        const char* ble_mode_num = BLE_MODEL_NUM;
+        memcpy(mod_num, ble_mode_num, strlen(ble_mode_num));
+        uint8_t mod_num_len = strlen(ble_mode_num);
+
+        mod_num[mod_num_len] = ':';
+        size_t cc_ver_len = 1;
+        uint32_t tmp = _cc3200_verion;
+        PRINTS("CC VER: ");
+        PRINT_HEX(&_cc3200_verion, sizeof(_cc3200_verion));
+        PRINTS("\r\n");
+
+        while(tmp / 10 > 0){
+            cc_ver_len++;
+            tmp = tmp / 10;
+        }
+        tmp = _cc3200_verion;
+
+        if(mod_num_len + cc_ver_len + 1 >= sizeof(mod_num)){
+            PRINTS("Model name string tooooo long\r\n");
+            nrf_delay_ms(100);
+            APP_ASSERT(0);  // fail loudly, the version name cannot be too long
+        }
+
+        PRINTS("CC VER LEN: ");
+        PRINT_HEX(&cc_ver_len, sizeof(cc_ver_len));
+        PRINTS("\r\n");
+
+        for(int i = cc_ver_len - 1; i >= 0; i--)
+        {
+            mod_num[mod_num_len + 1 + i] = '0' + tmp % 10;
+            tmp /= 10;
+        }
+        
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
-        ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
+        ble_srv_ascii_to_utf8(&dis_init.model_num_str, mod_num);
 
         char hex_device_id[DEVICE_ID_SIZE * 2 + 1];
         memset(hex_device_id, 0, sizeof(hex_device_id));
@@ -605,6 +640,7 @@ void hble_params_init(const char* device_name, uint64_t device_id)
         APP_OK(ble_dis_init(&dis_init));
     }
 
+
 #ifdef HAS_BATTERY_SERVICE
     //Battery level service
     {
@@ -623,6 +659,8 @@ void hble_params_init(const char* device_name, uint64_t device_id)
         APP_OK(ble_bas_init(&_ble_bas, &bas_init));
     }
 #endif
+
+    
 
     // Connection parameters.
     {
