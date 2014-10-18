@@ -109,15 +109,15 @@ _start()
 
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
 
-    SIMPRINTS("\r\nBootloader v");
-	SIMPRINTS(" is alive\r\n");
+    printf("\r\nBootloader v");
+	printf(" is alive\r\n");
 
 	crash_log_save();
 
 #ifdef DEBUG
-    SIMPRINTS("Device name: ");
-    SIMPRINTS(BLE_DEVICE_NAME);
-    SIMPRINTS("\r\n");
+    printf("Device name: ");
+    printf(BLE_DEVICE_NAME);
+    printf("\r\n");
 
 	{
 		uint8_t mac_address[6];
@@ -127,7 +127,9 @@ _start()
 		for(i = 0; i < 6; i++) {
 			mac_address[i] = ((uint8_t*)NRF_FICR->DEVICEADDR)[5-i];
 		}
-		DEBUG("MAC address: ", mac_address);
+		/*
+		 *DEBUG("MAC address: ", mac_address);
+		 */
 	}
 #endif
 
@@ -138,7 +140,7 @@ _start()
 	// const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
-        SIMPRINTS("Application crashed :(\r\n");
+        printf("Application crashed :(\r\n");
     }
 
     bool should_dfu = false;
@@ -147,37 +149,30 @@ _start()
     bootloader_util_settings_get(&bootloader_settings);
 
     uint16_t* p_expected_crc = &bootloader_settings->bank_0_crc;
-    DEBUG("App CRC-16 at ", p_expected_crc);
 
     uint16_t* p_bank_0 = &bootloader_settings->bank_0;
-    DEBUG("Bank 0 info at ", p_bank_0);
 
     uint16_t bank_0 = *p_bank_0;
-    DEBUG("Bank 0: ", bank_0);
 
     uint32_t *p_bank_0_size = &bootloader_settings->bank_0_size;
-    DEBUG("Bank 0 size at ", p_bank_0_size);
 
     uint32_t bank_0_size = *p_bank_0_size;
-    DEBUG("Bank 0 size: ", bank_0_size);
 
     uint16_t expected_crc = *p_expected_crc;
-    DEBUG("CRC-16 is ", expected_crc);
     printf("CRC-16 is %d\r\n", expected_crc);
 
     if(!bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
-        SIMPRINTS("Firmware doesn't match expected CRC-16\r\n");
-
+        printf("Firmware doesn't match expected CRC-16\r\n");
         should_dfu = true;
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
-        SIMPRINTS("Forcefully booting into DFU mode.\r\n");
+        printf("Forcefully booting into DFU mode.\r\n");
         should_dfu = true;
 	}
 
     if(should_dfu) {
-	    SIMPRINTS("Bootloader: in DFU mode...\r\n");
+	    printf("Bootloader: in DFU mode...\r\n");
 
         SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
@@ -188,11 +183,11 @@ _start()
 
 		if(bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
 			sd_power_gpregret_clr(GPREGRET_FORCE_DFU_ON_BOOT_MASK);
-			SIMPRINTS("DFU successful, rebooting...\r\n");
+			printf("DFU successful, rebooting...\r\n");
 		}
 		NVIC_SystemReset();
     } else {
-	    SIMPRINTS("Bootloader kicking to app...\r\n");
+	    printf("Bootloader kicking to app...\r\n");
 
 		bootloader_app_start(CODE_REGION_1_START);
 	}
