@@ -134,7 +134,7 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
             PRINTS("No data for field tag");
             PRINT_HEX(&field->tag, sizeof(field->tag));
             PRINTS("\r\n");
-            nrf_delay_ms(10);
+            //nrf_delay_ms(10);
             return true;
         }
 
