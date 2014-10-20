@@ -618,7 +618,7 @@ void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3
         size_t device_id_size = sizeof(hex_device_id);
 
         PRINTS("integer device id: ");
-        PRINT_HEX(&_device_id, DEVICE_ID_SIZE);
+        PRINT_HEX(&_device_id, sizeof(_device_id));
         PRINTS("\r\n");
 
         if(!hble_uint64_to_hex_device_id(_device_id, hex_device_id, &device_id_size))
