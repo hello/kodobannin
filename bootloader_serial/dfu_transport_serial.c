@@ -232,7 +232,7 @@ static void process_dfu_packet(void * p_event_data, uint16_t event_size)
                             // We expect to receive the init packet in two rounds of 512 bytes.
                             // If that fails, we abort, and boot the application.
                             // @note: Current release doesn't handle an init packet.
-
+                            dfu_init_pkt_handle(packet);
                             break;
 
                         default:
