@@ -46,11 +46,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             //meta command
         }else{
             //only 1 connection
-            MSG_Base_AcquireDataAtomic(data);
             _printblocking("\r\n<data>",8, 0);
             _printblocking(data->buf,data->len,1);
             _printblocking("</data>\r\n",9, 0);
-            MSG_Base_ReleaseDataAtomic(data);
         }
     }
     return SUCCESS;
