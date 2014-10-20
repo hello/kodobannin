@@ -129,12 +129,21 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
     /* We could read block-by-block to avoid the large buffer... */
     if (stream->bytes_left > PROTOBUF_MAX_LEN - 1 || stream->bytes_left == 0)
     {
+        if(stream->bytes_left == 0)
+        {
+            PRINTS("No data for field tag");
+            PRINT_HEX(&field->tag, sizeof(field->tag));
+            PRINTS("\r\n");
+            nrf_delay_ms(10);
+            return true;
+        }
+        
         return false;
     }
    	
     MSG_Data_t* string_page = MSG_Base_AllocateDataAtomic(stream->bytes_left + 1);
     if(!string_page){
-        PRINTS("No memory when decoding string field\r\n");
+        PRINTS("No memory when decoding string field\r\n"); nrf_delay_ms(1);
         return false;
     }
 
@@ -142,6 +151,7 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
 
     if (!pb_read(stream, string_page->buf, stream->bytes_left))
     {
+        PRINTS("_decode_string_field read content failed\r\n"); nrf_delay_ms(1);
         MSG_Base_ReleaseDataAtomic(string_page);
         return false;
     }
