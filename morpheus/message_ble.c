@@ -705,6 +705,14 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
             _erase_bonded_users();
             break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
+            hble_erase_other_bonded_central();
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            }
+            break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
         {
             MSG_Data_t* pill_id_page = command->deviceId.arg;
