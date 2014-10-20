@@ -5,6 +5,7 @@
 #include <app_error.h>
 #include <bootloader_util.h>
 #include <nrf_gpio.h>
+#include <app_gpiote.h>
 #include <nrf_delay.h>
 #include <nrf_sdm.h>
 #include <nrf_soc.h>
@@ -103,25 +104,28 @@ _start()
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+	APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
 
 	NRF_CLOCK->TASKS_LFCLKSTART = 1;
 	while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
 
-#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
-    simple_uart_config(SERIAL_RTS_PIN, CCU_TX_PIN, SERIAL_CTS_PIN, CCU_RX_PIN, false);
-#else
-    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
-#endif
+/*
+ *#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+ *    simple_uart_config(SERIAL_RTS_PIN, CCU_TX_PIN, SERIAL_CTS_PIN, CCU_RX_PIN, false);
+ *#else
+ *    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
+ *#endif
+ */
 
-    SIMPRINTS("\r\nBootloader v");
-	SIMPRINTS(" is alive\r\n");
+    //SIMPRINTS("\r\nBootloader v");
+	//SIMPRINTS(" is alive\r\n");
 
 	crash_log_save();
 
 #ifdef DEBUG
-    SIMPRINTS("Device name: ");
-    SIMPRINTS(BLE_DEVICE_NAME);
-    SIMPRINTS("\r\n");
+    //SIMPRINTS("Device name: ");
+    //SIMPRINTS(BLE_DEVICE_NAME);
+    //SIMPRINTS("\r\n");
 
 	{
 		uint8_t mac_address[6];
@@ -142,7 +146,7 @@ _start()
 	// const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
-        SIMPRINTS("Application crashed :(\r\n");
+        //SIMPRINTS("Application crashed :(\r\n");
     }
 
     bool should_dfu = false;
@@ -161,20 +165,20 @@ _start()
     uint32_t bank_0_size = *p_bank_0_size;
 
     uint16_t expected_crc = *p_expected_crc;
-    //SIMPRINTS("CRC-16 is %d\r\n", expected_crc);
+    ////SIMPRINTS("CRC-16 is %d\r\n", expected_crc);
 
     if(!bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
-        SIMPRINTS("Firmware doesn't match expected CRC-16\r\n");
+        //SIMPRINTS("Firmware doesn't match expected CRC-16\r\n");
         should_dfu = true;
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
-        SIMPRINTS("Forcefully booting into DFU mode.\r\n");
+        //SIMPRINTS("Forcefully booting into DFU mode.\r\n");
         should_dfu = true;
 	}
 
     if(should_dfu) {
-	    SIMPRINTS("Bootloader: in DFU mode...\r\n");
+	    //SIMPRINTS("Bootloader: in DFU mode...\r\n");
 
         SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
@@ -185,11 +189,11 @@ _start()
 
 		if(bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
 			sd_power_gpregret_clr(GPREGRET_FORCE_DFU_ON_BOOT_MASK);
-			SIMPRINTS("DFU successful, rebooting...\r\n");
+			//SIMPRINTS("DFU successful, rebooting...\r\n");
 		}
 		NVIC_SystemReset();
     } else {
-	    SIMPRINTS("Bootloader kicking to app...\r\n");
+	    //SIMPRINTS("Bootloader kicking to app...\r\n");
 
 		bootloader_app_start(CODE_REGION_1_START);
 	}
