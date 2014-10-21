@@ -83,8 +83,6 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/app_uart_fifo.c \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
-	nRF51_SDK/nrf51422/Source/app_common/hci_transport.c \
-	nRF51_SDK/nrf51422/Source/app_common/hci_slip.c \
     nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
