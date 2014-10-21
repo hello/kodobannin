@@ -359,7 +359,7 @@ static uint32_t slip_uart_open(void)
      *                         &m_uart_id);
      */
 
-    APP_UART_FIFO_INIT( &comm_params, 256, 32, slip_uart_eventhandler, APP_IRQ_PRIORITY_LOW, err_code);
+    APP_UART_FIFO_INIT( &comm_params, 512, 128, slip_uart_eventhandler, APP_IRQ_PRIORITY_LOW, err_code);
     if (err_code == NRF_SUCCESS)
     {
         m_current_state = SLIP_READY;
