@@ -606,11 +606,13 @@ uint32_t hci_transport_open(void)
         return err_code;
     }    
 
-    err_code = hci_slip_open();
-    if (err_code != NRF_SUCCESS)
-    {
-        return err_code;
-    }     
+    /*
+     *err_code = hci_slip_open();
+     *if (err_code != NRF_SUCCESS)
+     *{
+     *    return err_code;
+     *}     
+     */
 
     err_code = hci_mem_pool_rx_produce(RX_BUF_SIZE, (void **)&mp_slip_used_rx_buffer);
     if (err_code != NRF_SUCCESS)

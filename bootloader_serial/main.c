@@ -109,14 +109,9 @@ _start()
 	NRF_CLOCK->TASKS_LFCLKSTART = 1;
 	while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
 
-/*
- *#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
- *    simple_uart_config(SERIAL_RTS_PIN, CCU_TX_PIN, SERIAL_CTS_PIN, CCU_RX_PIN, false);
- *#else
- *    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
- *#endif
- */
-
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+	APP_OK(hci_slip_open());
+#endif
     //SIMPRINTS("\r\nBootloader v");
 	//SIMPRINTS(" is alive\r\n");
 
