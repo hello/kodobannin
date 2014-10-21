@@ -95,6 +95,17 @@ bool dfu_success = false;
 
 extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
 
+static void
+_slip_prints(char * string){
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+	char * b = string;
+	while(*b){
+		app_uart_put(*b);
+		b++;
+	}
+#endif
+}
+
 void
 _start()
 {
@@ -130,7 +141,9 @@ _start()
 		for(i = 0; i < 6; i++) {
 			mac_address[i] = ((uint8_t*)NRF_FICR->DEVICEADDR)[5-i];
 		}
-		DEBUG("MAC address: ", mac_address);
+		/*
+		 *DEBUG("MAC address: ", mac_address);
+		 */
 	}
 #endif
 
