@@ -65,6 +65,17 @@ _handle_command(int argc, char * argv[]){
         PRINT_HEX(&ret, 4);
         PRINTS("\r\n");
     }
+    if(_strncmp(argv[0], "slip", strlen("slip")) == 0){
+        MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
+        if(data){
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){UART,2},//destination address, ANT
+                                    data);
+            //release message object after dispatch to prevent memory leak
+            MSG_Base_ReleaseDataAtomic(data);
+        }
+
+    }
 }
 
 MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){
