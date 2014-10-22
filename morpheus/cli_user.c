@@ -1,5 +1,6 @@
 #include "cli_user.h"
 #include "util.h"
+#include "nrf_soc.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -75,6 +76,9 @@ _handle_command(int argc, char * argv[]){
             MSG_Base_ReleaseDataAtomic(data);
         }
 
+    }
+    if(_strncmp(argv[0], "dfu", strlen("dfu")) == 0){
+        REBOOT_TO_DFU();
     }
 }
 
