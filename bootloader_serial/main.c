@@ -150,7 +150,6 @@ _start()
 	APP_OK(hci_slip_open());
 #endif
 	_slip_prints("BOOTLOADER IS ALIVE\n\r");
-	_slip_encode_simple("HelloWorld",sizeof("HelloWorld"));
 
 	crash_log_save();
 
@@ -212,7 +211,8 @@ _start()
 	}
 
     if(should_dfu) {
-	    //SIMPRINTS("Bootloader: in DFU mode...\r\n");
+
+		_slip_encode_simple("DFUBEGIN",sizeof("DFUBEGIN")+1);
 
         SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
