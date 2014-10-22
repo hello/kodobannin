@@ -95,6 +95,16 @@ bool dfu_success = false;
 
 extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
 
+static uint8_t
+_header_checksum_calculate(uint8_t * header){
+	uint32_t checksum = header[0];
+	checksum += header[1];
+	checksum += header[2];
+	checksum &= 0xFFu;
+	checksum = (~checksum + 1u);
+	return (uint8_t)checksum;
+}
+
 static void
 _slip_prints(char * string){
 #ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
@@ -104,6 +114,22 @@ _slip_prints(char * string){
 		b++;
 	}
 #endif
+}
+static void
+_slip_encode_simple(uint8_t * buffer, uint16_t buffer_size){
+	static uint8_t tx_buffer[32];
+	if(buffer_size + 4 > sizeof(tx_buffer)){
+		_slip_prints("buffer too big kthx\r\n");
+		return;
+	}
+	//sets header
+	memset(tx_buffer, 0, 4);
+	tx_buffer[1] = (uint8_t)((buffer_size & 0x0F) + 14);
+	tx_buffer[2] = (uint8_t)((buffer_size >> 4 ) & 0xFFu);
+	tx_buffer[3] = _header_checksum_calculate(tx_buffer);
+	//sets body
+	memcpy(tx_buffer+4, buffer, buffer_size);
+	hci_slip_write(tx_buffer, buffer_size + 4);
 }
 
 void
@@ -123,8 +149,8 @@ _start()
 #ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
 	APP_OK(hci_slip_open());
 #endif
-    //SIMPRINTS("\r\nBootloader v");
-	//SIMPRINTS(" is alive\r\n");
+	_slip_prints("BOOTLOADER IS ALIVE\n\r");
+	_slip_encode_simple("HelloWorld",sizeof("HelloWorld"));
 
 	crash_log_save();
 
