@@ -44,14 +44,6 @@ static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
 
 
-#define MAX_DELAY_TASKS         5
-
-#define TASK_PAUSE_ANT          0   // task index for stop ant
-#define TASK_BOND_OP            1   // task index for bonding operations
-#define TASK_BLE_ADV_OP         2   // task index for restart BLE advertise
-#define TASK_RESUME_ANT         3   // task index for retsart ant
-#define TASK_MEM_CHECK          4   // task index for memory leak check
-
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
 static uint8_t _task_index;
@@ -176,7 +168,7 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
 	morpheus_ble_transmission_layer_reset();
-    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), NULL));
+    hble_start_delay_tasks(100, &_tasks);
     PRINTS("delay task started\r\n");
 
 }
@@ -189,9 +181,30 @@ static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
         _delay_task_memory_checkpoint,
         NULL
     };
-    memcpy(&_tasks, &tasks, sizeof(_tasks));
+    hble_start_delay_tasks(100, tasks);
+}
+
+
+bool hble_set_delay_task(const delay_task_t task, uint8_t index)
+{
+    if(index > MAX_DELAY_TASKS - 1)
+    {
+        PRINTS("Delay task index too large\r\n");
+        return false;
+    }
+
+    _tasks[index] = task;
+    return true;
+}
+
+void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks)
+{
+    if(tasks != &_tasks && tasks)
+    {
+        memcpy(&_tasks, &tasks, sizeof(_tasks));
+    }
     //nrf_delay_ms(100);
-    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), NULL));
+    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(start_delay_ms, APP_TIMER_PRESCALER), NULL));
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
@@ -305,12 +318,12 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 
 void hble_erase_other_bonded_central()
 {
-    _tasks[TASK_BOND_OP] = _delay_tasks_erase_other_bonds;
+    hble_set_delay_task(_delay_tasks_erase_other_bonds, TASK_BOND_OP);
 }
 
 void hble_erase_all_bonded_central()
 {
-    _tasks[TASK_BOND_OP] = _delay_tasks_erase_bonds;
+    hble_set_delay_task(_delay_tasks_erase_bonds, TASK_BOND_OP);
 }
 
 

@@ -225,16 +225,28 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
                     _start_morpheus_dfu_process();  // It's just that simple.
                 break;
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
+                {
+                    PRINTS("Factory reset from CC3200..\r\n");
+                    hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
+                    if(!hlo_ble_is_connected())
+                    {
+                        // Stop BLE radio, because the 2nd task will resume it.
+                        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+                        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL);
+                    }
+                }
+                break;
                 default:
                 {
-                // protobuf, dump the thing straight back?
-                PRINTS(">>>>>>>>>>>Protobuf to PHONE\r\n");
+                    // protobuf, dump the thing straight back?
+                    PRINTS(">>>>>>>>>>>Protobuf to PHONE\r\n");
 
-                morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
-                hlo_ble_notify(0xB00B, data->buf, data->len,
-                    &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+                    morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
+                    hlo_ble_notify(0xB00B, data->buf, data->len,
+                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
 
-                return SUCCESS;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
+                    return SUCCESS;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
                 }
             }
         }else{
