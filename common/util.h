@@ -65,6 +65,7 @@ uint8_t memsum(void *start, unsigned len);
 uint32_t aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce);
 uint32_t aes128_ctr_decrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce);
 const uint8_t * get_aes128_key(void);
+int nrf_atoi(char *p);
 
 union int16_bits {
 	int16_t value;
