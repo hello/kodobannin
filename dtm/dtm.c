@@ -30,6 +30,13 @@
 
 // Configuration parameters.
 #define BITRATE  UART_BAUDRATE_BAUDRATE_Baud19200  /**< Serial bitrate on the UART */
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+#define DTM_TX_PIN CCU_TX_PIN
+#define DTM_RX_PIN CCU_RX_PIN
+#else
+#define DTM_TX_PIN SERIAL_TX_PIN
+#define DTM_RX_PIN SERIAL_RX_PIN
+#endif
 
 // @note: The BLE DTM 2-wire UART standard specifies 8 data bits, 1 stop bit, no flow control.
 //        These parameters are not configurable in the BLE standard.
@@ -60,11 +67,11 @@
 static void uart_init(void)
 {
     // Configure UART0 pins.
-    nrf_gpio_cfg_output(SERIAL_TX_PIN);
-    nrf_gpio_cfg_input(SERIAL_RX_PIN, NRF_GPIO_PIN_NOPULL);  
+    nrf_gpio_cfg_output(DTM_TX_PIN);
+    nrf_gpio_cfg_input(DTM_RX_PIN, NRF_GPIO_PIN_NOPULL);
 
-    NRF_UART0->PSELTXD         = SERIAL_TX_PIN;
-    NRF_UART0->PSELRXD         = SERIAL_RX_PIN;
+    NRF_UART0->PSELTXD         = DTM_TX_PIN;
+    NRF_UART0->PSELRXD         = DTM_RX_PIN;
     NRF_UART0->BAUDRATE        = UART_BAUDRATE_BAUDRATE_Baud19200;
 
     // Clean out possible events from earlier operations
