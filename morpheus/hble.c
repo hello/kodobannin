@@ -72,13 +72,15 @@ static void _delay_task_store_bonds()
 #endif
 }
 
-static void _delay_task_advertise_resume()
+void hble_delay_task_advertise_resume()
 {
+    PRINTS("try to resume adv\r\n");
+    nrf_delay_ms(100);
     hble_advertising_start();
     PRINTS("adv restarted\r\n");
 }
 
-static void _delay_tasks_erase_bonds()
+void hble_delay_tasks_erase_bonds()
 {
     PRINTS("Trying to erase paired centrals....\r\n");
     APP_OK(ble_bondmngr_bonded_centrals_delete());
@@ -174,7 +176,7 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
     delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
-        _delay_task_advertise_resume, 
+        hble_delay_task_advertise_resume, 
         _delay_task_resume_ant, 
         _delay_task_memory_checkpoint,
         NULL
@@ -183,7 +185,7 @@ static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 }
 
 
-bool hble_set_delay_task(const delay_task_t task, uint8_t index)
+bool hble_set_delay_task(uint8_t index, const delay_task_t task)
 {
     if(index > MAX_DELAY_TASKS - 1)
     {
@@ -202,6 +204,7 @@ void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks)
         memcpy(&_tasks, &tasks, sizeof(_tasks));
     }
     //nrf_delay_ms(100);
+    _task_index = 0;
     APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(start_delay_ms, APP_TIMER_PRESCALER), NULL));
 }
 
@@ -220,7 +223,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         // define the tasks that will be performed when user disconnect
         delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
             _delay_task_store_bonds, 
-            _delay_task_advertise_resume, 
+            hble_delay_task_advertise_resume, 
             _delay_task_resume_ant, 
             _delay_task_memory_checkpoint};
         memcpy(&_tasks, &tasks, sizeof(_tasks));
@@ -316,12 +319,12 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 
 void hble_erase_other_bonded_central()
 {
-    hble_set_delay_task(_delay_tasks_erase_other_bonds, TASK_BOND_OP);
+    hble_set_delay_task(TASK_BOND_OP, _delay_tasks_erase_other_bonds);
 }
 
 void hble_erase_all_bonded_central()
 {
-    hble_set_delay_task(_delay_tasks_erase_bonds, TASK_BOND_OP);
+    hble_set_delay_task(TASK_BOND_OP, hble_delay_tasks_erase_bonds);
 }
 
 

@@ -228,12 +228,21 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 {
                     PRINTS("Factory reset from CC3200..\r\n");
-                    hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
+                    
                     if(!hlo_ble_is_connected())
                     {
                         // Stop BLE radio, because the 2nd task will resume it.
                         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+                        hble_set_delay_task(0, hble_delay_tasks_erase_bonds);
+                        hble_set_delay_task(1, hble_delay_task_advertise_resume);
+                        hble_set_delay_task(2, NULL);  // Indicates delay task end.
+
+                        // If not connected, the delay task will not 
+                        // triggered by disconnect, we need to manually 
+                        // start it.
                         hble_start_delay_tasks(APP_ADV_INTERVAL, NULL);
+                    }else{
+                        hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
                     }
                 }
                 break;
