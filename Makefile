@@ -74,6 +74,7 @@ HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard protobuf/*.c) \
 	$(wildcard ant/*.c) \
+	$(wildcard dtm/*.c) \
 
 
 NRF_SRCS = \
@@ -84,6 +85,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
     nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
+    nRF51_SDK/nrf51422/Source/ble/ble_dtm.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \
@@ -126,6 +128,7 @@ INCS =  ./ \
 	./common \
 	./drivers \
 	./ant \
+	./dtm \
 	
 
 

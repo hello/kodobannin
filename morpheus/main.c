@@ -31,6 +31,11 @@
 void
 _start()
 {
+#if 1
+#include "dtm.h"
+	sd_softdevice_disable();
+	dtm_begin();
+#endif
 
     {
         enum {
