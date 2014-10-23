@@ -18,7 +18,7 @@ extern const uint8_t hex[16];
 #define APP_OK(expr) APP_ERROR_CHECK(expr);
 #define BOOL_OK(expr) APP_ASSERT(expr);
 
-#ifdef DEBUG_SERIAL //=====================================
+#if defined(DEBUG_SERIAL) || defined(PLATFORM_HAS_SERIAL_CROSS_CONNECT)
 #include <simple_uart.h>
 #define PRINT_HEX(a,b) MSG_Uart_PrintHex(a,b) 
 #define PRINTS(a) MSG_Uart_Prints(a)

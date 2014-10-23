@@ -74,7 +74,7 @@ enum {
 // I2C_SCL  P29      // 48 P0.29
 // I2C_SDA  P28      // 47 P0.28
 
-#define PLATFORM_HAS_USB_ADC
+//#define PLATFORM_HAS_USB_ADC
 
 enum {
     USB_ADC_DM = 4,
@@ -88,8 +88,8 @@ enum {
 #define PLATFORM_HAS_SERIAL_CROSS_CONNECT
 
 enum {
-    CCU_TX_PIN = 20,
-    CCU_RX_PIN = 18,
+    CCU_TX_PIN = 4,
+    CCU_RX_PIN = 1,
     CCU_CTS_PIN = NC,
     CCU_RTS_PIN = NC,
 };

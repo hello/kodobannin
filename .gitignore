@@ -3,3 +3,5 @@
 *.swn
 build/
 .clang_complete
+*/.DS_Store
+.DS_Store

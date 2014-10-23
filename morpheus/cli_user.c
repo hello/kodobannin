@@ -1,5 +1,6 @@
 #include "cli_user.h"
 #include "util.h"
+#include "nrf_soc.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -64,6 +65,20 @@ _handle_command(int argc, char * argv[]){
         int32_t ret = hlo_ant_pause_radio();
         PRINT_HEX(&ret, 4);
         PRINTS("\r\n");
+    }
+    if(_strncmp(argv[0], "slip", strlen("slip")) == 0){
+        MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
+        if(data){
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){UART,2},//destination address, ANT
+                                    data);
+            //release message object after dispatch to prevent memory leak
+            MSG_Base_ReleaseDataAtomic(data);
+        }
+
+    }
+    if(_strncmp(argv[0], "dfu", strlen("dfu")) == 0){
+        REBOOT_TO_DFU();
     }
 }
 

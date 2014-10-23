@@ -337,6 +337,11 @@ void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length
 
 }
 
+bool hlo_ble_is_connected()
+{
+    return hlo_ble_get_connection_handle() != BLE_CONN_HANDLE_INVALID;
+}
+
 uint16_t hlo_ble_get_connection_handle()
 {
     return _connection_handle;

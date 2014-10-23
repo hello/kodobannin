@@ -5,6 +5,7 @@
 #include <app_error.h>
 #include <bootloader_util.h>
 #include <nrf_gpio.h>
+#include <app_gpiote.h>
 #include <nrf_delay.h>
 #include <nrf_sdm.h>
 #include <nrf_soc.h>
@@ -94,6 +95,43 @@ bool dfu_success = false;
 
 extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
 
+static uint8_t
+_header_checksum_calculate(uint8_t * header){
+	uint32_t checksum = header[0];
+	checksum += header[1];
+	checksum += header[2];
+	checksum &= 0xFFu;
+	checksum = (~checksum + 1u);
+	return (uint8_t)checksum;
+}
+
+static void
+_slip_prints(char * string){
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+	char * b = string;
+	while(*b){
+		app_uart_put(*b);
+		b++;
+	}
+#endif
+}
+static void
+_slip_encode_simple(uint8_t * buffer, uint16_t buffer_size){
+	static uint8_t tx_buffer[32];
+	if(buffer_size + 4 > sizeof(tx_buffer)){
+		_slip_prints("buffer too big kthx\r\n");
+		return;
+	}
+	//sets header
+	memset(tx_buffer, 0, 4);
+	tx_buffer[1] = (uint8_t)((buffer_size & 0x0F) + 14);
+	tx_buffer[2] = (uint8_t)((buffer_size >> 4 ) & 0xFFu);
+	tx_buffer[3] = _header_checksum_calculate(tx_buffer);
+	//sets body
+	memcpy(tx_buffer+4, buffer, buffer_size);
+	hci_slip_write(tx_buffer, buffer_size + 4);
+}
+
 void
 _start()
 {
@@ -103,21 +141,22 @@ _start()
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
+	APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
 
 	NRF_CLOCK->TASKS_LFCLKSTART = 1;
 	while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
 
-    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
-
-    printf("\r\nBootloader v");
-	printf(" is alive\r\n");
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+	APP_OK(hci_slip_open());
+#endif
+	_slip_prints("BOOTLOADER IS ALIVE\n\r");
 
 	crash_log_save();
 
 #ifdef DEBUG
-    printf("Device name: ");
-    printf(BLE_DEVICE_NAME);
-    printf("\r\n");
+    //SIMPRINTS("Device name: ");
+    //SIMPRINTS(BLE_DEVICE_NAME);
+    //SIMPRINTS("\r\n");
 
 	{
 		uint8_t mac_address[6];
@@ -140,7 +179,7 @@ _start()
 	// const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
-        printf("Application crashed :(\r\n");
+        //SIMPRINTS("Application crashed :(\r\n");
     }
 
     bool should_dfu = false;
@@ -159,20 +198,21 @@ _start()
     uint32_t bank_0_size = *p_bank_0_size;
 
     uint16_t expected_crc = *p_expected_crc;
-    printf("CRC-16 is %d\r\n", expected_crc);
+    ////SIMPRINTS("CRC-16 is %d\r\n", expected_crc);
 
     if(!bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
-        printf("Firmware doesn't match expected CRC-16\r\n");
+        //SIMPRINTS("Firmware doesn't match expected CRC-16\r\n");
         should_dfu = true;
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
-        printf("Forcefully booting into DFU mode.\r\n");
+        //SIMPRINTS("Forcefully booting into DFU mode.\r\n");
         should_dfu = true;
 	}
 
     if(should_dfu) {
-	    printf("Bootloader: in DFU mode...\r\n");
+
+		_slip_encode_simple("DFUBEGIN",sizeof("DFUBEGIN")+1);
 
         SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
@@ -183,11 +223,11 @@ _start()
 
 		if(bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
 			sd_power_gpregret_clr(GPREGRET_FORCE_DFU_ON_BOOT_MASK);
-			printf("DFU successful, rebooting...\r\n");
+			//SIMPRINTS("DFU successful, rebooting...\r\n");
 		}
 		NVIC_SystemReset();
     } else {
-	    printf("Bootloader kicking to app...\r\n");
+	    //SIMPRINTS("Bootloader kicking to app...\r\n");
 
 		bootloader_app_start(CODE_REGION_1_START);
 	}
