@@ -103,10 +103,12 @@ void _start()
     battery_module_power_off();
 
 	//HACK TO DISABLE PINS ON LED
+#ifdef PLATFORM_HAS_VLED
 	gpio_cfg_d0s1_output_disconnect_pull(LED3_ENABLE,NRF_GPIO_PIN_PULLDOWN);
 	gpio_cfg_d0s1_output_disconnect_pull(LED2_ENABLE,NRF_GPIO_PIN_PULLDOWN);
 	gpio_cfg_d0s1_output_disconnect_pull(LED1_ENABLE,NRF_GPIO_PIN_PULLDOWN);
 	gpio_cfg_d0s1_output_disconnect_pull(VRGB_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+#endif
 	//END HACK
     {
         enum {
