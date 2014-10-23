@@ -83,8 +83,6 @@ static void _delay_tasks_erase_bonds()
     PRINTS("Trying to erase paired centrals....\r\n");
     APP_OK(ble_bondmngr_bonded_centrals_delete());
     PRINTS("Erased\r\n");
-    nrf_delay_ms(100);
-    hble_bond_manager_init();
 }
 
 static void _delay_tasks_erase_other_bonds()
