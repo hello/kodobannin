@@ -243,6 +243,13 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                         hble_start_delay_tasks(APP_ADV_INTERVAL, NULL);
                     }else{
                         hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
+                        morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
+                        hlo_ble_notify(0xB00B, data->buf, data->len,
+                            &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+
+
+                        // We MUST return here
+                        return SUCCESS;
                     }
                 }
                 break;
