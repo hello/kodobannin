@@ -74,6 +74,7 @@ HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard protobuf/*.c) \
 	$(wildcard ant/*.c) \
+	$(wildcard dtm/*.c) \
 
 
 NRF_SRCS = \
@@ -84,6 +85,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
     nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
+    nRF51_SDK/nrf51422/Source/ble/ble_dtm.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \
@@ -126,6 +128,7 @@ INCS =  ./ \
 	./common \
 	./drivers \
 	./ant \
+	./dtm \
 	
 
 
@@ -186,10 +189,10 @@ clean:
 DEBUG = 0
 
 ifeq ($(DEBUG), 1)
-OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
+OPTFLAGS=-O1 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
-OPTFLAGS=-O0 -DuECC_ASM=2
+OPTFLAGS=-O1 -DuECC_ASM=2
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 endif
 
