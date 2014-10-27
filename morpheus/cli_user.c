@@ -1,10 +1,7 @@
 #include "cli_user.h"
 #include "util.h"
-<<<<<<< HEAD
 #include <nrf_soc.h>
-=======
-#include "nrf_soc.h"
->>>>>>> integration
+#include "app.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -97,7 +94,7 @@ _handle_command(int argc, char * argv[]){
 #ifdef FACTORY_APP
     if(argc > 0 && _strncmp(argv[0], "dtm", strlen("dtm")) == 0){
         sd_power_gpregret_set((uint32_t)GPREGRET_APP_BOOT_TO_DTM);
-        NVIC_SystemReset();
+        sd_nvic_SystemReset();
     }
 #endif
 }
