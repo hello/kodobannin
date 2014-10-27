@@ -50,7 +50,7 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 
 #define REBOOT_TO_DFU() do{\
 								if(NRF_SUCCESS == sd_power_gpregret_set((uint32_t)GPREGRET_FORCE_DFU_ON_BOOT_MASK)){\
-									NVIC_SystemReset();\
+									sd_nvic_SystemReset();\
 								}\
 							}while(0)
 #define AES128_BLOCK_SIZE 16
