@@ -202,7 +202,7 @@ static MSG_Status _init(void){
 	//ShakeDetectReset(15000000000, 5);
 	//easier to trigger
 #ifndef DEBUG_SERIAL
-	ShakeDetectReset(15000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+	ShakeDetectReset(100000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
 #else
     ShakeDetectReset(100000000);
 #endif

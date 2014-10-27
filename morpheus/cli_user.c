@@ -1,6 +1,10 @@
 #include "cli_user.h"
 #include "util.h"
+<<<<<<< HEAD
 #include <nrf_soc.h>
+=======
+#include "nrf_soc.h"
+>>>>>>> integration
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -86,6 +90,9 @@ _handle_command(int argc, char * argv[]){
         PRINT_HEX(&power,1);
         PRINTS("\r\n");
         hlo_ant_cw_test(freq,power);
+    }
+    if(_strncmp(argv[0], "dfu", strlen("dfu")) == 0){
+        REBOOT_TO_DFU();
     }
 #ifdef FACTORY_APP
     if(argc > 0 && _strncmp(argv[0], "dtm", strlen("dtm")) == 0){

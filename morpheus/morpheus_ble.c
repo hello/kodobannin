@@ -33,6 +33,7 @@
 
 // To generate the protobuf download nanopb
 // Generate C code: ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
+// ~/nanopb-0.3.1-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
 // Generate Java code: protoc --java_out=. morpheus/morpheus_ble.proto
 
 
