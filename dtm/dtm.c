@@ -72,7 +72,7 @@ static void uart_init(void)
 
     NRF_UART0->PSELTXD         = DTM_TX_PIN;
     NRF_UART0->PSELRXD         = DTM_RX_PIN;
-    NRF_UART0->BAUDRATE        = UART_BAUDRATE_BAUDRATE_Baud19200;
+    NRF_UART0->BAUDRATE        = UART_BAUDRATE_BAUDRATE_Baud38400;
 
     // Clean out possible events from earlier operations
     NRF_UART0->EVENTS_RXDRDY   = 0;
