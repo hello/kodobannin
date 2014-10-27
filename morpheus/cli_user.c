@@ -1,5 +1,6 @@
 #include "cli_user.h"
 #include "util.h"
+#include <nrf_soc.h>
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -85,6 +86,10 @@ _handle_command(int argc, char * argv[]){
         PRINT_HEX(&power,1);
         PRINTS("\r\n");
         hlo_ant_cw_test(freq,power);
+    }
+    if(argc > 0 && _strncmp(argv[0], "dtm", strlen("dtm")) == 0){
+        sd_power_gpregret_set((uint32_t)GPREGRET_APP_BOOT_TO_DTM);
+        NVIC_SystemReset();
     }
 }
 
