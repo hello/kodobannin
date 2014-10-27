@@ -23,7 +23,6 @@
 #include "nrf51.h"
 #include "nrf51_bitfields.h"
 #include "ble_dtm.h"
-#include "boards.h"
 #include "nrf_gpio.h"
 #include "platform.h"
 #include "watchdog.h"
