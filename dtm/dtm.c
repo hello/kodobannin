@@ -26,6 +26,7 @@
 #include "boards.h"
 #include "nrf_gpio.h"
 #include "platform.h"
+#include "watchdog.h"
 
 
 // Configuration parameters.
@@ -141,6 +142,7 @@ int dtm_begin(void)
     for (;;)
     {
         // Will return every timeout, 625 us.
+        watchdog_pet();
         current_time = dtm_wait();  
 
         if (NRF_UART0->EVENTS_RXDRDY == 0)
