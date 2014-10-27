@@ -27,15 +27,16 @@
 #include "hble.h"
 #include "platform.h"
 #include "morpheus_ble.h"
+#include "dtm.h"
 
 void
 _start()
 {
-#if 1
-#include "dtm.h"
-	sd_softdevice_disable();
-	dtm_begin();
-#endif
+	if(NRF_POWER->GPREGRET & GPREGRET_APP_BOOT_TO_DTM){
+		NRF_POWER->GPREGRET &= ~GPREGRET_APP_BOOT_TO_DTM;
+		sd_softdevice_disable();
+		dtm_begin();
+	}
 
     {
         enum {
