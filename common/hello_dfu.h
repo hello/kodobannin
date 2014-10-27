@@ -10,4 +10,4 @@
 #define GPREGRET_APP_CRASHED_MASK ((uint32_t)0x02)
 
 /// Mask to boot app into dtm mode
-#define GPREGRET_APP_BOOT_TO_DTM ((uint32_t)0x80)
+#define GPREGRET_APP_BOOT_TO_DTM ((uint32_t)0x04)
