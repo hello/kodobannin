@@ -721,6 +721,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_START_WIFISCAN:
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
