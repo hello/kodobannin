@@ -189,10 +189,10 @@ clean:
 DEBUG = 0
 
 ifeq ($(DEBUG), 1)
-OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
+OPTFLAGS=-O1 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
-OPTFLAGS=-O0 -DuECC_ASM=2
+OPTFLAGS=-O1 -DuECC_ASM=2
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 endif
 
