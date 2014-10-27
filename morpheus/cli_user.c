@@ -87,10 +87,12 @@ _handle_command(int argc, char * argv[]){
         PRINTS("\r\n");
         hlo_ant_cw_test(freq,power);
     }
+#ifdef FACTORY_APP
     if(argc > 0 && _strncmp(argv[0], "dtm", strlen("dtm")) == 0){
         sd_power_gpregret_set((uint32_t)GPREGRET_APP_BOOT_TO_DTM);
         NVIC_SystemReset();
     }
+#endif
 }
 
 MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){
