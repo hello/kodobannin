@@ -28,5 +28,6 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device);
 int32_t hlo_ant_disconnect(const hlo_ant_device_t * device);
 int32_t hlo_ant_pause_radio(void);
 int32_t hlo_ant_resume_radio(void);
+int32_t hlo_ant_cw_test(uint8_t freq, uint8_t tx_power);
 
 
