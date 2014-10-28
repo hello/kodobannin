@@ -83,7 +83,7 @@ static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field,
 
     MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
-    PRINTS("Lock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
+    //PRINTS("Lock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
     char* str = buffer_page->buf;
     
     bool ret = false;
@@ -93,7 +93,7 @@ static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field,
     }
 
     MSG_Base_ReleaseDataAtomic(buffer_page);
-    PRINTS("Unlock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
+    //PRINTS("Unlock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
     return ret;
 }
 
@@ -106,7 +106,7 @@ static bool _encode_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, 
 
     MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
-    PRINTS("Lock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
+    //PRINTS("Lock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
     char* str = buffer_page->buf;
     
     bool ret = false;
@@ -116,7 +116,7 @@ static bool _encode_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, 
     }
 
     MSG_Base_ReleaseDataAtomic(buffer_page);
-    PRINTS("Unlock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
+    //PRINTS("Unlock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
     return ret;
 }
 
@@ -157,7 +157,7 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
         return false;
     }
 	
-    PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
+    //PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
 	*arg = string_page;
 
     return true;
@@ -172,7 +172,7 @@ static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, v
     }
     
     MSG_Data_t* buffer_page = MSG_Base_AllocateDataAtomic(stream->bytes_left);
-    PRINTS("malloc in _decode_bytes_field\r\n");// nrf_delay_ms(1);
+    //PRINTS("malloc in _decode_bytes_field\r\n");// nrf_delay_ms(1);
 
     if(!buffer_page)
     {
