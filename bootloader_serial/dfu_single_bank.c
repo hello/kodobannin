@@ -60,7 +60,7 @@ static dfu_callback_t          m_data_pkt_cb;
 
 #define IMAGE_WRITE_IN_PROGRESS() (m_app_data_received > 0)      /**< Macro for determining is image write in progress. */
 #define APP_TIMER_PRESCALER       0                                                                 /**< Value of the RTC1 PRESCALER register. */
-#define DFU_TIMEOUT_INTERVAL      APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER)                       /**< DFU timeout interval in units of timer ticks. */             
+#define DFU_TIMEOUT_INTERVAL      APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER)                       /**< DFU timeout interval in units of timer ticks. */
 
 
 static void pstorage_callback_handler(pstorage_handle_t * handle, uint8_t op_code, uint32_t result, uint8_t * p_data, uint32_t data_len)
