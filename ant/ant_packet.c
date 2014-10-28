@@ -81,6 +81,7 @@ _acquire_session(const hlo_ant_device_t * device){
     //look for existing session
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == cid){
+            self.entries[i].age = self.global_age;
             return &(self.entries[i]);
         }
     }
@@ -88,6 +89,7 @@ _acquire_session(const hlo_ant_device_t * device){
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == 0){
             self.entries[i].cid = cid;
+            self.entries[i].age = self.global_age;
             _reset_session_tx(&(self.entries[i]));
             _reset_session_rx(&(self.entries[i]));
             return &(self.entries[i]);
@@ -96,6 +98,7 @@ _acquire_session(const hlo_ant_device_t * device){
     //look for sessions with no tx or rx objects(expired session)
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid != 0 && !self.entries[i].rx_obj && !self.entries[i].tx_obj){
+            self.entries[i].age = global_age;
             self.entries[i].cid = cid;
             return &(self.entries[i]);
         }
