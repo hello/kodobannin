@@ -239,7 +239,7 @@ hlo_ant_event_listener_t * hlo_ant_packet_init(const hlo_ant_packet_listener * u
 int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * msg){
     if(msg){
         hlo_ant_packet_session_t * session = _acquire_session(device);
-        if(session){
+        if(session && !session->tx_obj){
             _reset_session_tx(session);
             session->tx_obj = msg;
             MSG_Base_AcquireDataAtomic(msg);
@@ -250,6 +250,7 @@ int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * ms
             return hlo_ant_connect(device);
         }else{
             PRINTS("Session Full \r\n");
+            return -2;
         }
     }
     return -1;
