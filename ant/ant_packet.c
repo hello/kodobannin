@@ -16,6 +16,9 @@
 #define ANT_HEADER_TRANSMIT_COUNT DEFAULT_ANT_HEADER_RETRANSMIT_COUNT
 #endif
 
+//defines how old a session can be before getting swept
+#define ANT_SESSION_AGE_LIMIT 4
+
 typedef struct{
     uint8_t page;
     uint8_t page_count;//non 0 if it's a MSG_Data
@@ -78,6 +81,7 @@ static inline hlo_ant_packet_session_t *
 _acquire_session(const hlo_ant_device_t * device){
     int i;
     uint16_t cid = device->device_number;
+    ++self.global_age;
     //look for existing session
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == cid){
@@ -98,9 +102,20 @@ _acquire_session(const hlo_ant_device_t * device){
     //look for sessions with no tx or rx objects(expired session)
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid != 0 && !self.entries[i].rx_obj && !self.entries[i].tx_obj){
-            self.entries[i].age = global_age;
+            self.entries[i].age = self.global_age;
             self.entries[i].cid = cid;
             return &(self.entries[i]);
+        }
+    }
+    //lastly, try look for session with rx object that has age exceeds AGE limit
+    for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
+        if(self.entries[i].cid != 0 && !self.entries[i].tx_obj){
+            if(self.global_age - self.entries[i].age >= ANT_SESSION_AGE_LIMIT){
+                _reset_session_rx(&(self.entries[i]));
+                self.entries[i].age = self.global_age;
+                self.entries[i].cid = cid;
+                return &(self.entries[i]);
+            }
         }
     }
     return NULL;
