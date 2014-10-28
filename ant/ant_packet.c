@@ -82,9 +82,6 @@ _acquire_session(const hlo_ant_device_t * device){
     int i;
     uint16_t cid = device->device_number;
     ++self.global_age;
-    PRINTS("Allocate CID ");
-    PRINT_HEX(&cid,2);
-    PRINTS("\r\n");
     //look for existing session
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == cid){
