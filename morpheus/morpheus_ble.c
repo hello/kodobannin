@@ -144,7 +144,7 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
    	
     MSG_Data_t* string_page = MSG_Base_AllocateDataAtomic(stream->bytes_left + 1);
     if(!string_page){
-        PRINTS("No memory when decoding string field\r\n");// nrf_delay_ms(1);
+        PRINTS(MSG_NO_MEMORY);// nrf_delay_ms(1);
         return false;
     }
 
@@ -362,42 +362,42 @@ void morpheus_ble_free_protobuf(MorpheusCommand* command)
     {
         MSG_Base_ReleaseDataAtomic(command->accountId.arg);
         command->accountId.arg = NULL;
-        PRINTS("MorpheusCommand->accountId released\r\n");
+        //PRINTS("MorpheusCommand->accountId released\r\n");
     }
 
     if(command->deviceId.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->deviceId.arg);
         command->deviceId.arg = NULL;
-        PRINTS("MorpheusCommand->deviceId released\r\n");// nrf_delay_ms(2);
+        //PRINTS("MorpheusCommand->deviceId released\r\n");// nrf_delay_ms(2);
     }
 
     if(command->wifiName.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiName.arg);
         command->wifiName.arg = NULL;
-        PRINTS("MorpheusCommand->wifiName released\r\n");
+        //PRINTS("MorpheusCommand->wifiName released\r\n");
     }
 
     if(command->wifiSSID.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiSSID.arg);
         command->wifiSSID.arg = NULL;
-        PRINTS("MorpheusCommand->wifiSSID released\r\n");
+        //PRINTS("MorpheusCommand->wifiSSID released\r\n");
     }
 
     if(command->wifiPassword.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiPassword.arg);
         command->wifiPassword.arg = NULL;
-        PRINTS("MorpheusCommand->wifiPassword released\r\n");
+        //PRINTS("MorpheusCommand->wifiPassword released\r\n");
     }
 
     if(command->motionDataEntrypted.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->motionDataEntrypted.arg);
         command->motionDataEntrypted.arg = NULL;
-        PRINTS("MorpheusCommand->motionDataEntrypted released\r\n");
+        //PRINTS("MorpheusCommand->motionDataEntrypted released\r\n");
     }
 }
 
@@ -488,7 +488,7 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 
     	_protobuf_buffer = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
     	if(!_protobuf_buffer){
-    		PRINTS("Not enought memory\r\n");
+    		PRINTS(MSG_NO_MEMORY);
     		return;
     	}
     	
@@ -516,7 +516,7 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 	{
 		MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(_protobuf_len);
 		if(!data_page){
-			PRINTS("Not enought memory\r\n");
+			PRINTS(MSG_NO_MEMORY);
 		}else{
 			memcpy(data_page->buf, _protobuf_buffer->buf, _protobuf_len);
 		}
@@ -568,7 +568,7 @@ bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
     MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(protobuf_len);
     if(!heap_page)
     {
-        PRINTS("Not enough memory!\r\n");
+        PRINTS(MSG_NO_MEMORY);
         return false;
     }
     memset(heap_page->buf, 0, heap_page->len);
