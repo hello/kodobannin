@@ -40,6 +40,7 @@ typedef struct{
     int16_t tx_count;
     uint16_t tx_stretch;
     MSG_Data_t * tx_obj;
+    uint32_t age;
 }hlo_ant_packet_session_t;
 
 
@@ -47,6 +48,7 @@ static struct{
     hlo_ant_event_listener_t cbs;
     hlo_ant_packet_session_t entries[ANT_PACKET_MAX_CONCURRENT_SESSIONS];
     hlo_ant_packet_listener * user;
+    uint32_t global_age;
 }self;
 
 static inline uint16_t _calc_checksum(MSG_Data_t * data){
