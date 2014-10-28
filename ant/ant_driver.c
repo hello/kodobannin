@@ -146,6 +146,16 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
     return -1;
     
 }
+int32_t hlo_ant_cw_test(uint8_t freq, uint8_t tx_power){
+    sd_ant_stack_reset();
+    sd_ant_cw_test_mode_init();
+    if(tx_power <= RADIO_TX_POWER_LVL_4){
+        sd_ant_cw_test_mode(freq, tx_power, 0);
+    }else{
+        return -1;
+    }
+    return 0;
+}
 
 static void
 _handle_rx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){

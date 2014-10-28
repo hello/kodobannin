@@ -142,6 +142,26 @@ inline int puts(const char *str) {
 
 const uint8_t hex[] = "0123456789ABCDEF";
 
+int nrf_atoi(char *p){
+	int n = 0, f = 0;
+	for(;; p++){
+		switch(*p){
+			case ' ':
+			case '\t':
+				continue;
+			case '-':
+				f++;
+			case '+':
+				p++;
+		}
+		break;
+	}
+	while(*p >= '0' && *p <= '9'){
+		n = n * 10 + *p++ - '0';
+	}
+	return (f ? -n : n);
+}
+
 #if defined(DEBUG_SERIAL) || defined(PLATFORM_HAS_SERIAL_CROSS_CONNECT)
 void
 serial_print_hex(uint8_t *ptr, uint32_t len) {

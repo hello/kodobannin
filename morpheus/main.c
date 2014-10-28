@@ -31,6 +31,14 @@
 void
 _start()
 {
+#ifdef FACTORY_APP
+#include "dtm.h"
+	if(NRF_POWER->GPREGRET & GPREGRET_APP_BOOT_TO_DTM){
+		NRF_POWER->GPREGRET &= ~GPREGRET_APP_BOOT_TO_DTM;
+		sd_softdevice_disable();
+		dtm_begin();
+	}
+#endif
 
     {
         enum {
