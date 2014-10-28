@@ -20,6 +20,7 @@
 #include "app_timer.h"
 #include "app_gpiote.h"
 #include <stddef.h>
+#include "watchdog.h"
 
 #define MAX_BUFFERS 4u                                                               /**< Maximum number of buffers that can be received queued without being consumed. */
 
@@ -211,16 +212,19 @@ static void process_dfu_packet(void * p_event_data, uint16_t event_size)
                     switch (DATA_QUEUE_ELEMENT_GET_PTYPE(index))
                     {
                         case DATA_PACKET:
+                            watchdog_pet();
                             (void)dfu_data_pkt_handle(packet);
                             break;
 
                         case START_DATA_PACKET:
+                            watchdog_pet();
                             (void)dfu_image_size_set(
                                       uint32_decode((uint8_t *)DATA_QUEUE_ELEMENT_GET_PDATA(index))
                                       );
                             break;
 
                         case STOP_DATA_PACKET:
+                            watchdog_pet();
                             (void)dfu_image_validate();
                             (void)dfu_image_activate();
 
@@ -228,6 +232,7 @@ static void process_dfu_packet(void * p_event_data, uint16_t event_size)
                             return;
 
                         case INIT_PACKET:
+                            watchdog_pet();
                             // Validate init packet.
                             // We expect to receive the init packet in two rounds of 512 bytes.
                             // If that fails, we abort, and boot the application.

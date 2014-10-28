@@ -9,6 +9,8 @@
 #include "pb_encode.h"
 #include "morpheus_ble.pb.h"
 
+#define MSG_NO_MEMORY   "No memory\r\n"
+
 enum {
     BLE_UUID_MORPHEUS_SVC = 0xFEE1,
 };

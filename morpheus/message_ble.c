@@ -493,7 +493,7 @@ static MSG_Status _init(){
 
     if(!device_id_page)
     {
-        PRINTS("No memory.\r\n");
+        PRINTS(MSG_NO_MEMORY);
         return FAIL;
     }
 
@@ -509,7 +509,7 @@ static MSG_Status _init(){
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
     if(!data_page)
     {
-        PRINTS("No memory.\r\n");
+        PRINTS(MSG_NO_MEMORY);
         MSG_Base_ReleaseDataAtomic(device_id_page);
         return FAIL;
     }
@@ -635,7 +635,7 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(13);  // Fark this is a mac address
     if(!device_id_page)
     {
-        PRINTS("Not enough memory.\r\n");
+        PRINTS(MSG_NO_MEMORY);
         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
     }else{
         memset(device_id_page->buf, 0, device_id_page->len);
@@ -666,13 +666,13 @@ static void _pair_morpheus(MorpheusCommand* command)
             }else{
                 MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
                 if(!proto_len){
-                    PRINTS("Not enough memory.\r\n");
+                    PRINTS(MSG_NO_MEMORY);
                     morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
                 }else{
                     morpheus_ble_encode_protobuf(&pair_command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
                     if(message_ble_route_data_to_cc3200(proto_page) == FAIL)
                     {
-                        PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                        PRINTS(MSG_NO_MEMORY);
                         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
                     }
                     MSG_Base_ReleaseDataAtomic(proto_page);
@@ -705,7 +705,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
             _morpheus_switch_mode(true);
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
-                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                PRINTS(MSG_NO_MEMORY);
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
@@ -713,7 +713,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
             _morpheus_switch_mode(false);
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
-                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                PRINTS(MSG_NO_MEMORY);
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
@@ -724,7 +724,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_START_WIFISCAN:
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
-                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                PRINTS(MSG_NO_MEMORY);
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
@@ -738,7 +738,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
             hble_erase_other_bonded_central();
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
-                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                PRINTS(MSG_NO_MEMORY);
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
