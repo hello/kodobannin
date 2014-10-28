@@ -58,6 +58,7 @@ _configure_channel(uint8_t channel,const hlo_ant_channel_phy_t * phy,  const hlo
     ret += sd_ant_channel_id_set(channel, device->device_number, device->device_type, device->transmit_type);
     ret += sd_ant_channel_low_priority_rx_search_timeout_set(channel, 0xFF);
     ret += sd_ant_channel_rx_search_timeout_set(channel, 0);
+    ret += sd_ant_channel_radio_tx_power_set(channel, RADIO_TX_POWER_LVL_4, 0);
     return ret;
 }
 static int
