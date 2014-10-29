@@ -113,7 +113,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
                 //TODO set period properly based on deivce number
                 .period = device_period,
                 .frequency = 66,
-                .channel_type = CHANNEL_TYPE_MASTER,
+                .channel_type = CHANNEL_TYPE_MASTER_TX_ONLY,
                 .network = 0
             };
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
