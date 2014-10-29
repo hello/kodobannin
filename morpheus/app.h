@@ -105,4 +105,4 @@ enum {
 #define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER))
 
 //fatory app allows more capabilities
-#define FACTORY_APP
+//#define FACTORY_APP
