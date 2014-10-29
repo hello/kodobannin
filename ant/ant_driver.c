@@ -107,9 +107,11 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
         //open channel
         int new_ch = _find_unassigned_channel(begin, 7);
         if(new_ch >= begin){
+            //bias the period to reduce chance for channel collision
+            uint16_t device_period = (1092 - 4) + (device->device_number % 8);
             hlo_ant_channel_phy_t phy = {
                 //TODO set period properly based on deivce number
-                .period = 1092,
+                .period = device_period,
                 .frequency = 66,
                 .channel_type = CHANNEL_TYPE_MASTER,
                 .network = 0
