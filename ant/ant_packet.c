@@ -6,7 +6,8 @@
 #define UID2CID(uid) ((uint16_t)uid)
 #define PACKET_INTEGRITY_CHECK(buf) (buf[1] != 0 && buf[0] <= buf[1])
 #define DEFAULT_ANT_RETRANSMIT_COUNT 3
-#define DEFAULT_ANT_HEADER_RETRANSMIT_COUNT 5
+#define DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT 24
+#define DEFAULT_ANT_HEADER_RETRANSMIT_COUNT 2
 
 #ifndef ANT_RETRANSMIT_COUNT
 #define ANT_RETRANSMIT_COUNT DEFAULT_ANT_RETRANSMIT_COUNT
@@ -169,11 +170,16 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
 static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session->tx_obj){
+        //we always transmit a minimum number of packets regardless of packet size to ensure delivery
+        uint32_t transmit_mark = (( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)) + (session->tx_stretch >> 1);
+        if(transmit_mark < DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT){
+            transmit_mark = DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT;
+        }
         *out_buffer_len = 8;
         if(session->tx_count < 0){
             //copy header to prime transmission
             memcpy(out_buffer, &session->tx_header, 8);
-        }else if(session->tx_count < (( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)) + (session->tx_stretch >> 1)){
+        }else if(session->tx_count < transmit_mark){
             uint16_t mod = session->tx_count % (session->tx_header.page_count+1);
             if(mod == 0){
                 memcpy(out_buffer, &session->tx_header, 8);
