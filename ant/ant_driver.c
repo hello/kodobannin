@@ -76,18 +76,14 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
         .period = 273,
         .frequency = 66,
         .channel_type = CHANNEL_TYPE_SLAVE,
-#ifdef USE_HLO_ANT_NETWORK
-        .network = 1
-#else
         .network = 0
-#endif
     };
 
     sd_ant_stack_reset();
 
 #ifdef USE_HLO_ANT_NETWORK
     uint8_t network_key[8] = HLO_ANT_NETWORK_KEY;
-    sd_ant_network_address_set(1,network_key);
+    sd_ant_network_address_set(0,network_key);
 #else
     uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
     sd_ant_network_address_set(0,network_key);
@@ -126,11 +122,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
                 .period = device_period,
                 .frequency = 66,
                 .channel_type = CHANNEL_TYPE_MASTER_TX_ONLY,
-#ifdef USE_HLO_ANT_NETWORK
-                .network = 1
-#else
                 .network = 0
-#endif
             };
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
                 APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, 0));
