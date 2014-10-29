@@ -104,5 +104,10 @@ enum {
 #define APP_PILL_PAIRING_TIMEOUT_INTERVAL	 (APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER))
 #define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER))
 
+/*
+ * Application build options
+ */
 //fatory app allows more capabilities
 #define FACTORY_APP
+//use hlo ant network key
+//#define USE_HLO_ANT_NETWORK
