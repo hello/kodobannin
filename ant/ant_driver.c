@@ -5,6 +5,7 @@
 #include "util.h"
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32
+#define HLO_ANT_NETWORK_KEY {0xA8, 0xAC, 0x20, 0x7A, 0x1D, 0x72, 0xE3, 0x4D}
 typedef struct{
     //cached status
     uint8_t reserved;
@@ -74,11 +75,22 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
         .period = 273,
         .frequency = 66,
         .channel_type = CHANNEL_TYPE_SLAVE,
+#ifdef USE_HLO_ANT_NETWORK
+        .network = 1
+#else
         .network = 0
+#endif
     };
-    uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
+
     sd_ant_stack_reset();
+
+#ifdef USE_HLO_ANT_NETWORK
+    uint8_t network_key[8] = HLO_ANT_NETWORK_KEY;
+    sd_ant_network_address_set(1,network_key);
+#else
+    uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
     sd_ant_network_address_set(0,network_key);
+#endif
     hlo_ant_device_t device = {0};
     if(!user){
         return -1;
