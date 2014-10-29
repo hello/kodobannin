@@ -145,11 +145,10 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
             //header
             uint16_t new_crc = (uint16_t)(buffer[7] << 8) + buffer[6];
             uint16_t new_size = (uint16_t)(buffer[5] << 8) + buffer[4];
-            hlo_ant_header_packet_t * new_header = (hlo_ant_header_packet_t *)buffer;
             if(new_crc != session->rx_header.checksum){
                 //if crc is new, create new obj
                 //TODO optimize by not swapping objects, but reusing it
-                session->rx_header = *new_header;
+                memcpy(&session->rx_header, buffer, sizeof(hlo_ant_header_packet_t));
                 _reset_session_rx(session);
                 session->rx_obj = MSG_Base_AllocateDataAtomic(new_size);
             }
