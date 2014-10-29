@@ -103,6 +103,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         PRINTS("ANT Pill Heartbeat Received.\r\n");
                     }
                     break;
+                case ANT_PILL_SHAKING:
+                    PRINTS("Shaking\r\n");
+                    break;
 
                 default:
                     break;
