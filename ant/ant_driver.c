@@ -3,6 +3,7 @@
 #include <ant_interface.h>
 #include <ant_parameters.h>
 #include "util.h"
+#include "app.h"
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32
 #define HLO_ANT_NETWORK_KEY {0xA8, 0xAC, 0x20, 0x7A, 0x1D, 0x72, 0xE3, 0x4D}
