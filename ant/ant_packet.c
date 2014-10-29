@@ -6,6 +6,7 @@
 #define UID2CID(uid) ((uint16_t)uid)
 #define PACKET_INTEGRITY_CHECK(buf) (buf[1] != 0 && buf[0] <= buf[1])
 #define DEFAULT_ANT_RETRANSMIT_COUNT 3
+#define DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT 24
 #define DEFAULT_ANT_HEADER_RETRANSMIT_COUNT 5
 
 #ifndef ANT_RETRANSMIT_COUNT
@@ -15,6 +16,9 @@
 #ifndef ANT_HEADER_TRANSMIT_COUNT
 #define ANT_HEADER_TRANSMIT_COUNT DEFAULT_ANT_HEADER_RETRANSMIT_COUNT
 #endif
+
+//defines how old a session can be before getting swept
+#define ANT_SESSION_AGE_LIMIT 4
 
 typedef struct{
     uint8_t page;
@@ -40,6 +44,7 @@ typedef struct{
     int16_t tx_count;
     uint16_t tx_stretch;
     MSG_Data_t * tx_obj;
+    uint32_t age;
 }hlo_ant_packet_session_t;
 
 
@@ -47,6 +52,7 @@ static struct{
     hlo_ant_event_listener_t cbs;
     hlo_ant_packet_session_t entries[ANT_PACKET_MAX_CONCURRENT_SESSIONS];
     hlo_ant_packet_listener * user;
+    uint32_t global_age;
 }self;
 
 static inline uint16_t _calc_checksum(MSG_Data_t * data){
@@ -76,9 +82,11 @@ static inline hlo_ant_packet_session_t *
 _acquire_session(const hlo_ant_device_t * device){
     int i;
     uint16_t cid = device->device_number;
+    ++self.global_age;
     //look for existing session
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == cid){
+            self.entries[i].age = self.global_age;
             return &(self.entries[i]);
         }
     }
@@ -86,6 +94,7 @@ _acquire_session(const hlo_ant_device_t * device){
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid == 0){
             self.entries[i].cid = cid;
+            self.entries[i].age = self.global_age;
             _reset_session_tx(&(self.entries[i]));
             _reset_session_rx(&(self.entries[i]));
             return &(self.entries[i]);
@@ -94,8 +103,23 @@ _acquire_session(const hlo_ant_device_t * device){
     //look for sessions with no tx or rx objects(expired session)
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid != 0 && !self.entries[i].rx_obj && !self.entries[i].tx_obj){
+            self.entries[i].age = self.global_age;
             self.entries[i].cid = cid;
             return &(self.entries[i]);
+        }
+    }
+    //lastly, try look for session with rx object that has age exceeds AGE limit
+    for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
+        if(self.entries[i].cid != 0 && !self.entries[i].tx_obj){
+            if(self.global_age - self.entries[i].age >= ANT_SESSION_AGE_LIMIT){
+                PRINTS("Sweep cid \r\n");
+                PRINT_HEX(&cid,2);
+                PRINTS("\r\n");
+                _reset_session_rx(&(self.entries[i]));
+                self.entries[i].age = self.global_age;
+                self.entries[i].cid = cid;
+                return &(self.entries[i]);
+            }
         }
     }
     return NULL;
@@ -122,11 +146,10 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
             //header
             uint16_t new_crc = (uint16_t)(buffer[7] << 8) + buffer[6];
             uint16_t new_size = (uint16_t)(buffer[5] << 8) + buffer[4];
-            hlo_ant_header_packet_t * new_header = buffer;
             if(new_crc != session->rx_header.checksum){
                 //if crc is new, create new obj
                 //TODO optimize by not swapping objects, but reusing it
-                session->rx_header = *new_header;
+                memcpy(&session->rx_header, buffer, sizeof(hlo_ant_header_packet_t));
                 _reset_session_rx(session);
                 session->rx_obj = MSG_Base_AllocateDataAtomic(new_size);
             }
@@ -147,11 +170,16 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
 static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session->tx_obj){
+        //we always transmit a minimum number of packets regardless of packet size to ensure delivery
+        uint32_t transmit_mark = (( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)) + (session->tx_stretch >> 1);
+        if(transmit_mark < DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT){
+            transmit_mark = DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT;
+        }
         *out_buffer_len = 8;
         if(session->tx_count < 0){
             //copy header to prime transmission
             memcpy(out_buffer, &session->tx_header, 8);
-        }else if(session->tx_count < (( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)) + (session->tx_stretch >> 1)){
+        }else if(session->tx_count < transmit_mark){
             uint16_t mod = session->tx_count % (session->tx_header.page_count+1);
             if(mod == 0){
                 memcpy(out_buffer, &session->tx_header, 8);
@@ -216,7 +244,7 @@ hlo_ant_event_listener_t * hlo_ant_packet_init(const hlo_ant_packet_listener * u
 int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * msg){
     if(msg){
         hlo_ant_packet_session_t * session = _acquire_session(device);
-        if(session){
+        if(session && !session->tx_obj){
             _reset_session_tx(session);
             session->tx_obj = msg;
             MSG_Base_AcquireDataAtomic(msg);
@@ -227,6 +255,7 @@ int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * ms
             return hlo_ant_connect(device);
         }else{
             PRINTS("Session Full \r\n");
+            return -2;
         }
     }
     return -1;
