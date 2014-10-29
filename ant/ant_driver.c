@@ -110,11 +110,14 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
             //bias the period to reduce chance for channel collision
             uint16_t device_period = (1092 - 4) + (device->device_number % 8);
             hlo_ant_channel_phy_t phy = {
-                //TODO set period properly based on deivce number
                 .period = device_period,
                 .frequency = 66,
                 .channel_type = CHANNEL_TYPE_MASTER_TX_ONLY,
+#ifdef USE_HLO_ANT_NETWORK
+                .network = 1
+#else
                 .network = 0
+#endif
             };
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
                 APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, 0));
