@@ -162,20 +162,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         PRINTS("ANT to BLE Command received\r\n");
 
         switch(cmd->cmd){
-            default:
             case BLE_PING:
-                break;
-                /*
-            case BLE_ACK_DEVICE_REMOVED:
-                {
-                    // Reply to the phone the pill in whitelist has been deleted
-                    // The phone should delete the pill from server.
-                    // DONOT keep state here.
-                    MorpheusCommand morpheus_command;
-                    morpheus_command.version = PROTOBUF_VERSION;
-                    morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
-                    morpheus_ble_reply_protobuf(&morpheus_command);
-                }
                 break;
             case BLE_ACK_DEVICE_ADDED:
                 {
@@ -199,7 +186,8 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                     }
                 }
                 break;
-                */
+            default:
+            break;
         }
 
     }
@@ -366,7 +354,7 @@ MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
     self.pill_pairing_request.account_id = account_id_page;
 
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
-#ifdef ANT_ENABLE
+#ifdef HAS_CC3200
     PRINTS("Waiting the pill to reply...\r\n");
     if(!self.timer_id)
     {
@@ -720,12 +708,17 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_START_WIFISCAN:
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS(MSG_NO_MEMORY);
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            }
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
+            {
+                MSG_Data_t* account_id_page = command->accountId.arg;
+                message_ble_pill_pairing_begin(account_id_page);
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
