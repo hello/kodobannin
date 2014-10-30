@@ -109,13 +109,18 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                     if(self.pair_enable){
 
                         MSG_Data_t* ble_cmd_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
-                        memset(ble_cmd_page->buf, 0, ble_cmd_page->len);
-                        MSG_BLECommand_t* ble_cmd = (MSG_BLECommand_t*)ble_cmd_page->buf;
-                        ble_cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                        ble_cmd->param.pill_uid = pill_data->UUID;
+                        if(!ble_cmd_page)
+                        {
+                            PRINTS("No Memory!\r\n");
+                        }else{
+                            memset(ble_cmd_page->buf, 0, ble_cmd_page->len);
+                            MSG_BLECommand_t* ble_cmd = (MSG_BLECommand_t*)ble_cmd_page->buf;
+                            ble_cmd->cmd = BLE_ACK_DEVICE_ADDED;
+                            ble_cmd->param.pill_uid = pill_data->UUID;
 
-                        self.parent->dispatch(src, (MSG_Address_t){BLE, 0}, ble_cmd_page);
-                        MSG_Base_ReleaseDataAtomic(ble_cmd_page);
+                            self.parent->dispatch(src, (MSG_Address_t){BLE, 0}, ble_cmd_page);
+                            MSG_Base_ReleaseDataAtomic(ble_cmd_page);
+                        }
                     }
                     break;
 
