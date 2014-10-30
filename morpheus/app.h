@@ -40,7 +40,7 @@ enum {
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800
+#define APP_ADV_INTERVAL                     320
 
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           (1800)
