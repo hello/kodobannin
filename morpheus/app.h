@@ -16,7 +16,7 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Sense"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT3.1"
+#define BLE_MODEL_NUM         "EVT3.5"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -105,4 +105,4 @@ enum {
 #define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER))
 
 //fatory app allows more capabilities
-#define FACTORY_APP
+//#define FACTORY_APP

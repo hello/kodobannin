@@ -61,6 +61,10 @@ typedef struct
     uint32_t uptime_sec;
 }__attribute__((packed)) pill_heartbeat_t;
 
+typedef struct{
+    uint64_t time;
+}__attribute__((packed)) pill_shakedata_t;
+
 typedef enum {
     ANT_PILL_DATA = 0,
     ANT_PILL_HEARTBEAT,
