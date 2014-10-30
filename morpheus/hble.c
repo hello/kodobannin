@@ -444,7 +444,7 @@ void hble_advertising_start()
 
         APP_OK(err_code);
 
-        nrf_delay_ms(150);  // This is a must!
+        nrf_delay_ms(1000);  // This is a must!
         
     }
     else
