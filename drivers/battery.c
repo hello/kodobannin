@@ -137,7 +137,11 @@ void ADC_IRQHandler(void)
     
 }
 uint8_t battery_get_percent_cached(){
+#ifdef PLATFORM_HAS_VERSION
     return percentage_batt_lvl;
+#else
+    return BATTERY_INVALID_MEASUREMENT;
+#endif
 }
 
 void battery_module_power_on()
