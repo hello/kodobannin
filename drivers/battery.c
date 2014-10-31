@@ -48,6 +48,7 @@
 
 
 static batter_measure_callback_t _battery_measure_callback;
+static uint8_t percentage_batt_lvl;
 
 
 
@@ -115,7 +116,7 @@ void ADC_IRQHandler(void)
 
         uint32_t battery_milvolt = adc_result;
         uint32_t batt_lvl_in_micro_volts = ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
-        uint8_t percentage_batt_lvl     = _battery_level_in_percent(batt_lvl_in_micro_volts / 1000);
+        percentage_batt_lvl     = _battery_level_in_percent(batt_lvl_in_micro_volts / 1000);
         
 
         if(_battery_measure_callback)  // I assume there is no race condition here.
@@ -134,6 +135,9 @@ void ADC_IRQHandler(void)
     battery_module_power_off();
     
     
+}
+uint8_t battery_get_percent_cached(){
+    return percentage_batt_lvl;
 }
 
 void battery_module_power_on()
