@@ -152,6 +152,7 @@ void battery_module_power_on()
 
 uint32_t battery_measurement_begin(batter_measure_callback_t callback)
 {
+#ifdef PLATFORM_HAS_VERSION
 
     if(callback)
     {
@@ -187,6 +188,9 @@ uint32_t battery_measurement_begin(batter_measure_callback_t callback)
     NRF_ADC->TASKS_START = 1;
 
     return err_code;
+#else
+    return NRF_SUCCESS;
+#endif
 }
 
 /**
