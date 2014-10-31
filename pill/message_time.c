@@ -65,7 +65,9 @@ static void _send_available_data_ant(){
                 aes128_ctr_encrypt_inplace(motion_data->payload, rawDataSize, get_aes128_key(), nonce);
                 memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
                 self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
-                self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
+                /*
+                 *self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
+                 */
             }else{
                 //pools closed
             }
