@@ -247,7 +247,9 @@ static bool _dispatch_packet(struct hlo_ble_packet * t){
 			break;
 		default:
 		case BLE_ERROR_NO_TX_BUFFERS:
-			PRINTS("Send notification failed.\r\n");
+			PRINTS("Send notification failed: ");
+			PRINT_HEX(&err, 4);
+			PRINTS("\r\n");
 			if(_notify_context.callback_info.on_failed)
 			{
 				_notify_context.callback_info.on_failed(_notify_context.callback_info.callback_data);
