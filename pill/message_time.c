@@ -86,9 +86,9 @@ static void _send_heartbeat_data_ant(){
     if(data_page){
         pill_heartbeat_t heartbeat = {0};
 
-        heartbeat.battery_level = 100,
-        heartbeat.uptime_sec = self.uptime,
-        heartbeat.firmware_version = FIRMWARE_VERSION_8BIT,
+        heartbeat.battery_level = battery_get_percent_cached();
+        heartbeat.uptime_sec = self.uptime;
+        heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
         
         memset(&data_page->buf, 0, data_page->len);
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
