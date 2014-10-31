@@ -16,7 +16,7 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Sense"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT3.6"
+#define BLE_MODEL_NUM         "EVT3.7"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -106,3 +106,5 @@ enum {
 
 //fatory app allows more capabilities
 //#define FACTORY_APP
+//use hello's ant network key
+//#define USE_HLO_ANT_NETWORK

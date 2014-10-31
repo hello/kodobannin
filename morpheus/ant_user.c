@@ -138,7 +138,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                     if(morpheus_ble_encode_protobuf(&morpheus_command, proto_page->buf, &proto_len))
                     {
                         self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
-                        self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
+                        /*
+                         *self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
+                         */
                     }
                     MSG_Base_ReleaseDataAtomic(proto_page);
                 }else{
