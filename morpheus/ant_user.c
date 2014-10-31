@@ -10,6 +10,7 @@
 #include "app.h"
 
 #include "hble.h"
+#include "battery.h"
 
 static struct{
     MSG_Central_t * parent;
