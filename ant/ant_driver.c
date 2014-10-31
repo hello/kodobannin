@@ -3,8 +3,10 @@
 #include <ant_interface.h>
 #include <ant_parameters.h>
 #include "util.h"
+#include "app.h"
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32
+#define HLO_ANT_NETWORK_KEY {0xA8, 0xAC, 0x20, 0x7A, 0x1D, 0x72, 0xE3, 0x4D}
 typedef struct{
     //cached status
     uint8_t reserved;
@@ -76,9 +78,16 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
         .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0
     };
-    uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
+
     sd_ant_stack_reset();
+
+#ifdef USE_HLO_ANT_NETWORK
+    uint8_t network_key[8] = HLO_ANT_NETWORK_KEY;
     sd_ant_network_address_set(0,network_key);
+#else
+    uint8_t network_key[8] = {0,0,0,0,0,0,0,0};
+    sd_ant_network_address_set(0,network_key);
+#endif
     hlo_ant_device_t device = {0};
     if(!user){
         return -1;
@@ -107,11 +116,12 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
         //open channel
         int new_ch = _find_unassigned_channel(begin, 7);
         if(new_ch >= begin){
+            //bias the period to reduce chance for channel collision
+            uint16_t device_period = (1092 - 4) + (device->device_number % 8);
             hlo_ant_channel_phy_t phy = {
-                //TODO set period properly based on deivce number
-                .period = 1092,
+                .period = device_period,
                 .frequency = 66,
-                .channel_type = CHANNEL_TYPE_MASTER,
+                .channel_type = CHANNEL_TYPE_MASTER_TX_ONLY,
                 .network = 0
             };
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
