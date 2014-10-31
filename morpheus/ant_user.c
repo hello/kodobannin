@@ -91,9 +91,11 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         // http://dbp-consulting.com/StrictAliasing.pdf
                         memcpy(&heartbeat, pill_data->payload, sizeof(pill_heartbeat_t));
 
-                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
-                        morpheus_command.has_batteryLevel = true;
-                        morpheus_command.batteryLevel = heartbeat.battery_level;
+                        if(heartbeat.battery_level != BATTERY_INVALID_MEASUREMENT){
+                            morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
+                            morpheus_command.has_batteryLevel = true;
+                            morpheus_command.batteryLevel = heartbeat.battery_level;
+                        }
 
                         morpheus_command.has_uptime = true;
                         morpheus_command.uptime = heartbeat.uptime_sec;
