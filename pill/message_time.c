@@ -119,6 +119,8 @@ static void _timer_handler(void * ctx){
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
     {
         _send_heartbeat_data_ant();
+        battery_module_power_on();
+        battery_measurement_begin(NULL);
     }
 #endif
     
