@@ -43,7 +43,7 @@ enum {
 #define APP_ADV_INTERVAL                     320
 
 // Advertising timeout in units of seconds.
-#define APP_ADV_TIMEOUT_IN_SECONDS           (1800)
+#define APP_ADV_TIMEOUT_IN_SECONDS           (0)
 
 // Definition of 1 second, when 1 unit is 1.25 ms.
 #define SECOND_1_25_MS_UNITS                    800
