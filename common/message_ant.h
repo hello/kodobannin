@@ -62,7 +62,7 @@ typedef struct
 }__attribute__((packed)) pill_heartbeat_t;
 
 typedef struct{
-    uint64_t time;
+    uint8_t counter;
 }__attribute__((packed)) pill_shakedata_t;
 
 typedef enum {
