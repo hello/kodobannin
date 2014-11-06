@@ -179,6 +179,7 @@ static void _on_wom_timer(void* context)
 }
 
 static void _on_pill_pairing_guesture_detected(void){
+	static uint8_t counter;
     //TODO: send pairing request packets via ANT
 #ifdef ANT_ENABLE
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_shakedata_t));
@@ -189,7 +190,7 @@ static void _on_pill_pairing_guesture_detected(void){
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_SHAKING;
         ant_data->UUID = GET_UUID_64();
-		MSG_Time_GetMonotonicTime(&shake_data->time);
+		shake_data->counter = counter++;
         parent->dispatch((MSG_Address_t){IMU,1}, (MSG_Address_t){ANT,1}, data_page);
         MSG_Base_ReleaseDataAtomic(data_page);
     }
