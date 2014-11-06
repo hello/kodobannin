@@ -86,6 +86,9 @@ static void _init_rf_modules()
     PRINTS("ble_init() done.\r\n");
     hble_update_battery_level();
     hble_advertising_start();
+#else
+	battery_module_power_on();
+	battery_measurement_begin(NULL);
 #endif
     PRINTS("INIT DONE.\r\n");
 }
