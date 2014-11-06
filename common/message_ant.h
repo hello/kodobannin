@@ -59,7 +59,6 @@ typedef struct
     uint8_t battery_level;
     uint8_t firmware_version;
     uint32_t uptime_sec;
-    uint16_t adc_val;
 }__attribute__((packed)) pill_heartbeat_t;
 
 typedef struct{
