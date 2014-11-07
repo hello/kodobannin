@@ -11,6 +11,8 @@
 #include "message_ble.h"
 #include "hble.h"
 #include "morpheus_ble.h"
+#include "ble_bondmngr.h"
+#include "nrf_delay.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -282,7 +284,7 @@ static void _release_pending_resources(){
     }
 }
 
-MSG_Status message_ble_remove_pill(const MSG_Data_t* pill_id_page)
+MSG_Status message_ble_remove_pill(MSG_Data_t* pill_id_page)
 {
     if(SUCCESS != MSG_Base_AcquireDataAtomic(pill_id_page)){
         morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
@@ -346,7 +348,7 @@ static void _pill_pairing_time_out(void* context)
 
 
 
-MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
+MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
 {
     _release_pending_resources();
 
@@ -384,7 +386,7 @@ MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
 
 }
 
-MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
+MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
     
     if(SUCCESS == MSG_Base_AcquireDataAtomic(data)){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
@@ -679,7 +681,7 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Base_ReleaseDataAtomic(command->accountId.arg);
 }
 
-void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusCommand* command)
+void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command)
 {
     MSG_Base_AcquireDataAtomic(data_page);
     // A protobuf actually occupy multiple pages..

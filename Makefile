@@ -6,7 +6,7 @@ all: b m
 # apps & platforms
 
 TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
-APPS = bootloader bootloader_serial morpheus pill $(TEST_APPS)
+APPS = bootloader bootloader_serial morpheus pill
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
 S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1 morpheus_EVT2 pill_EVT2 morpheus_EVT3
@@ -201,7 +201,7 @@ NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV) -DBLE_STAC
 MICROECCFLAGS=-DECC_CURVE=6 # see ecc.h for details
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup -Map=build/build.map
-WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format
+WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format -Wno-sign-compare -Wno-nonnull -Wno-pointer-sign
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -std=gnu99 -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 

@@ -4,7 +4,7 @@
 
 static struct{
     MSG_Base_t base;
-    MSG_Central_t * parent;
+    const MSG_Central_t * parent;
     bool initialized;
     MSG_Data_t * rx_buf;
     uint16_t rx_index;
@@ -154,7 +154,7 @@ MSG_Base_t * MSG_Uart_Base(const app_uart_comm_params_t * params, const MSG_Cent
 }
 void MSG_Uart_Prints(const char * str){
     if(self.initialized){
-        char * head = str;
+        const char * head = str;
         while(*head){
             app_uart_put(*head);
             head++;

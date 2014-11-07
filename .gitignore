@@ -2,6 +2,7 @@
 *.swp
 *.swn
 build/
+patches/*
 .clang_complete
 */.DS_Store
 .DS_Store

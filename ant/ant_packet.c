@@ -1,6 +1,7 @@
 #include "ant_packet.h"
 #include "util.h"
 #include "crc16.h"
+#include <string.h>
 
 #define CID2UID(cid) (cid)
 #define UID2CID(uid) ((uint16_t)uid)
@@ -51,7 +52,7 @@ typedef struct{
 static struct{
     hlo_ant_event_listener_t cbs;
     hlo_ant_packet_session_t entries[ANT_PACKET_MAX_CONCURRENT_SESSIONS];
-    hlo_ant_packet_listener * user;
+    const hlo_ant_packet_listener * user;
     uint32_t global_age;
 }self;
 
@@ -59,7 +60,7 @@ static inline uint16_t _calc_checksum(MSG_Data_t * data){
     return (crc16_compute(data->buf, data->len, NULL));
 }
 
-static inline DECREF
+static inline DECREF void
 _reset_session_tx(hlo_ant_packet_session_t * session){
     if(session->tx_obj){
         MSG_Base_ReleaseDataAtomic(session->tx_obj);
@@ -69,7 +70,7 @@ _reset_session_tx(hlo_ant_packet_session_t * session){
     session->tx_count = ANT_HEADER_TRANSMIT_COUNT * -1;
     session->tx_stretch = 0;
 }
-static inline DECREF
+static inline DECREF void
 _reset_session_rx(hlo_ant_packet_session_t * session){
     if(session->rx_obj){
         MSG_Base_ReleaseDataAtomic(session->rx_obj);
@@ -124,7 +125,7 @@ _acquire_session(const hlo_ant_device_t * device){
     }
     return NULL;
 }
-static inline
+static inline void
 _close_session(hlo_ant_packet_session_t * session){
     _reset_session_rx(session);
     _reset_session_tx(session);

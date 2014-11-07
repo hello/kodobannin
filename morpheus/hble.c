@@ -16,6 +16,7 @@
 #include <softdevice_handler.h>
 #include "app.h"
 #include "platform.h"
+#include "nrf_delay.h"
 
 #ifdef BONDING_REQUIRED
 #include "ble_bondmngr_cfg.h"
@@ -38,7 +39,7 @@ static ble_gap_sec_params_t _sec_params;
 static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
-static volatile uint64_t _device_id;
+static uint64_t _device_id;
 
 static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
@@ -546,8 +547,6 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
     const char* hex_table = "0123456789ABCDEF";
     const uint8_t hex_table_len = strlen(hex_table);
     *device_id = 0;
-
-    uint8_t index = 0;
 
     for(uint8_t i = 0; i < hex_len / 2; i++)
     {

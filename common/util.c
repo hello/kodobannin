@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <nrf_soc.h>
+#include <string.h>
 #include <simple_uart.h>
 
 #include "util.h"
