@@ -109,7 +109,11 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         //donp't have queue atm, dropping extra data for now
         if(self.paired_devices[idx].device_number){
             int ret = hlo_ant_packet_send_message(&self.paired_devices[idx], data);
-            //TODO user status update on error
+            if(ret == 0){
+                return SUCCESS;
+            }else{
+                //what do?
+            }
         }
     }
     return SUCCESS;
