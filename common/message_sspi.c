@@ -1,6 +1,7 @@
 #include "message_sspi.h"
 #include <nrf_gpio.h>
 #include "util.h"
+#include <string.h>
 
 #define REG_READ_FROM_SSPI  0
 #define REG_WRITE_TO_SSPI 1
