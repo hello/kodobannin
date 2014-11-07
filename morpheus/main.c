@@ -14,6 +14,7 @@
 #include <spi.h>
 #include <spi_nor.h>
 #include <util.h>
+#include "pstorage.h"
 
 #include "platform.h"
 
