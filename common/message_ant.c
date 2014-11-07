@@ -4,7 +4,7 @@
 static struct{
     MSG_Central_t * parent;
     MSG_Base_t base;
-    MSG_ANTHandler_t * user_handler;
+    const MSG_ANTHandler_t * user_handler;
     hlo_ant_packet_listener message_listener;
     hlo_ant_device_t paired_devices[DEFAULT_ANT_BOND_COUNT];//TODO macro this in later
 }self;
