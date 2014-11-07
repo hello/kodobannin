@@ -6,7 +6,7 @@ all: b m
 # apps & platforms
 
 TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
-APPS = bootloader bootloader_serial morpheus pill $(TEST_APPS)
+APPS = bootloader bootloader_serial morpheus pill
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
 S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1 morpheus_EVT2 pill_EVT2 morpheus_EVT3
