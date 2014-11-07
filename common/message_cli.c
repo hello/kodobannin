@@ -9,7 +9,7 @@
  **/
 static struct{
     MSG_Base_t base;
-    MSG_Central_t * parent;
+    const MSG_Central_t * parent;
     MSG_CliUserListener_t user;
 }self;
 static char * name = "CLI";
