@@ -228,7 +228,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                         // If not connected, the delay task will not 
                         // triggered by disconnect, we need to manually 
                         // start it.
-                        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL);
+                        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
                     }else{
                         hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
                         morpheus_ble_free_protobuf(&command);  // Always free protobuf here.

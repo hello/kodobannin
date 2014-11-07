@@ -168,7 +168,7 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
 	morpheus_ble_transmission_layer_reset();
-    hble_start_delay_tasks(100, _tasks);
+    hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
     PRINTS("delay task started\r\n");
 
 }
@@ -181,7 +181,7 @@ static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
         _delay_task_memory_checkpoint,
         NULL
     };
-    hble_start_delay_tasks(100, tasks);
+    hble_start_delay_tasks(100, tasks, MAX_DELAY_TASKS);
 }
 
 
@@ -197,11 +197,18 @@ bool hble_set_delay_task(uint8_t index, const delay_task_t task)
     return true;
 }
 
-void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks)
+void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks, uint8_t task_len)
 {
+    if(task_len > MAX_DELAY_TASKS)
+    {
+        PRINTS("Too many tasks!\r\n");
+        return;
+    }
+
     if(tasks != _tasks && tasks)
     {
-        memcpy(_tasks, tasks, sizeof(_tasks));
+        memset(_tasks, 0, sizeof(_tasks));
+        memcpy(_tasks, tasks, sizeof(delay_task_t) * task_len);
     }
     //nrf_delay_ms(100);
     _task_index = 0;
