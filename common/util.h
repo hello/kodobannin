@@ -20,7 +20,7 @@ extern const uint8_t hex[16];
 
 #if defined(DEBUG_SERIAL) || defined(PLATFORM_HAS_SERIAL_CROSS_CONNECT)
 #include <simple_uart.h>
-#define PRINT_HEX(a,b) MSG_Uart_PrintHex(a,b) 
+#define PRINT_HEX(a,b) MSG_Uart_PrintHex((uint8_t*)a,b)
 #define PRINTS(a) MSG_Uart_Prints(a)
 #define PRINTC(a) {}
 #define SIMPRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
