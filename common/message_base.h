@@ -38,7 +38,7 @@ typedef struct _MSG_Data_t{
      * data buffer
      */
     uint8_t buf[0];
-}MSG_Data_t __attribute__((packed));
+}__attribute__((packed)) MSG_Data_t;
 
 
 typedef enum{
