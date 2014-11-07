@@ -368,7 +368,9 @@ static void _advertising_data_init(uint8_t flags){
     ble_uuid_t adv_uuids[] = {_service_uuid};
 
     //uint8_t data[1] = {0xAA};
-    uint8_array_t data_array = { .p_data = &_device_id, .size = DEVICE_ID_SIZE };
+    uint8_t device_id_cpy[sizeof(_device_id)];
+    memcpy(device_id_cpy, &_device_id, sizeof(_device_id));
+    uint8_array_t data_array = { .p_data = device_id_cpy, .size = DEVICE_ID_SIZE };
 
 
     ble_advdata_service_data_t  srv_data = { 
@@ -493,7 +495,9 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
     PRINTS("\r\n");
     */
     
-    uint8_t* ptr = &device_id;
+    uint8_t device_id_cpy[sizeof(device_id)];
+    memcpy(device_id_cpy, &device_id, sizeof(device_id));
+    uint8_t* ptr = device_id_cpy;
 
     size_t index = 0;
     for(size_t i = 0; i < actual_len; i++)
