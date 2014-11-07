@@ -14,7 +14,7 @@ typedef enum{
 
 static struct{
     MSG_Base_t base;
-    MSG_Central_t * parent;
+    const MSG_Central_t * parent;
     spi_slave_config_t config;
     volatile SSPIState current_state;
     uint8_t control_reg;
@@ -255,9 +255,6 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 
 static void
 _spi_evt_handler(spi_slave_evt_t event){
-    uint8_t swap;
-    char t[3] = {0};
-    uint32_t ret = 0;
     switch(event.evt_type){
         case SPI_SLAVE_BUFFERS_SET_DONE:
             break;
@@ -285,7 +282,6 @@ _spi_evt_handler(spi_slave_evt_t event){
 }
 static MSG_Status
 _init(){
-    uint32_t ret;
     if(spi_slave_init(&self.config) || 
             spi_slave_evt_handler_register(_spi_evt_handler)){
         /*
