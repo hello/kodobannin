@@ -1,6 +1,8 @@
 #include "cli_user.h"
 #include "util.h"
 #include <nrf_soc.h>
+#include <string.h>
+#include "ant_driver.h"
 #include "app.h"
 
 static struct{
