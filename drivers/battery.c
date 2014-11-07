@@ -43,11 +43,13 @@
  * @param[in]  ADC_VALUE   ADC result.
  * @retval     Result converted to millivolts.
  */
-#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)   ((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS / 255 * ADC_PRE_SCALING_COMPENSATION)
+
+#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)   ((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS / 1023 * ADC_PRE_SCALING_COMPENSATION)
 //#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)     ((((ADC_REF_VOLTAGE_IN_MILLIVOLTS)))
 
 
 static batter_measure_callback_t _battery_measure_callback;
+static uint8_t percentage_batt_lvl;
 
 
 
@@ -73,29 +75,29 @@ static inline uint8_t _battery_level_in_percent(const uint16_t mvolts)
 {
     uint8_t battery_level;
 
-    if (mvolts >= 3170)
+    if (mvolts >= 2883)
     {
         battery_level = 100;
     }
-    else if (mvolts > 3065)
+    else if (mvolts > 2855)
     {
-        battery_level = 100 - ((3170 - mvolts) * 58) / 100;
+        battery_level = 80;
     }
-    else if (mvolts > 2875)
+    else if (mvolts > 2828)
     {
-        battery_level = 42 - ((3065 - mvolts) * 24) / 160;
+        battery_level = 60;
     }
-    else if (mvolts > 2462)
+    else if (mvolts > 2780)
     {
-        battery_level = 18 - ((2875 - mvolts) * 12) / 300;
+        battery_level = 40;
     }
-    else if (mvolts > 2129)
+    else if (mvolts > 2750)
     {
-        battery_level = 6 - ((2462 - mvolts) * 6) / 340;
+        battery_level = 20;
     }
     else
     {
-        battery_level = 0;
+        battery_level = 5;
     }
 
     return battery_level;
@@ -115,7 +117,7 @@ void ADC_IRQHandler(void)
 
         uint32_t battery_milvolt = adc_result;
         uint32_t batt_lvl_in_micro_volts = ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
-        uint8_t percentage_batt_lvl     = _battery_level_in_percent(batt_lvl_in_micro_volts / 1000);
+        percentage_batt_lvl     = _battery_level_in_percent(batt_lvl_in_micro_volts / 1000);
         
 
         if(_battery_measure_callback)  // I assume there is no race condition here.
@@ -135,6 +137,13 @@ void ADC_IRQHandler(void)
     
     
 }
+uint8_t battery_get_percent_cached(){
+#ifdef PLATFORM_HAS_VERSION
+    return percentage_batt_lvl;
+#else
+    return BATTERY_INVALID_MEASUREMENT;
+#endif
+}
 
 void battery_module_power_on()
 {
@@ -148,6 +157,7 @@ void battery_module_power_on()
 
 uint32_t battery_measurement_begin(batter_measure_callback_t callback)
 {
+#ifdef PLATFORM_HAS_VERSION
 
     if(callback)
     {
@@ -183,6 +193,9 @@ uint32_t battery_measurement_begin(batter_measure_callback_t callback)
     NRF_ADC->TASKS_START = 1;
 
     return err_code;
+#else
+    return NRF_SUCCESS;
+#endif
 }
 
 /**

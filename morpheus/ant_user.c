@@ -10,6 +10,7 @@
 #include "app.h"
 
 #include "hble.h"
+#include "battery.h"
 
 static struct{
     MSG_Central_t * parent;
@@ -115,12 +116,13 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         pill_heartbeat_t heartbeat = {0};
                         // http://dbp-consulting.com/StrictAliasing.pdf
                         memcpy(&heartbeat, pill_data->payload, sizeof(pill_heartbeat_t));
-
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
                         morpheus_command.has_pill_data = true;
 
-                        morpheus_command.pill_data.has_battery_level = true;
-                        morpheus_command.pill_data.battery_level = heartbeat.battery_level;
+                        if(heartbeat.battery_level != BATTERY_INVALID_MEASUREMENT){
+                            morpheus_command.pill_data.has_battery_level = true;
+                            morpheus_command.pill_data.battery_level = heartbeat.battery_level;
+                        }
 
                         morpheus_command.pill_data.has_uptime = true;
                         morpheus_command.pill_data.uptime = heartbeat.uptime_sec;
