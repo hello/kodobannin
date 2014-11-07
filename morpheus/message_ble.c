@@ -559,7 +559,7 @@ static void _erase_bonded_users(){
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
     
-    command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE;
+    command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE;
     command.version = PROTOBUF_VERSION;
     morpheus_ble_reply_protobuf(&command);
 }
@@ -724,7 +724,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
             _pair_morpheus(command);
             break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE:
             _erase_bonded_users();
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
