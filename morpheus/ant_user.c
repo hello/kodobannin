@@ -77,32 +77,62 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                 case ANT_PILL_DATA_ENCRYPTED:
                     {
                         // TODO: Jackson please test this
-                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
-                        MSG_Data_t* encrypted_data = MSG_Base_AllocateDataAtomic(pill_data->payload_len);
-                        memset(encrypted_data->buf, 0, encrypted_data->len);
-                        memcpy(encrypted_data->buf, pill_data->payload, pill_data->payload_len);
+                        if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
+                        {
+                            PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
+                            APP_OK(NRF_ERROR_NO_MEM);
+                        }
 
-                        morpheus_command.motionDataEntrypted.arg = encrypted_data;
-                        PRINTS("ANT Encrypted Pill Data Received.\r\n");
+                        if(pill_data->payload_len > sizeof(morpheus_command.pill_data.motion_data_entrypted.bytes))
+                        {
+                            PRINTS("PLEASE REDESIGN PROTOBUF, payload tooo long\r\n");
+                            APP_OK(NRF_ERROR_NO_MEM);
+                        }
+
+
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
+                        morpheus_command.has_pill_data = true;
+
+                        morpheus_command.pill_data.has_motion_data_entrypted = true;
+                        memcpy(morpheus_command.pill_data.motion_data_entrypted.bytes, pill_data->payload, pill_data->payload_len);
+                        morpheus_command.pill_data.motion_data_entrypted.size = pill_data->payload_len;
+
+                        memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
+
+                        morpheus_command.pill_data.timestamp = 0;
+                        PRINTS("ANT Encrypted Pill Data Received:");
+                        PRINTS(morpheus_command.pill_data.device_id);
+                        PRINTS("\r\n");
                     }
                     break;
                 case ANT_PILL_HEARTBEAT:
                     {
+                        if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
+                        {
+                            PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
+                            APP_OK(NRF_ERROR_NO_MEM);
+                        }
+
                         pill_heartbeat_t heartbeat = {0};
                         // http://dbp-consulting.com/StrictAliasing.pdf
                         memcpy(&heartbeat, pill_data->payload, sizeof(pill_heartbeat_t));
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
+                        morpheus_command.has_pill_data = true;
 
                         if(heartbeat.battery_level != BATTERY_INVALID_MEASUREMENT){
-                            morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
-                            morpheus_command.has_batteryLevel = true;
-                            morpheus_command.batteryLevel = heartbeat.battery_level;
+                            morpheus_command.pill_data.has_battery_level = true;
+                            morpheus_command.pill_data.battery_level = heartbeat.battery_level;
                         }
 
-                        morpheus_command.has_uptime = true;
-                        morpheus_command.uptime = heartbeat.uptime_sec;
+                        morpheus_command.pill_data.has_uptime = true;
+                        morpheus_command.pill_data.uptime = heartbeat.uptime_sec;
 
-                        morpheus_command.has_firmwareVersion = true;
-                        morpheus_command.firmwareVersion = heartbeat.firmware_version;
+                        morpheus_command.pill_data.has_firmware_version = true;
+                        morpheus_command.pill_data.firmware_version = heartbeat.firmware_version;
+
+                        memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
+
+                        morpheus_command.pill_data.timestamp = 0;
                         PRINTS("ANT Pill Heartbeat Received.\r\n");
                     }
                     break;
