@@ -22,7 +22,7 @@ typedef struct{
 
 static struct{
     hlo_ant_role role;
-    hlo_ant_event_listener_t * event_listener;
+    const hlo_ant_event_listener_t * event_listener;
 }self;
 
 static int _find_open_channel_by_device(const hlo_ant_device_t * device, uint8_t begin, uint8_t end){
