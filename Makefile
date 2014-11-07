@@ -201,7 +201,7 @@ NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV) -DBLE_STAC
 MICROECCFLAGS=-DECC_CURVE=6 # see ecc.h for details
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup -Map=build/build.map
-WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format -Wno-sign-compare -Wno-pointer-sign -Werror
+WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format -Wno-sign-compare -Wno-nonnull -Wno-pointer-sign -Werror
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -std=gnu99 -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 
