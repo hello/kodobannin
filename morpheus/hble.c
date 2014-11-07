@@ -226,7 +226,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
             hble_delay_task_advertise_resume, 
             _delay_task_resume_ant, 
             _delay_task_memory_checkpoint};
-        memcpy(&_tasks, &tasks, sizeof(_tasks));
+        memcpy(_tasks, tasks, sizeof(_tasks));
     }
         break;
     case BLE_GAP_EVT_DISCONNECTED:

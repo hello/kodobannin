@@ -111,7 +111,8 @@ static void _init_ble_stack(const MorpheusCommand* command)
             hble_stack_init();
 
 #ifdef BONDING_REQUIRED     
-            hble_bond_manager_init();     
+            hble_bond_manager_init();
+            nrf_delay_ms(200);    
 #endif
             // append something to device name
             char device_name[strlen(BLE_DEVICE_NAME)+4];
