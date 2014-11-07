@@ -134,8 +134,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
             };
 
             hble_advertising_init(service_uuid);
-            
-            hble_advertising_start();
         }else{
             PRINTS("INIT Error, no device id presented.");
         }
@@ -415,6 +413,10 @@ MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
 static void _request_device_id(void* context)
 {
     if(hble_get_device_id() != 0){
+
+        hble_advertising_start();
+        nrf_delay_ms(100);
+
         PRINTS("Boot completed!\r\n");
         return;
     }else{

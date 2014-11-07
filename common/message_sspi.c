@@ -192,7 +192,7 @@ _handle_transaction(){
              */
             //send and release
             self.parent->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){BLE, 0}, self.transaction.payload);
-            self.parent->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){UART, 1}, self.transaction.payload);
+            //self.parent->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){UART, 1}, self.transaction.payload);
 
             if(self.transaction.payload){
                 MSG_Base_ReleaseDataAtomic(self.transaction.payload);
