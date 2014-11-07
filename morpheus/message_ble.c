@@ -11,6 +11,8 @@
 #include "message_ble.h"
 #include "hble.h"
 #include "morpheus_ble.h"
+#include "ble_bondmngr.h"
+#include "nrf_delay.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
