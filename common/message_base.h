@@ -72,7 +72,7 @@ typedef struct{
  */
 typedef struct{
     MSG_ModuleType type;
-    char * typestr;
+    const char * typestr;
     MSG_Status ( *init ) ( void );
     MSG_Status ( *destroy ) ( void );
     MSG_Status ( *flush ) ( void );
