@@ -69,7 +69,6 @@ static MSG_Status
 _handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     char * argv[CLI_MAX_ARGS] = {0};
     int argc = _tokenize(data->buf,argv);
-    int i;
     /*
      *PRINTS("args: \r\n");
      *for(i = 0; i < argc; i++){
