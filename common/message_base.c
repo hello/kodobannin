@@ -170,7 +170,6 @@ _inspect(MSG_Data_t * o){
 }
 MSG_Status
 MSG_Base_BufferTest(void){
-    uint8_t junk = 5;
     MSG_Data_t * objbig = NULL;
     MSG_Data_t * obj = NULL;
     for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE; i++){
