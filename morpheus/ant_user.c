@@ -154,6 +154,8 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                             self.parent->dispatch(src, (MSG_Address_t){BLE, 0}, ble_cmd_page);
                             MSG_Base_ReleaseDataAtomic(ble_cmd_page);
                         }
+                    }else{
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_SHAKES;
                     }
                     break;
 
