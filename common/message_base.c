@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <string.h>
 #include <app_util.h>
 #include <nrf_soc.h>
 #include "message_base.h"
