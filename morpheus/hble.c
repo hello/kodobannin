@@ -439,12 +439,11 @@ void hble_advertising_start()
             PRINTS("get whitelist error: ");
             PRINT_HEX(&err_code, sizeof(err_code));
             PRINTS("\r\n");
+            nrf_delay_ms(100);
             flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
         }
 
         APP_OK(err_code);
-
-        nrf_delay_ms(1000);  // This is a must!
         
     }
     else

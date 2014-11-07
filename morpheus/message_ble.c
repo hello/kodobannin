@@ -98,23 +98,17 @@ static void _init_ble_stack(const MorpheusCommand* command)
             PRINTS("Hex device id:");
             PRINTS(data_page->buf);
             PRINTS("\r\n");
-
-            nrf_delay_ms(100);
-
             uint64_t device_id = 0;
             
             if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
             {
                 PRINTS("Get device id failed.\r\n");
+                nrf_delay_ms(100);
                 APP_ASSERT(0);
             }
             
 
             hble_stack_init();
-
-#ifdef BONDING_REQUIRED   
-            hble_bond_manager_init();
-#endif
             // append something to device name
             char device_name[strlen(BLE_DEVICE_NAME)+4];
             memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
@@ -211,6 +205,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 }
                 break;
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
+                PRINTS("DFU from CC3200..\r\n");
                     _start_morpheus_dfu_process();  // It's just that simple.
                 break;
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
