@@ -354,11 +354,13 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
     switch(event->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
         _connection_handle = event->evt.gap_evt.conn_handle;
-        DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
+        PRINTS("Connect from MAC: ");
+        PRINT_HEX(&event->evt.gap_evt.params.connected.peer_addr.addr, sizeof(event->evt.gap_evt.params.connected.peer_addr.addr));
         PRINTS("\r\n");
         break;
     case BLE_GAP_EVT_DISCONNECTED:
-        DEBUG("Disconnected: ", event->evt.gap_evt.params.disconnected.reason);
+        PRINTS("Disconnected: ");
+        PRINT_HEX(&event->evt.gap_evt.params.disconnected.reason, sizeof(event->evt.gap_evt.params.disconnected.reason));
         PRINTS("\r\n");
         _connection_handle = BLE_CONN_HANDLE_INVALID;
         break;
@@ -375,7 +377,8 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         //_dispatch_queue_packet();
         break;
     default:
-        DEBUG("Unknown BLE event: ", event->header.evt_id);
+        PRINTS("Unknown BLE event: ");
+        PRINT_HEX(&event->header.evt_id, sizeof(event->header.evt_id));
         PRINTS("\r\n");
         break;
     }
