@@ -77,10 +77,6 @@ _start()
     APP_OK(pstorage_init());
     nrf_delay_ms(100);
 
-#ifdef BONDING_REQUIRED   
-    hble_bond_manager_init();
-#endif
-
     morpheus_load_modules();
 
     //hble_init(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, true, device_name, hlo_ble_on_ble_evt);
