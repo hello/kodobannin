@@ -145,7 +145,6 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
 int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
-    int ret;
     if(ch >= begin){
         PRINTS("Closing Channel = ");
         PRINT_HEX(&ch, 1);
@@ -227,7 +226,7 @@ _handle_tx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
 void ant_handler(ant_evt_t * p_ant_evt){
     uint8_t event = p_ant_evt->event;
     uint8_t ant_channel = p_ant_evt->channel;
-    uint32_t * event_message_buffer = p_ant_evt->evt_buffer;
+    uint8_t * event_message_buffer = (uint8_t*)p_ant_evt->evt_buffer;
     switch(event){
         case EVENT_RX_FAIL:
             break;
