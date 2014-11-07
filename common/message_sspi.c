@@ -161,7 +161,7 @@ _handle_transaction(){
              */
             self.transaction.payload = MSG_Base_AllocateDataAtomic(self.transaction.context_reg.length);
             if(self.transaction.payload){
-                spi_slave_buffers_set(self.transaction.payload->buf, &self.transaction.payload->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
+                spi_slave_buffers_set(self.transaction.payload->buf, self.transaction.payload->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
                 self.transaction.state = FIN_READ;
             }else{
                 //no buffer wat do?
