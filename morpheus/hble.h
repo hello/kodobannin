@@ -29,7 +29,7 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
 bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id);
 uint64_t hble_get_device_id();
 bool hble_set_delay_task(uint8_t index, const delay_task_t task);
-void hble_start_delay_tasks(uint32_t delay_ms, const delay_task_t* tasks);
+void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks, uint8_t task_len);
 
 void hble_delay_tasks_erase_bonds();
 void hble_delay_task_advertise_resume();

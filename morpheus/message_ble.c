@@ -11,6 +11,8 @@
 #include "message_ble.h"
 #include "hble.h"
 #include "morpheus_ble.h"
+#include "ble_bondmngr.h"
+#include "nrf_delay.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -98,22 +100,21 @@ static void _init_ble_stack(const MorpheusCommand* command)
             PRINTS("Hex device id:");
             PRINTS(data_page->buf);
             PRINTS("\r\n");
-
-            nrf_delay_ms(100);
-
             uint64_t device_id = 0;
             
             if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
             {
                 PRINTS("Get device id failed.\r\n");
+                nrf_delay_ms(100);
                 APP_ASSERT(0);
             }
             
 
             hble_stack_init();
 
-#ifdef BONDING_REQUIRED   
+#ifdef BONDING_REQUIRED     
             hble_bond_manager_init();
+            nrf_delay_ms(200);    
 #endif
             // append something to device name
             char device_name[strlen(BLE_DEVICE_NAME)+4];
@@ -133,8 +134,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
             };
 
             hble_advertising_init(service_uuid);
-            
-            hble_advertising_start();
         }else{
             PRINTS("INIT Error, no device id presented.");
         }
@@ -211,6 +210,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 }
                 break;
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
+                PRINTS("DFU from CC3200..\r\n");
                     _start_morpheus_dfu_process();  // It's just that simple.
                 break;
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
@@ -228,7 +228,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                         // If not connected, the delay task will not 
                         // triggered by disconnect, we need to manually 
                         // start it.
-                        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL);
+                        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
                     }else{
                         hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
                         morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
@@ -282,7 +282,7 @@ static void _release_pending_resources(){
     }
 }
 
-MSG_Status message_ble_remove_pill(const MSG_Data_t* pill_id_page)
+MSG_Status message_ble_remove_pill(MSG_Data_t* pill_id_page)
 {
     if(SUCCESS != MSG_Base_AcquireDataAtomic(pill_id_page)){
         morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
@@ -346,7 +346,7 @@ static void _pill_pairing_time_out(void* context)
 
 
 
-MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
+MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
 {
     _release_pending_resources();
 
@@ -384,7 +384,7 @@ MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
 
 }
 
-MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
+MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
     
     if(SUCCESS == MSG_Base_AcquireDataAtomic(data)){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
@@ -413,6 +413,10 @@ MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
 static void _request_device_id(void* context)
 {
     if(hble_get_device_id() != 0){
+
+        hble_advertising_start();
+        nrf_delay_ms(100);
+
         PRINTS("Boot completed!\r\n");
         return;
     }else{
@@ -559,7 +563,7 @@ static void _erase_bonded_users(){
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
     
-    command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE;
+    command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE;
     command.version = PROTOBUF_VERSION;
     morpheus_ble_reply_protobuf(&command);
 }
@@ -679,7 +683,7 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Base_ReleaseDataAtomic(command->accountId.arg);
 }
 
-void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusCommand* command)
+void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command)
 {
     MSG_Base_AcquireDataAtomic(data_page);
     // A protobuf actually occupy multiple pages..
@@ -724,7 +728,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
             _pair_morpheus(command);
             break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE:
             _erase_bonded_users();
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:

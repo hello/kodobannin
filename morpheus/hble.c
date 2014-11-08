@@ -16,6 +16,7 @@
 #include <softdevice_handler.h>
 #include "app.h"
 #include "platform.h"
+#include "nrf_delay.h"
 
 #ifdef BONDING_REQUIRED
 #include "ble_bondmngr_cfg.h"
@@ -38,7 +39,7 @@ static ble_gap_sec_params_t _sec_params;
 static bool _pairing_mode = false;
 
 static ble_uuid_t _service_uuid;
-static volatile uint64_t _device_id;
+static uint64_t _device_id;
 
 static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
@@ -168,7 +169,7 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
 	morpheus_ble_transmission_layer_reset();
-    hble_start_delay_tasks(100, _tasks);
+    hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
     PRINTS("delay task started\r\n");
 
 }
@@ -181,7 +182,7 @@ static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
         _delay_task_memory_checkpoint,
         NULL
     };
-    hble_start_delay_tasks(100, tasks);
+    hble_start_delay_tasks(100, tasks, MAX_DELAY_TASKS);
 }
 
 
@@ -197,11 +198,18 @@ bool hble_set_delay_task(uint8_t index, const delay_task_t task)
     return true;
 }
 
-void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks)
+void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks, uint8_t task_len)
 {
+    if(task_len > MAX_DELAY_TASKS)
+    {
+        PRINTS("Too many tasks!\r\n");
+        return;
+    }
+
     if(tasks != _tasks && tasks)
     {
-        memcpy(_tasks, tasks, sizeof(_tasks));
+        memset(_tasks, 0, sizeof(_tasks));
+        memcpy(_tasks, tasks, sizeof(delay_task_t) * task_len);
     }
     //nrf_delay_ms(100);
     _task_index = 0;
@@ -226,7 +234,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
             hble_delay_task_advertise_resume, 
             _delay_task_resume_ant, 
             _delay_task_memory_checkpoint};
-        memcpy(&_tasks, &tasks, sizeof(_tasks));
+        memcpy(_tasks, tasks, sizeof(_tasks));
     }
         break;
     case BLE_GAP_EVT_DISCONNECTED:
@@ -368,7 +376,9 @@ static void _advertising_data_init(uint8_t flags){
     ble_uuid_t adv_uuids[] = {_service_uuid};
 
     //uint8_t data[1] = {0xAA};
-    uint8_array_t data_array = { .p_data = &_device_id, .size = DEVICE_ID_SIZE };
+    uint8_t device_id_cpy[sizeof(_device_id)];
+    memcpy(device_id_cpy, &_device_id, sizeof(_device_id));
+    uint8_array_t data_array = { .p_data = device_id_cpy, .size = DEVICE_ID_SIZE };
 
 
     ble_advdata_service_data_t  srv_data = { 
@@ -439,12 +449,11 @@ void hble_advertising_start()
             PRINTS("get whitelist error: ");
             PRINT_HEX(&err_code, sizeof(err_code));
             PRINTS("\r\n");
+            nrf_delay_ms(100);
             flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
         }
 
         APP_OK(err_code);
-
-        nrf_delay_ms(1000);  // This is a must!
         
     }
     else
@@ -494,7 +503,9 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
     PRINTS("\r\n");
     */
     
-    uint8_t* ptr = &device_id;
+    uint8_t device_id_cpy[sizeof(device_id)];
+    memcpy(device_id_cpy, &device_id, sizeof(device_id));
+    uint8_t* ptr = device_id_cpy;
 
     size_t index = 0;
     for(size_t i = 0; i < actual_len; i++)
@@ -536,8 +547,6 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
     const char* hex_table = "0123456789ABCDEF";
     const uint8_t hex_table_len = strlen(hex_table);
     *device_id = 0;
-
-    uint8_t index = 0;
 
     for(uint8_t i = 0; i < hex_len / 2; i++)
     {

@@ -452,7 +452,6 @@ void imu_enter_low_power_mode(enum imu_hz sampling_rate, uint16_t wom_threshold)
     _register_write(MPU_REG_INT_EN, 0);
 	_register_write(MPU_REG_FIFO_EN, 0);
 
-    uint8_t user_control;
     //_register_read(MPU_REG_USER_CTL, &user_control);
     //_register_write(MPU_REG_USER_CTL, user_control & ~USR_CTL_FIFO_EN);
     _register_write(MPU_REG_USER_CTL, 0);
@@ -653,13 +652,13 @@ static inline void _config_imu_interrputs()
 	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
 }
 
-inline void imu_spi_enable()
+void imu_spi_enable()
 {
 	spi_enable(&_spi_context);
 }
 
 
-inline void imu_spi_disable()
+void imu_spi_disable()
 {
 	spi_disable(&_spi_context);
 }

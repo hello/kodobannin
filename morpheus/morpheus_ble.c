@@ -310,7 +310,7 @@ bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, siz
     
     morpheus_ble_assign_decode_funcs(command);
 
-    pb_istream_t stream = pb_istream_from_buffer(raw, len);
+    pb_istream_t stream = pb_istream_from_buffer((uint8_t*)raw, len);
     bool status = pb_decode(&stream, MorpheusCommand_fields, command);
 
     morpheus_ble_remove_decode_funcs(command);
@@ -552,7 +552,7 @@ void morpheus_ble_on_notify_failed(void* data_page)
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 }
 
-bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
+bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(morpheus_command, NULL, &protobuf_len))
     {

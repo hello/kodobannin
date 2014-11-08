@@ -10,7 +10,7 @@ static struct{
     app_sched_event_handler_t unknown_handler;
     MSG_Base_t * mods[MSG_CENTRAL_MODULE_NUM]; 
 }self;
-static name = "CENTRAL";
+static const char * name = "CENTRAL";
 
 typedef struct{
     MSG_Address_t src;
@@ -115,7 +115,7 @@ static MSG_Status
 _send(MSG_Address_t src,MSG_Address_t dst, MSG_Data_t * data){
     if(data){
         MSG_Base_AcquireDataAtomic(data);
-        MSG_AppCommand_t * tmp = data->buf;
+        MSG_AppCommand_t * tmp = (MSG_AppCommand_t*)data->buf;
         switch(tmp->cmd){
             default:
             case APP_PING:
