@@ -223,12 +223,6 @@ void morpheus_ble_assign_decode_funcs(MorpheusCommand* command)
         command->wifiPassword.funcs.decode = _decode_string_field;
         command->wifiPassword.arg = NULL;
     }
-
-    if(NULL == command->motionDataEntrypted.funcs.decode)
-    {
-        command->motionDataEntrypted.funcs.decode = _decode_bytes_field;
-        command->motionDataEntrypted.arg = NULL;
-    }
 }
 
 void morpheus_ble_remove_decode_funcs(MorpheusCommand* command)
@@ -257,11 +251,6 @@ void morpheus_ble_remove_decode_funcs(MorpheusCommand* command)
     {
         command->wifiPassword.funcs.decode = NULL;
     }
-
-    if(command->motionDataEntrypted.funcs.decode)
-    {
-        command->motionDataEntrypted.funcs.decode = NULL;
-    }
 }
 
 void morpheus_ble_assign_encode_funcs(MorpheusCommand* command)
@@ -289,11 +278,6 @@ void morpheus_ble_assign_encode_funcs(MorpheusCommand* command)
     if(command->wifiPassword.arg != NULL && command->wifiPassword.funcs.encode == NULL)
     {
         command->wifiPassword.funcs.encode = _encode_string_fields;
-    }
-
-    if(command->motionDataEntrypted.arg != NULL && command->motionDataEntrypted.funcs.encode == NULL)
-    {
-        command->motionDataEntrypted.funcs.encode = _encode_bytes_fields;
     }
 }
 
@@ -391,13 +375,6 @@ void morpheus_ble_free_protobuf(MorpheusCommand* command)
         MSG_Base_ReleaseDataAtomic(command->wifiPassword.arg);
         command->wifiPassword.arg = NULL;
         //PRINTS("MorpheusCommand->wifiPassword released\r\n");
-    }
-
-    if(command->motionDataEntrypted.arg)
-    {
-        MSG_Base_ReleaseDataAtomic(command->motionDataEntrypted.arg);
-        command->motionDataEntrypted.arg = NULL;
-        //PRINTS("MorpheusCommand->motionDataEntrypted released\r\n");
     }
 }
 
