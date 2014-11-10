@@ -41,8 +41,9 @@ message wifi_endpoint {
 
 enum wifi_connection_state {
 	NO_WLAN_CONNECTED = 0;
-	WLAN_CONNECTED = 1;
-	INTERNET_CONNECTED = 2;
+	WLAN_CONNECTING = 1;
+	WLAN_CONNECTED = 2;
+	INTERNET_CONNECTED = 3;
 }
 
 message pill_data {
