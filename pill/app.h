@@ -7,13 +7,8 @@
 
 enum {
     APP_TIMER_PRESCALER = 0,
-<<<<<<< HEAD
-    APP_TIMER_MAX_TIMERS = 6,
-    APP_TIMER_OP_QUEUE_SIZE = 6,
-=======
-    APP_TIMER_MAX_TIMERS = 7,
+    APP_TIMER_MAX_TIMERS = 8,
     APP_TIMER_OP_QUEUE_SIZE = 8,
->>>>>>> integration
 };
 
 /*
