@@ -1,6 +1,7 @@
 #include "cli_user.h"
 #include "util.h"
 #include "ant_driver.h"
+#include "message_led.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -32,6 +33,9 @@ _handle_command(int argc, char * argv[]){
     PRINTS("Handle Command: \r\n");
     if(argc > 1 && _strncmp(argv[0], "echo", strlen("echo")) == 0){
         PRINTS(argv[1]);
+    }
+    if(_strncmp(argv[0], "led", strlen("led")) == 0){
+        test_led();
     }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
