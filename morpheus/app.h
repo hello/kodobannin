@@ -7,8 +7,8 @@
 
 enum {
     APP_TIMER_PRESCALER = 0,
-    APP_TIMER_MAX_TIMERS = 5,
-    APP_TIMER_OP_QUEUE_SIZE = 5,
+    APP_TIMER_MAX_TIMERS = 6,
+    APP_TIMER_OP_QUEUE_SIZE = 2,
 };
 
 /*
@@ -16,11 +16,15 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Sense"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT1"
+#define BLE_MODEL_NUM         "EVT3.9"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
 #define BONDING_REQUIRED
+
+#ifdef BONDING_REQUIRED
+#define IN_MEMORY_BONDING
+#endif
  
 #define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D
 #define PROTOBUF_VERSION		(0)
@@ -36,10 +40,10 @@ enum {
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800
+#define APP_ADV_INTERVAL                     320
 
 // Advertising timeout in units of seconds.
-#define APP_ADV_TIMEOUT_IN_SECONDS           180
+#define APP_ADV_TIMEOUT_IN_SECONDS           (0)
 
 // Definition of 1 second, when 1 unit is 1.25 ms.
 #define SECOND_1_25_MS_UNITS                    800
@@ -98,3 +102,9 @@ enum {
 #define TX_POWER_LEVEL (0)
 
 #define APP_PILL_PAIRING_TIMEOUT_INTERVAL	 (APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER))
+#define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER))
+
+//fatory app allows more capabilities
+//#define FACTORY_APP
+//use hello's ant network key
+//#define USE_HLO_ANT_NETWORK

@@ -11,6 +11,7 @@
 #include <string.h>
 #include <app_gpiote.h>
 
+#include "gpio_nor.h"
 #include "imu.h"
 #include "mpu_6500_registers.h"
 #include "sensor_data.h"
@@ -451,7 +452,6 @@ void imu_enter_low_power_mode(enum imu_hz sampling_rate, uint16_t wom_threshold)
     _register_write(MPU_REG_INT_EN, 0);
 	_register_write(MPU_REG_FIFO_EN, 0);
 
-    uint8_t user_control;
     //_register_read(MPU_REG_USER_CTL, &user_control);
     //_register_write(MPU_REG_USER_CTL, user_control & ~USR_CTL_FIFO_EN);
     _register_write(MPU_REG_USER_CTL, 0);
@@ -652,13 +652,13 @@ static inline void _config_imu_interrputs()
 	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
 }
 
-inline void imu_spi_enable()
+void imu_spi_enable()
 {
 	spi_enable(&_spi_context);
 }
 
 
-inline void imu_spi_disable()
+void imu_spi_disable()
 {
 	spi_disable(&_spi_context);
 }
@@ -666,18 +666,16 @@ inline void imu_spi_disable()
 inline void imu_power_on()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-    nrf_gpio_cfg_output(IMU_VDD_EN);
-    //nrf_gpio_pin_write(IMU_VDD_EN, 0);
-    nrf_gpio_pin_clear(IMU_VDD_EN); // Equal to nrf_gpio_pin_write(IMU_VDD_EN, 0);
+    gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 0);
 #endif
 }
 
 inline void imu_power_off()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-    nrf_gpio_cfg_output(IMU_VDD_EN);
-    //nrf_gpio_pin_write(IMU_VDD_EN, 1);
-    nrf_gpio_pin_set(IMU_VDD_EN); // Should I ?
+    gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 1);
+    gpio_cfg_d0s1_output_disconnect(IMU_VDD_EN);
+
 #endif
 }
 

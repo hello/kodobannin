@@ -15,6 +15,9 @@
 /** @file
  *  This header contains defines with respect persistent storage that are specific to
  *  persistent storage implementation and application use case.
+ *  CODE PAGE SIZE in FICR for nrf514 is 0x400
+ *  CODE SIZE is 0x100
+ *  check memory.ld for number of usable code pages
  */
 #ifndef PSTORAGE_PL_H__
 #define PSTORAGE_PL_H__
@@ -22,9 +25,10 @@
 #include <stdint.h>
 
 #define PSTORAGE_FLASH_PAGE_SIZE    ((uint16_t)NRF_FICR->CODEPAGESIZE)   /**< Size of one flash page. */
+#define BOOTLOADER_LOCATION         (0x36000)
 #define PSTORAGE_FLASH_EMPTY_MASK    0xFFFFFFFF                          /**< Bit mask that defines an empty address in flash. */
 
-#define PSTORAGE_FLASH_PAGE_END		NRF_FICR->CODESIZE
+#define PSTORAGE_FLASH_PAGE_END	(BOOTLOADER_LOCATION/PSTORAGE_FLASH_PAGE_SIZE)	
 
 
 #define PSTORAGE_MAX_APPLICATIONS   3                                                           /**< Maximum number of applications that can be registered with the module, configurable based on system requirements. */

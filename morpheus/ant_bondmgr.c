@@ -162,7 +162,7 @@ static uint32_t _commit_block(const ANT_BondedDevice_t * p_bond, pstorage_size_t
 
 }
 uint32_t ANT_BondMgrCommit(void){
-    uint32_t m_crc_bond_info, i;
+    uint32_t i;
     if(dirty){
         ANT_BondMgr_EraseAll();
         for(i = 0; i < self.bond_count; i++){

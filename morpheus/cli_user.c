@@ -1,5 +1,9 @@
 #include "cli_user.h"
 #include "util.h"
+#include <nrf_soc.h>
+#include <string.h>
+#include "ant_driver.h"
+#include "app.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -53,15 +57,48 @@ _handle_command(int argc, char * argv[]){
             MSG_Base_ReleaseDataAtomic(data);
         }
     }
-    if(_strncmp(argv[0], "pair", strlen("pair")) == 0){
-        PRINTS("Pairing");
-        ANT_UserSetPairing(1);
+    if(_strncmp(argv[0], "resume", strlen("resume")) == 0){
+        PRINTS("Resume radio = ");
+        int32_t ret = hlo_ant_resume_radio();
+        PRINT_HEX(&ret, 4);
+        PRINTS("\r\n");
     }
-    if(_strncmp(argv[0], "unpair", strlen("unpair")) == 0){
-        PRINTS("Unpairing All");
-        ANT_UserSetPairing(0);
-        ANT_BondMgr_EraseAll();
+    if(_strncmp(argv[0], "pause", strlen("pause")) == 0){
+        PRINTS("Pause radio = ");
+        int32_t ret = hlo_ant_pause_radio();
+        PRINT_HEX(&ret, 4);
+        PRINTS("\r\n");
     }
+    if(_strncmp(argv[0], "slip", strlen("slip")) == 0){
+        MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
+        if(data){
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){UART,2},//destination address, ANT
+                                    data);
+            //release message object after dispatch to prevent memory leak
+            MSG_Base_ReleaseDataAtomic(data);
+        }
+    }
+    if(_strncmp(argv[0], "dfu", strlen("dfu")) == 0){
+        REBOOT_TO_DFU();
+    }
+#ifdef FACTORY_APP
+    if(argc > 0 && _strncmp(argv[0], "dtm", strlen("dtm")) == 0){
+        sd_power_gpregret_set((uint32_t)GPREGRET_APP_BOOT_TO_DTM);
+        sd_nvic_SystemReset();
+    }
+    if(argc > 2 && _strncmp(argv[0], "testant", strlen("testant")) == 0){
+        PRINTS("ant radio test: \r\n");
+        uint8_t freq = (uint8_t)nrf_atoi(argv[1]);
+        uint8_t power = (uint8_t)nrf_atoi(argv[2]);
+        PRINTS("freq = 0x");
+        PRINT_HEX(&freq,1);
+        PRINTS("power = 0x");
+        PRINT_HEX(&power,1);
+        PRINTS("\r\n");
+        hlo_ant_cw_test(freq,power);
+    }
+#endif
 }
 
 MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){

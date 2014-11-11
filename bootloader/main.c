@@ -127,7 +127,9 @@ _start()
 		for(i = 0; i < 6; i++) {
 			mac_address[i] = ((uint8_t*)NRF_FICR->DEVICEADDR)[5-i];
 		}
-		DEBUG("MAC address: ", mac_address);
+		/*
+		 *DEBUG("MAC address: ", mac_address);
+		 */
 	}
 #endif
 
@@ -147,27 +149,22 @@ _start()
     bootloader_util_settings_get(&bootloader_settings);
 
     uint16_t* p_expected_crc = &bootloader_settings->bank_0_crc;
-    DEBUG("App CRC-16 at ", p_expected_crc);
 
     uint16_t* p_bank_0 = &bootloader_settings->bank_0;
-    DEBUG("Bank 0 info at ", p_bank_0);
 
     uint16_t bank_0 = *p_bank_0;
-    DEBUG("Bank 0: ", bank_0);
 
     uint32_t *p_bank_0_size = &bootloader_settings->bank_0_size;
-    DEBUG("Bank 0 size at ", p_bank_0_size);
 
     uint32_t bank_0_size = *p_bank_0_size;
-    DEBUG("Bank 0 size: ", bank_0_size);
 
     uint16_t expected_crc = *p_expected_crc;
-    DEBUG("CRC-16 is ", expected_crc);
-    printf("CRC-16 is %d\r\n", expected_crc);
+	/*
+     *SIMPRINT("CRC-16 is %d\r\n", expected_crc);
+	 */
 
     if(!bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
         SIMPRINTS("Firmware doesn't match expected CRC-16\r\n");
-
         should_dfu = true;
 	}
 

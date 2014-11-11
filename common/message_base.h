@@ -38,7 +38,7 @@ typedef struct _MSG_Data_t{
      * data buffer
      */
     uint8_t buf[0];
-}MSG_Data_t __attribute__((packed));
+}__attribute__((packed)) MSG_Data_t;
 
 
 typedef enum{
@@ -72,7 +72,7 @@ typedef struct{
  */
 typedef struct{
     MSG_ModuleType type;
-    char * typestr;
+    const char * typestr;
     MSG_Status ( *init ) ( void );
     MSG_Status ( *destroy ) ( void );
     MSG_Status ( *flush ) ( void );
@@ -93,6 +93,7 @@ typedef struct{
 
 MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(size_t size);
 MSG_Data_t * INCREF MSG_Base_AllocateStringAtomic(const char * str);
+MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig);
 MSG_Status MSG_Base_BufferTest(void);
 uint32_t MSG_Base_FreeCount(void);
 uint32_t MSG_Base_BigPoolFreeCount(void);

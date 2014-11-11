@@ -16,6 +16,7 @@
 #include <softdevice_handler.h>
 #include "app.h"
 #include "platform.h"
+#include "nrf_delay.h"
 
 #ifdef BONDING_REQUIRED
 #include "ble_bondmngr_cfg.h"
@@ -26,6 +27,7 @@
 
 #include "hble.h"
 
+#include "ant_driver.h"
 #include "morpheus_gatt.h"
 #include "morpheus_ble.h"
 
@@ -39,31 +41,179 @@ static bool _pairing_mode = false;
 static ble_uuid_t _service_uuid;
 static uint64_t _device_id;
 
-static int16_t  _last_bond_central_id; 
+static int16_t  _last_bond_central_id;
+static app_timer_id_t _delay_timer;
 
-static void _on_disconnect(void * p_event_data, uint16_t event_size)
+
+
+static delay_task_t _tasks[MAX_DELAY_TASKS];
+static uint8_t _task_index;
+
+static void _delay_task_pause_ant()
 {
-    // Reset transmission layer, clean out error states.
-	morpheus_ble_transmission_layer_reset();
+#ifdef ANT_ENABLE
+    APP_OK(hlo_ant_pause_radio());
+    PRINTS("ANT Radio stop\r\n");
+#endif
+}
+
+static void _delay_task_resume_ant()
+{
+#ifdef ANT_ENABLE
+    //nrf_delay_ms(100);
+    APP_OK(hlo_ant_resume_radio());
+#endif
+}
+
+static void _delay_task_store_bonds()
+{
 #ifdef BONDING_REQUIRED
     APP_OK(ble_bondmngr_bonded_centrals_store());
+    PRINTS("bond saved\r\n");
 #endif
+}
+
+void hble_delay_task_advertise_resume()
+{
+    PRINTS("try to resume adv\r\n");
     nrf_delay_ms(100);
     hble_advertising_start();
+    PRINTS("adv restarted\r\n");
+}
 
-#ifndef ANT_ENABLE
+void hble_delay_tasks_erase_bonds()
+{
+    PRINTS("Trying to erase paired centrals....\r\n");
+    APP_OK(ble_bondmngr_bonded_centrals_delete());
+    PRINTS("Erased\r\n");
+}
+
+static void _delay_tasks_erase_other_bonds()
+{
+    if(!_last_bond_central_id)
+    {
+        PRINTS("Current user is not bonded!");
+        return;
+    }
+
+    PRINTS("Current central: ");
+    PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
+    PRINTS("\r\n");
+    
+    
+
+    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+    if(paired_users_count == 0)
+    {
+        PRINTS("No paired centrals found.\r\n");
+        return;
+    }
+
+    PRINTS("Paired central count: ");
+    PRINT_HEX(&paired_users_count, sizeof(paired_users_count));
+    PRINTS("\r\n");
+
+    uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
+    memset(bonded_central_list, 0, sizeof(bonded_central_list));
+
+    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, &paired_users_count));
+    for(int i = 0; i < paired_users_count; i++)
+    {
+        if(bonded_central_list[i] != _last_bond_central_id)
+        {
+            APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[i]));
+            PRINTS("Paired central ");
+            PRINT_HEX(&bonded_central_list[i], sizeof(bonded_central_list[i]));
+            PRINTS(" deleted.\r\n");
+        }
+    }
+}
+
+
+static void _delay_task_memory_checkpoint()
+{
     if(MSG_Base_HasMemoryLeak()){
         PRINTS("Possible memory leak detected!\r\n");
     }else{
         PRINTS("No memory leak.\r\n");
     }
-#endif
+}
+
+static void _delay_tasks(void* context)
+{
+    
+    if(_task_index == MAX_DELAY_TASKS)
+    {
+        PRINTS("All delay tasks done\r\n");
+        _last_bond_central_id = 0;
+        _task_index = 0;
+        return;
+    }
+
+    if(_tasks[_task_index])
+    {
+        _tasks[_task_index]();
+    }else{
+        PRINTS("All delay tasks done\r\n");
+        _last_bond_central_id = 0;
+        _task_index = 0;
+        return;
+    }
+    _task_index++;
+    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
+
+}
+
+static void _on_disconnect(void * p_event_data, uint16_t event_size)
+{
+    // Reset transmission layer, clean out error states.
+	morpheus_ble_transmission_layer_reset();
+    hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
+    PRINTS("delay task started\r\n");
+
 }
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
-    nrf_delay_ms(100);  // Due to nRF51 release note
-    hble_advertising_start();
+    delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
+        hble_delay_task_advertise_resume, 
+        _delay_task_resume_ant, 
+        _delay_task_memory_checkpoint,
+        NULL
+    };
+    hble_start_delay_tasks(100, tasks, MAX_DELAY_TASKS);
+}
+
+
+bool hble_set_delay_task(uint8_t index, const delay_task_t task)
+{
+    if(index > MAX_DELAY_TASKS - 1)
+    {
+        PRINTS("Delay task index too large\r\n");
+        return false;
+    }
+
+    _tasks[index] = task;
+    return true;
+}
+
+void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks, uint8_t task_len)
+{
+    if(task_len > MAX_DELAY_TASKS)
+    {
+        PRINTS("Too many tasks!\r\n");
+        return;
+    }
+
+    if(tasks != _tasks && tasks)
+    {
+        memset(_tasks, 0, sizeof(_tasks));
+        memcpy(_tasks, tasks, sizeof(delay_task_t) * task_len);
+    }
+    //nrf_delay_ms(100);
+    _task_index = 0;
+    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(start_delay_ms, APP_TIMER_PRESCALER), NULL));
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
@@ -72,10 +222,20 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 
     switch(ble_evt->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
+    {
         // Reset transmission layer, clean out error states.
         morpheus_ble_transmission_layer_reset();
         // When new connection comes in, always set it back to non-pairing mode.
         hble_set_advertising_mode(false);
+
+        // define the tasks that will be performed when user disconnect
+        delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
+            _delay_task_store_bonds, 
+            hble_delay_task_advertise_resume, 
+            _delay_task_resume_ant, 
+            _delay_task_memory_checkpoint};
+        memcpy(_tasks, tasks, sizeof(_tasks));
+    }
         break;
     case BLE_GAP_EVT_DISCONNECTED:
         app_sched_event_put(NULL, 0, _on_disconnect);
@@ -167,44 +327,12 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 
 void hble_erase_other_bonded_central()
 {
-    if(!_last_bond_central_id)
-    {
-        PRINTS("Current user is not bonded!");
-        return;
-    }
+    hble_set_delay_task(TASK_BOND_OP, _delay_tasks_erase_other_bonds);
+}
 
-    PRINTS("Current central: ");
-    PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
-    PRINTS("\r\n");
-    
-    
-
-    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
-    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
-    if(paired_users_count == 0)
-    {
-        PRINTS("No paired centrals found.\r\n");
-        return;
-    }
-
-    PRINTS("Paired central count: ");
-    PRINT_HEX(&paired_users_count, sizeof(paired_users_count));
-    PRINTS("\r\n");
-
-    uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
-    memset(bonded_central_list, 0, sizeof(bonded_central_list));
-
-    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, &paired_users_count));
-    for(int i = 0; i < paired_users_count; i++)
-    {
-        if(bonded_central_list[i] != _last_bond_central_id)
-        {
-            APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[i]));
-            PRINTS("Paired central ");
-            PRINT_HEX(&bonded_central_list[i], sizeof(bonded_central_list[i]));
-            PRINTS(" deleted.\r\n");
-        }
-    }
+void hble_erase_all_bonded_central()
+{
+    hble_set_delay_task(TASK_BOND_OP, hble_delay_tasks_erase_bonds);
 }
 
 
@@ -219,8 +347,6 @@ void hble_bond_manager_init()
 {
 
     ble_bondmngr_init_t bond_init_data;
-    bool bonds_delete = false;
-
     //PRINTS("pstorage_init() done.\r\n");
 
     memset(&bond_init_data, 0, sizeof(bond_init_data));
@@ -228,7 +354,11 @@ void hble_bond_manager_init()
     // Initialize the Bond Manager.
     bond_init_data.evt_handler             = _bond_evt_handler;
     bond_init_data.error_handler           = _bond_manager_error_handler;
-    bond_init_data.bonds_delete            = bonds_delete;
+#ifdef IN_MEMORY_BONDING
+    bond_init_data.bonds_delete            = true;
+#else
+    bond_init_data.bonds_delete            = false;
+#endif
 
     APP_OK(ble_bondmngr_init(&bond_init_data));
     //PRINTS("bond manager init.\r\n");
@@ -246,7 +376,9 @@ static void _advertising_data_init(uint8_t flags){
     ble_uuid_t adv_uuids[] = {_service_uuid};
 
     //uint8_t data[1] = {0xAA};
-    uint8_array_t data_array = { .p_data = &_device_id, .size = DEVICE_ID_SIZE };
+    uint8_t device_id_cpy[sizeof(_device_id)];
+    memcpy(device_id_cpy, &_device_id, sizeof(_device_id));
+    uint8_array_t data_array = { .p_data = device_id_cpy, .size = DEVICE_ID_SIZE };
 
 
     ble_advdata_service_data_t  srv_data = { 
@@ -317,6 +449,7 @@ void hble_advertising_start()
             PRINTS("get whitelist error: ");
             PRINT_HEX(&err_code, sizeof(err_code));
             PRINTS("\r\n");
+            nrf_delay_ms(100);
             flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
         }
 
@@ -345,6 +478,8 @@ void hble_stack_init()
     // Register with the SoftDevice handler module for BLE events.
     APP_OK(softdevice_sys_evt_handler_set(_on_sys_evt));
 
+    APP_OK(app_timer_create(&_delay_timer, APP_TIMER_MODE_SINGLE_SHOT, _delay_tasks));
+
 }
 
 bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_t* len)
@@ -368,7 +503,9 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
     PRINTS("\r\n");
     */
     
-    uint8_t* ptr = &device_id;
+    uint8_t device_id_cpy[sizeof(device_id)];
+    memcpy(device_id_cpy, &device_id, sizeof(device_id));
+    uint8_t* ptr = device_id_cpy;
 
     size_t index = 0;
     for(size_t i = 0; i < actual_len; i++)
@@ -383,6 +520,15 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
     PRINTS("\r\n");
 
     return true;
+}
+
+static char _upper_case_hex_digit(char hex_ascii){
+    if(hex_ascii >= 0x61 && hex_ascii <= 0x7A)
+    {
+        return hex_ascii - (0x61 - 0x41);  // 'a' - 'A'
+    }
+
+    return hex_ascii;
 }
 
 bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id)
@@ -402,8 +548,6 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
     const uint8_t hex_table_len = strlen(hex_table);
     *device_id = 0;
 
-    uint8_t index = 0;
-
     for(uint8_t i = 0; i < hex_len / 2; i++)
     {
         uint8_t multiplier = 0;
@@ -412,12 +556,12 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 
         for(uint8_t j = 0; j < hex_table_len; j++)
         {
-            if(hex_table[j] == hex_device_id[i * 2])
+            if(hex_table[j] == _upper_case_hex_digit(hex_device_id[i * 2]))
             {
                 multiplier = j;
             }
 
-            if(hex_table[j] == hex_device_id[i * 2 + 1])
+            if(hex_table[j] == _upper_case_hex_digit(hex_device_id[i * 2 + 1]))
             {
                 remain = j;
             }
@@ -431,7 +575,8 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 
 }
 
-void hble_params_init(const char* device_name, uint64_t device_id)
+
+void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3200_verion)
 {
     _device_id = device_id;
     // initialize GAP parameters
@@ -451,20 +596,54 @@ void hble_params_init(const char* device_name, uint64_t device_id)
         APP_OK(sd_ble_gap_tx_power_set(TX_POWER_LEVEL));
     }
 
-    //Device Info
     {
         ble_dis_init_t dis_init;
         memset(&dis_init, 0, sizeof(dis_init));
 
+        char mod_num[20] = {0};
+        
+        const char* ble_mode_num = BLE_MODEL_NUM;
+        memcpy(mod_num, ble_mode_num, strlen(ble_mode_num));
+        uint8_t mod_num_len = strlen(ble_mode_num);
+
+        mod_num[mod_num_len] = ':';
+        size_t cc_ver_len = 1;
+        uint32_t tmp = _cc3200_verion;
+        PRINTS("CC VER: ");
+        PRINT_HEX(&_cc3200_verion, sizeof(_cc3200_verion));
+        PRINTS("\r\n");
+
+        while(tmp / 10 > 0){
+            cc_ver_len++;
+            tmp = tmp / 10;
+        }
+        tmp = _cc3200_verion;
+
+        if(mod_num_len + cc_ver_len + 1 >= sizeof(mod_num)){
+            PRINTS("Model name string tooooo long\r\n");
+            nrf_delay_ms(100);
+            APP_ASSERT(0);  // fail loudly, the version name cannot be too long
+        }
+
+        PRINTS("CC VER LEN: ");
+        PRINT_HEX(&cc_ver_len, sizeof(cc_ver_len));
+        PRINTS("\r\n");
+
+        for(int i = cc_ver_len - 1; i >= 0; i--)
+        {
+            mod_num[mod_num_len + 1 + i] = '0' + tmp % 10;
+            tmp /= 10;
+        }
+        
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
-        ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
+        ble_srv_ascii_to_utf8(&dis_init.model_num_str, mod_num);
 
         char hex_device_id[DEVICE_ID_SIZE * 2 + 1];
         memset(hex_device_id, 0, sizeof(hex_device_id));
         size_t device_id_size = sizeof(hex_device_id);
 
         PRINTS("integer device id: ");
-        PRINT_HEX(&_device_id, DEVICE_ID_SIZE);
+        PRINT_HEX(&_device_id, sizeof(_device_id));
         PRINTS("\r\n");
 
         if(!hble_uint64_to_hex_device_id(_device_id, hex_device_id, &device_id_size))
@@ -486,6 +665,7 @@ void hble_params_init(const char* device_name, uint64_t device_id)
         APP_OK(ble_dis_init(&dis_init));
     }
 
+
 #ifdef HAS_BATTERY_SERVICE
     //Battery level service
     {
@@ -504,6 +684,8 @@ void hble_params_init(const char* device_name, uint64_t device_id)
         APP_OK(ble_bas_init(&_ble_bas, &bas_init));
     }
 #endif
+
+    
 
     // Connection parameters.
     {
@@ -531,6 +713,11 @@ void hble_params_init(const char* device_name, uint64_t device_id)
         _sec_params.max_key_size = SEC_PARAM_MAX_KEY_SIZE;
     }
 
+}
+
+uint64_t hble_get_device_id()
+{
+    return _device_id;
 }
 
 

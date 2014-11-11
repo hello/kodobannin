@@ -1,1 +1,0 @@
-../drivers/aigz.c

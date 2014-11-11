@@ -1,6 +1,7 @@
 #include "ant_user.h"
 #include "message_uart.h"
 #include "message_ble.h"
+#include "morpheus_ble.h"
 #include "util.h"
 #include "ant_bondmgr.h"
 #include "app_timer.h"
@@ -9,6 +10,7 @@
 #include "app.h"
 
 #include "hble.h"
+#include "battery.h"
 
 static struct{
     MSG_Central_t * parent;
@@ -64,21 +66,90 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 
             //TODO it may be a good idea to check len from the msg
             switch(pill_data->type){
-                case ANT_PILL_DATA:
+                case ANT_PILL_DATA_ENCRYPTED:
                     {
+                        // TODO: Jackson please test this
+                        if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
+                        {
+                            PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
+                            APP_OK(NRF_ERROR_NO_MEM);
+                        }
+
+                        if(pill_data->payload_len > sizeof(morpheus_command.pill_data.motion_data_entrypted.bytes))
+                        {
+                            PRINTS("PLEASE REDESIGN PROTOBUF, payload tooo long\r\n");
+                            APP_OK(NRF_ERROR_NO_MEM);
+                        }
+
+
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
-                        morpheus_command.has_motionData = true;
-                        morpheus_command.motionData = pill_data->payload[TF_CONDENSED_BUFFER_SIZE - 1];
+                        morpheus_command.has_pill_data = true;
+
+                        morpheus_command.pill_data.has_motion_data_entrypted = true;
+                        memcpy(morpheus_command.pill_data.motion_data_entrypted.bytes, pill_data->payload, pill_data->payload_len);
+                        morpheus_command.pill_data.motion_data_entrypted.size = pill_data->payload_len;
+
+                        memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
+
+                        morpheus_command.pill_data.timestamp = 0;
+                        PRINTS("ANT Encrypted Pill Data Received:");
+                        PRINTS(morpheus_command.pill_data.device_id);
+                        PRINTS("\r\n");
                     }
                     break;
                 case ANT_PILL_HEARTBEAT:
                     {
-                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
-                        morpheus_command.has_batteryLevel = true;
-                        morpheus_command.batteryLevel = ((pill_heartbeat_t*)pill_data->payload)->battery_level;
+                        if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
+                        {
+                            PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
+                            APP_OK(NRF_ERROR_NO_MEM);
+                        }
 
-                        morpheus_command.has_uptime = true;
-                        morpheus_command.uptime = ((pill_heartbeat_t*)pill_data->payload)->uptime_sec;
+                        pill_heartbeat_t heartbeat = {0};
+                        // http://dbp-consulting.com/StrictAliasing.pdf
+                        memcpy(&heartbeat, pill_data->payload, sizeof(pill_heartbeat_t));
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_HEARTBEAT;
+                        morpheus_command.has_pill_data = true;
+
+                        if(heartbeat.battery_level != BATTERY_INVALID_MEASUREMENT){
+                            morpheus_command.pill_data.has_battery_level = true;
+                            morpheus_command.pill_data.battery_level = heartbeat.battery_level;
+                        }
+
+                        morpheus_command.pill_data.has_uptime = true;
+                        morpheus_command.pill_data.uptime = heartbeat.uptime_sec;
+
+                        morpheus_command.pill_data.has_firmware_version = true;
+                        morpheus_command.pill_data.firmware_version = heartbeat.firmware_version;
+
+                        memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
+
+                        morpheus_command.pill_data.timestamp = 0;
+                        PRINTS("ANT Pill Heartbeat Received.\r\n");
+                    }
+                    break;
+                case ANT_PILL_SHAKING:
+                    PRINTS("Shaking pill: ");
+                    PRINT_HEX(&pill_data->UUID, sizeof(pill_data->UUID));
+                    PRINTS("\r\n");
+
+                    if(self.pair_enable){
+
+                        MSG_Data_t* ble_cmd_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
+                        if(!ble_cmd_page)
+                        {
+                            PRINTS("No Memory!\r\n");
+                        }else{
+                            memset(ble_cmd_page->buf, 0, ble_cmd_page->len);
+                            MSG_BLECommand_t* ble_cmd = (MSG_BLECommand_t*)ble_cmd_page->buf;
+                            ble_cmd->cmd = BLE_ACK_DEVICE_ADDED;
+                            ble_cmd->param.pill_uid = pill_data->UUID;
+
+                            self.parent->dispatch(src, (MSG_Address_t){BLE, 0}, ble_cmd_page);
+                            MSG_Base_ReleaseDataAtomic(ble_cmd_page);
+                        }
+                    }else{
+                        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_SHAKES;
                     }
                     break;
 
@@ -96,7 +167,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                     if(morpheus_ble_encode_protobuf(&morpheus_command, proto_page->buf, &proto_len))
                     {
                         self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
-                        self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
+                        /*
+                         *self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
+                         */
                     }
                     MSG_Base_ReleaseDataAtomic(proto_page);
                 }else{
@@ -108,7 +181,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         }
 
     }
-
+    morpheus_ble_free_protobuf(&morpheus_command);
     MSG_Base_ReleaseDataAtomic(msg);
 }
 

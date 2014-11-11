@@ -175,7 +175,80 @@ pill_ble_services_init(void)
 
 }
 
+/*
+#include "nrf_soc.h"
+#include "message_ant.h"
+static app_timer_id_t _ant_timer_id;
+static uint8_t _test_count;
 
+static void _test_send_available_data_ant(void *ctx){
+    if(_test_count % 2 == 0)
+    {
+        PRINTS("TRANSMIT 1\r\n");
+        MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + 
+            sizeof(MSG_ANT_EncryptedMotionData_t) + 
+            TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t));
+        if(data_page){
+            memset(&data_page->buf, 0, sizeof(data_page->len));
+            MSG_ANT_PillData_t* ant_data = &data_page->buf;
+            MSG_ANT_EncryptedMotionData_t * motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
+            ant_data->version = ANT_PROTOCOL_VER;
+            ant_data->type = ANT_PILL_DATA_ENCRYPTED;
+            ant_data->UUID = GET_UUID_64();
+            ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t) + TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t);
+            
+            uint8_t pool_size = 0;
+            if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
+                uint8_t nonce[8] = {0};
+                sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce)?sizeof(nonce):pool_size));
+
+                PRINTS("Nonce: ");
+                PRINT_HEX(nonce, sizeof(nonce));
+                PRINTS("\r\n");
+
+                PRINTS("Raw Payload: ");
+                PRINT_HEX(motion_data->payload, ant_data->payload_len - 8);
+                PRINTS("\r\n");
+
+
+                aes128_ctr_encrypt_inplace(motion_data->payload, TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t), get_aes128_key(), nonce);
+                memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
+
+                PRINTS("Encrypted Payload: ");
+                PRINT_HEX(motion_data, ant_data->payload_len);
+                PRINTS("\r\n");
+
+                central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
+                central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
+            }else{
+                //pools closed
+            }
+            
+            MSG_Base_ReleaseDataAtomic(data_page);
+        }
+    }else{
+        PRINTS("TRANSMIT 2\r\n");
+        MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t));
+        if(data_page){
+            memset(&data_page->buf, 0, sizeof(data_page->len));
+            MSG_ANT_PillData_t* ant_data = &data_page->buf;
+            ant_data->version = ANT_PROTOCOL_VER;
+            ant_data->type = ANT_PILL_DATA;
+            ant_data->UUID = GET_UUID_64();
+            ant_data->payload_len = TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t);
+            //if(TF_GetCondensed(ant_data->payload, TF_CONDENSED_BUFFER_SIZE))
+            {
+                central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
+                central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
+            }
+            MSG_Base_ReleaseDataAtomic(data_page);
+        }
+    }
+
+    
+    _test_count++;
+}
+*/
 
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
@@ -192,13 +265,14 @@ void pill_ble_load_modules(void){
 			UART_BAUDRATE_BAUDRATE_Baud38400
 		};
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
+        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #endif
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(MSG_IMU_Init(central));
 #endif
 
-        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
+        
 #ifdef ANT_ENABLE
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
         {
@@ -216,7 +290,11 @@ void pill_ble_load_modules(void){
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 
-	    
+        /*
+	    APP_OK(app_timer_create(&_ant_timer_id, APP_TIMER_MODE_REPEATED, _test_send_available_data_ant));
+        APP_OK(app_timer_start(_ant_timer_id, APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER), NULL));
+        */
+
     }else{
         PRINTS("FAIL");
     }

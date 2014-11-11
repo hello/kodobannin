@@ -7,8 +7,13 @@
 
 enum {
     APP_TIMER_PRESCALER = 0,
+<<<<<<< HEAD
     APP_TIMER_MAX_TIMERS = 6,
     APP_TIMER_OP_QUEUE_SIZE = 6,
+=======
+    APP_TIMER_MAX_TIMERS = 7,
+    APP_TIMER_OP_QUEUE_SIZE = 8,
+>>>>>>> integration
 };
 
 /*
@@ -21,6 +26,7 @@ enum {
 #define BLE_ORG_UNIQUE_ID     0x1337
 
 #define ANT_PROTOCOL_VER      (1)
+#define FIRMWARE_VERSION_8BIT (1)
 
 //#define BONDING_REQUIRED
 //#define DATA_SCIENCE_TASK
@@ -44,7 +50,7 @@ enum {
 #define IMU_INACTIVE_FREQ    (IMU_HZ_1_95)
 #define IMU_INACTIVE_WOM     (55)
 
-#define IMU_ACTIVE_FREQ      (IMU_HZ_7_81)
+#define IMU_ACTIVE_FREQ      (IMU_HZ_15_63)
 #define IMU_ACTIVE_WOM       (80)
 
 #define IMU_CONSTANT_FREQ    (IMU_HZ_15_63)
@@ -65,14 +71,14 @@ enum {
 #define SECOND_10_MS_UNITS                   100
 // Minimum acceptable connection interval (0.5 seconds),
 // Connection interval uses 1.25 ms units
-#define MIN_CONN_INTERVAL                    (5 * TWENTY_MS_1_25_MS_UNITS)
+#define MIN_CONN_INTERVAL                    (3 * TWENTY_MS_1_25_MS_UNITS)
 // Maximum acceptable connection interval (1 second), Connection interval uses 1.25 ms units.
-#define MAX_CONN_INTERVAL                    (5 * TWENTY_MS_1_25_MS_UNITS)
+#define MAX_CONN_INTERVAL                    (3 * TWENTY_MS_1_25_MS_UNITS)
 
 // Slave latency. */
 #define SLAVE_LATENCY                        1
 // Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units
-#define CONN_SUP_TIMEOUT                     (2 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
+#define CONN_SUP_TIMEOUT                     (4 * MAX_CONN_INTERVAL * (SLAVE_LATENCY + 1))
 
 #define TX_POWER_LEVEL						(-8)
 
@@ -111,5 +117,8 @@ enum {
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
 #define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
-#define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(100,APP_TIMER_PRESCALER)
+#define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
+#define HEARTBEAT_INTERVAL_SEC              (3600)
 
+//use hello's ant network key
+//#define USE_HLO_ANT_NETWORK

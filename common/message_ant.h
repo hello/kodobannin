@@ -3,7 +3,7 @@
 #include "ant_driver.h"
 #include "ant_packet.h"
 
-#define TF_CONDENSED_BUFFER_SIZE (3)
+#define TF_CONDENSED_BUFFER_SIZE (1)
 
 /**
  *
@@ -49,17 +49,27 @@ typedef struct{
     }param;
 }MSG_ANTCommand_t;
 
+typedef struct{
+    uint64_t nonce;
+    uint8_t payload[0];
+}MSG_ANT_EncryptedMotionData_t;
 
 typedef struct 
 {
     uint8_t battery_level;
+    uint8_t firmware_version;
     uint32_t uptime_sec;
 }__attribute__((packed)) pill_heartbeat_t;
+
+typedef struct{
+    uint8_t counter;
+}__attribute__((packed)) pill_shakedata_t;
 
 typedef enum {
     ANT_PILL_DATA = 0,
     ANT_PILL_HEARTBEAT,
-    ANT_PILL_SHAKING
+    ANT_PILL_SHAKING,
+    ANT_PILL_DATA_ENCRYPTED
 }MSG_ANT_PillDataType_t;
 
 typedef struct{
