@@ -106,6 +106,8 @@ DRIVER_SRCS = \
 	$(wildcard drivers/battery.c) \
 	$(wildcard drivers/gpio_nor.c) \
 	$(wildcard drivers/pwm.c) \
+	$(wildcard drivers/led.c) \
+	$(wildcard drivers/led_booster_timer.c) \
 	#$(wildcard drivers/twi_hw_master_softdevice.c) \
 	#$(wildcard drivers/twi_hw_master.c) \
 	#$(wildcard drivers/twi_sw_master.c) \
