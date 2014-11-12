@@ -14,6 +14,8 @@ static void _setup(void){
     led_power_on();
 }
 static void _teardown(void){
+    PRINTS("Teardown\r\n");
+    led_all_colors_off();
     led_power_off();
 }
 static void _on_warm(void){
