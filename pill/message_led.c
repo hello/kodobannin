@@ -12,6 +12,7 @@ static struct{
     MSG_Base_t base;
     const MSG_Central_t * parent;
     uint32_t counter;
+    enum MSG_LEDAddress animation;
 }self;
 static const char * name = "LED";
 
@@ -65,7 +66,12 @@ static int _on_cycle(int * out_r, int * out_g, int * out_b){
     /*
      *PRINTS("cycle\r\n");
      */
-    return _play_boot_complete(out_r, out_g, out_b);
+    switch(self.animation){
+        default:
+            return 0;
+        case LED_PLAY_BOOT_COMPLETE:
+            return _play_boot_complete(out_r, out_g, out_b);
+    }
 }
 
 static MSG_Status
@@ -81,13 +87,20 @@ _init(void){
     return SUCCESS;
 }
 
-void test_led(){
+static int
+_play_animation(enum MSG_LEDAddress type){
     if(led_booster_is_free()){
         self.counter = 0;
         led_booster_power_on();
+        self.animation = type;
+        return 0;
     }else{
         led_booster_power_off();
+        return -1;
     }
+}
+void test_led(){
+    _play_animation(LED_PLAY_BOOT_COMPLETE);
 }
 static MSG_Status
 _destroy(void){
@@ -102,8 +115,8 @@ _handle_led_commands(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     switch(dst.submodule){
         default:
             break;
-        case LED_BLINK_GREEN:
-
+        case LED_PLAY_BOOT_COMPLETE:
+            _play_animation(dst.submodule);
             break;
     }
     return SUCCESS;
