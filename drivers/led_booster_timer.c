@@ -90,12 +90,12 @@ uint8_t led_booster_is_free(void){
 }
 void led_booster_power_on(void){
     uint32_t ticks = APP_TIMER_TICKS(10, APP_TIMER_PRESCALER);
+    CRITICAL_REGION_ENTER();
+    self.free = 0;
     app_timer_stop(self.timer);
     self.user.setup();
     self.state = LED_BOOSTER_STATE_WARM;
     app_timer_start(self.timer, ticks, NULL);
-    CRITICAL_REGION_ENTER();
-    self.free = 0;
     CRITICAL_REGION_EXIT();
 }
 void led_booster_power_off(void){
