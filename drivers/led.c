@@ -25,11 +25,11 @@ static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
 void led_set(int led_channel, int pwmval){
     int offset = 0;
     led_all_colors_off();
-    nrf_gpio_pin_clear(led_channel);
     if(led_channel == LED_GREEN_CHANNEL){
         offset = 0x8;
     }
-    if(pwmval - offset > 0){
+    if(pwmval < 255 && pwmval - offset > 0){
+        nrf_gpio_pin_clear(led_channel);
         APP_OK(pwm_set_value(PWM_Channel_1, pwmval - offset));
     }
 
