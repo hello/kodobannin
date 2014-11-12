@@ -124,36 +124,6 @@ void led_init()
     nrf_gpio_pin_set(LED1_ENABLE); // blu led off ( open drain )
     _led_gpio_cfg_open_drain(LED1_ENABLE); // nrf_gpio_cfg_output(LED1_ENABLE); // blu
 
- /* uint32_t gpios[1] = {VRGB_ADJUST}; // port to use for pwm dac
- // APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
-
-//for (;;) {
- // PRINTS("\r\n===( LED precharge )===\r\n");
-    nrf_gpio_pin_set(VRGB_ENABLE);  // precharge capacitors ( Vrgb / Vpwm )
-    APP_OK(pwm_set_value(PWM_Channel_1, 0x57)); // set Vout lower than 1.8
-
-    nrf_delay_ms(10);
- // PRINTS(" (");
-    nrf_gpio_pin_clear(VLED_VDD_EN); // write 0 to enable pfet power control
-
-    nrf_delay_ms(40);
-    APP_OK(pwm_set_value(PWM_Channel_1, 0x47)); // match FB 0.5 volt
-    nrf_delay_ms(40);
-
-    nrf_gpio_pin_clear(LED3_ENABLE); // red on
-
-    nrf_delay_ms(40);
- // PRINTS(") ");
-    nrf_gpio_pin_set(VLED_VDD_EN); // write 0 to enable pfet power control
-
-    nrf_gpio_pin_clear(VRGB_ENABLE);  // discharge capacitors ( Vrgb / Vpwm )
-    nrf_gpio_pin_set(LED3_ENABLE); // red off
-
- // PRINTS("\r\n===( LED discharge )===\r\n");
-
- // nrf_delay_ms(2000); // repeat
-//} */
-
 }
 
 
