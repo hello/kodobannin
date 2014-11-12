@@ -51,6 +51,7 @@ _timer_handler(void * ctx){
         case LED_BOOSTER_STATE_HOT:
             {
                 uint32_t ticks = APP_TIMER_TICKS((1000/(3 * BOOSTER_REFRESH_RATE)), APP_TIMER_PRESCALER);
+#ifdef PLATFORM_HAS_VLED
                 switch(self.cycle_state){
                     case LED_BOOSTER_EVENT_START:
                         if(self.user.on_cycle(&self.rgb[0], &self.rgb[1], &self.rgb[2])){
@@ -72,6 +73,9 @@ _timer_handler(void * ctx){
                         self.cycle_state = LED_BOOSTER_EVENT_START;
                         break;
                 }
+#else
+                self.state = LED_BOOSTER_STATE_COLD;
+#endif
                 app_timer_start(self.timer, ticks, NULL);
             }
             break;

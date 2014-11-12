@@ -1,9 +1,6 @@
 #pragma once
 #include "platform.h"
 
-#define LED_BLUE_CHANNEL LED1_ENABLE
-#define LED_RED_CHANNEL LED3_ENABLE
-#define LED_GREEN_CHANNEL LED2_ENABLE
 
 void led_init();
 void led_power_on();
