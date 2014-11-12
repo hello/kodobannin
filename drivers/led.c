@@ -97,17 +97,6 @@ void led_power_on()
     APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
     APP_OK(pwm_set_value(PWM_Channel_1, 0xEF)); // set initial Vrgb = Vmcu
 
-    //nrf_delay_ms(5); // wait for Vrgb to settle ( diode drop below Vdd )
-
- // nrf_gpio_cfg_output(LED3_ENABLE); // grn red
- // nrf_gpio_pin_clear(LED3_ENABLE);  // write 0
-    
- // nrf_gpio_cfg_output(LED2_ENABLE); // orn grn
- // nrf_gpio_pin_clear(LED2_ENABLE);  // write 0
-    
- // nrf_gpio_cfg_output(LED1_ENABLE); // blu blu
- // nrf_gpio_pin_clear(LED1_ENABLE);  // write 0
-
 #endif
 }
 
