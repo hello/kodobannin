@@ -175,6 +175,12 @@ void led_all_colors_off()
 #endif
 }
 
+void led_warm_up(){
+    PRINTS(" boost");
+    nrf_gpio_pin_clear(VLED_VDD_EN); // write 0 to enable pfet power control
+    PRINTS(" on"); // boost regulator powered on
+    PRINTS(" set )===\r\n"); // boost regulator powered on
+}
 void led_power_on()
 {
 #ifdef PLATFORM_HAS_VLED
@@ -187,13 +193,7 @@ void led_power_on()
     APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
     APP_OK(pwm_set_value(PWM_Channel_1, 0xEF)); // set initial Vrgb = Vmcu
 
-    nrf_delay_ms(5); // wait for Vrgb to settle ( diode drop below Vdd )
-
-    PRINTS(" boost");
-    nrf_gpio_pin_clear(VLED_VDD_EN); // write 0 to enable pfet power control
-    PRINTS(" on"); // boost regulator powered on
-    PRINTS(" set )===\r\n"); // boost regulator powered on
-
+    //nrf_delay_ms(5); // wait for Vrgb to settle ( diode drop below Vdd )
 
  // nrf_gpio_cfg_output(LED3_ENABLE); // grn red
  // nrf_gpio_pin_clear(LED3_ENABLE);  // write 0
