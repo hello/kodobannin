@@ -37,6 +37,8 @@ void led_set(int led_channel, int pwmval){
 
 void led_init()
 {
+    uint32_t gpios[1] = {VRGB_ADJUST}; // port to use for pwm dac
+
     nrf_gpio_pin_set(VLED_VDD_EN); // set pfet gate high
     nrf_gpio_cfg_output(VLED_VDD_EN); // power off boost regualator
 
@@ -58,6 +60,7 @@ void led_init()
     nrf_gpio_pin_set(LED1_ENABLE); // blu led off ( open drain )
     _led_gpio_cfg_open_drain(LED1_ENABLE); // nrf_gpio_cfg_output(LED1_ENABLE); // blu
 
+    APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
 }
 
 
@@ -88,13 +91,11 @@ void led_warm_up(){
 void led_power_on()
 {
 #ifdef PLATFORM_HAS_VLED
-    uint32_t gpios[1] = {VRGB_ADJUST}; // port to use for pwm dac
 
     PRINTS("\r\n===( LED precharge");
     nrf_gpio_pin_set(VRGB_ENABLE);  // precharge capacitors ( Vrgb / Vpwm )
 
     PRINTS(" pwm");
-    APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
     APP_OK(pwm_set_value(PWM_Channel_1, 0xEF)); // set initial Vrgb = Vmcu
 
 #endif
