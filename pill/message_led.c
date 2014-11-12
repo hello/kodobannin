@@ -18,6 +18,7 @@ static void _teardown(void){
 }
 static void _on_warm(void){
     PRINTS("Warm\r\n");
+    led_warm_up();
     led_all_colors_on();
     /*
      *led_flash(0, 1000, NULL); // cylce thru all three colors each time
