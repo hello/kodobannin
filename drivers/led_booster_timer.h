@@ -5,6 +5,7 @@
  * to prevent browning out of the system
  **/
 
+#define BOOSTER_REFRESH_RATE 48
 
 typedef struct{
     void (* setup )(void);
