@@ -19,6 +19,7 @@
 #include "sensor_data.h"
 #include "message_base.h"
 #include "timedfifo.h"
+#include "boot_test.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -43,6 +44,7 @@ static bool initialized = false;
 
 static MSG_Central_t * parent;
 static MSG_Base_t base;
+static uint32_t shake_counter;
 
 
 static struct imu_settings _settings = {
@@ -255,6 +257,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
                         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
                     }
 #endif
+					if(shake_counter++ == 0){
+						test_ok(parent, IMU_OK);
+					}
 				}
 
 
