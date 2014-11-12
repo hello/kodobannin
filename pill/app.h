@@ -7,7 +7,7 @@
 
 enum {
     APP_TIMER_PRESCALER = 0,
-    APP_TIMER_MAX_TIMERS = 7,
+    APP_TIMER_MAX_TIMERS = 8,
     APP_TIMER_OP_QUEUE_SIZE = 8,
 };
 
@@ -21,7 +21,7 @@ enum {
 #define BLE_ORG_UNIQUE_ID     0x1337
 
 #define ANT_PROTOCOL_VER      (1)
-#define FIRMWARE_VERSION_8BIT (0)
+#define FIRMWARE_VERSION_8BIT (1)
 
 //#define BONDING_REQUIRED
 //#define DATA_SCIENCE_TASK
@@ -115,3 +115,5 @@ enum {
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_SEC              (3600)
 
+//use hello's ant network key
+//#define USE_HLO_ANT_NETWORK

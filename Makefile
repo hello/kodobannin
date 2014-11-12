@@ -6,7 +6,7 @@ all: b m
 # apps & platforms
 
 TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
-APPS = bootloader morpheus pill $(TEST_APPS)
+APPS = bootloader bootloader_serial morpheus pill
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
 S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1 morpheus_EVT2 pill_EVT2 morpheus_EVT3
@@ -74,6 +74,7 @@ HELLO_SRCS = \
 	$(wildcard common/*.c) $(wildcard common/*.s) \
 	$(wildcard protobuf/*.c) \
 	$(wildcard ant/*.c) \
+	$(wildcard dtm/*.c) \
 
 
 NRF_SRCS = \
@@ -84,6 +85,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
 	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
     nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
+    nRF51_SDK/nrf51422/Source/ble/ble_dtm.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \
@@ -104,6 +106,8 @@ DRIVER_SRCS = \
 	$(wildcard drivers/battery.c) \
 	$(wildcard drivers/gpio_nor.c) \
 	$(wildcard drivers/pwm.c) \
+	$(wildcard drivers/led.c) \
+	$(wildcard drivers/led_booster_timer.c) \
 	#$(wildcard drivers/twi_hw_master_softdevice.c) \
 	#$(wildcard drivers/twi_hw_master.c) \
 	#$(wildcard drivers/twi_sw_master.c) \
@@ -126,6 +130,7 @@ INCS =  ./ \
 	./common \
 	./drivers \
 	./ant \
+	./dtm \
 	
 
 
@@ -186,10 +191,11 @@ clean:
 DEBUG = 1
 
 ifeq ($(DEBUG), 1)
-OPTFLAGS=-O0 -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
+OPTFLAGS=-O1 -fno-inline -fno-strict-aliasing -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
-OPTFLAGS=-O0 -DuECC_ASM=2
+OPTFLAGS=-O1 -fno-strict-aliasing -fno-inline -DuECC_ASM=2
+SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 endif
 
 NRFREV=NRF51422_QFAA_ED
@@ -197,7 +203,7 @@ NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV) -DBLE_STAC
 MICROECCFLAGS=-DECC_CURVE=6 # see ecc.h for details
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup -Map=build/build.map
-WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format
+WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format -Wno-sign-compare -Wno-nonnull -Wno-pointer-sign
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -std=gnu99 -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 

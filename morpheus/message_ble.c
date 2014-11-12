@@ -11,6 +11,8 @@
 #include "message_ble.h"
 #include "hble.h"
 #include "morpheus_ble.h"
+#include "ble_bondmngr.h"
+#include "nrf_delay.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -98,22 +100,21 @@ static void _init_ble_stack(const MorpheusCommand* command)
             PRINTS("Hex device id:");
             PRINTS(data_page->buf);
             PRINTS("\r\n");
-
-            nrf_delay_ms(100);
-
             uint64_t device_id = 0;
             
             if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
             {
                 PRINTS("Get device id failed.\r\n");
+                nrf_delay_ms(100);
                 APP_ASSERT(0);
             }
             
 
             hble_stack_init();
 
-#ifdef BONDING_REQUIRED   
+#ifdef BONDING_REQUIRED     
             hble_bond_manager_init();
+            nrf_delay_ms(200);    
 #endif
             // append something to device name
             char device_name[strlen(BLE_DEVICE_NAME)+4];
@@ -133,8 +134,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
             };
 
             hble_advertising_init(service_uuid);
-            
-            hble_advertising_start();
         }else{
             PRINTS("INIT Error, no device id presented.");
         }
@@ -162,20 +161,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         PRINTS("ANT to BLE Command received\r\n");
 
         switch(cmd->cmd){
-            default:
             case BLE_PING:
-                break;
-                /*
-            case BLE_ACK_DEVICE_REMOVED:
-                {
-                    // Reply to the phone the pill in whitelist has been deleted
-                    // The phone should delete the pill from server.
-                    // DONOT keep state here.
-                    MorpheusCommand morpheus_command;
-                    morpheus_command.version = PROTOBUF_VERSION;
-                    morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
-                    morpheus_ble_reply_protobuf(&morpheus_command);
-                }
                 break;
             case BLE_ACK_DEVICE_ADDED:
                 {
@@ -199,7 +185,8 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                     }
                 }
                 break;
-                */
+            default:
+            break;
         }
 
     }
@@ -223,18 +210,47 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 }
                 break;
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
+                PRINTS("DFU from CC3200..\r\n");
                     _start_morpheus_dfu_process();  // It's just that simple.
+                break;
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
+                {
+                    PRINTS("Factory reset from CC3200..\r\n");
+                    
+                    if(!hlo_ble_is_connected())
+                    {
+                        // Stop BLE radio, because the 2nd task will resume it.
+                        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+                        hble_set_delay_task(0, hble_delay_tasks_erase_bonds);
+                        hble_set_delay_task(1, hble_delay_task_advertise_resume);
+                        hble_set_delay_task(2, NULL);  // Indicates delay task end.
+
+                        // If not connected, the delay task will not 
+                        // triggered by disconnect, we need to manually 
+                        // start it.
+                        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+                    }else{
+                        hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
+                        morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
+                        hlo_ble_notify(0xB00B, data->buf, data->len,
+                            &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+
+
+                        // We MUST return here
+                        return SUCCESS;
+                    }
+                }
                 break;
                 default:
                 {
-                // protobuf, dump the thing straight back?
-                PRINTS(">>>>>>>>>>>Protobuf to PHONE\r\n");
+                    // protobuf, dump the thing straight back?
+                    PRINTS(">>>>>>>>>>>Protobuf to PHONE\r\n");
 
-                morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
-                hlo_ble_notify(0xB00B, data->buf, data->len,
-                    &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+                    morpheus_ble_free_protobuf(&command);  // Always free protobuf here.
+                    hlo_ble_notify(0xB00B, data->buf, data->len,
+                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
 
-                return SUCCESS;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
+                    return SUCCESS;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
                 }
             }
         }else{
@@ -266,7 +282,7 @@ static void _release_pending_resources(){
     }
 }
 
-MSG_Status message_ble_remove_pill(const MSG_Data_t* pill_id_page)
+MSG_Status message_ble_remove_pill(MSG_Data_t* pill_id_page)
 {
     if(SUCCESS != MSG_Base_AcquireDataAtomic(pill_id_page)){
         morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
@@ -330,7 +346,7 @@ static void _pill_pairing_time_out(void* context)
 
 
 
-MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
+MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
 {
     _release_pending_resources();
 
@@ -338,7 +354,7 @@ MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
     self.pill_pairing_request.account_id = account_id_page;
 
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
-#ifdef ANT_ENABLE
+#ifdef HAS_CC3200
     PRINTS("Waiting the pill to reply...\r\n");
     if(!self.timer_id)
     {
@@ -368,7 +384,7 @@ MSG_Status message_ble_pill_pairing_begin(const MSG_Data_t* account_id_page)
 
 }
 
-MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
+MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
     
     if(SUCCESS == MSG_Base_AcquireDataAtomic(data)){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
@@ -397,6 +413,10 @@ MSG_Status message_ble_route_data_to_cc3200(const MSG_Data_t* data){
 static void _request_device_id(void* context)
 {
     if(hble_get_device_id() != 0){
+
+        hble_advertising_start();
+        nrf_delay_ms(100);
+
         PRINTS("Boot completed!\r\n");
         return;
     }else{
@@ -465,7 +485,7 @@ static MSG_Status _init(){
 
     if(!device_id_page)
     {
-        PRINTS("No memory.\r\n");
+        PRINTS(MSG_NO_MEMORY);
         return FAIL;
     }
 
@@ -481,7 +501,7 @@ static MSG_Status _init(){
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
     if(!data_page)
     {
-        PRINTS("No memory.\r\n");
+        PRINTS(MSG_NO_MEMORY);
         MSG_Base_ReleaseDataAtomic(device_id_page);
         return FAIL;
     }
@@ -543,7 +563,7 @@ static void _erase_bonded_users(){
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
     
-    command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE;
+    command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE;
     command.version = PROTOBUF_VERSION;
     morpheus_ble_reply_protobuf(&command);
 }
@@ -607,7 +627,7 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(13);  // Fark this is a mac address
     if(!device_id_page)
     {
-        PRINTS("Not enough memory.\r\n");
+        PRINTS(MSG_NO_MEMORY);
         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
     }else{
         memset(device_id_page->buf, 0, device_id_page->len);
@@ -638,13 +658,13 @@ static void _pair_morpheus(MorpheusCommand* command)
             }else{
                 MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
                 if(!proto_len){
-                    PRINTS("Not enough memory.\r\n");
+                    PRINTS(MSG_NO_MEMORY);
                     morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
                 }else{
                     morpheus_ble_encode_protobuf(&pair_command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
                     if(message_ble_route_data_to_cc3200(proto_page) == FAIL)
                     {
-                        PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                        PRINTS(MSG_NO_MEMORY);
                         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
                     }
                     MSG_Base_ReleaseDataAtomic(proto_page);
@@ -663,7 +683,7 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Base_ReleaseDataAtomic(command->accountId.arg);
 }
 
-void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusCommand* command)
+void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command)
 {
     MSG_Base_AcquireDataAtomic(data_page);
     // A protobuf actually occupy multiple pages..
@@ -677,7 +697,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
             _morpheus_switch_mode(true);
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
-                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                PRINTS(MSG_NO_MEMORY);
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
@@ -685,25 +705,39 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, const MorpheusComman
             _morpheus_switch_mode(false);
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
-                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                PRINTS(MSG_NO_MEMORY);
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_START_WIFISCAN:
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
-                PRINTS("Pass data to CC3200 failed, not enough memory.\r\n");
+                PRINTS(MSG_NO_MEMORY);
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            }
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
+            {
+                MSG_Data_t* account_id_page = command->accountId.arg;
+                message_ble_pill_pairing_begin(account_id_page);
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
             _pair_morpheus(command);
             break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_EREASE_PAIRED_PHONE:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE:
             _erase_bonded_users();
+            break;
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
+            hble_erase_other_bonded_central();
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS(MSG_NO_MEMORY);
+                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
         {

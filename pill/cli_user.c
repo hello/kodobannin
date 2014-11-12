@@ -1,5 +1,7 @@
 #include "cli_user.h"
 #include "util.h"
+#include "ant_driver.h"
+#include "message_led.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -32,6 +34,9 @@ _handle_command(int argc, char * argv[]){
     if(argc > 1 && _strncmp(argv[0], "echo", strlen("echo")) == 0){
         PRINTS(argv[1]);
     }
+    if(_strncmp(argv[0], "led", strlen("led")) == 0){
+        test_led();
+    }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
         //Create a message object from uart string
@@ -43,6 +48,17 @@ _handle_command(int argc, char * argv[]){
             //release message object after dispatch to prevent memory leak
             MSG_Base_ReleaseDataAtomic(data);
         }
+    }
+    if(argc > 2 && _strncmp(argv[0], "testant", strlen("testant")) == 0){
+        PRINTS("ant radio test: \r\n");
+        uint8_t freq = (uint8_t)nrf_atoi(argv[1]);
+        uint8_t power = (uint8_t)nrf_atoi(argv[2]);
+        PRINTS("freq = 0x");
+        PRINT_HEX(&freq,1);
+        PRINTS("power = 0x");
+        PRINT_HEX(&power,1);
+        PRINTS("\r\n");
+        hlo_ant_cw_test(freq,power);
     }
 }
 

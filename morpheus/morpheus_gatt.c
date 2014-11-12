@@ -247,7 +247,9 @@ static bool _dispatch_packet(struct hlo_ble_packet * t){
 			break;
 		default:
 		case BLE_ERROR_NO_TX_BUFFERS:
-			PRINTS("Send notification failed.\r\n");
+			PRINTS("Send notification failed: ");
+			PRINT_HEX(&err, 4);
+			PRINTS("\r\n");
 			if(_notify_context.callback_info.on_failed)
 			{
 				_notify_context.callback_info.on_failed(_notify_context.callback_info.callback_data);
@@ -337,6 +339,11 @@ void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length
 
 }
 
+bool hlo_ble_is_connected()
+{
+    return hlo_ble_get_connection_handle() != BLE_CONN_HANDLE_INVALID;
+}
+
 uint16_t hlo_ble_get_connection_handle()
 {
     return _connection_handle;
@@ -347,11 +354,13 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
     switch(event->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
         _connection_handle = event->evt.gap_evt.conn_handle;
-        DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
+        PRINTS("Connect from MAC: ");
+        PRINT_HEX(&event->evt.gap_evt.params.connected.peer_addr.addr, sizeof(event->evt.gap_evt.params.connected.peer_addr.addr));
         PRINTS("\r\n");
         break;
     case BLE_GAP_EVT_DISCONNECTED:
-        DEBUG("Disconnected: ", event->evt.gap_evt.params.disconnected.reason);
+        PRINTS("Disconnected: ");
+        PRINT_HEX(&event->evt.gap_evt.params.disconnected.reason, sizeof(event->evt.gap_evt.params.disconnected.reason));
         PRINTS("\r\n");
         _connection_handle = BLE_CONN_HANDLE_INVALID;
         break;
@@ -368,7 +377,8 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         //_dispatch_queue_packet();
         break;
     default:
-        DEBUG("Unknown BLE event: ", event->header.evt_id);
+        PRINTS("Unknown BLE event: ");
+        PRINT_HEX(&event->header.evt_id, sizeof(event->header.evt_id));
         PRINTS("\r\n");
         break;
     }

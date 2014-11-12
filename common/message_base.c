@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <string.h>
 #include <app_util.h>
 #include <nrf_soc.h>
 #include "message_base.h"
@@ -169,7 +170,6 @@ _inspect(MSG_Data_t * o){
 }
 MSG_Status
 MSG_Base_BufferTest(void){
-    uint8_t junk = 5;
     MSG_Data_t * objbig = NULL;
     MSG_Data_t * obj = NULL;
     for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE; i++){

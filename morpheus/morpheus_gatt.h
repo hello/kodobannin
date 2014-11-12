@@ -74,3 +74,5 @@ void hlo_ble_dispatch_write(ble_evt_t *event);
 
 void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, const struct hlo_ble_operation_callbacks* callback_info);
 void hlo_ble_on_ble_evt(ble_evt_t* event);
+
+bool hlo_ble_is_connected();

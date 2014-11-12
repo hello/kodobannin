@@ -4,6 +4,15 @@
 
 #include <ble.h>
 
+#define MAX_DELAY_TASKS         5
+
+#define TASK_PAUSE_ANT          0   // task index for stop ant
+#define TASK_BOND_OP            1   // task index for bonding operations
+#define TASK_BLE_ADV_OP         2   // task index for restart BLE advertise
+#define TASK_RESUME_ANT         3   // task index for retsart ant
+#define TASK_MEM_CHECK          4   // task index for memory leak check
+
+
 typedef void(*hble_evt_handler_t)(ble_evt_t* ble_evt);
 typedef void(*delay_task_t)(void);
 
@@ -19,3 +28,8 @@ void hble_erase_all_bonded_central();
 bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_t* len);
 bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id);
 uint64_t hble_get_device_id();
+bool hble_set_delay_task(uint8_t index, const delay_task_t task);
+void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks, uint8_t task_len);
+
+void hble_delay_tasks_erase_bonds();
+void hble_delay_task_advertise_resume();

@@ -38,7 +38,7 @@ typedef struct _MSG_Data_t{
      * data buffer
      */
     uint8_t buf[0];
-}MSG_Data_t __attribute__((packed));
+}__attribute__((packed)) MSG_Data_t;
 
 
 typedef enum{
@@ -51,6 +51,9 @@ typedef enum{
     CLI,
     TIME,
     SSPI,
+#ifdef PLATFORM_HAS_VLED
+    LED,
+#endif
     MOD_END
 }MSG_ModuleType;
 
@@ -72,7 +75,7 @@ typedef struct{
  */
 typedef struct{
     MSG_ModuleType type;
-    char * typestr;
+    const char * typestr;
     MSG_Status ( *init ) ( void );
     MSG_Status ( *destroy ) ( void );
     MSG_Status ( *flush ) ( void );

@@ -18,9 +18,9 @@ extern const uint8_t hex[16];
 #define APP_OK(expr) APP_ERROR_CHECK(expr);
 #define BOOL_OK(expr) APP_ASSERT(expr);
 
-#ifdef DEBUG_SERIAL //=====================================
+#if defined(DEBUG_SERIAL) || defined(PLATFORM_HAS_SERIAL_CROSS_CONNECT)
 #include <simple_uart.h>
-#define PRINT_HEX(a,b) MSG_Uart_PrintHex(a,b) 
+#define PRINT_HEX(a,b) MSG_Uart_PrintHex((uint8_t*)a,b)
 #define PRINTS(a) MSG_Uart_Prints(a)
 #define PRINTC(a) {}
 #define SIMPRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
@@ -50,7 +50,7 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 
 #define REBOOT_TO_DFU() do{\
 								if(NRF_SUCCESS == sd_power_gpregret_set((uint32_t)GPREGRET_FORCE_DFU_ON_BOOT_MASK)){\
-									NVIC_SystemReset();\
+									sd_nvic_SystemReset();\
 								}\
 							}while(0)
 #define AES128_BLOCK_SIZE 16
@@ -65,6 +65,7 @@ uint8_t memsum(void *start, unsigned len);
 uint32_t aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce);
 uint32_t aes128_ctr_decrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce);
 const uint8_t * get_aes128_key(void);
+int nrf_atoi(char *p);
 
 union int16_bits {
 	int16_t value;

@@ -179,15 +179,18 @@ static void _on_wom_timer(void* context)
 }
 
 static void _on_pill_pairing_guesture_detected(void){
+	static uint8_t counter;
     //TODO: send pairing request packets via ANT
 #ifdef ANT_ENABLE
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t));
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_shakedata_t));
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
+		pill_shakedata_t * shake_data = (pill_shakedata_t*)ant_data->payload;
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_SHAKING;
         ant_data->UUID = GET_UUID_64();
+		shake_data->counter = counter++;
         parent->dispatch((MSG_Address_t){IMU,1}, (MSG_Address_t){ANT,1}, data_page);
         MSG_Base_ReleaseDataAtomic(data_page);
     }
@@ -202,7 +205,7 @@ static MSG_Status _init(void){
 	//ShakeDetectReset(15000000000, 5);
 	//easier to trigger
 #ifndef DEBUG_SERIAL
-	ShakeDetectReset(15000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+	ShakeDetectReset(1000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
 #else
     ShakeDetectReset(100000000);
 #endif

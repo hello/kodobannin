@@ -4,7 +4,7 @@
 
 static struct{
     MSG_Base_t base;
-    MSG_Central_t * parent;
+    const MSG_Central_t * parent;
     bool initialized;
     MSG_Data_t * rx_buf;
     uint16_t rx_index;
@@ -44,13 +44,14 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(data){
         if(dst.submodule == 0){
             //meta command
-        }else{
+        }else if(dst.submodule == 1){
             //only 1 connection
-            MSG_Base_AcquireDataAtomic(data);
             _printblocking("\r\n<data>",8, 0);
             _printblocking(data->buf,data->len,1);
             _printblocking("</data>\r\n",9, 0);
-            MSG_Base_ReleaseDataAtomic(data);
+        }else if(dst.submodule == 2){
+            uint8_t test_slip[] = {0xc0, 0xc1, 0xae, 0x00, 0x91, 0x02, 0x00, 0x00, 0x00, 0xb8, 0x43, 0x00, 0x00, 0xe1, 0x38, 0xc0};
+            _printblocking(test_slip,sizeof(test_slip), 0);
         }
     }
     return SUCCESS;
@@ -115,7 +116,22 @@ _uart_event_handler(app_uart_evt_t * evt){
 static MSG_Status
 _init(void){
     uint32_t err;
-    APP_UART_FIFO_INIT(&self.uart_params, 16, 256, _uart_event_handler, APP_IRQ_PRIORITY_LOW, err);
+    {
+        uint16_t uart_id = 0;
+        app_uart_buffers_t buffers = {0};
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+        static uint8_t rx_buf[128];
+        static uint8_t tx_buf[256];
+#else
+        static uint8_t rx_buf[16];
+        static uint8_t tx_buf[256];
+#endif
+        buffers.rx_buf = rx_buf;
+        buffers.rx_buf_size = sizeof(rx_buf);
+        buffers.tx_buf = tx_buf;
+        buffers.tx_buf_size = sizeof(tx_buf);
+        err = app_uart_init(&self.uart_params, &buffers, _uart_event_handler, APP_IRQ_PRIORITY_LOW, &uart_id);
+    }
     if(!err){
         self.initialized = 1;
         return SUCCESS;
@@ -138,7 +154,7 @@ MSG_Base_t * MSG_Uart_Base(const app_uart_comm_params_t * params, const MSG_Cent
 }
 void MSG_Uart_Prints(const char * str){
     if(self.initialized){
-        char * head = str;
+        const char * head = str;
         while(*head){
             app_uart_put(*head);
             head++;

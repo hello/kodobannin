@@ -9,6 +9,8 @@
 #include "pb_encode.h"
 #include "morpheus_ble.pb.h"
 
+#define MSG_NO_MEMORY   "No memory\r\n"
+
 enum {
     BLE_UUID_MORPHEUS_SVC = 0xFEE1,
 };
@@ -79,7 +81,7 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event);
 void morpheus_load_modules(void);
 void morpheus_ble_transmission_layer_init();
 void morpheus_ble_transmission_layer_reset();
-bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command);
+bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command);
 bool morpheus_ble_reply_protobuf_error(uint32_t error_type);
 void morpheus_ble_on_notify_completed(const void* data, void* data_page);
 void morpheus_ble_on_notify_failed(void* data_page);

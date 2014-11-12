@@ -87,6 +87,9 @@ static void _init_rf_modules()
     PRINTS("ble_init() done.\r\n");
     hble_update_battery_level();
     hble_advertising_start();
+#else
+	battery_module_power_on();
+	battery_measurement_begin(NULL);
 #endif
     PRINTS("INIT DONE.\r\n");
 }
@@ -102,7 +105,15 @@ void _start()
 {
     
     battery_module_power_off();
-    
+
+	//HACK TO DISABLE PINS ON LED
+#ifdef PLATFORM_HAS_VLED
+	gpio_cfg_d0s1_output_disconnect_pull(LED3_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+	gpio_cfg_d0s1_output_disconnect_pull(LED2_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+	gpio_cfg_d0s1_output_disconnect_pull(LED1_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+	gpio_cfg_d0s1_output_disconnect_pull(VRGB_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+#endif
+	//END HACK
     {
         enum {
             SCHED_QUEUE_SIZE = 32,

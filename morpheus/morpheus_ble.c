@@ -33,6 +33,7 @@
 
 // To generate the protobuf download nanopb
 // Generate C code: ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
+// ~/nanopb-0.3.1-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
 // Generate Java code: protoc --java_out=. morpheus/morpheus_ble.proto
 
 
@@ -82,7 +83,7 @@ static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field,
 
     MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
-    PRINTS("Lock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
+    //PRINTS("Lock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
     char* str = buffer_page->buf;
     
     bool ret = false;
@@ -92,7 +93,7 @@ static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field,
     }
 
     MSG_Base_ReleaseDataAtomic(buffer_page);
-    PRINTS("Unlock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
+    //PRINTS("Unlock memory in _encode_string_fields\r\n");// nrf_delay_ms(1);
     return ret;
 }
 
@@ -105,7 +106,7 @@ static bool _encode_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, 
 
     MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
     MSG_Base_AcquireDataAtomic(buffer_page);
-    PRINTS("Lock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
+    //PRINTS("Lock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
     char* str = buffer_page->buf;
     
     bool ret = false;
@@ -115,7 +116,7 @@ static bool _encode_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, 
     }
 
     MSG_Base_ReleaseDataAtomic(buffer_page);
-    PRINTS("Unlock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
+    //PRINTS("Unlock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
     return ret;
 }
 
@@ -129,12 +130,21 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
     /* We could read block-by-block to avoid the large buffer... */
     if (stream->bytes_left > PROTOBUF_MAX_LEN - 1 || stream->bytes_left == 0)
     {
+        if(stream->bytes_left == 0)
+        {
+            PRINTS("No data for field tag");
+            PRINT_HEX(&field->tag, sizeof(field->tag));
+            PRINTS("\r\n");
+            //nrf_delay_ms(10);
+            return true;
+        }
+
         return false;
     }
    	
     MSG_Data_t* string_page = MSG_Base_AllocateDataAtomic(stream->bytes_left + 1);
     if(!string_page){
-        PRINTS("No memory when decoding string field\r\n");
+        PRINTS(MSG_NO_MEMORY);// nrf_delay_ms(1);
         return false;
     }
 
@@ -142,11 +152,12 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
 
     if (!pb_read(stream, string_page->buf, stream->bytes_left))
     {
+        PRINTS("_decode_string_field read content failed\r\n");// nrf_delay_ms(1);
         MSG_Base_ReleaseDataAtomic(string_page);
         return false;
     }
 	
-    PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
+    //PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
 	*arg = string_page;
 
     return true;
@@ -161,7 +172,7 @@ static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, v
     }
     
     MSG_Data_t* buffer_page = MSG_Base_AllocateDataAtomic(stream->bytes_left);
-    PRINTS("malloc in _decode_bytes_field\r\n");// nrf_delay_ms(1);
+    //PRINTS("malloc in _decode_bytes_field\r\n");// nrf_delay_ms(1);
 
     if(!buffer_page)
     {
@@ -212,12 +223,6 @@ void morpheus_ble_assign_decode_funcs(MorpheusCommand* command)
         command->wifiPassword.funcs.decode = _decode_string_field;
         command->wifiPassword.arg = NULL;
     }
-
-    if(NULL == command->motionDataEntrypted.funcs.decode)
-    {
-        command->motionDataEntrypted.funcs.decode = _decode_bytes_field;
-        command->motionDataEntrypted.arg = NULL;
-    }
 }
 
 void morpheus_ble_remove_decode_funcs(MorpheusCommand* command)
@@ -245,11 +250,6 @@ void morpheus_ble_remove_decode_funcs(MorpheusCommand* command)
     if(command->wifiPassword.funcs.decode)
     {
         command->wifiPassword.funcs.decode = NULL;
-    }
-
-    if(command->motionDataEntrypted.funcs.decode)
-    {
-        command->motionDataEntrypted.funcs.decode = NULL;
     }
 }
 
@@ -279,11 +279,6 @@ void morpheus_ble_assign_encode_funcs(MorpheusCommand* command)
     {
         command->wifiPassword.funcs.encode = _encode_string_fields;
     }
-
-    if(command->motionDataEntrypted.arg != NULL && command->motionDataEntrypted.funcs.encode == NULL)
-    {
-        command->motionDataEntrypted.funcs.encode = _encode_bytes_fields;
-    }
 }
 
 bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, size_t len)
@@ -299,7 +294,7 @@ bool morpheus_ble_decode_protobuf(MorpheusCommand* command, const char* raw, siz
     
     morpheus_ble_assign_decode_funcs(command);
 
-    pb_istream_t stream = pb_istream_from_buffer(raw, len);
+    pb_istream_t stream = pb_istream_from_buffer((uint8_t*)raw, len);
     bool status = pb_decode(&stream, MorpheusCommand_fields, command);
 
     morpheus_ble_remove_decode_funcs(command);
@@ -351,42 +346,35 @@ void morpheus_ble_free_protobuf(MorpheusCommand* command)
     {
         MSG_Base_ReleaseDataAtomic(command->accountId.arg);
         command->accountId.arg = NULL;
-        PRINTS("MorpheusCommand->accountId released\r\n");
+        //PRINTS("MorpheusCommand->accountId released\r\n");
     }
 
     if(command->deviceId.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->deviceId.arg);
         command->deviceId.arg = NULL;
-        PRINTS("MorpheusCommand->deviceId released\r\n");// nrf_delay_ms(2);
+        //PRINTS("MorpheusCommand->deviceId released\r\n");// nrf_delay_ms(2);
     }
 
     if(command->wifiName.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiName.arg);
         command->wifiName.arg = NULL;
-        PRINTS("MorpheusCommand->wifiName released\r\n");
+        //PRINTS("MorpheusCommand->wifiName released\r\n");
     }
 
     if(command->wifiSSID.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiSSID.arg);
         command->wifiSSID.arg = NULL;
-        PRINTS("MorpheusCommand->wifiSSID released\r\n");
+        //PRINTS("MorpheusCommand->wifiSSID released\r\n");
     }
 
     if(command->wifiPassword.arg)
     {
         MSG_Base_ReleaseDataAtomic(command->wifiPassword.arg);
         command->wifiPassword.arg = NULL;
-        PRINTS("MorpheusCommand->wifiPassword released\r\n");
-    }
-
-    if(command->motionDataEntrypted.arg)
-    {
-        MSG_Base_ReleaseDataAtomic(command->motionDataEntrypted.arg);
-        command->motionDataEntrypted.arg = NULL;
-        PRINTS("MorpheusCommand->motionDataEntrypted released\r\n");
+        //PRINTS("MorpheusCommand->wifiPassword released\r\n");
     }
 }
 
@@ -477,7 +465,7 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 
     	_protobuf_buffer = MSG_Base_AllocateDataAtomic(PROTOBUF_MAX_LEN);
     	if(!_protobuf_buffer){
-    		PRINTS("Not enought memory\r\n");
+    		PRINTS(MSG_NO_MEMORY);
     		return;
     	}
     	
@@ -505,7 +493,7 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 	{
 		MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(_protobuf_len);
 		if(!data_page){
-			PRINTS("Not enought memory\r\n");
+			PRINTS(MSG_NO_MEMORY);
 		}else{
 			memcpy(data_page->buf, _protobuf_buffer->buf, _protobuf_len);
 		}
@@ -541,7 +529,7 @@ void morpheus_ble_on_notify_failed(void* data_page)
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
 }
 
-bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
+bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(morpheus_command, NULL, &protobuf_len))
     {
@@ -557,7 +545,7 @@ bool morpheus_ble_reply_protobuf(const MorpheusCommand* morpheus_command){
     MSG_Data_t* heap_page = MSG_Base_AllocateDataAtomic(protobuf_len);
     if(!heap_page)
     {
-        PRINTS("Not enough memory!\r\n");
+        PRINTS(MSG_NO_MEMORY);
         return false;
     }
     memset(heap_page->buf, 0, heap_page->len);
@@ -627,7 +615,19 @@ void morpheus_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
     	central->loadmod(MSG_App_Base(central));
+#ifdef PLATFORM_HAS_SERIAL_CROSS_CONNECT
+		app_uart_comm_params_t uart_params = {
+            CCU_RX_PIN,
+            CCU_TX_PIN,
+            CCU_CTS_PIN,
+            CCU_RTS_PIN,
+            APP_UART_FLOW_CONTROL_DISABLED,
+            0,
+            UART_BAUDRATE_BAUDRATE_Baud38400
+		};
 
+		central->loadmod(MSG_Uart_Base(&uart_params, central));
+#else
 #ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
             SERIAL_RX_PIN,
@@ -641,6 +641,8 @@ void morpheus_load_modules(void){
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #endif
+#endif
+
 
 #ifdef PLATFORM_HAS_SSPI
 		spi_slave_config_t spi_params = {
