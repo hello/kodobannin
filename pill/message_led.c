@@ -5,7 +5,7 @@
 static struct{
     MSG_Base_t base;
     const MSG_Central_t * parent;
-    int counter;
+    uint32_t counter;
 }self;
 static const char * name = "LED";
 
@@ -74,6 +74,13 @@ _flush(void){
 }
 static MSG_Status
 _handle_led_commands(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
+    switch(dst.submodule){
+        default:
+            break;
+        case LED_BLINK_GREEN:
+
+            break;
+    }
     return SUCCESS;
 }
 
