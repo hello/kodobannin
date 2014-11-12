@@ -2,7 +2,6 @@
 
 #include <app_timer.h>
 
-#include "platform.h"
 #include "app.h"
 #include "util.h"
 #include "nrf_gpio.h"

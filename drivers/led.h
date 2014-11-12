@@ -1,4 +1,5 @@
 #pragma once
+#include "platform.h"
 typedef void(*led_callback_t)(void);  
 
 #define LED_BLUE_CHANNEL LED1_ENABLE

@@ -1,6 +1,7 @@
 #include "led_booster_timer.h"
 #include <app_timer.h>
 #include "app.h"
+#include "led.h"
 //APP_TIMER_TICKS(x, APP_TIMER_PRESCALER)
 
 typedef enum{
@@ -9,10 +10,19 @@ typedef enum{
     LED_BOOSTER_STATE_HOT
 }led_booster_state_t;
 
+typedef enum{
+    LED_BOOSTER_EVENT_START = 0,
+    LED_BOOSTER_EVENT_BLUE,
+    LED_BOOSTER_EVENT_GREEN,
+    LED_BOOSTER_EVENT_RED
+}led_booster_event_t;
+
 static struct{
     volatile led_booster_state_t state;
     led_booster_context_t user;
     app_timer_id_t timer;
+    int rgb[3];
+    led_booster_event_t cycle_state;
 }self;
 
 static void
@@ -29,15 +39,33 @@ _timer_handler(void * ctx){
                 uint32_t ticks = APP_TIMER_TICKS(100, APP_TIMER_PRESCALER);
                 self.state = LED_BOOSTER_STATE_HOT;
                 self.user.on_warm();
+                self.cycle_state = LED_BOOSTER_EVENT_START;
                 app_timer_start(self.timer, ticks, NULL);
             }
             break;
         case LED_BOOSTER_STATE_HOT:
             {
-                uint32_t ticks = APP_TIMER_TICKS(5, APP_TIMER_PRESCALER);
-                if(self.user.on_cycle(LED_BOOSTER_EVENT_START)){
-                }else{
-                    self.state = LED_BOOSTER_STATE_COLD;
+                uint32_t ticks = APP_TIMER_TICKS(11, APP_TIMER_PRESCALER);
+                switch(self.cycle_state){
+                    case LED_BOOSTER_EVENT_START:
+                        if(self.user.on_cycle(&self.rgb[0], &self.rgb[1], &self.rgb[2])){
+                        }else{
+                            self.state = LED_BOOSTER_STATE_COLD;
+                        }
+                        self.cycle_state = LED_BOOSTER_EVENT_RED;
+                        break;
+                    case LED_BOOSTER_EVENT_RED:
+                        led_set(LED_RED_CHANNEL, self.rgb[0]);
+                        self.cycle_state = LED_BOOSTER_EVENT_GREEN;
+                        break;
+                    case LED_BOOSTER_EVENT_GREEN:
+                        led_set(LED_GREEN_CHANNEL, self.rgb[1]);
+                        self.cycle_state = LED_BOOSTER_EVENT_BLUE;
+                        break;
+                    case LED_BOOSTER_EVENT_BLUE:
+                        led_set(LED_BLUE_CHANNEL, self.rgb[2]);
+                        self.cycle_state = LED_BOOSTER_EVENT_START;
+                        break;
                 }
                 app_timer_start(self.timer, ticks, NULL);
             }

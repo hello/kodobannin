@@ -10,35 +10,35 @@ static struct{
 static const char * name = "LED";
 
 static void _setup(void){
-    PRINTS("Setup\r\n");
+    /*
+     *PRINTS("Setup\r\n");
+     */
     led_power_on();
 }
 static void _teardown(void){
-    PRINTS("Teardown\r\n");
+    /*
+     *PRINTS("Teardown\r\n");
+     */
     led_all_colors_off();
     led_power_off();
 }
 static void _on_warm(void){
-    PRINTS("Warm\r\n");
+    /*
+     *PRINTS("Warm\r\n");
+     */
     led_warm_up();
 }
-static int _on_cycle(led_booster_event_t event){
+static int _on_cycle(int * out_r, int * out_g, int * out_b){
     static int led;
-    PRINTS("cycle\r\n");
+    /*
+     *PRINTS("cycle\r\n");
+     */
     if(self.counter++ > 30){
         return 0;
     }else{
-        switch((led++ % 3)){
-            case 0:
-                led_set(LED_RED_CHANNEL, 0x37);
-                break;
-            case 1:
-                led_set(LED_BLUE_CHANNEL, 0x37);
-                break;
-            case 2:
-                led_set(LED_GREEN_CHANNEL, 0x37);
-                break;
-        }
+        *out_r = 0x37;
+        *out_g = 0x37;
+        *out_b = 0x37;
     }
     return 1;
 }

@@ -5,18 +5,12 @@
  * to prevent browning out of the system
  **/
 
-typedef enum{
-    LED_BOOSTER_EVENT_START = 0,
-    LED_BOOSTER_EVENT_BLUE,
-    LED_BOOSTER_EVENT_GREEN,
-    LED_BOOSTER_EVENT_RED
-}led_booster_event_t;
 
 typedef struct{
     void (* setup )(void);
     void (* teardown)(void);
     void (* on_warm)(void);
-    int  (* on_cycle)(led_booster_event_t event);
+    int  (* on_cycle)(int * out_r, int * out_g, int * out_b);
 }led_booster_context_t;
 
 //MUST CALL init before everything else
