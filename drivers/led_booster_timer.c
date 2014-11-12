@@ -2,6 +2,7 @@
 #include <app_timer.h>
 #include "app.h"
 #include "led.h"
+#include <nrf_soc.h>
 //APP_TIMER_TICKS(x, APP_TIMER_PRESCALER)
 
 typedef enum{
@@ -19,6 +20,7 @@ typedef enum{
 
 static struct{
     volatile led_booster_state_t state;
+    volatile uint8_t free;
     led_booster_context_t user;
     app_timer_id_t timer;
     int rgb[3];
@@ -32,6 +34,9 @@ _timer_handler(void * ctx){
         case LED_BOOSTER_STATE_COLD:
             {
                 self.user.teardown();
+                CRITICAL_REGION_ENTER();
+                self.free = 1;
+                CRITICAL_REGION_EXIT();
             }
             break;
         case LED_BOOSTER_STATE_WARM:
@@ -77,14 +82,21 @@ void led_booster_init(const led_booster_context_t * ctx){
     self.user = *ctx;
     app_timer_create(&self.timer, APP_TIMER_MODE_SINGLE_SHOT, _timer_handler);
     self.state = LED_BOOSTER_STATE_COLD;
+    self.free = 1;
 }
 
+uint8_t led_booster_is_free(void){
+    return self.free;
+}
 void led_booster_power_on(void){
     uint32_t ticks = APP_TIMER_TICKS(10, APP_TIMER_PRESCALER);
     app_timer_stop(self.timer);
     self.user.setup();
     self.state = LED_BOOSTER_STATE_WARM;
     app_timer_start(self.timer, ticks, NULL);
+    CRITICAL_REGION_ENTER();
+    self.free = 0;
+    CRITICAL_REGION_EXIT();
 }
 void led_booster_power_off(void){
     self.state = LED_BOOSTER_STATE_COLD;

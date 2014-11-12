@@ -57,8 +57,12 @@ _init(void){
 }
 
 void test_led(){
-    self.counter = 0;
-    led_booster_power_on();
+    if(led_booster_is_free()){
+        self.counter = 0;
+        led_booster_power_on();
+    }else{
+        led_booster_power_off();
+    }
 }
 static MSG_Status
 _destroy(void){

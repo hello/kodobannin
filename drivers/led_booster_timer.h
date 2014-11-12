@@ -15,5 +15,11 @@ typedef struct{
 
 //MUST CALL init before everything else
 void led_booster_init(const led_booster_context_t * ctx);
+
+//indicates whether we may schedule power on
+unsigned char led_booster_is_free(void);
+
+//call to power on the routine
 void led_booster_power_on(void);
+//optional if we want to quit half way
 void led_booster_power_off(void);
