@@ -3,7 +3,6 @@ typedef void(*led_callback_t)(void);
 
 void led_init();
 void led_power_on();
-void led_warm_up();
 void led_power_off();
 void led_all_colors_on();
 void led_all_colors_off();

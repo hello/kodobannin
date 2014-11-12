@@ -14,11 +14,11 @@ static void _setup(void){
     led_power_on();
 }
 static void _teardown(void){
+    led_all_colors_off();
     led_power_off();
 }
 static void _on_warm(void){
     PRINTS("Warm\r\n");
-    led_warm_up();
     led_all_colors_on();
     /*
      *led_flash(0, 1000, NULL); // cylce thru all three colors each time
