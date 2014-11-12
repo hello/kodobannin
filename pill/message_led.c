@@ -2,6 +2,12 @@
 #include "led.h"
 #include "led_booster_timer.h"
 #include "util.h"
+typedef struct{
+    uint32_t time;
+    int16_t rgb[3];
+    int16_t valid;
+}animation_node_t;
+
 static struct{
     MSG_Base_t base;
     const MSG_Central_t * parent;
@@ -28,19 +34,38 @@ static void _on_warm(void){
      */
     led_warm_up();
 }
+static int
+_play_boot_complete(int * out_r, int * out_g, int * out_b){
+    static const animation_node_t seq[] = {
+        {0 * BOOSTER_REFRESH_RATE, {0x8, 0xff, 0xff}, 1},
+        {1 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
+        {2 * BOOSTER_REFRESH_RATE, {0x8, 0xff, 0xff}, 1},
+        {3 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
+        {4 * BOOSTER_REFRESH_RATE, {0x8, 0xff, 0xff}, 1},
+        {5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
+    };
+    int i;
+    animation_node_t * current;
+    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
+        if(self.counter >= seq[i].time){
+            *out_r = seq[i].rgb[0];
+            *out_g = seq[i].rgb[1];
+            *out_b = seq[i].rgb[2];
+            current = &seq[i];
+        }
+    }
+    self.counter++;
+    if(current){
+        return current->valid;
+    }
+    return 0;
+}
 static int _on_cycle(int * out_r, int * out_g, int * out_b){
     static int led;
     /*
      *PRINTS("cycle\r\n");
      */
-    if(self.counter++ > 30){
-        return 0;
-    }else{
-        *out_r = 0x37;
-        *out_g = 0x37;
-        *out_b = 0x37;
-    }
-    return 1;
+    return _play_boot_complete(out_r, out_g, out_b);
 }
 
 static MSG_Status
