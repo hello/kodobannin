@@ -37,11 +37,11 @@ static void _on_warm(void){
 static int
 _play_boot_complete(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
-        {0   * BOOSTER_REFRESH_RATE, {0x8, 0xff, 0xff}, 1},
+        {0   * BOOSTER_REFRESH_RATE, {0xff, 0x18, 0xff}, 1},
         {0.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
-        {1   * BOOSTER_REFRESH_RATE, {0x8, 0xff, 0xff}, 1},
+        {1   * BOOSTER_REFRESH_RATE, {0xff, 0x18, 0xff}, 1},
         {1.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
-        {2   * BOOSTER_REFRESH_RATE, {0x8, 0xff, 0xff}, 1},
+        {2   * BOOSTER_REFRESH_RATE, {0xff, 0x18, 0xff}, 1},
         {2.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
     };
     int i;
