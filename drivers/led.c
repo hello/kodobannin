@@ -28,7 +28,7 @@ void led_set(int led_channel, int pwmval){
     if(led_channel == LED_GREEN_CHANNEL){
         offset = 0x8;
     }
-    if(pwmval < 255 && pwmval - offset > 0){
+    if(pwmval < 0xff && pwmval - offset > 0){
         nrf_gpio_pin_clear(led_channel);
         APP_OK(pwm_set_value(PWM_Channel_1, pwmval - offset));
     }
