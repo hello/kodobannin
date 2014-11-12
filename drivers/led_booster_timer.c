@@ -41,7 +41,7 @@ _timer_handler(void * ctx){
             break;
         case LED_BOOSTER_STATE_WARM:
             {
-                uint32_t ticks = APP_TIMER_TICKS(500, APP_TIMER_PRESCALER);
+                uint32_t ticks = APP_TIMER_TICKS(200, APP_TIMER_PRESCALER);
                 self.state = LED_BOOSTER_STATE_HOT;
                 self.user.on_warm();
                 self.cycle_state = LED_BOOSTER_EVENT_START;
@@ -89,7 +89,7 @@ uint8_t led_booster_is_free(void){
     return self.free;
 }
 void led_booster_power_on(void){
-    uint32_t ticks = APP_TIMER_TICKS(500, APP_TIMER_PRESCALER);
+    uint32_t ticks = APP_TIMER_TICKS(10, APP_TIMER_PRESCALER);
     CRITICAL_REGION_ENTER();
     self.free = 0;
     app_timer_stop(self.timer);
