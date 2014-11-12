@@ -138,17 +138,11 @@ void _start()
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
 
-    led_init();
-
- // led_power_on();
- // nrf_delay_ms(100);
- // led_power_off();
     
     _init_rf_modules();
     _load_watchdog();
     
 
-    led_flash(0, 1000, NULL); // cylce thru all three colors each time
 
 
     for(;;) {

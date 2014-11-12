@@ -5,6 +5,7 @@
 static struct{
     MSG_Base_t base;
     const MSG_Central_t * parent;
+    int counter;
 }self;
 static const char * name = "LED";
 
@@ -13,15 +14,21 @@ static void _setup(void){
     led_power_on();
 }
 static void _teardown(void){
-    //led_power_off();
+    led_power_off();
 }
 static void _on_warm(void){
     PRINTS("Warm\r\n");
-    led_warm();
+    led_all_colors_on();
+    /*
+     *led_flash(0, 1000, NULL); // cylce thru all three colors each time
+     */
 }
-static void _on_cycle(led_booster_event_t event){
+static int _on_cycle(led_booster_event_t event){
     PRINTS("cycle\r\n");
-    //led_all_colors_on();
+    if(self.counter++ > 10){
+        return 0;
+    }
+    return 1;
 }
 
 static MSG_Status
@@ -32,7 +39,7 @@ _init(void){
         .on_warm = _on_warm,
         .on_cycle = _on_cycle,
     };
-    led_driver_init();
+    led_init();
     led_booster_init(&ctx);
     return SUCCESS;
 }

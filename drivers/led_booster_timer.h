@@ -16,7 +16,7 @@ typedef struct{
     void (* setup )(void);
     void (* teardown)(void);
     void (* on_warm)(void);
-    void( * on_cycle)(led_booster_event_t event);
+    int  (* on_cycle)(led_booster_event_t event);
 }led_booster_context_t;
 
 //MUST CALL init before everything else

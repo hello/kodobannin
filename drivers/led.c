@@ -70,10 +70,7 @@ static void _led_blink_all(void* ctx)
         }
     }
     _blink_count--;
-
- // APP_OK(app_timer_start(_flash_timer, LED_INIT_LIGHTUP_INTERAVL, NULL));
-
-    APP_OK(app_timer_start(_flash_timer, APP_TIMER_TICKS(2,APP_TIMER_PRESCALER), NULL));
+    APP_OK(app_timer_start(_flash_timer, LED_INIT_LIGHTUP_INTERAVL, NULL));
 }
 
 bool led_flash(uint8_t color, uint8_t count, led_callback_t on_finished) // uint32_t color_rgb
@@ -96,28 +93,27 @@ bool led_flash(uint8_t color, uint8_t count, led_callback_t on_finished) // uint
     }
 
     _blink_color = color;
-    _blink_count = 60 * count * 2 * 3; // turn all three colors on/off each cycle
+    _blink_count = count * 2 * 3; // turn all three colors on/off each cycle
 
     led_power_on();
 
-    APP_OK(app_timer_start(_flash_timer, APP_TIMER_TICKS(20,APP_TIMER_PRESCALER), NULL));
+    APP_OK(app_timer_start(_flash_timer, LED_INIT_LIGHTUP_INTERAVL, NULL));
 #endif
 }
 
-void led_driver_init()
+void led_init()
 {
-#ifdef PLATFORM_HAS_VLED
-    nrf_gpio_pin_set(VLED_VDD_EN); // set pfet gate high to power off
-    nrf_gpio_cfg_output(VLED_VDD_EN); // boost regualator ( power supply )
+    nrf_gpio_pin_set(VLED_VDD_EN); // set pfet gate high
+    nrf_gpio_cfg_output(VLED_VDD_EN); // power off boost regualator
 
-    nrf_gpio_pin_clear(VRGB_ENABLE); // set control input low to disable
-    nrf_gpio_cfg_output(VRGB_ENABLE); // boost regulator ( enable input )
+    nrf_gpio_pin_clear(VRGB_ENABLE); // set control input low
+    nrf_gpio_cfg_output(VRGB_ENABLE); // disable boost regulator enable input
 
-    nrf_gpio_pin_clear(VRGB_SELECT);  // connect to boost resistor divider
+    nrf_gpio_pin_clear(VRGB_SELECT);  // connect from boost resistor divider ( FB set )
     _led_gpio_cfg_open_drain(VRGB_SELECT); // voltage range select ( grn/blu vs red )
 
-    nrf_gpio_pin_set(VRGB_ADJUST); // disconnect from boost adjust filter
-    _led_gpio_cfg_open_drain(VRGB_ADJUST); // dac output w/pwm filter ( 100K / 0.01uF )
+    nrf_gpio_pin_set(VRGB_ADJUST); // disconnect from boost adjust filter ( FB trim )
+    _led_gpio_cfg_open_drain(VRGB_ADJUST); // dac output w/pwm filter ( 100K / 0.1uF )
 
     nrf_gpio_pin_set(LED3_ENABLE); // red led off ( open drain )
     _led_gpio_cfg_open_drain(LED3_ENABLE); // nrf_gpio_cfg_output(LED3_ENABLE); // red
@@ -127,8 +123,39 @@ void led_driver_init()
 
     nrf_gpio_pin_set(LED1_ENABLE); // blu led off ( open drain )
     _led_gpio_cfg_open_drain(LED1_ENABLE); // nrf_gpio_cfg_output(LED1_ENABLE); // blu
-#endif
+
+ /* uint32_t gpios[1] = {VRGB_ADJUST}; // port to use for pwm dac
+ // APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
+
+//for (;;) {
+ // PRINTS("\r\n===( LED precharge )===\r\n");
+    nrf_gpio_pin_set(VRGB_ENABLE);  // precharge capacitors ( Vrgb / Vpwm )
+    APP_OK(pwm_set_value(PWM_Channel_1, 0x57)); // set Vout lower than 1.8
+
+    nrf_delay_ms(10);
+ // PRINTS(" (");
+    nrf_gpio_pin_clear(VLED_VDD_EN); // write 0 to enable pfet power control
+
+    nrf_delay_ms(40);
+    APP_OK(pwm_set_value(PWM_Channel_1, 0x47)); // match FB 0.5 volt
+    nrf_delay_ms(40);
+
+    nrf_gpio_pin_clear(LED3_ENABLE); // red on
+
+    nrf_delay_ms(40);
+ // PRINTS(") ");
+    nrf_gpio_pin_set(VLED_VDD_EN); // write 0 to enable pfet power control
+
+    nrf_gpio_pin_clear(VRGB_ENABLE);  // discharge capacitors ( Vrgb / Vpwm )
+    nrf_gpio_pin_set(LED3_ENABLE); // red off
+
+ // PRINTS("\r\n===( LED discharge )===\r\n");
+
+ // nrf_delay_ms(2000); // repeat
+//} */
+
 }
+
 
 void led_all_colors_on()
 {
@@ -148,48 +175,7 @@ void led_all_colors_off()
 #endif
 }
 
-// led driver power up
-
-void led_warm(void){
-    //enable boost
-    nrf_gpio_pin_clear(VLED_VDD_EN); // turn boost regulator power supply on
-    PRINTS(" power on )===\r\n"); // boost regulator operating
-   
-}
 void led_power_on()
-{
-#ifdef PLATFORM_HAS_VLED
-    uint32_t gpios[1] = {VRGB_ADJUST}; // set port to use for pwm dac
-
-    nrf_gpio_pin_set(VRGB_ENABLE);  // precharge capacitors ( Vrgb / Vpwm )
-
-    APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
-    APP_OK(pwm_set_value(PWM_Channel_1, 0x47)); // set initial 30 percent ( 0.5 / 1.8 )
-#endif
-}
-
-// led driver shutdown
-
-void led_power_off()
-{
-#ifdef PLATFORM_HAS_VLED
-    PRINTS("\r\n===( LED disable");
-    nrf_gpio_pin_clear(VRGB_ENABLE); // disable boost regulator
-
-    PRINTS(" pwm");
-    pwm_disable(); // stop pwm dac operation
-
-    PRINTS(" boost");
-    nrf_gpio_pin_set(VLED_VDD_EN); // turn led driver power supply off
-
-    PRINTS(" power off )===\r\n"); // boost regulator shut down
-#endif
-}
-
-#endif
-
-
-/* void led_power_on()
 {
 #ifdef PLATFORM_HAS_VLED
     uint32_t gpios[1] = {VRGB_ADJUST}; // port to use for pwm dac
@@ -219,17 +205,19 @@ void led_power_off()
  // nrf_gpio_pin_clear(LED1_ENABLE);  // write 0
 
 #endif
-} */
+}
 
 
-/* void led_power_off()
+void led_power_off()
 {
 #ifdef PLATFORM_HAS_VLED
-    nrf_gpio_pin_clear(VRGB_ENABLE); // boost disabled and then
-
     pwm_disable();
 
+    nrf_gpio_pin_clear(VRGB_ENABLE); // boost disabled and then
     nrf_gpio_pin_set(VLED_VDD_EN); // regulator powered off
 #endif
-} */
+}
 
+
+
+#endif

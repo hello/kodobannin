@@ -291,7 +291,7 @@ void pill_ble_load_modules(void){
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 #ifdef PLATFORM_HAS_VLED
-        central->loadmod(MSG_LEDInit(central));
+		central->loadmod(MSG_LEDInit(central));
 #endif
 
         /*
