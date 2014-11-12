@@ -23,9 +23,22 @@ static void _on_warm(void){
     led_warm_up();
 }
 static int _on_cycle(led_booster_event_t event){
+    static int led;
     PRINTS("cycle\r\n");
-    if(self.counter++ > 10){
+    if(self.counter++ > 30){
         return 0;
+    }else{
+        switch((led++ % 3)){
+            case 0:
+                led_set(LED_RED_CHANNEL, 0x37);
+                break;
+            case 1:
+                led_set(LED_BLUE_CHANNEL, 0x37);
+                break;
+            case 2:
+                led_set(LED_GREEN_CHANNEL, 0x37);
+                break;
+        }
     }
     return 1;
 }
@@ -44,6 +57,7 @@ _init(void){
 }
 
 void test_led(){
+    self.counter = 0;
     led_booster_power_on();
 }
 static MSG_Status

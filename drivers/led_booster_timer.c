@@ -34,7 +34,7 @@ _timer_handler(void * ctx){
             break;
         case LED_BOOSTER_STATE_HOT:
             {
-                uint32_t ticks = APP_TIMER_TICKS(100, APP_TIMER_PRESCALER);
+                uint32_t ticks = APP_TIMER_TICKS(5, APP_TIMER_PRESCALER);
                 if(self.user.on_cycle(LED_BOOSTER_EVENT_START)){
                 }else{
                     self.state = LED_BOOSTER_STATE_COLD;

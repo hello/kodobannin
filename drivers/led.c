@@ -28,6 +28,18 @@ static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
                                   | (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);      // output only
 }
 
+void led_set(int led_channel, int pwmval){
+    int offset = 0;
+    led_all_colors_off();
+    nrf_gpio_pin_clear(led_channel);
+    if(led_channel == LED_GREEN_CHANNEL){
+        offset = 0x8;
+    }
+    if(pwmval - offset > 0){
+        APP_OK(pwm_set_value(PWM_Channel_1, pwmval - offset));
+    }
+
+}
 static void _led_blink_all(void* ctx)
 {
     uint8_t count;
