@@ -9,11 +9,6 @@
 #include "led.h"
 #include "pwm.h"
 
-static led_callback_t _on_falsh_finished;
-static app_timer_id_t _flash_timer;
-static volatile uint16_t _blink_color;
-static volatile uint16_t _blink_count;
-
 
 #ifdef PLATFORM_HAS_VLED
 
@@ -38,78 +33,6 @@ void led_set(int led_channel, int pwmval){
         APP_OK(pwm_set_value(PWM_Channel_1, pwmval - offset));
     }
 
-}
-static void _led_blink_all(void* ctx)
-{
-    uint8_t count;
-
-    if(_blink_count % 2 == 0)
-    {
-     // APP_OK(pwm_set_value(PWM_Channel_1, 0x0F));
-     // led_all_colors_on();
-        if ((_blink_color % 3) == 0) nrf_gpio_pin_clear(LED3_ENABLE); // red
-        if ((_blink_color % 3) == 1) nrf_gpio_pin_clear(LED2_ENABLE); // grn
-        if ((_blink_color % 3) == 2) nrf_gpio_pin_clear(LED1_ENABLE); // blu
-    }else{
-        if(_blink_count == 1)
-        {
-
-            led_power_off();
-            if(_on_falsh_finished)
-            {
-                _on_falsh_finished();
-            }
-            _blink_count = 0;
-            return;
-        } else {
-            led_all_colors_off();
-            _blink_color++; if (_blink_color > 2) _blink_color= 0;
-            if (_blink_color % 3) { // grn/blu selected
-             // nrf_gpio_pin_clear(VRGB_SELECT);  // grn/blu ( high volt range )
-                if ((_blink_color % 3) == 1) { // grn selected
-                    APP_OK(pwm_set_value(PWM_Channel_1, 0x37)); // adjust pwm trim lower
-                } else { // blu selected
-                    APP_OK(pwm_set_value(PWM_Channel_1, 0x2F)); // adjust pwm trim higher
-                }
-            } else { // red led selected
-             // nrf_gpio_pin_set(VRGB_SELECT);  // red ( low volt range )
-                APP_OK(pwm_set_value(PWM_Channel_1, 0x3F)); // adjust pwm trim null
-            }
-
-         // count = (uint8_t) _blink_count / 6;
-         // PRINT_HEX(&count, sizeof(count));
-        }
-    }
-    _blink_count--;
-    APP_OK(app_timer_start(_flash_timer, LED_INIT_LIGHTUP_INTERAVL, NULL));
-}
-
-bool led_flash(uint8_t color, uint8_t count, led_callback_t on_finished) // uint32_t color_rgb
-{
-    if(_blink_count > 0)
-    {
-        return false;
-    }
-#ifdef PLATFORM_HAS_VLED
-    if(!on_finished)
-    {
-        _on_falsh_finished = on_finished;
-    }
-
-    if(_flash_timer)
-    {
-        app_timer_stop(_flash_timer);
-    }else{
-        APP_OK(app_timer_create(&_flash_timer, APP_TIMER_MODE_SINGLE_SHOT, _led_blink_all));
-    }
-
-    _blink_color = color;
-    _blink_count = count * 2 * 3; // turn all three colors on/off each cycle
-
-    led_power_on();
-
-    APP_OK(app_timer_start(_flash_timer, LED_INIT_LIGHTUP_INTERAVL, NULL));
-#endif
 }
 
 void led_init()
