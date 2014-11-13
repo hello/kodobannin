@@ -61,6 +61,7 @@ void led_init()
     _led_gpio_cfg_open_drain(LED1_ENABLE); // nrf_gpio_cfg_output(LED1_ENABLE); // blu
 
     APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
+    pwm_disable(); // config pwm rate and power down
 }
 
 
@@ -83,10 +84,9 @@ void led_all_colors_off()
 }
 
 void led_warm_up(){
-    PRINTS(" boost");
+    PRINTS("===( LED power");
     nrf_gpio_pin_clear(VLED_VDD_EN); // write 0 to enable pfet power control
-    PRINTS(" on"); // boost regulator powered on
-    PRINTS(" set )===\r\n"); // boost regulator powered on
+    PRINTS(" on )==="); // boost regulator powered on
 }
 void led_power_on()
 {
@@ -97,6 +97,7 @@ void led_power_on()
 
     PRINTS(" pwm");
     APP_OK(pwm_set_value(PWM_Channel_1, 0xEF)); // set initial Vrgb = Vmcu
+    PRINTS(" on )===");
 
 #endif
 }
@@ -105,10 +106,15 @@ void led_power_on()
 void led_power_off()
 {
 #ifdef PLATFORM_HAS_VLED
+    PRINTS(" LED shutdown"); // boost regulator powered on
+    nrf_gpio_pin_clear(VRGB_ENABLE); // boost disabled and then
+
+    PRINTS(" pwm");
     pwm_disable();
 
-    nrf_gpio_pin_clear(VRGB_ENABLE); // boost disabled and then
+    PRINTS(" power"); // boost regulator powered on
     nrf_gpio_pin_set(VLED_VDD_EN); // regulator powered off
+    PRINTS(" off )===\r\n"); // boost regulator powered on
 #endif
 }
 
