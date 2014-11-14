@@ -135,6 +135,15 @@ static void _delay_task_memory_checkpoint()
 {
     if(MSG_Base_HasMemoryLeak()){
         PRINTS("Possible memory leak detected!\r\n");
+        uint8_t free_pages = 0;
+#ifndef MSG_BASE_USE_BIG_POOL
+        free_pages = MSG_Base_FreeCount();
+#else
+        free_pages = MSG_Base_FreeCount() + MSG_Base_BigPoolFreeCount();
+#endif
+        PRINTS("Free page count: ");
+        PRINT_HEX(&free_pages, sizeof(free_pages));
+        PRINTS("\r\n");
     }else{
         PRINTS("No memory leak.\r\n");
     }
