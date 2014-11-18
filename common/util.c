@@ -7,6 +7,7 @@
 #include <nrf_soc.h>
 #include <string.h>
 #include <simple_uart.h>
+#include "nrf51.h"
 
 #include "util.h"
 
@@ -18,6 +19,7 @@ _ctr_inc_ctr(nrf_ecb_hal_data_t * ecb){
 const uint8_t *
 get_aes128_key(void){
 	static uint8_t key[16] = {0};
+	memcpy(key, NRF_FICR->ER, sizeof(key));
 	return key;
 }
 uint32_t
