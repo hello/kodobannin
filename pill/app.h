@@ -116,4 +116,4 @@ enum {
 #define HEARTBEAT_INTERVAL_SEC              (3600)
 
 //use hello's ant network key
-//#define USE_HLO_ANT_NETWORK
+#define USE_HLO_ANT_NETWORK

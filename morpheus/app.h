@@ -107,4 +107,4 @@ enum {
 //fatory app allows more capabilities
 //#define FACTORY_APP
 //use hello's ant network key
-//#define USE_HLO_ANT_NETWORK
+#define USE_HLO_ANT_NETWORK
