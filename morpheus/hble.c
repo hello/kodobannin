@@ -382,17 +382,25 @@ static void _on_conn_params_error(uint32_t nrf_error)
 static void _advertising_data_init(uint8_t flags){
     ble_advdata_t advdata;
     ble_advdata_t scanrsp;
+
+    ble_uuid_t indication_service_uuid = {
+             .type = hello_type,
+             .uuid = 0xBEEB
+         };
+
     ble_uuid_t adv_uuids[] = {_service_uuid};
 
     //uint8_t data[1] = {0xAA};
-    uint8_t device_id_cpy[sizeof(_device_id)];
-    memcpy(device_id_cpy, &_device_id, sizeof(_device_id));
-    uint8_array_t data_array = { .p_data = device_id_cpy, .size = DEVICE_ID_SIZE };
+    // We no longer have space to add another service for scan response data
+    uint8_t device_id_cpy[DEVICE_ID_SIZE + sizeof(_pairing_mode)];
+    memcpy(device_id_cpy, &_device_id, DEVICE_ID_SIZE);
+    memcpy(&device_id_cpy[DEVICE_ID_SIZE], &_pairing_mode, sizeof(_pairing_mode));
 
-
-    ble_advdata_service_data_t  srv_data = { 
-        .service_uuid = _service_uuid.uuid,
-        .data = data_array };
+    ble_advdata_service_data_t srv_data_array[1];
+    memset(srv_data_array, 0, sizeof(srv_data_array));
+    srv_data_array[0].service_uuid = _service_uuid.uuid;
+    srv_data_array[0].data.p_data = device_id_cpy;
+    srv_data_array[0].data.size = sizeof(device_id_cpy);
 
     PRINTS("Service UUID:");
     PRINT_HEX(&_service_uuid.uuid, sizeof(_service_uuid.uuid));
@@ -406,9 +414,9 @@ static void _advertising_data_init(uint8_t flags){
     advdata.flags.p_data = &flags;
 
     memset(&scanrsp, 0, sizeof(scanrsp));
-    scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
+    scanrsp.uuids_complete.uuid_cnt = 1; //sizeof(adv_uuids) / sizeof(adv_uuids[0]);
     scanrsp.uuids_complete.p_uuids = adv_uuids;
-    scanrsp.p_service_data_array = &srv_data;
+    scanrsp.p_service_data_array = srv_data_array;
     scanrsp.service_data_count = 1;
 
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
@@ -453,6 +461,7 @@ void hble_advertising_start()
             }else{
                 flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just make it clear what we want to do.
                 PRINTS("NO whitelist retrieved. Advertising in pairing mode.\r\n");
+                _pairing_mode = true;
             }
         }else{
             PRINTS("get whitelist error: ");
