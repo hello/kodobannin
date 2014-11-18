@@ -46,8 +46,8 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
-    nrf_delay_ms(100);
-    hble_advertising_start();
+    //nrf_delay_ms(100);
+    //hble_advertising_start();
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
