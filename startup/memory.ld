@@ -14,7 +14,8 @@ MEMORY
   /* App Persistent Storage */
   APP_DATA (rw) : ORIGIN = 0x3CC00, LENGTH = 0x2000 /* 0x8 pages */
   /* Bootloader storage */
-  USER_DATA (rw) : ORIGIN = 0x3EC00, LENGTH = 0x1400 /* 0x5 pages */
+  KEY_DATA (rw) : ORIGIN = 0x3EC00, LENGTH = 0x400 /* 1 page of pub/identity */
+  USER_DATA (rw) : ORIGIN = 0x3F000, LENGTH = 0x1000 /* 0x5 pages */
   /* Make sure the total of the above are  of the TOTAL 100 pages */
   SOFTDEVICE_RAM (rwx): ORIGIN = 0x20000000, LENGTH = 0x2400
   RAM (rwx) : ORIGIN = 0x20002400, LENGTH = 0x1C00
