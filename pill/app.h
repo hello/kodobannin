@@ -114,6 +114,7 @@ enum {
 #define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_SEC              (3600)
+#define MOTION_DATA_INTERVAL_SEC            (60)
 
 //use hello's ant network key
 //#define USE_HLO_ANT_NETWORK
