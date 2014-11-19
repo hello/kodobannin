@@ -176,7 +176,7 @@ _start()
     if(should_dfu) {
 	    SIMPRINTS("Bootloader: in DFU mode...\r\n");
 
-        SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+        SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
 
         APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
