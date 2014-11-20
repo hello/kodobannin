@@ -15,8 +15,8 @@ typedef struct{
 }yolo_ctx_t;
 
 yolo_ctx_t * yolo_init(void * buffer, size_t buffer_size);
-void * yolo_malloc(yolo_ctx_t * ctx, size_t size);
-void * yolo_calloc(yolo_ctx_t * ctx, size_t num, size_t size);
+void * yolo_malloc(size_t size);
+void * yolo_calloc(size_t num, size_t size);
 void yolo_free(void * ptr);
 
 
