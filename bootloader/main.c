@@ -31,7 +31,11 @@
 #include "ecc_benchmark.h"
 #endif
 #include "git_description.h"
+#include "yolo_malloc.h"
 
+
+static uint8_t crypto_mem_buffer[2048];
+yolo_ctx_t * crypto_mem;
 enum {
     APP_GPIOTE_MAX_USERS = 2,
 };
@@ -101,6 +105,7 @@ _start()
     volatile uint8_t* proposed_fw_sha1 = __app_sha1_start__;
 
     uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
+	crypto_mem = yolo_init(crypto_mem_buffer, sizeof(crypto_mem_buffer));
 
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
