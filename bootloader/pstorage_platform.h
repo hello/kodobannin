@@ -23,7 +23,8 @@
 
 #define PSTORAGE_FLASH_PAGE_SIZE    ((uint16_t)NRF_FICR->CODEPAGESIZE)   /**< Size of one flash page. */
 #define PSTORAGE_FLASH_EMPTY_MASK    0xFFFFFFFF                          /**< Bit mask that defines an empty address in flash. */
-#define BOOTLOADER_INFO_ADDRESS     0x3F000                             /** defined in memory.ld */
+#define USER_START_ADDRESS           0x3F000                             /** defined in memory.ld */
+#define DEVICE_KEY_ADDRESS           0x3F400
 
 #define PSTORAGE_FLASH_PAGE_END      NRF_FICR->CODESIZE
 
@@ -31,7 +32,7 @@
 #define PSTORAGE_MAX_APPLICATIONS   4                                                           /**< Maximum number of applications that can be registered with the module, configurable based on system requirements. */
 #define PSTORAGE_MIN_BLOCK_SIZE     0x0004                                                      /**< Minimum size of block that can be registered with the module. Should be configured based on system requirements, recommendation is not have this value to be at least size of word. */
 
-#define PSTORAGE_DATA_START_ADDR    BOOTLOADER_INFO_ADDRESS
+#define PSTORAGE_DATA_START_ADDR    USER_START_ADDRESS
 #define PSTORAGE_DATA_END_ADDR      (PSTORAGE_FLASH_PAGE_END * PSTORAGE_FLASH_PAGE_SIZE)        /**< End address for persistent data, configurable according to system requirements. */
 #define PSTORAGE_SWAP_ADDR          PSTORAGE_DATA_END_ADDR
 
