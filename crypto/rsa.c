@@ -33,6 +33,7 @@
  * perform its calculations.
  */
 
+#include "util.h"
 #include <string.h>
 #include "crypto.h"
 
@@ -82,7 +83,7 @@ void RSA_pub_key_new(RSA_CTX **ctx,
         RSA_free(*ctx);
 
     bi_ctx = bi_initialize();
-    *ctx = (RSA_CTX *)pvPortMalloc(sizeof(RSA_CTX));
+    *ctx = (RSA_CTX *)yolo_malloc(sizeof(RSA_CTX));
     memset( *ctx, 0, sizeof(RSA_CTX));
     rsa_ctx = *ctx;
     rsa_ctx->bi_ctx = bi_ctx;
@@ -125,7 +126,7 @@ void RSA_free(RSA_CTX *rsa_ctx)
     }
 
     bi_terminate(bi_ctx);
-    vPortFree(rsa_ctx);
+    yolo_free(rsa_ctx);
 }
 
 /**
@@ -137,15 +138,13 @@ void RSA_free(RSA_CTX *rsa_ctx)
  * @return  The number of bytes that were originally encrypted. -1 on error.
  * @see http://www.rsasecurity.com/rsalabs/node.asp?id=2125
  */
-#include "FreeRTOS.h"
-#include "task.h"
 int RSA_decrypt(const RSA_CTX *ctx, const uint8_t *in_data, 
                             uint8_t *out_data, int is_decryption)
 {
     const int byte_size = ctx->num_octets;
     int i, size;
     bigint *decrypted_bi, *dat_bi;
-    uint8_t *block = (uint8_t *)pvPortMalloc(byte_size);
+    uint8_t *block = (uint8_t *)yolo_malloc(byte_size);
 
     memset(out_data, 0, byte_size); /* initialise */
 
@@ -182,7 +181,7 @@ int RSA_decrypt(const RSA_CTX *ctx, const uint8_t *in_data,
     if (size > 0)
         memcpy(out_data, &block[i], size);
     
-    vPortFree(block);
+    yolo_free(block);
     return size ? size : -1;
 }
 

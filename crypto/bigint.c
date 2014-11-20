@@ -60,12 +60,11 @@
  * @{
  */
 
-#include <stdlib.h>
 #include <limits.h>
 #include <string.h>
-#include <time.h>
 #include "bigint.h"
 #include "yolomalloc.h"
+#include "util.h"
 
 #define V1      v->comps[v->size-1]                 /**< v1 for division */
 #define V2      v->comps[v->size-2]                 /**< v2 for division */
