@@ -29,60 +29,63 @@
  */
 
 /**
- * Some misc. routines to help things out
+ * An implementation of the RC4/ARC4 algorithm.
+ * Originally written by Christophe Devine.
  */
 
-#include <stdint.h>
-
+#include <string.h>
 #include "crypto.h"
-#include "nrf51.h"
-#include "nrf_error.h"
-#include <nrf_soc.h>
 
-#define ENTROPY_POOL_SIZE 16
-static uint8_t entropy[ENTROPY_POOL_SIZE];
 /**
- * If no /dev/urandom, then initialise the RNG with something interesting.
+ * Get ready for an encrypt/decrypt operation
  */
-void RNG_custom_init(const uint8_t *seed_buf, int size)
+void RC4_setup(RC4_CTX *ctx, const uint8_t *key, int length)
 {
-    for(int i = 0; i < sizeof(entropy); i++){
-        entropy[i] = seed_buf[i];
+    int i, j = 0, k = 0, a;
+    uint8_t *m;
+
+    ctx->x = 0;
+    ctx->y = 0;
+    m = ctx->m;
+
+    for (i = 0; i < 256; i++)
+        m[i] = i;
+
+    for (i = 0; i < 256; i++)
+    {
+        a = m[i];
+        j = (uint8_t)(j + a + key[k]);
+        m[i] = m[j]; 
+        m[j] = a;
+
+        if (++k >= length) 
+            k = 0;
     }
 }
 
 /**
- * Set a series of bytes with a random number. Individual bytes can be 0
+ * Perform the encrypt/decrypt operation (can use it for either since
+ * this is a stream cipher).
+ * NOTE: *msg and *out must be the same pointer (performance tweak)
  */
-void get_random(int num_rand_bytes, uint8_t *rand_data)
-{   
-    uint8_t pool_size;
-    uint8_t radio_entropy[ENTROPY_POOL_SIZE] = {0};
-    if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
-        sd_rand_application_vector_get(radio_entropy, (pool_size < ENTROPY_POOL_SIZE)?pool_size:ENTROPY_POOL_SIZE);
-        for(int i = 0; i < ENTROPY_POOL_SIZE; i++){
-            entropy[i] ^= radio_entropy[i];
-        }
-        RC4_CTX rc4;
-        RC4_setup(&rc4, entropy, ENTROPY_POOL_SIZE);
-        RC4_crypt(&rc4, rand_data, rand_data, num_rand_bytes);
-        RC4_crypt(&rc4, entropy, entropy, ENTROPY_POOL_SIZE);
-    }
-}
-
-/**
- * Set a series of bytes with a random number. Individual bytes are not zero.
- */
-void get_random_NZ(int num_rand_bytes, uint8_t *rand_data)
-{
+void RC4_crypt(RC4_CTX *ctx, const uint8_t *msg, uint8_t *out, int length)
+{ 
     int i;
-    get_random(num_rand_bytes, rand_data);
-    for(i = 0; i < num_rand_bytes; i++){
-        while(rand_data[i] == 0){
-            get_random(1, &rand_data[i]);
-        }
+    uint8_t *m, x, y, a, b;
+
+    x = ctx->x;
+    y = ctx->y;
+    m = ctx->m;
+
+    for (i = 0; i < length; i++)
+    {
+        a = m[++x];
+        y += a;
+        m[x] = b = m[y];
+        m[y] = a;
+        out[i] ^= m[(uint8_t)(a + b)];
     }
 
+    ctx->x = x;
+    ctx->y = y;
 }
-
-
