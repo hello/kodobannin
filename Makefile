@@ -75,6 +75,7 @@ HELLO_SRCS = \
 	$(wildcard protobuf/*.c) \
 	$(wildcard ant/*.c) \
 	$(wildcard dtm/*.c) \
+	$(wildcard crypto/*.c) \
 
 
 NRF_SRCS = \
@@ -129,6 +130,7 @@ INCS =  ./ \
 	./drivers \
 	./ant \
 	./dtm \
+	./crypto \
 	
 
 
