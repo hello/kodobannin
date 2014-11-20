@@ -27,9 +27,6 @@
 #include "error_handler.h"
 #include "hello_dfu.h"
 #include "util.h"
-#ifdef ECC_BENCHMARK
-#include "ecc_benchmark.h"
-#endif
 #include "git_description.h"
 #include "yolomalloc.h"
 
@@ -136,12 +133,6 @@ _start()
 		 */
 	}
 #endif
-
-#ifdef ECC_BENCHMARK
-	ecc_benchmark();
-#endif
-
-	// const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
         SIMPRINTS("Application crashed :(\r\n");
