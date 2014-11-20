@@ -65,7 +65,7 @@ void get_random(int num_rand_bytes, uint8_t *rand_data)
 void get_random_NZ(int num_rand_bytes, uint8_t *rand_data)
 {
     for(i = 0; i < num_rand_bytes; i++){
-        rand_data[i] = i+1;
+        rand_data[i] = (i%128)+1;
     }
 }
 
