@@ -38,6 +38,7 @@
 #include "nrf51.h"
 #include "nrf_error.h"
 #include <nrf_soc.h>
+#include <nrf_sdm.h>
 
 #define ENTROPY_POOL_SIZE 16
 static uint8_t entropy[ENTROPY_POOL_SIZE];
@@ -58,16 +59,27 @@ void get_random(int num_rand_bytes, uint8_t *rand_data)
 {   
     uint8_t pool_size;
     uint8_t radio_entropy[ENTROPY_POOL_SIZE] = {0};
-    if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
-        sd_rand_application_vector_get(radio_entropy, (pool_size < ENTROPY_POOL_SIZE)?pool_size:ENTROPY_POOL_SIZE);
-        for(int i = 0; i < ENTROPY_POOL_SIZE; i++){
-            entropy[i] ^= radio_entropy[i];
+    uint8_t sd;
+    if(sd_softdevice_is_enabled(&sd) && sd){
+        if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
+            sd_rand_application_vector_get(radio_entropy, (pool_size < ENTROPY_POOL_SIZE)?pool_size:ENTROPY_POOL_SIZE);
         }
-        RC4_CTX rc4;
-        RC4_setup(&rc4, entropy, ENTROPY_POOL_SIZE);
-        RC4_crypt(&rc4, rand_data, rand_data, num_rand_bytes);
-        RC4_crypt(&rc4, entropy, entropy, ENTROPY_POOL_SIZE);
+    }else{
+        //no random number generator
+        NRF_RNG->TASKS_START = 1;
+        for(int i = 0; i < ENTROPY_POOL_SIZE; i++){
+            while(NRF_RNG->EVENTS_VALRDY == 0){};
+            radio_entropy[i] = NRF_RNG->VALUE;
+        }
+        NRF_RNG->TASKS_STOP = 1;
     }
+    for(int i = 0; i < ENTROPY_POOL_SIZE; i++){
+        entropy[i] ^= radio_entropy[i];
+    }
+    RC4_CTX rc4;
+    RC4_setup(&rc4, entropy, ENTROPY_POOL_SIZE);
+    RC4_crypt(&rc4, rand_data, rand_data, num_rand_bytes);
+    RC4_crypt(&rc4, entropy, entropy, ENTROPY_POOL_SIZE);
 }
 
 /**
@@ -82,7 +94,6 @@ void get_random_NZ(int num_rand_bytes, uint8_t *rand_data)
             get_random(1, &rand_data[i]);
         }
     }
-
 }
 
 
