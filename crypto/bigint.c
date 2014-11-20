@@ -63,10 +63,9 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
-#include <stdio.h>
 #include <time.h>
-
 #include "bigint.h"
+#include "yolomalloc.h"
 
 #define V1      v->comps[v->size-1]                 /**< v1 for division */
 #define V2      v->comps[v->size-2]                 /**< v2 for division */
@@ -90,8 +89,6 @@ static void check(const bigint *bi);
 #define check(A)                /**< disappears in normal production mode */
 #endif
 
-#include "FreeRTOS.h"
-
 /**
  * @brief Start a new bigint context.
  * @return A bigint context.
@@ -99,8 +96,7 @@ static void check(const bigint *bi);
 BI_CTX *bi_initialize(void)
 {
     /* calloc() sets everything to zero */
-    BI_CTX *ctx = (BI_CTX *)pvPortMalloc(sizeof(BI_CTX));
-    memset(ctx,0,sizeof(BI_CTX));
+    BI_CTX *ctx = (BI_CTX *)yolo_calloc(crypto_mem, 1, sizeof(BI_CTX));
    
     /* the radix */
     ctx->bi_radix = alloc(ctx, 2); 
@@ -132,7 +128,7 @@ void bi_terminate(BI_CTX *ctx)
     }
 
     bi_clear_cache(ctx);
-    vPortFree(ctx);
+    yolo_free(ctx);
 }
 
 /**
@@ -148,8 +144,8 @@ void bi_clear_cache(BI_CTX *ctx)
     for (p = ctx->free_list; p != NULL; p = pn)
     {
         pn = p->next;
-        vPortFree(p->comps);
-        vPortFree(p);
+        yolo_free(p->comps);
+        yolo_free(p);
     }
 
     ctx->free_count = 0;
@@ -1074,9 +1070,9 @@ static void more_comps(bigint *bi, int n)
     	int max_comps = bi->max_comps;
 
         bi->max_comps = max(bi->max_comps * 2, n);
-        bi->comps = (comp*)pvPortMalloc(bi->max_comps * COMP_BYTE_SIZE);
+        bi->comps = (comp*)yolo_malloc(bi->max_comps * COMP_BYTE_SIZE);
         memcpy( bi->comps, old_comps, max_comps * COMP_BYTE_SIZE );
-		vPortFree(old_comps);
+		yolo_free(old_comps);
     }
 
     if (n > bi->size)
@@ -1114,9 +1110,9 @@ static bigint *alloc(BI_CTX *ctx, int size)
     }
     else
     {
-        /* No vPortFree bigints available - create a new one. */
-        biR = (bigint *)pvPortMalloc(sizeof(bigint));
-        biR->comps = (comp*)pvPortMalloc(size * COMP_BYTE_SIZE);
+        /* No yolo_free bigints available - create a new one. */
+        biR = (bigint *)yolo_malloc(sizeof(bigint));
+        biR->comps = (comp*)yolo_malloc(size * COMP_BYTE_SIZE);
         biR->max_comps = size;  /* give some space to spare */
     }
 
@@ -1322,7 +1318,7 @@ static void precompute_slide_window(BI_CTX *ctx, int window, bigint *g1)
         k <<= 1;
     }
 
-    ctx->g = (bigint **)pvPortMalloc(k*sizeof(bigint *));
+    ctx->g = (bigint **)yolo_malloc(k*sizeof(bigint *));
     ctx->g[0] = bi_clone(ctx, g1);
     bi_permanent(ctx->g[0]);
     g2 = bi_residue(ctx, bi_square(ctx, ctx->g[0]));   /* g^2 */
@@ -1376,7 +1372,7 @@ bigint *bi_mod_power(BI_CTX *ctx, bigint *bi, bigint *biexp)
     /* work out the slide constants */
     precompute_slide_window(ctx, window_size, bi);
 #else   /* just one constant */
-    ctx->g = (bigint **)pvPortMalloc(sizeof(bigint *));
+    ctx->g = (bigint **)yolo_malloc(sizeof(bigint *));
     ctx->g[0] = bi_clone(ctx, bi);
     ctx->window = 1;
     bi_permanent(ctx->g[0]);
@@ -1428,7 +1424,7 @@ bigint *bi_mod_power(BI_CTX *ctx, bigint *bi, bigint *biexp)
         bi_free(ctx, ctx->g[i]);
     }
 
-    vPortFree(ctx->g);
+    yolo_free(ctx->g);
     bi_free(ctx, bi);
     bi_free(ctx, biexp);
 #if defined CONFIG_BIGINT_MONTGOMERY
