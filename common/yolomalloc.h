@@ -8,6 +8,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 typedef struct{
     uint32_t offset;
     uint32_t size;

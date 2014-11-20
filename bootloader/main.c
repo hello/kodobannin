@@ -31,10 +31,10 @@
 #include "ecc_benchmark.h"
 #endif
 #include "git_description.h"
-#include "yolo_malloc.h"
+#include "yolomalloc.h"
 
 
-static uint8_t crypto_mem_buffer[2048];
+static uint8_t crypto_mem_buffer[1028];
 enum {
     APP_GPIOTE_MAX_USERS = 2,
 };

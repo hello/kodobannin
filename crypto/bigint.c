@@ -95,7 +95,7 @@ static void check(const bigint *bi);
 BI_CTX *bi_initialize(void)
 {
     /* calloc() sets everything to zero */
-    BI_CTX *ctx = (BI_CTX *)yolo_calloc(crypto_mem, 1, sizeof(BI_CTX));
+    BI_CTX *ctx = (BI_CTX *)yolo_calloc(1, sizeof(BI_CTX));
    
     /* the radix */
     ctx->bi_radix = alloc(ctx, 2); 
