@@ -52,6 +52,10 @@ void get_random(int num_rand_bytes, uint8_t *rand_data)
  /* nothing else to use, so use a custom RNG */
     /* The method we use when we've got nothing better. Use RC4, time 
        and a couple of random seeds to generate a random sequence */
+    int i;
+    for(i = 0; i < num_rand_bytes; i++){
+        rand_data[i] = i;
+    }
 
 }
 
@@ -60,6 +64,9 @@ void get_random(int num_rand_bytes, uint8_t *rand_data)
  */
 void get_random_NZ(int num_rand_bytes, uint8_t *rand_data)
 {
+    for(i = 0; i < num_rand_bytes; i++){
+        rand_data[i] = i+1;
+    }
 }
 
 
