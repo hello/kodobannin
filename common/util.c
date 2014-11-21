@@ -8,6 +8,8 @@
 #include <string.h>
 #include <simple_uart.h>
 #include "nrf51.h"
+#include "nrf_ecb.h"
+#include <nrf_sdm.h>
 
 #include "util.h"
 
@@ -33,38 +35,54 @@ aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, const uint8
 	uint32_t * write_ptr = (uint32_t*)message;
 	uint32_t * read_ptr = (uint32_t*)ecb.ciphertext;
 	uint32_t written = 0;
+	uint8_t has_sd;
+	sd_softdevice_is_enabled(&has_sd);
 	//set key
 	memcpy(ecb.key, key, AES128_BLOCK_SIZE);
 	//set counter
 	memcpy(ecb.cleartext, (uint8_t*)nonce, 8);
 	memset(ecb.cleartext+8, 0, 8);
+	if(!has_sd){
+		nrf_ecb_init();
+		nrf_ecb_set_key(key);
+	}
 	while(message_size >= AES128_BLOCK_SIZE){
 		//do one operation
-		if(NRF_SUCCESS == sd_ecb_block_encrypt(&ecb)){
-			//output = input xor aes output
-			write_ptr[0] = write_ptr[0] ^ read_ptr[0];
-			write_ptr[1] = write_ptr[1] ^ read_ptr[1];
-			write_ptr[2] = write_ptr[2] ^ read_ptr[2];
-			write_ptr[3] = write_ptr[3] ^ read_ptr[3];
-			write_ptr += 4;
-			written += 16;
+		if(!has_sd){
+			if(!nrf_ecb_crypt(read_ptr, write_ptr)){
+				return 1;
+			}
 		}else{
-			return 1;
+			if(NRF_SUCCESS != sd_ecb_block_encrypt(&ecb)){
+				return 1;
+			}
 		}
+		//output = input xor aes output
+		write_ptr[0] = write_ptr[0] ^ read_ptr[0];
+		write_ptr[1] = write_ptr[1] ^ read_ptr[1];
+		write_ptr[2] = write_ptr[2] ^ read_ptr[2];
+		write_ptr[3] = write_ptr[3] ^ read_ptr[3];
+		write_ptr += 4;
+		written += 16;
 		message_size -= AES128_BLOCK_SIZE;
 		_ctr_inc_ctr(&ecb);
 	}
 	if(message_size > 0){
-		if(NRF_SUCCESS == sd_ecb_block_encrypt(&ecb)){
-			read_ptr[0] = write_ptr[0] ^ read_ptr[0];
-			read_ptr[1] = write_ptr[1] ^ read_ptr[1];
-			read_ptr[2] = write_ptr[2] ^ read_ptr[2];
-			read_ptr[3] = write_ptr[3] ^ read_ptr[3];
-			memcpy((uint8_t*)write_ptr, (uint8_t*)read_ptr, message_size);
-			written += message_size;
+		if(!has_sd){
+			if(!nrf_ecb_crypt(read_ptr, write_ptr)){
+				return 1;
+			}
 		}else{
-			return 1;
+			if(NRF_SUCCESS != sd_ecb_block_encrypt(&ecb)){
+				return 1;
+			}
 		}
+		read_ptr[0] = write_ptr[0] ^ read_ptr[0];
+		read_ptr[1] = write_ptr[1] ^ read_ptr[1];
+		read_ptr[2] = write_ptr[2] ^ read_ptr[2];
+		read_ptr[3] = write_ptr[3] ^ read_ptr[3];
+		memcpy((uint8_t*)write_ptr, (uint8_t*)read_ptr, message_size);
+		written += message_size;
 	}
 	PRINTS("AES: ");
 	PRINT_HEX(&written, 2);
