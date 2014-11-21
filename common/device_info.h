@@ -25,3 +25,4 @@ typedef struct{
 }__attribute__((packed)) device_info_t;
 
 void generate_new_device(device_info_t * info);
+

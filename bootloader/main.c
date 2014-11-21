@@ -28,6 +28,7 @@
 #include "hello_dfu.h"
 #include "util.h"
 #include "git_description.h"
+#include "factory_provision.h"
 
 
 enum {
@@ -134,7 +135,6 @@ _start()
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
         SIMPRINTS("Application crashed :(\r\n");
     }
-
     bool should_dfu = false;
 
     const bootloader_settings_t* bootloader_settings;
@@ -163,6 +163,14 @@ _start()
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
         SIMPRINTS("Forcefully booting into DFU mode.\r\n");
         should_dfu = true;
+	}
+
+	if(1) {
+		SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+		APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
+		APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+		factory_provision_start();
+		NVIC_SystemReset();
 	}
 
     if(should_dfu) {
