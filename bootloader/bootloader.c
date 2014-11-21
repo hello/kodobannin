@@ -38,7 +38,7 @@ typedef enum
 } bootloader_status_t;
 
 static pstorage_handle_t        m_bootsettings_handle;  /**< Pstorage handle to use for registration and identifying the bootloader module on subsequent calls to the pstorage module for load and store of bootloader setting in flash. */
-static pstorage_handle_t        m_key_handle;
+static pstorage_handle_t        m_info_handle;
 static bootloader_status_t      m_update_status;        /**< Current update status for the bootloader module to ensure correct behaviour when updating settings and when update completes. */
 
 
@@ -206,15 +206,15 @@ uint32_t bootloader_dfu_start(void)
 {
     uint32_t                err_code = NRF_SUCCESS;
     pstorage_module_param_t storage_params;
-    pstorage_module_param_t key_params;
+    pstorage_module_param_t info_params;
 
     storage_params.cb          = pstorage_callback_handler;
     storage_params.block_size  = sizeof(bootloader_settings_t);
     storage_params.block_count = 1;
     
-    key_params.cb          = key_callback_handler;
-    key_params.block_size  = 0x400;
-    key_params.block_count = 1;
+    info_params.cb          = key_callback_handler;
+    info_params.block_size  = 0x400;
+    info_params.block_count = 1;
 
     err_code = pstorage_init();
     if (err_code != NRF_SUCCESS)    
@@ -223,14 +223,14 @@ uint32_t bootloader_dfu_start(void)
     }
 
     m_bootsettings_handle.block_id   = BOOTLOADER_SETTINGS_ADDRESS;
-    m_key_handle.block_id = DEVICE_INFO_ADDRESS;
+    m_info_handle.block_id = DEVICE_INFO_ADDRESS;
     err_code = pstorage_register(&storage_params, &m_bootsettings_handle);
     if (err_code != NRF_SUCCESS)    
     {
         return err_code;
     }
 
-    err_code = pstorage_register(&key_params, &m_key_handle);
+    err_code = pstorage_register(&info_params, &m_info_handle);
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
