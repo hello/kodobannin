@@ -17,7 +17,8 @@ MEMORY
   USER_DATA (rw) : ORIGIN = 0x3F000, LENGTH = 0x1000 /* 0x5 pages */
   /* Make sure the total of the above are  of the TOTAL 100 pages */
   SOFTDEVICE_RAM (rwx): ORIGIN = 0x20000000, LENGTH = 0x2400
-  RAM (rwx) : ORIGIN = 0x20002400, LENGTH = 0x1C00
+  KEYSTORE (rw) : ORIGIN = 0x20002400, LENGTH = 0x10 /* place where the identity aes key will be stored */
+  RAM (rwx) : ORIGIN = 0x20002410, LENGTH = 0x1BF0
 }
 
 /* Note that this is the standard nRF SDK DFU layout:
