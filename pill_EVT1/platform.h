@@ -6,6 +6,7 @@
 #define ANT_ENABLE
 #endif
 
+#define HW_REVISION 0
 //#define BLE_ENABLE
 //#define BATTERY_SERVICE_ENABLE
 //#define DEBUG_BATT_LVL

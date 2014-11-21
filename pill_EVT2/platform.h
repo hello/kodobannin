@@ -8,6 +8,8 @@
 
 #define BLE_ENABLE
 
+#define HW_REVISION 0
+
 /*
 // This is from EVT1, not used
 // TODO: Maybe just usesomething from PLATFORM_HAS_I2C?
