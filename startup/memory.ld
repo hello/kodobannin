@@ -10,11 +10,10 @@ MEMORY
   /* DFU_APP_DATA_RESERVED _can_ occupy space here if we wish; this
      may be a better idea than defining our own USER_DATA section,
      since it's SDK-supported. */
-  BOOTLOADER (rx) : ORIGIN = 0x36000, LENGTH = 0x6C00 /*  0x1B pages */
+  BOOTLOADER (rx) : ORIGIN = 0x36000, LENGTH = 0x7000 /*  0x1C pages */
   /* App Persistent Storage */
   APP_DATA (rw) : ORIGIN = 0x3CC00, LENGTH = 0x2000 /* 0x8 pages */
   /* Bootloader storage */
-  KEY_DATA (rw) : ORIGIN = 0x3EC00, LENGTH = 0x400 /* 1 page of pub/identity */
   USER_DATA (rw) : ORIGIN = 0x3F000, LENGTH = 0x1000 /* 0x5 pages */
   /* Make sure the total of the above are  of the TOTAL 100 pages */
   SOFTDEVICE_RAM (rwx): ORIGIN = 0x20000000, LENGTH = 0x2400
