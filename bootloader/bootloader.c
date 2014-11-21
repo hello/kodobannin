@@ -223,7 +223,7 @@ uint32_t bootloader_dfu_start(void)
     }
 
     m_bootsettings_handle.block_id   = BOOTLOADER_SETTINGS_ADDRESS;
-    m_key_handle.block_id = DEVICE_KEY_ADDRESS;
+    m_key_handle.block_id = DEVICE_INFO_ADDRESS;
     err_code = pstorage_register(&storage_params, &m_bootsettings_handle);
     if (err_code != NRF_SUCCESS)    
     {
