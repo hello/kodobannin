@@ -4,6 +4,9 @@
 #include "crypto.h"
 #include "crc16.h"
 #include <nrf_soc.h>
+#include "platform.h"
+#include "hlo_keys.h"
+#include "util.h"
 
 void generate_new_device(device_info_t * info){
     device_meta_info_t * meta = &(info->meta);
@@ -21,8 +24,11 @@ void generate_new_device(device_info_t * info){
     get_random(16, einfo->device_aes);
     memcpy(einfo->ficr, NRF_FICR, sizeof(einfo->ficr));
     sha1_calc(einfo, sizeof(*einfo) - SHA1_DIGEST_LENGTH, einfo->sha);
+ 
 
-    meta->factory_crc = crc16_compute(einfo, sizeof(*einfo), NULL);
+    aes128_ctr_encrypt_inplace(einfo, sizeof(*einfo), (uint8_t*)HLO_FACTORY_AES, meta->nonce);
+
+    meta->factory_crc = crc16_compute((uint8_t*)einfo, sizeof(*einfo), NULL);
 }
 
 
