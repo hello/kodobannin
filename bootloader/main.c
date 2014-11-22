@@ -165,11 +165,16 @@ _start()
         should_dfu = true;
 	}
 
-	if(1) {
-		SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
-		APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
-		APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
-		factory_provision_start();
+	if(factory_needs_provisioning()) {
+		uint32_t ret;
+        SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+        APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
+        APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+		SIMPRINTS("Provisioning New Key...");
+		ret = factory_provision_start();
+		SIMPRINTS("factory returns : ");
+		SIMPRINT_HEX(&ret, 4);
+		while(1){};
 		NVIC_SystemReset();
 	}
 
