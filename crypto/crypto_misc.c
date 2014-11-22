@@ -60,7 +60,7 @@ void get_random(int num_rand_bytes, uint8_t *rand_data)
     uint8_t pool_size;
     uint8_t radio_entropy[ENTROPY_POOL_SIZE] = {0};
     uint8_t sd;
-    if(sd_softdevice_is_enabled(&sd) && sd){
+    if(NRF_SUCCESS == sd_softdevice_is_enabled(&sd) && sd){
         if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
             sd_rand_application_vector_get(radio_entropy, (pool_size < ENTROPY_POOL_SIZE)?pool_size:ENTROPY_POOL_SIZE);
         }
