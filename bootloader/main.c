@@ -196,8 +196,8 @@ _start()
 		}
 		NVIC_SystemReset();
     } else {
+		memcpy((uint8_t*)0x20003FF0, decrypt_key(), 0x10);
 	    SIMPRINTS("Bootloader kicking to app...\r\n");
-
 		bootloader_app_start(CODE_REGION_1_START);
 	}
 }
