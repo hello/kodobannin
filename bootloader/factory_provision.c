@@ -87,3 +87,8 @@ uint32_t factory_provision_start(void){
     return NRF_SUCCESS;
 }
 
+uint8_t * decrypt_key(void){
+    decrypt_device(DEVICE_INFO_ADDRESS, &test_info);
+    return test_info.factory_info.device_aes;
+
+}
