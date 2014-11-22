@@ -49,7 +49,7 @@ aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, const uint8
 	while(message_size >= AES128_BLOCK_SIZE){
 		//do one operation
 		if(!has_sd){
-			if(!nrf_ecb_crypt(read_ptr, write_ptr)){
+			if(!nrf_ecb_crypt(read_ptr, ecb.cleartext)){
 				return 1;
 			}
 		}else{
@@ -69,7 +69,7 @@ aes128_ctr_encrypt_inplace(uint8_t * message, uint32_t message_size, const uint8
 	}
 	if(message_size > 0){
 		if(!has_sd){
-			if(!nrf_ecb_crypt(read_ptr, write_ptr)){
+			if(!nrf_ecb_crypt(read_ptr, ecb.cleartext)){
 				return 1;
 			}
 		}else{
