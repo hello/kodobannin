@@ -172,9 +172,11 @@ _start()
         APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
 		SIMPRINTS("Provisioning New Key...");
 		ret = factory_provision_start();
-		SIMPRINTS("factory returns : ");
-		SIMPRINT_HEX(&ret, 4);
-		while(1){};
+		if(ret == NRF_SUCCESS){
+			SIMPRINTS("Successful\r\n");
+		}else{
+			SIMPRINTS("Failed\r\n");
+		}
 		NVIC_SystemReset();
 	}
 
