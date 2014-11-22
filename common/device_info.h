@@ -27,5 +27,5 @@ typedef struct{
 
 void generate_new_device(device_info_t * info);
 bool validate_device_fast(uint32_t address);
-
+void decrypt_device(uint32_t address, device_info_t * out_info);
 

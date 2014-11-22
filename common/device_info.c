@@ -9,6 +9,7 @@
 #include "util.h"
 
 void generate_new_device(device_info_t * info){
+    volatile uint8_t aes[16] = HLO_FACTORY_AES;
     device_meta_info_t * meta = &(info->meta);
     device_encrypted_info_t * einfo = &(info->factory_info);
 
@@ -21,12 +22,15 @@ void generate_new_device(device_info_t * info){
 
     memcpy(einfo->device_id,NRF_FICR->DEVICEID, sizeof(einfo->device_id));
     memcpy(einfo->device_address,NRF_FICR->DEVICEADDR, sizeof(einfo->device_address));
+    /**
+     * IMPORTANT
+     * GENERATE IDENTITY TO BE REPORTED TO HLO HQ
+     */
     get_random(16, einfo->device_aes);
     memcpy(einfo->ficr, NRF_FICR, sizeof(einfo->ficr));
     sha1_calc(einfo, sizeof(*einfo) - SHA1_DIGEST_LENGTH, einfo->sha);
  
-
-    aes128_ctr_encrypt_inplace(einfo, sizeof(*einfo), (uint8_t*)HLO_FACTORY_AES, meta->nonce);
+    aes128_ctr_encrypt_inplace(einfo, sizeof(*einfo), aes, meta->nonce);
 
     meta->factory_crc = crc16_compute((uint8_t*)einfo, sizeof(*einfo), NULL);
 }
@@ -37,7 +41,12 @@ bool validate_device_fast(uint32_t address){
         return true;
     }
     return false;
-
+}
+void decrypt_device(uint32_t address, device_info_t * out_info){
+    volatile uint8_t aes[16] = HLO_FACTORY_AES;
+    device_info_t * in = (device_info_t*)address;
+    memcpy(out_info, in, sizeof(*out_info));
+    aes128_ctr_decrypt_inplace(&out_info->factory_info, sizeof(out_info->factory_info), aes, in->meta.nonce);
 }
 
 
