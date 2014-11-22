@@ -31,5 +31,13 @@ void generate_new_device(device_info_t * info){
     meta->factory_crc = crc16_compute((uint8_t*)einfo, sizeof(*einfo), NULL);
 }
 
+bool validate_device_fast(uint32_t address){
+    device_info_t * head = (device_info_t*)address;
+    if(head->meta.factory_crc == crc16_compute((uint8_t*)&head->factory_info, sizeof(head->factory_info),NULL)){
+        return true;
+    }
+    return false;
+
+}
 
 

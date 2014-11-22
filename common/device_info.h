@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "sha1.h"
+#include <stdbool.h>
 
 #define META_NONCE_SIZE 8
 typedef struct{
@@ -25,4 +26,6 @@ typedef struct{
 }__attribute__((packed)) device_info_t;
 
 void generate_new_device(device_info_t * info);
+bool validate_device_fast(uint32_t address);
+
 
