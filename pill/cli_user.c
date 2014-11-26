@@ -37,6 +37,7 @@ _handle_command(int argc, char * argv[]){
     }
     if(_strncmp(argv[0], "dfu", strlen("dfu")) == 0){
         REBOOT_TO_DFU();
+    }
     if(_strncmp(argv[0], "led", strlen("led")) == 0){
         test_led();
     }
