@@ -21,7 +21,7 @@ enum {
 #define BLE_ORG_UNIQUE_ID     0x1337
 
 #define ANT_PROTOCOL_VER      (1)
-#define FIRMWARE_VERSION_8BIT (1)
+#define FIRMWARE_VERSION_8BIT (2)
 
 //#define BONDING_REQUIRED
 //#define DATA_SCIENCE_TASK
