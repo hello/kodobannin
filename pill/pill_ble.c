@@ -141,6 +141,9 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 		hble_update_battery_level();
 #endif
 		break;
+	case PILL_COMMAND_WIPE_FIRMWARE:
+		REBOOT_TO_DFU();
+		break;
     };
 }
 

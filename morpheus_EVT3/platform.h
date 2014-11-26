@@ -11,6 +11,7 @@
 #define MSG_BASE_USE_BIG_POOL
 
 #define PLATFORM_HAS_SERIAL
+#define HW_REVISION 3
 
 enum {
     SERIAL_TX_PIN = 19,

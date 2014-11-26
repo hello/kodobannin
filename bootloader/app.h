@@ -20,13 +20,10 @@ enum {
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
+#define FIRMWARE_VERSION_8BIT (1)
 /*
  * BLE Connection Parameters
  */
-// Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800//40
-// Advertising timeout in units of seconds.
-#define APP_ADV_TIMEOUT_IN_SECONDS           180
 
 // Definition of 1 second, when 1 unit is 1.25 ms.
 #define SECOND_1_25_MS_UNITS                    800

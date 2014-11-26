@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include "nrf51.h"
 #include "app_util.h"
+#include "pstorage_platform.h"
 
 #define NRF_UICR_BOOT_START_ADDRESS     (NRF_UICR_BASE + 0x14)                                  /**< Register where the bootloader start address is stored in the UICR register. */
 
@@ -39,7 +40,7 @@
 #endif 
 
 #define BOOTLOADER_REGION_START         0x00036000                                              /**< This field should correspond to start address of the bootloader, found in UICR.RESERVED, 0x10001014, register. This value is used for sanity check, so the bootloader will fail immediately if this value differs from runtime value. The value is used to determine max application size for updating. */
-#define BOOTLOADER_SETTINGS_ADDRESS     0x0003F000                                              /**< The field specifies the page location of the bootloader settings address. */
+#define BOOTLOADER_SETTINGS_ADDRESS     USER_START_ADDRESS                                      /**< The field specifies the page location of the bootloader settings address. */
 
 #define DFU_REGION_TOTAL_SIZE           (BOOTLOADER_REGION_START - CODE_REGION_1_START)         /**< Total size of the region between SD and Bootloader. */
 

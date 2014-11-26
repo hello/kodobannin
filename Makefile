@@ -75,6 +75,7 @@ HELLO_SRCS = \
 	$(wildcard protobuf/*.c) \
 	$(wildcard ant/*.c) \
 	$(wildcard dtm/*.c) \
+	$(wildcard crypto/*.c) \
 
 
 NRF_SRCS = \
@@ -100,6 +101,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
 	nRF51_SDK/nrf51422/Source/spi_slave/spi_slave.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c \
+	nRF51_SDK/nrf51422/Source/nrf_ecb/nrf_ecb.c \
 
 DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
@@ -129,6 +131,7 @@ INCS =  ./ \
 	./drivers \
 	./ant \
 	./dtm \
+	./crypto \
 	
 
 
