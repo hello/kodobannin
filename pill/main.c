@@ -46,6 +46,10 @@
 
 static void _init_rf_modules()
 {
+	volatile int debounce = 16777216;//about 3 seconds debounce
+	while(debounce > 0){
+		debounce--;
+	}
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
 #ifdef ANT_ENABLE
