@@ -16,7 +16,7 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Pill"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT3.10"
+#define BLE_MODEL_NUM         "EVT3.11"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -114,6 +114,7 @@ enum {
 #define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_SEC              (3600)
+#define MOTION_DATA_INTERVAL_SEC            (60)
 
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key

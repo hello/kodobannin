@@ -25,7 +25,7 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
 
 void TF_TickOneSecond(uint64_t monotonic_time){
     self.data.mtime = monotonic_time;
-    if(++self.tick > 60){
+    if(++self.tick > MOTION_DATA_INTERVAL_SEC){
         self.tick = 0;
         self.data.prev_idx = self.current_idx;
         self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
