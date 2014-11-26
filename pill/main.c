@@ -40,6 +40,7 @@
 #include "util.h"
 #include "watchdog.h"
 
+#include "led.h"
 #include "battery.h"
 
 #include <twi_master.h>
@@ -140,12 +141,9 @@ void _start()
     }
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
-    
+
     _init_rf_modules();
     _load_watchdog();
-    
-
-
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
