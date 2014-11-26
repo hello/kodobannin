@@ -15,7 +15,11 @@ void generate_new_device(device_info_t * info){
 
     RNG_custom_init(NRF_FICR->ER, 16);
 
+#ifdef FIRMWARE_VERSION_8BIT
     meta->bootloader_ver = FIRMWARE_VERSION_8BIT;
+#else
+    meta->bootloader_ver = 0;
+#endif
     meta->hw_revision = HW_REVISION;
     memset(meta->reserved, 0xA5, 4);
     get_random(META_NONCE_SIZE, meta->nonce);

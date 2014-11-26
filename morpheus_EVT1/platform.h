@@ -7,6 +7,7 @@
 #define MSG_BASE_USE_BIG_POOL
 
 #define PLATFORM_HAS_SSPI
+#define HW_REVISION 1
 
 /* CS and MOSI are inverted in EVT1*/
 enum {
