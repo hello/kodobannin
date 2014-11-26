@@ -6,13 +6,14 @@
 MEMORY
 {
   SOFTDEVICE (rx) : ORIGIN = 0x0, LENGTH = 0x20000 /* 0x80 pages */
-  APP (rx) : ORIGIN = 0x20000, LENGTH = 0x14000 /* 0x50 Pages */
-  /* Persistent Storage */
-  APP_DATA (rw) : ORIGIN = 0x34000, LENGTH = 0x2000 /* 0x8 pages */
+  APP (rx) : ORIGIN = 0x20000, LENGTH = 0x16000 /* 0x58 Pages */
   /* DFU_APP_DATA_RESERVED _can_ occupy space here if we wish; this
      may be a better idea than defining our own USER_DATA section,
      since it's SDK-supported. */
-  BOOTLOADER (rx) : ORIGIN = 0x36000, LENGTH = 0x8C00 /*  0x23 pages */
+  BOOTLOADER (rx) : ORIGIN = 0x36000, LENGTH = 0x6C00 /*  0x1B pages */
+  /* App Persistent Storage */
+  APP_DATA (rw) : ORIGIN = 0x3CC00, LENGTH = 0x2000 /* 0x8 pages */
+  /* Bootloader storage */
   USER_DATA (rw) : ORIGIN = 0x3EC00, LENGTH = 0x1400 /* 0x5 pages */
   /* Make sure the total of the above are  of the TOTAL 100 pages */
   SOFTDEVICE_RAM (rwx): ORIGIN = 0x20000000, LENGTH = 0x2400
