@@ -16,7 +16,7 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Pill"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT3.11"
+#define BLE_MODEL_NUM         "DVT4.0"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
