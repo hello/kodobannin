@@ -51,6 +51,7 @@ typedef enum{
     CLI,
     TIME,
     SSPI,
+    LED,
     MOD_END
 }MSG_ModuleType;
 

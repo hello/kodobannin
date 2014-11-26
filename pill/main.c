@@ -40,12 +40,17 @@
 #include "util.h"
 #include "watchdog.h"
 
+#include "led.h"
 #include "battery.h"
 
 #include <twi_master.h>
 
 static void _init_rf_modules()
 {
+	volatile int debounce = 16777216;//about 3 seconds debounce
+	while(debounce > 0){
+		debounce--;
+	}
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
 #ifdef ANT_ENABLE
@@ -136,12 +141,9 @@ void _start()
     }
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
-    
+
     _init_rf_modules();
     _load_watchdog();
-    
-
-
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

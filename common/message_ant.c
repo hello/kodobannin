@@ -65,6 +65,7 @@ static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * messag
      *self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
      */
 }
+#include "boot_test.h"
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(dst.submodule == 0){
@@ -73,7 +74,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             default:
                 break;
             case ANT_SET_ROLE:
-                hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener));
+                if(0 == hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener))){
+                    test_ok(self.parent, ANT_OK);
+                }
                 break;
             case ANT_REMOVE_DEVICE:
                 {
