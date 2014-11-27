@@ -22,11 +22,11 @@ typedef struct{
     }param;
 }MSG_BLECommand_t;
 
-enum boot_status {
+typedef enum {
     BOOT_CHECK = 0,
     BOOT_SYNC_DEVICE_ID,
     BOOT_COMPLETED
-}
+} boot_status;
 
 MSG_Base_t* MSG_BLE_Base(MSG_Central_t* parent);
 MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data);
