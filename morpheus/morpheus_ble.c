@@ -317,6 +317,8 @@ bool morpheus_ble_encode_protobuf(MorpheusCommand* command, char* raw, size_t* l
         return false;
     }
 
+    command->version = PROTOBUF_VERSION;
+
     morpheus_ble_assign_encode_funcs(command);
 
     pb_ostream_t out_stream = {0};
@@ -564,7 +566,6 @@ bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
     MorpheusCommand morpheus_command;
     memset(&morpheus_command, 0, sizeof(morpheus_command));
     morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERROR;
-    morpheus_command.version = PROTOBUF_VERSION;
 
     morpheus_command.has_error = true;
     morpheus_command.error = error_type;
