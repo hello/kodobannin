@@ -162,7 +162,7 @@ static void _init_ble_stack(const MorpheusCommand* command)
         case BOOT_COMPLETED:
         PRINTS("BLE already initialized!\r\n");
         break;
-        case BOOT_CHECK:   // The boot check command was sent.
+        case BOOT_CHECK:   // The boot check command was sent. backward compatible TODO remove this case for production
         {
             if(command->deviceId.arg)
             {
@@ -562,7 +562,9 @@ static void _on_boot_timer(void* context)
     }
 
 #ifdef HAS_CC3200
-    app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
+    if(self.boot_state != BOOT_COMPLETED){
+        app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
+    }
 #endif
 }
 
