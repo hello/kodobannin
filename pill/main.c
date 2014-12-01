@@ -47,7 +47,7 @@
 
 static void _init_rf_modules()
 {
-	volatile int debounce = 16777216;//about 3 seconds debounce
+	volatile int debounce = 2000000;//about 2 seconds debounce
 	while(debounce > 0){
 		debounce--;
 	}
