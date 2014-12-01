@@ -8,7 +8,7 @@
 
 #define BLE_ENABLE
 
-#define HW_REVISION 0
+#define HW_REVISION 2
 
 /*
 // This is from EVT1, not used
