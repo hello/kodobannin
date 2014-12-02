@@ -18,6 +18,8 @@ _ctr_inc_ctr(nrf_ecb_hal_data_t * ecb){
 	uint64_t * ctr = (uint64_t*)(ecb->cleartext);
 	ctr[1]++;
 }
+
+#include "app.h"
 const uint8_t *
 get_aes128_key(void){
 #ifdef DEVICE_KEY_ADDRESS
