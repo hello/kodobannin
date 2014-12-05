@@ -511,11 +511,12 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
         return false;
     }
 
-    if(!hex_device_id || ((*len) - 1) % 2 != 0)
-    {
-        *len = sizeof(device_id) * 2 + 1;
-        return false;
-    }
+	if(!hex_device_id){
+		*len = sizeof(device_id) * 2 + 1;
+		return true;
+	}else if(((*len) - 1) % 2 != 0){
+		return false;
+	}
 
     memset(hex_device_id, 0, *len);
     const char* hex_table = "0123456789ABCDEF";
