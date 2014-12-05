@@ -93,23 +93,17 @@ static void _sync_device_id(){
     if(!hble_uint64_to_hex_device_id(GET_UUID_64(), NULL, &hex_device_id_len))
     {
         PRINTS("Get device id len failed.\r\n");
-        nrf_delay_ms(100);
-        APP_ASSERT(0);
     }
 
     MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(hex_device_id_len + 1);
     if(!device_id_page){
         PRINTS("Get device id page.\r\n");
-        nrf_delay_ms(100);
-        APP_ASSERT(0);
     }
 
     memset(device_id_page->buf, 0, hex_device_id_len + 1);
     if(!hble_uint64_to_hex_device_id(GET_UUID_64(), device_id_page->buf, &hex_device_id_len))
     {
         PRINTS("Get device id failed.\r\n");
-        nrf_delay_ms(100);
-        APP_ASSERT(0);
     }
 
     MorpheusCommand sync_device_id_command;
