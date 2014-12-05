@@ -56,6 +56,7 @@ static uint8_t percentage_batt_lvl;
 
 inline void battery_module_power_off()
 {
+    APP_OK(sd_nvic_DisableIRQ(ADC_IRQn));
     if(ADC_ENABLE_ENABLE_Disabled != NRF_ADC->ENABLE)
     {
         NRF_ADC->ENABLE = ADC_ENABLE_ENABLE_Disabled;
