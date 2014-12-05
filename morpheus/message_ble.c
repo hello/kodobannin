@@ -162,8 +162,12 @@ static void _init_ble_stack(const MorpheusCommand* command)
         break;
         case BOOT_CHECK:   // The boot check command was sent. backward compatible TODO remove this case for production
         {
-            if(command->deviceId.arg)
-            {
+            if(command->type != MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID){
+                //because both boards don't boot at same time, make sure
+                //simply drop the echo if it doesn't match the current state
+                break;
+            }
+            if(command->deviceId.arg){
                 PRINTS("EVT3 middle board detected.\r\n");
                 MSG_Data_t* data_page = (MSG_Data_t*)command->deviceId.arg;
                 PRINTS("Hex device id:");
@@ -203,6 +207,11 @@ static void _init_ble_stack(const MorpheusCommand* command)
         break;
         case BOOT_SYNC_DEVICE_ID:  // The sync device id command was sent
         {
+            if(command->type != MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID){
+                //because both boards don't boot at same time, make sure
+                //simply drop the echo if it doesn't match the current state
+                break;
+            }
             hble_stack_init();
 
 #ifdef BONDING_REQUIRED     
