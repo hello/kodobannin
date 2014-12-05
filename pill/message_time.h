@@ -1,6 +1,7 @@
 #pragma once
 #include "message_base.h"
 #include "hlo_ble_time.h"
+#include "battery.h"
 
 /**
  * time module, keeps track of time 
@@ -29,6 +30,7 @@ typedef struct{
 MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central);
 MSG_Status MSG_Time_GetMonotonicTime(uint64_t * out_time);
 uint64_t* get_time();
+void print_and_turn_off_adc(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level);
 
 
 

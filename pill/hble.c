@@ -194,6 +194,9 @@ static void _advertising_data_init(uint8_t flags){
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
 
+static void _power_off_battery_adc(void * p_event_data, uint16_t event_size){
+    battery_module_power_off();
+}
 
 static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
 {
@@ -206,7 +209,7 @@ static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_mil
     PRINT_HEX(&adc_result, sizeof(adc_result));
     PRINTS("\r\n");
 
-    battery_module_power_off();
+    app_sched_event_put(NULL, 0, _power_off_battery_adc);
 
     uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, adc_result);
     if ((err_code != NRF_SUCCESS) &&
@@ -219,6 +222,8 @@ static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_mil
 
     
 }
+
+
 
 
 void hble_advertising_init(ble_uuid_t service_uuid)
