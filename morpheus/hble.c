@@ -44,7 +44,7 @@ static uint64_t _device_id;
 static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
 
-
+static void(*_on_advertise_started)(bool);
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
 static uint8_t _task_index;
@@ -71,6 +71,11 @@ static void _delay_task_store_bonds()
     APP_OK(ble_bondmngr_bonded_centrals_store());
     PRINTS("bond saved\r\n");
 #endif
+}
+
+void hble_set_advertise_callback(void(*advertise_started_callback)(bool))
+{
+    _on_advertise_started = advertise_started_callback;
 }
 
 void hble_delay_task_advertise_resume()
@@ -478,6 +483,12 @@ void hble_advertising_start()
     APP_OK(sd_ble_gap_adv_start(&adv_params));
 
     PRINTS("Advertising started.\r\n");
+
+    if(!_on_advertise_started)
+    {
+        _on_advertise_started(_pairing_mode);
+    }
+
 }
 
 void hble_stack_init()
