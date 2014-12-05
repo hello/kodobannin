@@ -89,7 +89,7 @@ static void _register_pill(){
 static void _sync_device_id(){
     self.boot_state = BOOT_SYNC_DEVICE_ID;
     uint64_t device_id = 0;
-    uint8_t hex_device_id_len = 0;
+    uint32_t hex_device_id_len = 0;
     if(!hble_uint64_to_hex_device_id(GET_UUID_64(), NULL, &hex_device_id_len))
     {
         PRINTS("Get device id len failed.\r\n");
