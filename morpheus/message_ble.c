@@ -97,7 +97,7 @@ static void _sync_device_id(){
 
     MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(hex_device_id_len + 1);
     if(!device_id_page){
-        PRINTS("Get device id page.\r\n");
+        PRINTS("Get device id page failed.\r\n");
     }
 
     memset(device_id_page->buf, 0, hex_device_id_len + 1);
