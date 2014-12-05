@@ -453,6 +453,7 @@ void hble_advertising_start()
             }else{
                 flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just make it clear what we want to do.
                 PRINTS("NO whitelist retrieved. Advertising in pairing mode.\r\n");
+                _pairing_mode = true;
             }
         }else{
             PRINTS("get whitelist error: ");
@@ -460,6 +461,7 @@ void hble_advertising_start()
             PRINTS("\r\n");
             nrf_delay_ms(100);
             flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+            _pairing_mode = true;
         }
 
         APP_OK(err_code);
