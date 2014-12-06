@@ -49,11 +49,34 @@ static void _start_morpheus_dfu_process(void)
 
 static void _on_advertise_started(bool is_pairing_mode)
 {
+    PRINTS("advertise callback called\r\n");
     MorpheusCommand advertising_command;
     memset(&advertising_command, 0, sizeof(advertising_command));
     advertising_command.type = is_pairing_mode ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
     if(!morpheus_ble_rount_protobuf_to_cc3200(&advertising_command))
+    {
+        PRINTS("Route protobuf to middle board failed\r\n");
+    }
+}
+
+static void _on_bond_finished(ble_bondmngr_evt_type_t bond_type)
+{
+    MorpheusCommand ble_command;
+    memset(&ble_command, 0, sizeof(ble_command));
+    ble_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PHONE_BLE_BONDED;
+    if(!morpheus_ble_rount_protobuf_to_cc3200(&ble_command))
+    {
+        PRINTS("Route protobuf to middle board failed\r\n");
+    }
+}
+
+static void _on_connected(void)
+{
+    MorpheusCommand ble_command;
+    memset(&ble_command, 0, sizeof(ble_command));
+    ble_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PHONE_BLE_CONNECTED;
+    if(!morpheus_ble_rount_protobuf_to_cc3200(&ble_command))
     {
         PRINTS("Route protobuf to middle board failed\r\n");
     }
@@ -563,6 +586,8 @@ static MSG_Status _init(){
     
 #ifdef HAS_CC3200
     hble_set_advertise_callback(_on_advertise_started);
+    hble_set_connected_callback(_on_connected);
+    hble_set_bond_status_callback(_on_bond_finished);
     app_timer_create(&self.boot_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_boot_timer);
     _cc3200_boot_check();
     _on_boot_timer(NULL);  // start the timer.

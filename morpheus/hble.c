@@ -44,7 +44,11 @@ static uint64_t _device_id;
 static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
 
+// BLE event callbacks for message_ble.c
 static void(*_on_advertise_started)(bool);
+static bond_status_callback_t _bond_status_callback;
+static connected_callback_t _connect_callback;
+////
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
 static uint8_t _task_index;
@@ -76,6 +80,16 @@ static void _delay_task_store_bonds()
 void hble_set_advertise_callback(void(*advertise_started_callback)(bool))
 {
     _on_advertise_started = advertise_started_callback;
+}
+
+void hble_set_bond_status_callback(bond_status_callback_t callback)
+{
+    _bond_status_callback = callback;
+}
+
+void hble_set_connected_callback(connected_callback_t callback)
+{
+    _connect_callback = callback;
 }
 
 void hble_delay_task_advertise_resume()
@@ -179,6 +193,15 @@ static void _delay_tasks(void* context)
 
 }
 
+static void _on_bond(void * p_event_data, uint16_t event_size)
+{
+    if(_bond_status_callback)
+    {
+        ble_bondmngr_evt_type_t* type = (ble_bondmngr_evt_type_t*)p_event_data;
+        _bond_status_callback(*type);
+    }
+}
+
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
@@ -186,6 +209,14 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
     hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
     PRINTS("delay task started\r\n");
 
+}
+
+static void _on_connected(void * p_event_data, uint16_t event_size)
+{
+    if(_connect_callback)
+    {
+        _connect_callback();
+    }
 }
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
@@ -249,6 +280,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
             _delay_task_resume_ant, 
             _delay_task_memory_checkpoint};
         memcpy(_tasks, tasks, sizeof(_tasks));
+        app_sched_event_put(NULL, 0, _on_connected);
     }
         break;
     case BLE_GAP_EVT_DISCONNECTED:
@@ -333,10 +365,25 @@ static void _bond_manager_error_handler(uint32_t nrf_error)
  */
 static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 {
+    PRINTS("Bond event ");
+    PRINT_HEX(&p_evt->evt_type, sizeof(p_evt->evt_type));
+    PRINTS("\r\n");
+
     _last_bond_central_id = p_evt->central_id;
     PRINTS("last bonded central: ");
     PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
     PRINTS("\r\n");
+
+    switch(p_evt->evt_type)
+    {
+        case BLE_BONDMNGR_EVT_NEW_BOND:
+        case BLE_BONDMNGR_EVT_AUTH_STATUS_UPDATED:
+        {
+            // Notify message ble module, schedule the call
+            app_sched_event_put(&p_evt->evt_type, sizeof(p_evt->evt_type), _on_bond);
+        }
+        break;
+    }
 }
 
 void hble_erase_other_bonded_central()
@@ -484,7 +531,7 @@ void hble_advertising_start()
 
     PRINTS("Advertising started.\r\n");
 
-    if(!_on_advertise_started)
+    if(_on_advertise_started)
     {
         _on_advertise_started(_pairing_mode);
     }
