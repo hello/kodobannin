@@ -43,6 +43,8 @@
 #include "nrf.h"
 #include "timedfifo.h"
 #include "cli_user.h"
+#include "gpio_nor.h"
+
 
 
 extern uint8_t hello_type;
@@ -253,14 +255,22 @@ static void _test_send_available_data_ant(void *ctx){
     _test_count++;
 }
 */
-int is_rx_pulled_low(){
+int is_debug_enabled(){
+#ifdef PLATFORM_HAS_SERIAL
+	uint32_t val = nrf_gpio_pin_read(SERIAL_RX_PIN);
+	/*
+	 *gpio_input_disconnect(SERIAL_RX_PIN);
+	 */
+	gpio_cfg_d0s1_output_disconnect(SERIAL_RX_PIN);
+	return !val;
+#endif
 	return 0;
 }
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		central->loadmod(MSG_App_Base(central));
-		if(is_rx_pulled_low()){
+		if(is_debug_enabled()){
 			app_uart_comm_params_t uart_params = {
 				SERIAL_RX_PIN,
 				SERIAL_TX_PIN,
