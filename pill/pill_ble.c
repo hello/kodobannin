@@ -253,24 +253,26 @@ static void _test_send_available_data_ant(void *ctx){
     _test_count++;
 }
 */
-
+int is_rx_pulled_low(){
+	return 0;
+}
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		central->loadmod(MSG_App_Base(central));
-#ifdef DEBUG_SERIAL
-		app_uart_comm_params_t uart_params = {
-			SERIAL_RX_PIN,
-			SERIAL_TX_PIN,
-			SERIAL_RTS_PIN,
-			SERIAL_CTS_PIN,
-    		APP_UART_FLOW_CONTROL_ENABLED,
-			0,
-			UART_BAUDRATE_BAUDRATE_Baud38400
-		};
-		central->loadmod(MSG_Uart_Base(&uart_params, central));
-        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
-#endif
+		if(is_rx_pulled_low()){
+			app_uart_comm_params_t uart_params = {
+				SERIAL_RX_PIN,
+				SERIAL_TX_PIN,
+				SERIAL_RTS_PIN,
+				SERIAL_CTS_PIN,
+				APP_UART_FLOW_CONTROL_ENABLED,
+				0,
+				UART_BAUDRATE_BAUDRATE_Baud38400
+			};
+			central->loadmod(MSG_Uart_Base(&uart_params, central));
+			central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
+		}
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(MSG_IMU_Init(central));
