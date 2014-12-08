@@ -287,7 +287,16 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         }
 
     }
-    
+
+
+    if(src.module == CLI && dst.submodule == 10 && dst.module == BLE){
+        MorpheusCommand command = {0};
+        PRINTS("Booting Radio\r\n");
+        command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
+        _init_ble_stack(&command);
+        command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID;
+        _init_ble_stack(&command);
+    }
 
     if(src.module == SSPI && dst.submodule == 0 && dst.module == BLE){
         PRINTS("SPI to BLE Command received\r\n");
