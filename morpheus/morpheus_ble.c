@@ -629,7 +629,6 @@ void morpheus_load_modules(void){
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #else
-#ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
             SERIAL_RX_PIN,
             SERIAL_TX_PIN,
@@ -641,7 +640,6 @@ void morpheus_load_modules(void){
 		};
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
-#endif
 #endif
 
 
