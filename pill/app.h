@@ -5,6 +5,8 @@
 #include <nrf51.h>
 #include <nrf51_bitfields.h>
 
+#include "platform.h"
+
 enum {
     APP_TIMER_PRESCALER = 0,
     APP_TIMER_MAX_TIMERS = 8,
@@ -115,7 +117,3 @@ enum {
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_SEC              (3600)
 #define MOTION_DATA_INTERVAL_SEC            (60)
-
-#define DEVICE_KEY_ADDRESS                   0x20003FF0
-//use hello's ant network key
-#define USE_HLO_ANT_NETWORK
