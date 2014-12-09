@@ -43,6 +43,8 @@
 #include "nrf.h"
 #include "timedfifo.h"
 #include "cli_user.h"
+#include "gpio_nor.h"
+
 
 
 extern uint8_t hello_type;
@@ -253,24 +255,34 @@ static void _test_send_available_data_ant(void *ctx){
     _test_count++;
 }
 */
-
+int is_debug_enabled(){
+#ifdef PLATFORM_HAS_SERIAL
+	uint32_t val = nrf_gpio_pin_read(SERIAL_RX_PIN);
+	/*
+	 *gpio_input_disconnect(SERIAL_RX_PIN);
+	 */
+	gpio_cfg_d0s1_output_disconnect(SERIAL_RX_PIN);
+	return !val;
+#endif
+	return 0;
+}
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		central->loadmod(MSG_App_Base(central));
-#ifdef DEBUG_SERIAL
-		app_uart_comm_params_t uart_params = {
-			SERIAL_RX_PIN,
-			SERIAL_TX_PIN,
-			SERIAL_RTS_PIN,
-			SERIAL_CTS_PIN,
-    		APP_UART_FLOW_CONTROL_ENABLED,
-			0,
-			UART_BAUDRATE_BAUDRATE_Baud38400
-		};
-		central->loadmod(MSG_Uart_Base(&uart_params, central));
-        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
-#endif
+		if(is_debug_enabled()){
+			app_uart_comm_params_t uart_params = {
+				SERIAL_RX_PIN,
+				SERIAL_TX_PIN,
+				SERIAL_RTS_PIN,
+				SERIAL_CTS_PIN,
+				APP_UART_FLOW_CONTROL_ENABLED,
+				0,
+				UART_BAUDRATE_BAUDRATE_Baud38400
+			};
+			central->loadmod(MSG_Uart_Base(&uart_params, central));
+			central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
+		}
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(MSG_IMU_Init(central));

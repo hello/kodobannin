@@ -18,23 +18,13 @@ extern const uint8_t hex[16];
 #define APP_OK(expr) APP_ERROR_CHECK(expr);
 #define BOOL_OK(expr) APP_ASSERT(expr);
 
-#if defined(DEBUG_SERIAL) || defined(PLATFORM_HAS_SERIAL_CROSS_CONNECT)
 #include <simple_uart.h>
 #define PRINT_HEX(a,b) MSG_Uart_PrintHex((uint8_t*)a,b)
 #define PRINTS(a) MSG_Uart_Prints(a)
-#define PRINTC(a) {}
+#define PRINTC(a) MSG_Uart_Printc(a)
 #define SIMPRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
 #define SIMPRINTS(a) simple_uart_putstring((const uint8_t *)a)
 #define SIMPRINTC(a) simple_uart_put(a)
-#else //---------------------------------------------------
-#define PRINT_HEX(a,b) {}
-#define PRINTS(a) {}
-#define PRINTC(a) {}
-#define simple_uart_config(a,b,c,d,e) {}
-#define SIMPRINT_HEX(a,b) {}
-#define SIMPRINTS(a) {}
-#define SIMPRINTC(a) {}
-#endif //===================================================
 
 void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);
 
