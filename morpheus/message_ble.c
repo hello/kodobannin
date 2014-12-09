@@ -89,17 +89,19 @@ static void _register_pill(){
 static void _sync_device_id(){
     self.boot_state = BOOT_SYNC_DEVICE_ID;
     uint64_t device_id = 0;
-    uint32_t hex_device_id_len = 0;
+    size_t hex_device_id_len = 0;
     if(!hble_uint64_to_hex_device_id(GET_UUID_64(), NULL, &hex_device_id_len))
     {
         PRINTS("Get device id len failed.\r\n");
-        return;
+        nrf_delay_ms(100);
+        APP_ASSERT(0);
     }
 
     MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(hex_device_id_len + 1);
     if(!device_id_page){
         PRINTS("Get device id page failed.\r\n");
-        return;
+        nrf_delay_ms(100);
+        APP_ASSERT(0);
     }
 
     memset(device_id_page->buf, 0, hex_device_id_len + 1);
@@ -107,7 +109,8 @@ static void _sync_device_id(){
     {
         PRINTS("Get device id failed.\r\n");
         MSG_Base_ReleaseDataAtomic(device_id_page);
-        return;
+        nrf_delay_ms(100);
+        APP_ASSERT(0);
     }
 
     MorpheusCommand sync_device_id_command;
@@ -162,11 +165,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
         break;
         case BOOT_CHECK:   // The boot check command was sent. backward compatible TODO remove this case for production
         {
-            if(command->type != MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID){
-                //because both boards don't boot at same time, make sure
-                //simply drop the echo if it doesn't match the current state
-                break;
-            }
             if(command->deviceId.arg){
                 PRINTS("EVT3 middle board detected.\r\n");
                 MSG_Data_t* data_page = (MSG_Data_t*)command->deviceId.arg;
@@ -207,11 +205,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
         break;
         case BOOT_SYNC_DEVICE_ID:  // The sync device id command was sent
         {
-            if(command->type != MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID){
-                //because both boards don't boot at same time, make sure
-                //simply drop the echo if it doesn't match the current state
-                break;
-            }
             hble_stack_init();
 
 #ifdef BONDING_REQUIRED     
