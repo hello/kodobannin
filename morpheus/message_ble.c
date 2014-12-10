@@ -832,7 +832,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_START_WIFISCAN:
