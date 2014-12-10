@@ -708,7 +708,10 @@ void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, mod_num);
 
-        char hex_device_id[DEVICE_ID_SIZE * 2 + 1];
+        // If _device_id != GET_UUID_64(), that means a MAC is fed in and the 
+        // mid is an old EVT build, use 6 bytes instead.
+        uint8_t int_size = _device_id == GET_UUID_64() ? DEVICE_ID_SIZE : 6;
+        char hex_device_id[int_size * 2 + 1];
         memset(hex_device_id, 0, sizeof(hex_device_id));
         size_t device_id_size = sizeof(hex_device_id);
 
