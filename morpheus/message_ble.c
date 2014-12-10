@@ -54,7 +54,7 @@ static void _on_advertise_started(bool is_pairing_mode)
     memset(&advertising_command, 0, sizeof(advertising_command));
     advertising_command.type = is_pairing_mode ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
-    if(!morpheus_ble_rount_protobuf_to_cc3200(&advertising_command))
+    if(!morpheus_ble_route_protobuf_to_cc3200(&advertising_command))
     {
         PRINTS("Route protobuf to middle board failed\r\n");
     }
@@ -65,7 +65,7 @@ static void _on_bond_finished(ble_bondmngr_evt_type_t bond_type)
     MorpheusCommand ble_command;
     memset(&ble_command, 0, sizeof(ble_command));
     ble_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PHONE_BLE_BONDED;
-    if(!morpheus_ble_rount_protobuf_to_cc3200(&ble_command))
+    if(!morpheus_ble_route_protobuf_to_cc3200(&ble_command))
     {
         PRINTS("Route protobuf to middle board failed\r\n");
     }
@@ -76,7 +76,7 @@ static void _on_connected(void)
     MorpheusCommand ble_command;
     memset(&ble_command, 0, sizeof(ble_command));
     ble_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PHONE_BLE_CONNECTED;
-    if(!morpheus_ble_rount_protobuf_to_cc3200(&ble_command))
+    if(!morpheus_ble_route_protobuf_to_cc3200(&ble_command))
     {
         PRINTS("Route protobuf to middle board failed\r\n");
     }
@@ -95,7 +95,7 @@ static void _register_pill(){
         pairing_command.deviceId.arg = self.pill_pairing_request.device_id;
         pairing_command.accountId.arg = self.pill_pairing_request.account_id;
 
-        if(!morpheus_ble_rount_protobuf_to_cc3200(&pairing_command))
+        if(!morpheus_ble_route_protobuf_to_cc3200(&pairing_command))
         {
             morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
         }
@@ -139,7 +139,7 @@ static void _sync_device_id(){
     sync_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID;
     sync_device_id_command.deviceId.arg = device_id_page;
 
-    if(!morpheus_ble_rount_protobuf_to_cc3200(&sync_device_id_command))
+    if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command))
     {
         PRINTS("Encode sync deviceId protobuf failed.\r\n");
         nrf_delay_ms(100);
@@ -759,7 +759,7 @@ static void _pair_morpheus(MorpheusCommand* command)
             PRINTS("device id: ");
             PRINTS(((MSG_Data_t*)pair_command.deviceId.arg)->buf);
             PRINTS("\r\n");
-            if(!morpheus_ble_rount_protobuf_to_cc3200(&pair_command))
+            if(!morpheus_ble_route_protobuf_to_cc3200(&pair_command))
             {
                 morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
             }
@@ -775,7 +775,7 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Base_ReleaseDataAtomic(command->accountId.arg);
 }
 
-bool morpheus_ble_rount_protobuf_to_cc3200(MorpheusCommand* command)
+bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
 {
     size_t proto_len = 0;
     if(!morpheus_ble_encode_protobuf(command, NULL, &proto_len))
