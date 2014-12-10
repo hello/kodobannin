@@ -208,6 +208,7 @@ static void _init_ble_stack(const MorpheusCommand* command)
         break;
         case BOOT_SYNC_DEVICE_ID:  // The sync device id command was sent
         {
+            PRINTS("SYNC DEVICEID\r\n");
             hble_stack_init();
 
 #ifdef BONDING_REQUIRED     
@@ -749,7 +750,7 @@ static void _pair_morpheus(MorpheusCommand* command)
         MSG_Base_AcquireDataAtomic(command->accountId.arg);
     }
 
-    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(13);  // Fark this is a mac address
+    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(DEVICE_ID_SIZE * 2 + 1);
     if(!device_id_page)
     {
         PRINTS(MSG_NO_MEMORY);
