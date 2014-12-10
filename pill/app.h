@@ -119,4 +119,4 @@ enum {
 #define MOTION_DATA_INTERVAL_SEC            (60)
 
 #define SLIDING_WINDOW_SIZE_SEC         (1)
-#define SHAKING_DATA_COUNT_THRESHOLD    (15)
+#define SHAKING_DATA_COUNT_THRESHOLD    (10)
