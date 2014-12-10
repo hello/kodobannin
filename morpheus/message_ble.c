@@ -532,27 +532,7 @@ static void _cc3200_boot_check(){
     get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
 
 #ifdef HAS_CC3200
-    size_t protobuf_len = 0;
-    if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
-    {
-        PRINTS("Failed to encode protobuf. Retry to boot...\r\n");
-    }else{
-
-        MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
-        if(!data_page)
-        {
-            PRINTS("No memory. Retry to boot...\r\n");
-            
-        }else{
-
-            memset(data_page->buf, 0, data_page->len);
-            if(morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
-            {
-                self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){SSPI, 1}, data_page);
-            }
-            MSG_Base_ReleaseDataAtomic(data_page);
-        }
-    }
+    morpheus_ble_route_protobuf_to_cc3200(&get_device_id_command);
 #endif
 }
 
@@ -600,7 +580,7 @@ static MSG_Status _init(){
     hble_set_bond_status_callback(_on_bond_finished);
     app_timer_create(&self.boot_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_boot_timer);
     _cc3200_boot_check();
-    _on_boot_timer(NULL);  // start the timer.
+    app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
     
 #else
     
