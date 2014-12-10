@@ -29,6 +29,7 @@
 #include "battery_config.h"
 #include "nordic_common.h"
 #include "nrf.h"
+#include "util.h"
 #include "app_error.h"
 #include "nrf_gpio.h"
 #include "nrf51_bitfields.h"
@@ -54,8 +55,10 @@ static uint8_t percentage_batt_lvl;
 
 
 
-inline void battery_module_power_off()
+void battery_module_power_off()
 {
+    NRF_ADC->TASKS_STOP = 1;
+    APP_OK(sd_nvic_DisableIRQ(ADC_IRQn));
     if(ADC_ENABLE_ENABLE_Disabled != NRF_ADC->ENABLE)
     {
         NRF_ADC->ENABLE = ADC_ENABLE_ENABLE_Disabled;
@@ -113,7 +116,6 @@ void ADC_IRQHandler(void)
     {
         NRF_ADC->EVENTS_END     = 0;
         adc_t adc_result      = NRF_ADC->RESULT;
-        NRF_ADC->TASKS_STOP     = 1;
 
         uint32_t battery_milvolt = adc_result;
         uint32_t batt_lvl_in_micro_volts = ADC_RESULT_IN_MILLI_VOLTS(battery_milvolt);
@@ -125,18 +127,9 @@ void ADC_IRQHandler(void)
             _battery_measure_callback(adc_result, batt_lvl_in_micro_volts, percentage_batt_lvl);
         }
     }
-
-    /*
-    NRF_ADC->CONFIG = (ADC_CONFIG_RES_8bit << ADC_CONFIG_RES_Pos) | 
-        (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling << ADC_CONFIG_INPSEL_Pos) | 
-        (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos) | 
-        (ADC_CONFIG_PSEL_Disabled << ADC_CONFIG_PSEL_Pos) | 
-        (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
-        */
-    battery_module_power_off();
-    
     
 }
+
 uint8_t battery_get_percent_cached(){
 #ifdef PLATFORM_HAS_VERSION
     return percentage_batt_lvl;

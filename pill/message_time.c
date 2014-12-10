@@ -7,6 +7,7 @@
 #include "app.h"
 #include "shake_detect.h"
 #include "timedfifo.h"
+#include "battery.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -107,6 +108,24 @@ static void _send_heartbeat_data_ant(){
 
 #endif
 
+static void _power_off_battery_adc(void * p_event_data, uint16_t event_size){
+    battery_module_power_off();
+}
+
+void print_and_turn_off_adc(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
+{
+
+    PRINTS("Battery level measured,  Voltage:");
+    PRINT_HEX(&batt_level_milli_volts, sizeof(batt_level_milli_volts));
+    PRINTS(", Percentage: ");
+    PRINT_HEX(&percentage_battery_level, sizeof(percentage_battery_level));
+    PRINTS(", ADC: ");
+    PRINT_HEX(&adc_result, sizeof(adc_result));
+    PRINTS("\r\n");
+
+    app_sched_event_put(NULL, 0, _power_off_battery_adc);
+}
+
 static void _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
@@ -124,7 +143,7 @@ static void _timer_handler(void * ctx){
     {
         _send_heartbeat_data_ant();
         battery_module_power_on();
-        battery_measurement_begin(NULL);
+        battery_measurement_begin(print_and_turn_off_adc);
     }
 #endif
     

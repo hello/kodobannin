@@ -97,7 +97,7 @@ static void _init_rf_modules()
     hble_advertising_start();
 #else
 	battery_module_power_on();
-	battery_measurement_begin(NULL);
+	battery_measurement_begin(print_and_turn_off_adc);
 #endif
     PRINTS("INIT DONE.\r\n");
 }
