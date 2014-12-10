@@ -795,6 +795,7 @@ bool morpheus_ble_rount_protobuf_to_cc3200(MorpheusCommand* command)
     morpheus_ble_encode_protobuf(command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
     if(message_ble_route_data_to_cc3200(proto_page) == FAIL)
     {
+        MSG_Base_ReleaseDataAtomic(proto_page);
         PRINTS(MSG_NO_MEMORY);
         return false;
     }
