@@ -108,8 +108,8 @@ static void _register_pill(){
 }
 
 
-static void _sync_device_id(){
-    self.boot_state = BOOT_SYNC_DEVICE_ID;
+static void _sync_device_id()
+{
     size_t hex_device_id_len = 0;
     if(!hble_uint64_to_hex_device_id(GET_UUID_64(), NULL, &hex_device_id_len))
     {
@@ -294,13 +294,28 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
             switch(command.type)
             {
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+                {
+                    if(self.boot_state == BOOT_COMPLETED && NULL == command.deviceId.arg)
+                    {
+                        // DVT CC3200 reboot, resync device id without initializing the BLE stack
+                        // This allows the CC always request device id from top after rebooting
+                        // saving device id in a file is no longer needed.
+                        _sync_device_id();
+                    }
+                    // else, fallback to normal boot sequence, the same code in SYNC_DEVICE_ID
+                }
+                // DONOT put a break here, it is intended to fall to 
+                // MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID:
                 {
                     PRINTS("BLE init command received: ");
-                    PRINT_HEX(&command.type, 1);
+                    PRINT_HEX(&command.type, sizeof(command.type));
                     PRINTS("\r\n");
 
-                    _init_ble_stack(&command);
+                    if(self.boot_state != BOOT_COMPLETED)
+                    {
+                        _init_ble_stack(&command);
+                    }
                     morpheus_ble_free_protobuf(&command);
                 }
                 break;
