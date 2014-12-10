@@ -744,7 +744,7 @@ static void _pair_morpheus(MorpheusCommand* command)
         MSG_Base_AcquireDataAtomic(command->accountId.arg);
     }
 
-    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(13);  // Fark this is a mac address
+    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(DEVICE_ID_SIZE * 2 + 1);  // Fark this is a mac address
     if(!device_id_page)
     {
         PRINTS(MSG_NO_MEMORY);
