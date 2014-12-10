@@ -70,6 +70,24 @@ _handle_command(int argc, char * argv[]){
         PRINTS("\r\n");
     }
     if(_strncmp(argv[0], "boot", strlen("boot")) == 0){
+        //prints out id
+        MSG_Data_t * id = MSG_Base_AllocateDataAtomic(6);
+        if(id){
+            uint8_t id_copy[6] = {0};
+            memcpy(id_copy, NRF_FICR->DEVICEADDR, 6);
+            id->buf[0] = id_copy[5];
+            id->buf[1] = id_copy[4];
+            id->buf[2] = id_copy[3];
+            id->buf[3] = id_copy[2];
+            id->buf[4] = id_copy[1];
+            id->buf[5] = id_copy[0];
+            //transform for factory test
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){UART,1},//destination address, ANT
+                                    id);
+            //release message object after dispatch to prevent memory leak
+            MSG_Base_ReleaseDataAtomic(id);
+        }
         //force boot without midboard
         MSG_Data_t * data = MSG_Base_AllocateDataAtomic(1);
         if(data){
