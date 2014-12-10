@@ -19,6 +19,7 @@
 #include "sensor_data.h"
 #include "message_base.h"
 #include "timedfifo.h"
+#include "boot_test.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -43,6 +44,7 @@ static bool initialized = false;
 
 static MSG_Central_t * parent;
 static MSG_Base_t base;
+static uint32_t shake_counter;
 
 
 static struct imu_settings _settings = {
@@ -205,9 +207,9 @@ static MSG_Status _init(void){
 	//ShakeDetectReset(15000000000, 5);
 	//easier to trigger
 #ifndef DEBUG_SERIAL
-	ShakeDetectReset(1000000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+	ShakeDetectReset(750000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
 #else
-    ShakeDetectReset(100000000);
+    ShakeDetectReset(750000000);
 #endif
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
     //APP_OK(app_timer_create(&_flash_timer_1, APP_TIMER_MODE_SINGLE_SHOT, _blink_leds));
@@ -255,6 +257,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
                         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
                     }
 #endif
+					if(shake_counter++ == 0){
+						test_ok(parent, IMU_OK);
+					}
 				}
 
 

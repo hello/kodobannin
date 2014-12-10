@@ -24,7 +24,6 @@
 #define PSTORAGE_FLASH_PAGE_SIZE    ((uint16_t)NRF_FICR->CODEPAGESIZE)   /**< Size of one flash page. */
 #define PSTORAGE_FLASH_EMPTY_MASK    0xFFFFFFFF                          /**< Bit mask that defines an empty address in flash. */
 #define BOOTLOADER_INFO_ADDRESS     0x3F000                             /** defined in memory.ld */
-#define BOOTLOADER_SWAP_ADDRESS     0x3EC00                             /** defined in memory.ld */
 
 #define PSTORAGE_FLASH_PAGE_END      NRF_FICR->CODESIZE
 

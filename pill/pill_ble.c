@@ -38,10 +38,13 @@
 #endif
 
 #include "message_time.h"
+#include "message_led.h"
 
 #include "nrf.h"
 #include "timedfifo.h"
 #include "cli_user.h"
+#include "gpio_nor.h"
+
 
 
 extern uint8_t hello_type;
@@ -139,6 +142,9 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 #ifdef DEBUG_BATT_LVL
 		hble_update_battery_level();
 #endif
+		break;
+	case PILL_COMMAND_WIPE_FIRMWARE:
+		REBOOT_TO_DFU();
 		break;
     };
 }
@@ -249,24 +255,34 @@ static void _test_send_available_data_ant(void *ctx){
     _test_count++;
 }
 */
-
+int is_debug_enabled(){
+#ifdef PLATFORM_HAS_SERIAL
+	uint32_t val = nrf_gpio_pin_read(SERIAL_RX_PIN);
+	/*
+	 *gpio_input_disconnect(SERIAL_RX_PIN);
+	 */
+	gpio_cfg_d0s1_output_disconnect(SERIAL_RX_PIN);
+	return !val;
+#endif
+	return 0;
+}
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		central->loadmod(MSG_App_Base(central));
-#ifdef DEBUG_SERIAL
-		app_uart_comm_params_t uart_params = {
-			SERIAL_RX_PIN,
-			SERIAL_TX_PIN,
-			SERIAL_RTS_PIN,
-			SERIAL_CTS_PIN,
-    		APP_UART_FLOW_CONTROL_ENABLED,
-			0,
-			UART_BAUDRATE_BAUDRATE_Baud38400
-		};
-		central->loadmod(MSG_Uart_Base(&uart_params, central));
-        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
-#endif
+		if(is_debug_enabled()){
+			app_uart_comm_params_t uart_params = {
+				SERIAL_RX_PIN,
+				SERIAL_TX_PIN,
+				SERIAL_RTS_PIN,
+				SERIAL_CTS_PIN,
+				APP_UART_FLOW_CONTROL_ENABLED,
+				0,
+				UART_BAUDRATE_BAUDRATE_Baud38400
+			};
+			central->loadmod(MSG_Uart_Base(&uart_params, central));
+			central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
+		}
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(MSG_IMU_Init(central));
@@ -279,7 +295,7 @@ void pill_ble_load_modules(void){
             hlo_ant_role role = HLO_ANT_ROLE_PERIPHERAL;
 			hlo_ant_device_t id = {
 				.device_number = GET_UUID_16(),
-				.device_type = HLO_ANT_DEVICE_TYPE_PILL_EVT,
+				.device_type = HLO_ANT_DEVICE_TYPE_PILL,
 				.transmit_type = 1
 			};
             MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
@@ -289,6 +305,9 @@ void pill_ble_load_modules(void){
 #endif
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
+#ifdef PLATFORM_HAS_VLED
+		central->loadmod(MSG_LEDInit(central));
+#endif
 
         /*
 	    APP_OK(app_timer_create(&_ant_timer_id, APP_TIMER_MODE_REPEATED, _test_send_available_data_ant));

@@ -27,10 +27,9 @@
 #include "error_handler.h"
 #include "hello_dfu.h"
 #include "util.h"
-#ifdef ECC_BENCHMARK
-#include "ecc_benchmark.h"
-#endif
 #include "git_description.h"
+#include "factory_provision.h"
+
 
 enum {
     APP_GPIOTE_MAX_USERS = 2,
@@ -133,16 +132,9 @@ _start()
 	}
 #endif
 
-#ifdef ECC_BENCHMARK
-	ecc_benchmark();
-#endif
-
-	// const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
-
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
         SIMPRINTS("Application crashed :(\r\n");
     }
-
     bool should_dfu = false;
 
     const bootloader_settings_t* bootloader_settings;
@@ -173,10 +165,25 @@ _start()
         should_dfu = true;
 	}
 
+	if(factory_needs_provisioning()) {
+		uint32_t ret;
+        SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+        APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
+        APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+		SIMPRINTS("Provisioning New Key...");
+		ret = factory_provision_start();
+		if(ret == NRF_SUCCESS){
+			SIMPRINTS("Successful\r\n");
+		}else{
+			SIMPRINTS("Failed\r\n");
+		}
+		NVIC_SystemReset();
+	}
+
     if(should_dfu) {
 	    SIMPRINTS("Bootloader: in DFU mode...\r\n");
 
-        SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
+        SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
 
         APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
@@ -189,8 +196,8 @@ _start()
 		}
 		NVIC_SystemReset();
     } else {
+		memcpy((uint8_t*)0x20003FF0, decrypt_key(), 0x10);
 	    SIMPRINTS("Bootloader kicking to app...\r\n");
-
 		bootloader_app_start(CODE_REGION_1_START);
 	}
 }

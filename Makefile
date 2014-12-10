@@ -9,7 +9,7 @@ TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
 APPS = bootloader bootloader_serial morpheus pill
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
-S310_PLATFORMS = pca10003 pill_EVT1 morpheus_EVT1 morpheus_EVT2 pill_EVT2 morpheus_EVT3
+S310_PLATFORMS = pca10003 pill_EVT2 morpheus_EVT3 morpheus_DVT1 pill_DVT1
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 UNAME := $(shell uname)
 
@@ -75,6 +75,7 @@ HELLO_SRCS = \
 	$(wildcard protobuf/*.c) \
 	$(wildcard ant/*.c) \
 	$(wildcard dtm/*.c) \
+	$(wildcard crypto/*.c) \
 
 
 NRF_SRCS = \
@@ -100,6 +101,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
 	nRF51_SDK/nrf51422/Source/spi_slave/spi_slave.c \
 	nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c \
+	nRF51_SDK/nrf51422/Source/nrf_ecb/nrf_ecb.c \
 
 DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
@@ -129,6 +131,7 @@ INCS =  ./ \
 	./drivers \
 	./ant \
 	./dtm \
+	./crypto \
 	
 
 

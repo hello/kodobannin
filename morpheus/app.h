@@ -16,7 +16,7 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Sense"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT3.11"
+#define BLE_MODEL_NUM         "DVT4.0"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -30,7 +30,7 @@ enum {
 #define PROTOBUF_VERSION		(0)
 #define PROTOBUF_MAX_LEN        (100)
 
-#define DEVICE_ID_SIZE          6
+#define DEVICE_ID_SIZE          8
 
 #ifdef DEBUG_SERIAL
 #define PB_NO_ERRMSG
@@ -105,6 +105,6 @@ enum {
 #define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER))
 
 //fatory app allows more capabilities
-//#define FACTORY_APP
+#define FACTORY_APP
 //use hello's ant network key
-//#define USE_HLO_ANT_NETWORK
+#define USE_HLO_ANT_NETWORK

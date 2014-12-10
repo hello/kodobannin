@@ -27,6 +27,7 @@ static struct{
     struct pill_pairing_request pill_pairing_request;
     app_timer_id_t timer_id;
     app_timer_id_t boot_timer;
+    boot_status boot_state;
 } self;
 
 
@@ -56,7 +57,6 @@ static void _register_pill(){
         memset(&pairing_command, 0, sizeof(pairing_command));
 
         pairing_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL;
-        pairing_command.version = PROTOBUF_VERSION;
         pairing_command.deviceId.arg = self.pill_pairing_request.device_id;
         pairing_command.accountId.arg = self.pill_pairing_request.account_id;
 
@@ -85,47 +85,141 @@ static void _register_pill(){
     _release_pending_resources();
 }
 
-static void _init_ble_stack(const MorpheusCommand* command)
-{
-    if(hble_get_device_id() != 0)
-    {
-        PRINTS("BLE already initialized!\r\n");
-    }else{
 
-        // TODO: Set the morpheus device id into BLE advertising data.
-        // Jimmy need this
-        if(command->deviceId.arg)
-        {
-            MSG_Data_t* data_page = (MSG_Data_t*)command->deviceId.arg;
-            PRINTS("Hex device id:");
-            PRINTS(data_page->buf);
-            PRINTS("\r\n");
-            uint64_t device_id = 0;
-            
-            if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
+static void _sync_device_id(){
+    self.boot_state = BOOT_SYNC_DEVICE_ID;
+    uint64_t device_id = 0;
+    uint32_t hex_device_id_len = 0;
+    if(!hble_uint64_to_hex_device_id(GET_UUID_64(), NULL, &hex_device_id_len))
+    {
+        PRINTS("Get device id len failed.\r\n");
+        return;
+    }
+
+    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(hex_device_id_len + 1);
+    if(!device_id_page){
+        PRINTS("Get device id page failed.\r\n");
+        return;
+    }
+
+    memset(device_id_page->buf, 0, hex_device_id_len + 1);
+    if(!hble_uint64_to_hex_device_id(GET_UUID_64(), device_id_page->buf, &hex_device_id_len))
+    {
+        PRINTS("Get device id failed.\r\n");
+        MSG_Base_ReleaseDataAtomic(device_id_page);
+        return;
+    }
+
+    MorpheusCommand sync_device_id_command;
+    memset(&sync_device_id_command, 0, sizeof(sync_device_id_command));
+    sync_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID;
+    sync_device_id_command.deviceId.arg = device_id_page;
+
+    size_t proto_len = 0;
+    if(!morpheus_ble_encode_protobuf(&sync_device_id_command, NULL, &proto_len))
+    {
+        PRINTS("Encode sync deviceId protobuf failed.\r\n");
+        nrf_delay_ms(100);
+        APP_ASSERT(0);
+    }else{
+        MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
+        if(!proto_len){
+            PRINTS(MSG_NO_MEMORY);
+            nrf_delay_ms(100);
+            APP_ASSERT(0);
+        }else{
+            morpheus_ble_encode_protobuf(&sync_device_id_command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
+            if(message_ble_route_data_to_cc3200(proto_page) == FAIL)
             {
-                PRINTS("Get device id failed.\r\n");
+                PRINTS(MSG_NO_MEMORY);
                 nrf_delay_ms(100);
                 APP_ASSERT(0);
             }
-            
+            MSG_Base_ReleaseDataAtomic(proto_page);
+        }
 
+    }
+
+    morpheus_ble_free_protobuf(&sync_device_id_command);
+}
+
+
+static void _init_ble_stack(const MorpheusCommand* command)
+{
+    // append something to device name
+    char device_name[strlen(BLE_DEVICE_NAME)+4];
+    memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+    uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
+    device_name[strlen(BLE_DEVICE_NAME)] = '-';
+    device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
+    device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
+    device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+
+    switch(self.boot_state)
+    {
+        case BOOT_COMPLETED:
+        PRINTS("BLE already initialized!\r\n");
+        break;
+        case BOOT_CHECK:   // The boot check command was sent. backward compatible TODO remove this case for production
+        {
+            if(command->type != MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID){
+                //because both boards don't boot at same time, make sure
+                //simply drop the echo if it doesn't match the current state
+                break;
+            }
+            if(command->deviceId.arg){
+                PRINTS("EVT3 middle board detected.\r\n");
+                MSG_Data_t* data_page = (MSG_Data_t*)command->deviceId.arg;
+                PRINTS("Hex device id:");
+                PRINTS(data_page->buf);
+                PRINTS("\r\n");
+                uint64_t device_id = 0;
+                
+                if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
+                {
+                    PRINTS("Get device id failed.\r\n");
+                    nrf_delay_ms(100);
+                    APP_ASSERT(0);
+                }
+
+                hble_stack_init();
+
+#ifdef BONDING_REQUIRED     
+                hble_bond_manager_init();
+                nrf_delay_ms(200);    
+#endif
+                
+                hble_params_init(device_name, device_id, command->firmwareVersion);
+                hble_services_init();
+
+                ble_uuid_t service_uuid = {
+                    .type = hello_type,
+                    .uuid = BLE_UUID_MORPHEUS_SVC
+                };
+
+                hble_advertising_init(service_uuid);
+                self.boot_state = BOOT_COMPLETED;  // set state, wait for boot timer start advertising and end itself.
+            }else{
+                PRINTS("DVT middle board detected. CC boot detected.\r\n");
+                self.boot_state = BOOT_SYNC_DEVICE_ID;  // set state, wait for the boot timer call _sync_device_id()
+            }
+        }
+        break;
+        case BOOT_SYNC_DEVICE_ID:  // The sync device id command was sent
+        {
+            if(command->type != MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID){
+                //because both boards don't boot at same time, make sure
+                //simply drop the echo if it doesn't match the current state
+                break;
+            }
             hble_stack_init();
 
 #ifdef BONDING_REQUIRED     
             hble_bond_manager_init();
             nrf_delay_ms(200);    
 #endif
-            // append something to device name
-            char device_name[strlen(BLE_DEVICE_NAME)+4];
-            memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-            uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-            device_name[strlen(BLE_DEVICE_NAME)] = '-';
-            device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-            device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-            device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-            hble_params_init(device_name, device_id, command->firmwareVersion);
             
+            hble_params_init(device_name, GET_UUID_64(), command->firmwareVersion);
             hble_services_init();
 
             ble_uuid_t service_uuid = {
@@ -134,11 +228,14 @@ static void _init_ble_stack(const MorpheusCommand* command)
             };
 
             hble_advertising_init(service_uuid);
-        }else{
-            PRINTS("INIT Error, no device id presented.");
+            self.boot_state = BOOT_COMPLETED;  // set state, wait for boot timer start advertising and end itself.
         }
+        break;
+
     }
 }
+
+
 
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
     if(!data){
@@ -190,7 +287,16 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         }
 
     }
-    
+
+
+    if(src.module == CLI && dst.submodule == 10 && dst.module == BLE){
+        MorpheusCommand command = {0};
+        PRINTS("Booting Radio\r\n");
+        command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
+        _init_ble_stack(&command);
+        command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID;
+        _init_ble_stack(&command);
+    }
 
     if(src.module == SSPI && dst.submodule == 0 && dst.module == BLE){
         PRINTS("SPI to BLE Command received\r\n");
@@ -201,18 +307,22 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
             switch(command.type)
             {
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID:
                 {
-                    PRINTS("BLE init command received\r\n");
+                    PRINTS("BLE init command received: ");
+                    PRINT_HEX(&command.type, 1);
+                    PRINTS("\r\n");
+
                     _init_ble_stack(&command);
                     morpheus_ble_free_protobuf(&command);
-                    
-
                 }
                 break;
+
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
                 PRINTS("DFU from CC3200..\r\n");
                     _start_morpheus_dfu_process();  // It's just that simple.
                 break;
+
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 {
                     PRINTS("Factory reset from CC3200..\r\n");
@@ -322,7 +432,6 @@ MSG_Status message_ble_remove_pill(MSG_Data_t* pill_id_page)
 
         MorpheusCommand morpheus_command;
         memset(&morpheus_command, 0, sizeof(morpheus_command));
-        morpheus_command.version = PROTOBUF_VERSION;
         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
         morpheus_ble_reply_protobuf(&morpheus_command);
 #endif
@@ -410,29 +519,15 @@ MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
     }
 }
 
-static void _request_device_id(void* context)
-{
-    if(hble_get_device_id() != 0){
-
-        hble_advertising_start();
-        nrf_delay_ms(100);
-
-        PRINTS("Boot completed!\r\n");
-        return;
-    }else{
-        PRINTS("No device_id detected, retry...\r\n");
-    }
-
+static void _cc3200_boot_check(){
+    self.boot_state = BOOT_CHECK;
     // Tests
     // self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
     MorpheusCommand get_device_id_command;
     memset(&get_device_id_command, 0, sizeof(get_device_id_command));
     get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
-    get_device_id_command.version = PROTOBUF_VERSION;
 
 #ifdef HAS_CC3200
-
-    
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
     {
@@ -454,8 +549,38 @@ static void _request_device_id(void* context)
             MSG_Base_ReleaseDataAtomic(data_page);
         }
     }
+#endif
+}
 
-    app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
+static void _on_boot_timer(void* context)
+{
+    switch(self.boot_state)
+    {
+        case BOOT_COMPLETED:
+        hble_advertising_start();
+        nrf_delay_ms(100);
+
+        PRINTS("Boot completed!\r\n");
+        break;
+
+        case BOOT_CHECK:
+        PRINTS("No device_id detected, retry...\r\n");
+        _cc3200_boot_check();
+        break;
+
+        case BOOT_SYNC_DEVICE_ID:
+        PRINTS("CC3200 seems to stuck, retry...\r\n");
+        _sync_device_id();
+        break;
+
+        default:
+        break;
+    }
+
+#ifdef HAS_CC3200
+    if(self.boot_state != BOOT_COMPLETED){
+        app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
+    }
 #endif
 }
 
@@ -463,13 +588,11 @@ static MSG_Status _init(){
     self.pill_pairing_request = (struct pill_pairing_request){0};
     app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
     
-
-    
-
 #ifdef HAS_CC3200
 
-    app_timer_create(&self.boot_timer, APP_TIMER_MODE_SINGLE_SHOT, _request_device_id);
-    _request_device_id(NULL);
+    app_timer_create(&self.boot_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_boot_timer);
+    _cc3200_boot_check();
+    _on_boot_timer(NULL);  // start the timer.
     
 #else
     
@@ -478,7 +601,6 @@ static MSG_Status _init(){
     MorpheusCommand get_device_id_command;
     memset(&get_device_id_command, 0, sizeof(get_device_id_command));
     get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
-    get_device_id_command.version = PROTOBUF_VERSION;
 
     char* fake_device_id = "0123456789AB";
     MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(fake_device_id);
@@ -564,7 +686,6 @@ static void _erase_bonded_users(){
     memset(&command, 0, sizeof(command));
     
     command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE;
-    command.version = PROTOBUF_VERSION;
     morpheus_ble_reply_protobuf(&command);
 }
 
@@ -599,7 +720,6 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
     
     command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
-    command.version = PROTOBUF_VERSION;
 #ifdef HAS_CC3200  // If don't have CC, the route_data_to_cc function will reply
     morpheus_ble_reply_protobuf(&command);
 #endif    
@@ -639,7 +759,6 @@ static void _pair_morpheus(MorpheusCommand* command)
             memset(&pair_command, 0, sizeof(MorpheusCommand));
 
             pair_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE;
-            pair_command.version = PROTOBUF_VERSION;
             pair_command.accountId.arg = command->accountId.arg;
             PRINTS("account id: ");
             PRINTS(((MSG_Data_t*)pair_command.accountId.arg)->buf);

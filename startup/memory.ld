@@ -10,14 +10,15 @@ MEMORY
   /* DFU_APP_DATA_RESERVED _can_ occupy space here if we wish; this
      may be a better idea than defining our own USER_DATA section,
      since it's SDK-supported. */
-  BOOTLOADER (rx) : ORIGIN = 0x36000, LENGTH = 0x6C00 /*  0x1B pages */
+  BOOTLOADER (rx) : ORIGIN = 0x36000, LENGTH = 0x7000 /*  0x1C pages */
   /* App Persistent Storage */
-  APP_DATA (rw) : ORIGIN = 0x3CC00, LENGTH = 0x2000 /* 0x8 pages */
+  APP_DATA (rw) : ORIGIN = 0x3D000, LENGTH = 0x2000 /* 0x8 pages */
   /* Bootloader storage */
-  USER_DATA (rw) : ORIGIN = 0x3EC00, LENGTH = 0x1400 /* 0x5 pages */
+  USER_DATA (rw) : ORIGIN = 0x3F000, LENGTH = 0x1000 /* 0x5 pages */
   /* Make sure the total of the above are  of the TOTAL 100 pages */
   SOFTDEVICE_RAM (rwx): ORIGIN = 0x20000000, LENGTH = 0x2400
-  RAM (rwx) : ORIGIN = 0x20002400, LENGTH = 0x1C00
+  RAM (rwx) : ORIGIN = 0x20002400, LENGTH = 0x1BF0
+  KEYSTORE (rw) : ORIGIN = 0x20003FF0, LENGTH = 0x10 /* place where the identity information are stored*/
 }
 
 /* Note that this is the standard nRF SDK DFU layout:

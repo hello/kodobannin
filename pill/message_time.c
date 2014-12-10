@@ -41,11 +41,14 @@ _flush(void){
 }
 
 #ifdef ANT_STACK_SUPPORT_REQD
+#define MOTION_DATA_MAGIC 0x5A5A
 static void _send_available_data_ant(){
     size_t rawDataSize = TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t);
+    uint16_t magic = MOTION_DATA_MAGIC;
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
         sizeof(MSG_ANT_EncryptedMotionData_t) + // Encrypted info headers (nonce)
-        rawDataSize);  // Raw/encrypted data
+        rawDataSize +  // Raw/encrypted data
+        sizeof(magic));
 
     if(data_page){
         memset(&data_page->buf, 0, data_page->len);
@@ -54,15 +57,16 @@ static void _send_available_data_ant(){
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_DATA_ENCRYPTED;
         ant_data->UUID = GET_UUID_64();
-        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t) + rawDataSize;
+        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t) + rawDataSize + sizeof(magic);
 
         if(TF_GetCondensed(motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
         {
             uint8_t pool_size = 0;
+            memcpy((uint8_t*)motion_data->payload + rawDataSize, &magic, sizeof(magic));
             if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
                 uint8_t nonce[8] = {0};
                 sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
-                aes128_ctr_encrypt_inplace(motion_data->payload, rawDataSize, get_aes128_key(), nonce);
+                aes128_ctr_encrypt_inplace(motion_data->payload, rawDataSize + sizeof(magic), get_aes128_key(), nonce);
                 memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
                 self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
                 /*

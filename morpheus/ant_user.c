@@ -46,8 +46,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
     MorpheusCommand morpheus_command;
     memset(&morpheus_command, 0, sizeof(MorpheusCommand));
 
-    morpheus_command.version = PROTOBUF_VERSION;
-
     uint64_t device_id = pill_data->UUID;
     char buffer[17];  // 17 = 8 * 2 + 1
     memset(buffer, 0, 17);

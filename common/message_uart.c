@@ -152,6 +152,13 @@ MSG_Base_t * MSG_Uart_Base(const app_uart_comm_params_t * params, const MSG_Cent
     return &self.base;
 
 }
+
+void MSG_Uart_Printc(char c){
+    if(self.initialized){
+        app_uart_put(c);
+    }
+}
+
 void MSG_Uart_Prints(const char * str){
     if(self.initialized){
         const char * head = str;

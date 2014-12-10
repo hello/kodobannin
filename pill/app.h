@@ -7,7 +7,7 @@
 
 enum {
     APP_TIMER_PRESCALER = 0,
-    APP_TIMER_MAX_TIMERS = 7,
+    APP_TIMER_MAX_TIMERS = 8,
     APP_TIMER_OP_QUEUE_SIZE = 8,
 };
 
@@ -16,12 +16,12 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Pill"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "EVT3.11"
+#define BLE_MODEL_NUM         "DVT4.0"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
 #define ANT_PROTOCOL_VER      (1)
-#define FIRMWARE_VERSION_8BIT (1)
+#define FIRMWARE_VERSION_8BIT (2)
 
 //#define BONDING_REQUIRED
 //#define DATA_SCIENCE_TASK
@@ -56,7 +56,7 @@ enum {
 // Advertising interval (in units of 0.625 ms)
 #define APP_ADV_INTERVAL                     800 * 8
 // Advertising timeout in units of seconds.
-#define APP_ADV_TIMEOUT_IN_SECONDS           0
+#define APP_ADV_TIMEOUT_IN_SECONDS           5 * 60
 
 // Definition of 1 second, when 1 unit is 1.25 ms.
 #define SECOND_1_25_MS_UNITS                    800
@@ -116,5 +116,6 @@ enum {
 #define HEARTBEAT_INTERVAL_SEC              (3600)
 #define MOTION_DATA_INTERVAL_SEC            (60)
 
+#define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key
-//#define USE_HLO_ANT_NETWORK
+#define USE_HLO_ANT_NETWORK
