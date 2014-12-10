@@ -203,6 +203,7 @@ static void _init_ble_stack(const MorpheusCommand* command)
             }else{
                 PRINTS("DVT middle board detected. CC boot detected.\r\n");
                 self.boot_state = BOOT_SYNC_DEVICE_ID;  // set state, wait for the boot timer call _sync_device_id()
+                _sync_device_id();
             }
         }
         break;
