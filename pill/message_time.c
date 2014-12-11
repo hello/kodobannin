@@ -24,7 +24,8 @@ static struct{
     app_timer_id_t timer_id;
     MSG_Data_t * user_cb;
     uint32_t uptime;
-    uint8_t last_reed_state;
+    uint8_t reed_states;
+    uint8_t power_state;
 }self;
 
 static char * name = "TIME";
@@ -111,6 +112,7 @@ static void _send_heartbeat_data_ant(){
 
 #endif
 
+#define POWER_STATE_MASK 0x7
 static void _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
@@ -142,19 +144,20 @@ static void _timer_handler(void * ctx){
         }
     }
     uint8_t current_reed_state = (uint8_t)led_check_reedswitch();
-    PRINT_HEX(&current_reed_state,1);
-    if(current_reed_state != self.last_reed_state){
-        if(current_reed_state == 1){
-            PRINTS("Going into Factory Mode");
-            self.central->unloadmod(MSG_IMU_GetBase());
-            sd_ble_gap_adv_stop();
-        }else{
-            self.central->loadmod(MSG_IMU_GetBase());
-            hble_advertising_start();
-            PRINTS("Going into User Mode");
-        }
+    self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
+    PRINT_HEX(&self.reed_states, 1);
+    PRINTS("\r\n");
+    if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
+        PRINTS("Going into Factory Mode");
+        self.power_state = 1;
+        self.central->unloadmod(MSG_IMU_GetBase());
+        sd_ble_gap_adv_stop();
+    }else if(self.reed_states == 0x00 && self.power_state == 1){
+        PRINTS("Going into User Mode");
+        self.power_state = 0;
+        self.central->loadmod(MSG_IMU_GetBase());
+        hble_advertising_start();
     }
-    self.last_reed_state = current_reed_state;
 }
 
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
