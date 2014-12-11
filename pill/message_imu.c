@@ -27,6 +27,7 @@
 #endif
 
 #include <watchdog.h>
+#include "gpio_nor.h"
 
 
 enum {
@@ -164,9 +165,6 @@ static void _on_wom_timer(void* context)
     uint32_t time_diff = 0;
     app_timer_cnt_diff_compute(current_time, _last_active_time, &time_diff);
 
-	if(!initialized){
-		return;
-	}
     if(time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
@@ -229,7 +227,9 @@ static MSG_Status _init(void){
 static MSG_Status _destroy(void){
 	if(initialized){
 		initialized = false;
+		APP_OK(app_gpiote_user_disable(_gpiote_user));
 		imu_clear_interrupt_status();
+		gpio_input_disconnect(IMU_INT);
 		imu_power_off();
 	}
     return SUCCESS;
