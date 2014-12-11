@@ -4,6 +4,7 @@
 #include <nrf_soc.h>
 #include "message_led.h"
 #include "app.h"
+#include <ble.h>
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -41,6 +42,9 @@ _handle_command(int argc, char * argv[]){
     }
     if(_strncmp(argv[0], "led", strlen("led")) == 0){
         test_led();
+    }
+    if(_strncmp(argv[0], "advstop", strlen("advstop")) == 0){
+        sd_ble_gap_adv_stop();
     }
     if(_strncmp(argv[0], "ver", strlen("ver")) == 0){
         MSG_Data_t * id = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
