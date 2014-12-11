@@ -73,7 +73,7 @@ _handle_command(int argc, char * argv[]){
         MSG_Data_t * id = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
         if(id){
             self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
-                                    (MSG_Address_t){UART,2},//destination address, UART STRING
+                                    (MSG_Address_t){UART,MSG_UART_STRING},//destination address, UART STRING
                                     id);
             MSG_Base_ReleaseDataAtomic(id);
         }
