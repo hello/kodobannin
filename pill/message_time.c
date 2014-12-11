@@ -7,6 +7,7 @@
 #include "app.h"
 #include "shake_detect.h"
 #include "timedfifo.h"
+#include "led.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -21,6 +22,7 @@ static struct{
     app_timer_id_t timer_id;
     MSG_Data_t * user_cb;
     uint32_t uptime;
+    uint8_t last_reed_state;
 }self;
 
 static char * name = "TIME";
@@ -137,6 +139,16 @@ static void _timer_handler(void * ctx){
             self.user_cb = NULL;
         }
     }
+    uint8_t current_reed_state = (uint8_t)led_check_reedswitch();
+    PRINT_HEX(&current_reed_state,1);
+    if(current_reed_state != self.last_reed_state){
+        if(current_reed_state == 1){
+            PRINTS("Going into Factory Mode");
+        }else{
+            PRINTS("Going into User Mode");
+        }
+    }
+    self.last_reed_state = current_reed_state;
 }
 
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
