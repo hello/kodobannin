@@ -46,6 +46,12 @@ _handle_command(int argc, char * argv[]){
     if(_strncmp(argv[0], "advstop", strlen("advstop")) == 0){
         sd_ble_gap_adv_stop();
     }
+    if(_strncmp(argv[0], "imuoff", strlen("imuoff")) == 0){
+        self.parent->unloadmod(MSG_IMU_GetBase());
+    }
+    if(_strncmp(argv[0], "imuon", strlen("imuon")) == 0){
+        self.parent->loadmod(MSG_IMU_GetBase());
+    }
     if(_strncmp(argv[0], "ver", strlen("ver")) == 0){
         MSG_Data_t * id = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
         if(id){
