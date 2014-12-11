@@ -3,6 +3,7 @@
 #include "ant_driver.h"
 #include <nrf_soc.h>
 #include "message_led.h"
+#include "app.h"
 
 static struct{
     //parent is the reference to the dispatcher 
