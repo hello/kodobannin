@@ -203,17 +203,23 @@ static void _on_pill_pairing_guesture_detected(void){
 
 
 static MSG_Status _init(void){
-	//harder
-	//ShakeDetectReset(15000000000, 5);
-	//easier to trigger
-#ifndef DEBUG_SERIAL
-	ShakeDetectReset(750000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+	if(!initialized){
+        imu_power_on();
+#ifdef IMU_DYNAMIC_SAMPLING
+		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
+			_settings.inactive_sampling_rate, _settings.accel_range, _settings.inactive_wom_threshold))
 #else
-    ShakeDetectReset(750000000);
+        if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
+            _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
 #endif
-    set_shake_detection_callback(_on_pill_pairing_guesture_detected);
-    //APP_OK(app_timer_create(&_flash_timer_1, APP_TIMER_MODE_SINGLE_SHOT, _blink_leds));
+		{
+			nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
 
+		    imu_clear_interrupt_status();
+			PRINTS("IMU: initialization done.\r\n");
+			initialized = true;
+		}
+	}
     return SUCCESS;
 }
 
@@ -274,36 +280,26 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 
 MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 {
-	if(!initialized){
-		parent = central;
-        base.init = _init;
-        base.destroy = _destroy;
-        base.flush = _flush;
-        base.send = _send;
-        base.type = IMU;
-        base.typestr = name;
-        imu_power_on();
-        
-#ifdef IMU_DYNAMIC_SAMPLING
-		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
-			_settings.inactive_sampling_rate, _settings.accel_range, _settings.inactive_wom_threshold))
-#else
-        if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
-            _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
-#endif
-		{
-			nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
-#ifdef IMU_DYNAMIC_SAMPLING
-		    APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_wom_timer));
-#endif
-		    APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
-		    APP_OK(app_gpiote_user_enable(_gpiote_user));
+	imu_power_off();
 
-		    imu_clear_interrupt_status();
-			PRINTS("IMU: initialization done.\r\n");
-			initialized = true;
-		}
-	}
+	parent = central;
+	base.init = _init;
+	base.destroy = _destroy;
+	base.flush = _flush;
+	base.send = _send;
+	base.type = IMU;
+	base.typestr = name;
+#ifdef IMU_DYNAMIC_SAMPLING
+	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_wom_timer));
+#endif
+	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
+	APP_OK(app_gpiote_user_enable(_gpiote_user));
+    ShakeDetectReset(750000000);
+    set_shake_detection_callback(_on_pill_pairing_guesture_detected);
+
 	return &base;
 
+}
+MSG_Base_t * MSG_IMU_GetBase(void){
+	return &base;
 }
