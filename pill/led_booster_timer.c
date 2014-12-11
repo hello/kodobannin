@@ -94,6 +94,10 @@ uint8_t led_booster_is_free(void){
 }
 void led_booster_power_on(void){
     uint32_t ticks = APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER);
+    if(led_check_reedswitch() == 1){
+        PRINTS("RS Low\r\n");
+        return;
+    }
     CRITICAL_REGION_ENTER();
     self.free = 0;
     app_timer_stop(self.timer);
