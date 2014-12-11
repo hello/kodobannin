@@ -144,7 +144,11 @@ static void _timer_handler(void * ctx){
     if(current_reed_state != self.last_reed_state){
         if(current_reed_state == 1){
             PRINTS("Going into Factory Mode");
+            self.parent->unloadmod(MSG_IMU_GetBase());
+            sd_ble_gap_adv_stop();
         }else{
+            self.parent->loadmod(MSG_IMU_GetBase());
+            hble_advertising_start();
             PRINTS("Going into User Mode");
         }
     }
