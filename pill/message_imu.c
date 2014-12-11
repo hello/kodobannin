@@ -216,6 +216,7 @@ static MSG_Status _init(void){
 			nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
 
 		    imu_clear_interrupt_status();
+			APP_OK(app_gpiote_user_enable(_gpiote_user));
 			PRINTS("IMU: initialization done.\r\n");
 			initialized = true;
 		}
@@ -224,6 +225,11 @@ static MSG_Status _init(void){
 }
 
 static MSG_Status _destroy(void){
+	if(initialized){
+		initialized = false;
+		imu_clear_interrupt_status();
+		imu_power_off();
+	}
     return SUCCESS;
 }
 
@@ -293,7 +299,7 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_wom_timer));
 #endif
 	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
-	APP_OK(app_gpiote_user_enable(_gpiote_user));
+	APP_OK(app_gpiote_user_disable(_gpiote_user));
     ShakeDetectReset(750000000);
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
 
