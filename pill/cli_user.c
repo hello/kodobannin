@@ -41,6 +41,15 @@ _handle_command(int argc, char * argv[]){
     if(_strncmp(argv[0], "led", strlen("led")) == 0){
         test_led();
     }
+    if(_strncmp(argv[0], "ver", strlen("ver")) == 0){
+        MSG_Data_t * id = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
+        if(id){
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){UART,MSG_UART_STRING},//destination address, UART STRING
+                                    id);
+            MSG_Base_ReleaseDataAtomic(id);
+        }
+    }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
         //Create a message object from uart string
