@@ -161,10 +161,12 @@ static void _on_wom_timer(void* context)
 {
     uint32_t current_time = 0;
     app_timer_cnt_get(&current_time);
-
     uint32_t time_diff = 0;
     app_timer_cnt_diff_compute(current_time, _last_active_time, &time_diff);
 
+	if(!initialized){
+		return;
+	}
     if(time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
