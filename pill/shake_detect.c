@@ -41,6 +41,11 @@ void ShakeDetectDecWindow(void){
 
 bool ShakeDetect(uint32_t accelmag){
     uint8_t current_time_sec = get_tick();
+    int8_t diff = current_time_sec - self.last_shaking_time_sec;
+    if(diff < 0)
+    {
+        diff = MOTION_DATA_INTERVAL_SEC - self.last_shaking_time_sec + current_time_sec;
+    }
     // Do not detect shaking for 3 seconds after the previous shake is detected.
     if(current_time_sec - self.last_shaking_time_sec < MIN_SHAKE_DETECT_INTERVAL_SEC)
     {
