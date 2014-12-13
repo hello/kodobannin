@@ -118,5 +118,6 @@ enum {
 #define HEARTBEAT_INTERVAL_SEC              (3600)
 #define MOTION_DATA_INTERVAL_SEC            (60)
 
+#define SHAKING_MOTION_THRESHOLD        (750000000)
 #define SLIDING_WINDOW_SIZE_SEC         (1)
-#define SHAKING_DATA_COUNT_THRESHOLD    (10)
+#define SHAKING_DATA_COUNT_THRESHOLD    (8)
