@@ -3,6 +3,7 @@
 #include "ant_driver.h"
 #include <nrf_soc.h>
 #include "message_led.h"
+#include "message_imu.h"
 #include "app.h"
 #include <ble.h>
 
@@ -51,6 +52,10 @@ _handle_command(int argc, char * argv[]){
     }
     if(_strncmp(argv[0], "imuon", strlen("imuon")) == 0){
         self.parent->loadmod(MSG_IMU_GetBase());
+    }
+    if(_strncmp(argv[0], "sleep", strlen("sleep")) == 0){
+        self.central->unloadmod(MSG_IMU_GetBase());
+        sd_ble_gap_adv_stop();
     }
     if(_strncmp(argv[0], "ver", strlen("ver")) == 0){
         MSG_Data_t * id = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
