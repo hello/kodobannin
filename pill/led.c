@@ -127,7 +127,7 @@ uint32_t led_check_reedswitch(void){
     _led_gpio_cfg_open_drain(LED2_ENABLE); // nrf_gpio_cfg_output(LED2_ENABLE); // grn
     return ret;
 #else
-    return 1;
+    return 0;
 #endif
 }
 
