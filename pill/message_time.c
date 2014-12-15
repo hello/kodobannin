@@ -157,6 +157,7 @@ static void _timer_handler(void * ctx){
         self.power_state = 1;
         self.central->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
+        self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE}, NULL);
     }else if(self.reed_states == 0x00 && self.power_state == 1){
         PRINTS("Going into User Mode");
         self.power_state = 0;
