@@ -3,6 +3,7 @@
 
 enum MSG_LEDAddress{
     LED_PLAY_BOOT_COMPLETE = 1,
+    LED_PLAY_ENTER_FACTORY_MODE = 2,
 };
 
 MSG_Base_t * MSG_LEDInit(MSG_Central_t * parent);
