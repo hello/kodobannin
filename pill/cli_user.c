@@ -54,7 +54,7 @@ _handle_command(int argc, char * argv[]){
         self.parent->loadmod(MSG_IMU_GetBase());
     }
     if(_strncmp(argv[0], "sleep", strlen("sleep")) == 0){
-        self.central->unloadmod(MSG_IMU_GetBase());
+        self.parent->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
     }
     if(_strncmp(argv[0], "ver", strlen("ver")) == 0){
