@@ -144,6 +144,11 @@ static void _timer_handler(void * ctx){
         }
     }
     uint8_t current_reed_state = (uint8_t)led_check_reedswitch();
+    if(led_booster_is_free()){
+        current_reed_state = (uint8_t)led_check_reedswitch();
+    }else{
+        current_reed_state = 0;
+    }
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
     PRINT_HEX(&self.reed_states, 1);
     PRINTS("\r\n");
