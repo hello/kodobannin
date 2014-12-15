@@ -6,6 +6,7 @@
 #include "platform.h"
 #include "app.h"
 #include "shake_detect.h"
+#include "message_led.h"
 #include "timedfifo.h"
 #include "led.h"
 #include <ble.h>
