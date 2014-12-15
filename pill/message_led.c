@@ -36,6 +36,28 @@ static void _on_warm(void){
     led_warm_up();
 }
 static int
+_play_test(int * out_r, int * out_g, int * out_b){
+    static const animation_node_t seq[] = {
+        {0    * BOOSTER_REFRESH_RATE, {0x18, 0x18, 0x18}, 1},
+        {3    * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
+    };
+    int i;
+    animation_node_t * current;
+    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
+        if(self.counter >= seq[i].time){
+            *out_r = seq[i].rgb[0];
+            *out_g = seq[i].rgb[1];
+            *out_b = seq[i].rgb[2];
+            current = &seq[i];
+        }
+    }
+    self.counter++;
+    if(current){
+        return current->valid;
+    }
+    return 0;
+}
+static int
 _play_enter_factory_mode(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
         {0    * BOOSTER_REFRESH_RATE, {0x18, 0x18, 0x18}, 1},
@@ -97,6 +119,8 @@ static int _on_cycle(int * out_r, int * out_g, int * out_b){
             return _play_boot_complete(out_r, out_g, out_b);
         case LED_PLAY_ENTER_FACTORY_MODE:
             return _play_enter_factory_mode(out_r, out_g, out_b);
+        case LED_PLAY_TEST:
+            return _play_test(out_r, out_g, out_b);
     }
 }
 
@@ -126,7 +150,7 @@ _play_animation(enum MSG_LEDAddress type){
     }
 }
 void test_led(){
-    _play_animation(LED_PLAY_ENTER_FACTORY_MODE);
+    _play_animation(LED_PLAY_TEST);
 }
 static MSG_Status
 _destroy(void){
@@ -141,6 +165,7 @@ _handle_led_commands(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     switch(dst.submodule){
         default:
             break;
+        case LED_PLAY_TEST:
         case LED_PLAY_ENTER_FACTORY_MODE:
         case LED_PLAY_BOOT_COMPLETE:
             _play_animation(dst.submodule);
