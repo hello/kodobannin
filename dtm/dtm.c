@@ -137,46 +137,17 @@ int dtm_begin(void)
         // If DTM cannot be correctly initialized, then we just return.
         return -1;
     }
-
+    dtm_cmd_from_uart = 0x4000;
+    if (dtm_cmd_put(dtm_cmd_from_uart) != DTM_SUCCESS){
+    }
+    for (;;){
+    }
     for (;;)
     {
         // Will return every timeout, 625 us.
-        watchdog_pet();
-        current_time = dtm_wait();  
-
-        if (NRF_UART0->EVENTS_RXDRDY == 0)
-        {
-            // Nothing read from the UART.
-            continue;
-        }
-        NRF_UART0->EVENTS_RXDRDY = 0;
-        rx_byte                  = (uint8_t)NRF_UART0->RXD;
-
-        if (!is_msb_read)
-        {
-            // This is first byte of two-byte command.
-            is_msb_read       = true;
-            dtm_cmd_from_uart = ((dtm_cmd_t)rx_byte) << 8;
-            msb_time          = current_time;
-
-            // Go back and wait for 2nd byte of command word.
-            continue;
-        }
-
-        // This is the second byte read; combine it with the first and process command
-        if (current_time > (msb_time + MAX_ITERATIONS_NEEDED_FOR_NEXT_BYTE))
-        {
-            // More than ~5mS after msb: Drop old byte, take the new byte as MSB.
-            // The variable is_msb_read will remains true.
-            // Go back and wait for 2nd byte of the command word.
-            dtm_cmd_from_uart = ((dtm_cmd_t)rx_byte) << 8;
-            msb_time          = current_time;
-            continue;
-        }
-
-        // 2-byte UART command received.
-        is_msb_read        = false;
-        dtm_cmd_from_uart |= (dtm_cmd_t)rx_byte;
+        /*
+         *watchdog_pet();
+         */
 
         if (dtm_cmd_put(dtm_cmd_from_uart) != DTM_SUCCESS)
         {

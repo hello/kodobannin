@@ -112,6 +112,10 @@ static void _load_watchdog()
 void _start()
 {
     
+#include "dtm.h"
+	sd_softdevice_disable();
+	dtm_begin();
+
     battery_module_power_off();
 
 	//HACK TO DISABLE PINS ON LED
