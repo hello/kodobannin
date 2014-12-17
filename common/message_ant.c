@@ -74,16 +74,12 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             default:
                 break;
             case ANT_SET_ROLE:
-                /*
-                 *if(0 == hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener))){
-                 */
+                if(0 == hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener))){
+                    test_ok(self.parent, ANT_OK);
                     /*
-                     *test_ok(self.parent, ANT_OK);
+                     *hlo_ant_cw_test(66,4);
                      */
-                    hlo_ant_cw_test(66,4);
-                /*
-                 *}
-                 */
+                }
                 break;
             case ANT_REMOVE_DEVICE:
                 {
