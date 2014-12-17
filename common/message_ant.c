@@ -76,6 +76,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case ANT_SET_ROLE:
                 if(0 == hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener))){
                     test_ok(self.parent, ANT_OK);
+                    hlo_ant_cw_test(66,4);
                 }
                 break;
             case ANT_REMOVE_DEVICE:
@@ -111,12 +112,14 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         int idx = dst.submodule - 1;
         //donp't have queue atm, dropping extra data for now
         if(self.paired_devices[idx].device_number){
-            int ret = hlo_ant_packet_send_message(&self.paired_devices[idx], data);
-            if(ret == 0){
-                return SUCCESS;
-            }else{
-                //what do?
-            }
+            /*
+             *int ret = hlo_ant_packet_send_message(&self.paired_devices[idx], data);
+             *if(ret == 0){
+             *    return SUCCESS;
+             *}else{
+             *    //what do?
+             *}
+             */
         }
     }
     return SUCCESS;
