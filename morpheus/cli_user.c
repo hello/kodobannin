@@ -1,4 +1,5 @@
 #include "cli_user.h"
+#include <ble.h>
 #include "util.h"
 #include <nrf_soc.h>
 #include <string.h>
@@ -67,6 +68,13 @@ _handle_command(int argc, char * argv[]){
         PRINTS("Pause radio = ");
         int32_t ret = hlo_ant_pause_radio();
         PRINT_HEX(&ret, 4);
+        PRINTS("\r\n");
+    }
+    if(_strncmp(argv[0], "adv", strlen("adv")) == 0){
+        uint32_t err_code;
+        PRINTS("Adv off\r\n");
+        err_code = sd_ble_gap_adv_stop();
+        PRINT_HEX("&err_code",2);
         PRINTS("\r\n");
     }
     if(_strncmp(argv[0], "ver", strlen("ver")) == 0){
