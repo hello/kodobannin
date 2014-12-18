@@ -44,6 +44,7 @@
 #include "battery.h"
 
 #include <twi_master.h>
+#include "main_tx.h"
 
 static void _init_rf_modules()
 {
@@ -114,6 +115,10 @@ static void _load_watchdog()
 void _start()
 {
     
+	/*
+	 *dtm_begin();
+	 */
+	test_start();
     battery_module_power_off();
 
 	//HACK TO DISABLE PINS ON LED
