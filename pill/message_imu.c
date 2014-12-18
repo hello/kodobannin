@@ -205,9 +205,10 @@ static void _on_pill_pairing_guesture_detected(void){
 static MSG_Status _init(void){
 	if(!initialized){
         imu_power_on();
+		ShakeDetectReset(750000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
 #ifdef IMU_DYNAMIC_SAMPLING
 		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
-	ShakeDetectReset(750000000);  // I think it may be better to set the threshold higher to make the gesture explicit.
+            _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
 #else
         if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
             _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
