@@ -9,6 +9,9 @@
 #define PLATFORM_HAS_SSPI
 #define HW_REVISION 1
 
+#define DEVICE_ID_SIZE        6
+#define BLE_MODEL_NUM         "EVT1"
+
 /* CS and MOSI are inverted in EVT1*/
 enum {
 	SSPI_MOSI = 9,
