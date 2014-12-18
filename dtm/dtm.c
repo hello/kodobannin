@@ -137,7 +137,7 @@ int dtm_begin(void)
         // If DTM cannot be correctly initialized, then we just return.
         return -1;
     }
-    dtm_cmd_from_uart = 0x4000;
+    dtm_cmd_from_uart = 0x8000;
     if (dtm_cmd_put(dtm_cmd_from_uart) != DTM_SUCCESS){
     }
     for (;;){
