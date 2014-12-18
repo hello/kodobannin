@@ -7,6 +7,12 @@
 #include <app_uart.h>
 #include "message_base.h"
 
+typedef enum{
+    MSG_UART_DEFAULT = 0,
+    MSG_UART_HEX,
+    MSG_UART_SLIP,
+    MSG_UART_STRING,
+}MSG_Uart_Ports;
 
 #define MSG_UART_COMMAND_MAX_SIZE 32
 
