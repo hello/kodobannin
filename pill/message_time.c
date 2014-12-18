@@ -113,6 +113,7 @@ static void _send_heartbeat_data_ant(){
 
 #endif
 
+#include "message_led.h"
 #define POWER_STATE_MASK 0x7
 static void _timer_handler(void * ctx){
     //uint8_t carry;
@@ -126,6 +127,20 @@ static void _timer_handler(void * ctx){
         _send_available_data_ant();
     }
 
+    static int counter;
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_shakedata_t));
+    if(data_page){
+        memset(&data_page->buf, 0, sizeof(data_page->len));
+        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+		pill_shakedata_t * shake_data = (pill_shakedata_t*)ant_data->payload;
+        ant_data->version = ANT_PROTOCOL_VER;
+        ant_data->type = ANT_PILL_SHAKING;
+        ant_data->UUID = GET_UUID_64();
+		shake_data->counter = counter++;
+        self.central->dispatch((MSG_Address_t){IMU,1}, (MSG_Address_t){ANT,1}, data_page);
+        MSG_Base_ReleaseDataAtomic(data_page);
+    }
+    test_led();
 
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
     {
