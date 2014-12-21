@@ -122,6 +122,7 @@ static uint32_t dtm_cmd_put(uint16_t command)
  *          dtmlib. After initialization, DTM commands submitted through the UART are forwarded to
  *          dtmlib and events (i.e. results from the command) is reported back through the UART.
  */
+#include "gpio_nor.h"
 int dtm_begin(void)
 {
     uint32_t    current_time;
@@ -143,6 +144,9 @@ int dtm_begin(void)
         return -1;
     }
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
+    //TODO put pin here
+    //
+    gpio_cfg_s0s1_output_connect(13,1);
     dtm_cmd_from_uart = 0x6700;
     SIMPRINTS("DTM CODE: ");
     SIMPRINT_HEX(&dtm_cmd_from_uart, 2);
