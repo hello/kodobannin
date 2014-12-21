@@ -26,6 +26,9 @@
 #include "nrf_gpio.h"
 #include "platform.h"
 #include "watchdog.h"
+#include "platform.h"
+#include "simple_uart.h"
+#include "util.h"
 
 
 // Configuration parameters.
@@ -139,7 +142,12 @@ int dtm_begin(void)
         // If DTM cannot be correctly initialized, then we just return.
         return -1;
     }
-    dtm_cmd_from_uart = 0x8000;
+    simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
+    dtm_cmd_from_uart = 0x6700;
+    SIMPRINTS("DTM CODE: ");
+    SIMPRINT_HEX(&dtm_cmd_from_uart, 2);
+    SIMPRINTS("\r\n");
+
     if (dtm_cmd_put(dtm_cmd_from_uart) != DTM_SUCCESS){
     }
     for (;;){
