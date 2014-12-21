@@ -129,7 +129,9 @@ int dtm_begin(void)
     uint8_t     rx_byte;                   // Last byte read from UART.
     dtm_event_t result;                    // Result of a DTM operation.
 
-    uart_init();
+    /*
+     *uart_init();
+     */
 
     dtm_error_code = dtm_init();
     if (dtm_error_code != DTM_SUCCESS)
