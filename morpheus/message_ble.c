@@ -823,6 +823,19 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
 
     switch(command->type)
     {
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_BUSY:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_TRIPPY:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OFF:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SCAN_WIFI:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_NEXT_WIFI_AP:
+        {
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS(MSG_NO_MEMORY);
+                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            }
+            break;
+        }
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
             _morpheus_switch_mode(true);
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
