@@ -869,7 +869,8 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
     {
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_BUSY:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_TRIPPY:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OFF:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OPERATION_FAILED:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OPERATION_SUCCESS:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SCAN_WIFI:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_NEXT_WIFI_AP:
         {
