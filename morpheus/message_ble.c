@@ -272,7 +272,12 @@ static void _hold_to_enter_pairing_mode()
         // start it.
         hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
     }else{
-        hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
+        if(_is_bond_db_full())
+        {
+            hble_erase_all_bonded_central();
+        }
+        hble_set_advertising_mode(true);
+        // Need to wait the delay task to do the actual wipe.
     }
 }
 
