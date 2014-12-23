@@ -233,6 +233,53 @@ static void _init_ble_stack(const MorpheusCommand* command)
     }
 }
 
+static bool _is_bond_db_full()
+{
+    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+
+    if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS)
+    {
+        PRINTS("Pairing database full.\r\n");
+        return true;
+    }
+
+    return false;
+}
+
+static void _check_bonds_and_enter_pairing_mode()
+{
+    if(_is_bond_db_full())
+    {
+        hble_delay_tasks_erase_bonds();
+    }
+
+    hble_set_advertising_mode(true);
+}
+
+static void _hold_to_enter_pairing_mode()
+{
+    if(!hlo_ble_is_connected())
+    {
+        // Stop BLE radio, because the 2nd task will resume it.
+        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+        hble_set_delay_task(0, _check_bonds_and_enter_pairing_mode);
+        hble_set_delay_task(1, hble_delay_task_advertise_resume);
+        hble_set_delay_task(2, NULL);  // Indicates delay task end.
+
+        // If not connected, the delay task will not 
+        // triggered by disconnect, we need to manually 
+        // start it.
+        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+    }else{
+        if(_is_bond_db_full())
+        {
+            hble_erase_all_bonded_central();
+        }
+        hble_set_advertising_mode(true);
+        // Need to wait the delay task to do the actual wipe.
+    }
+}
 
 
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
@@ -332,8 +379,12 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 break;
 
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
-                PRINTS("DFU from CC3200..\r\n");
+                    PRINTS("DFU from CC3200..\r\n");
                     _start_morpheus_dfu_process();  // It's just that simple.
+                break;
+
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
+                    _hold_to_enter_pairing_mode();
                 break;
 
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
@@ -687,21 +738,11 @@ static void _erase_bonded_users(){
 }
 
 
-
-static void _led_pairing_mode(void)
-{
-    // TODO: Notify the led
-}
-
-
 static void _morpheus_switch_mode(bool is_pairing_mode)
 {
     if(is_pairing_mode)
     {
-        uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
-        APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
-
-        if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS)
+        if(_is_bond_db_full())
         {
             PRINTS("Pairing database full.\r\n");
             morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_DATABASE_FULL);
