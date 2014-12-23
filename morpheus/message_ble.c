@@ -742,10 +742,7 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
 {
     if(is_pairing_mode)
     {
-        uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
-        APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
-
-        if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS)
+        if(_is_bond_db_full())
         {
             PRINTS("Pairing database full.\r\n");
             morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_DATABASE_FULL);
