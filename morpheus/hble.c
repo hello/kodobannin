@@ -377,6 +377,7 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
     switch(p_evt->evt_type)
     {
         case BLE_BONDMNGR_EVT_NEW_BOND:
+        case BLE_BONDMNGR_EVT_CONN_TO_BONDED_CENTRAL:
         case BLE_BONDMNGR_EVT_AUTH_STATUS_UPDATED:
         {
             // Notify message ble module, schedule the call
