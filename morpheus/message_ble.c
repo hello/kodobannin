@@ -424,6 +424,11 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                     hlo_ble_notify(0xB00B, data->buf, data->len,
                         &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
 
+                    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
+                    PRINTS("Big pool free: ");
+                    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
+                    PRINTS("\r\n");
+                    
                     return SUCCESS;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
                 }
             }
@@ -784,7 +789,7 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(DEVICE_ID_SIZE * 2 + 1);  // Fark this is a mac address
     if(!device_id_page)
     {
-        PRINTS(MSG_NO_MEMORY);
+        PRINTS("Fail to alloc device id\r\n");
         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
     }else{
         memset(device_id_page->buf, 0, device_id_page->len);
@@ -808,8 +813,10 @@ static void _pair_morpheus(MorpheusCommand* command)
             PRINTS("\r\n");
             if(!morpheus_ble_route_protobuf_to_cc3200(&pair_command))
             {
+                PRINTS("Rount pairing data to cc3200 failed\r\n");
                 morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
             }
+            PRINTS("Rount pairing data to cc3200 done!\r\n");
 
         }else{
             PRINTS("Convert device id failed\r\n");
@@ -831,6 +838,10 @@ bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
         return false;
     }
 
+    PRINTS("Proto len: ");
+    PRINT_HEX(&proto_len, sizeof(proto_len));
+    PRINTS("\r\n");
+
 
     MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
     if(!proto_page){
@@ -840,14 +851,7 @@ bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
 
 
     morpheus_ble_encode_protobuf(command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
-    if(message_ble_route_data_to_cc3200(proto_page) == FAIL)
-    {
-        MSG_Base_ReleaseDataAtomic(proto_page);
-        PRINTS(MSG_NO_MEMORY);
-        return false;
-    }
-
-
+    self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, proto_page);
     MSG_Base_ReleaseDataAtomic(proto_page);
 
     return true;
@@ -940,11 +944,11 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
                 MSG_Data_t* device_id_page = command->deviceId.arg;
                 if(!device_id_page){
                     PRINTS("No device id found for DFU.\r\n");
-                    return;
+                }else{
+                    uint64_t pill_id = 0;
+                    hble_hex_to_uint64_device_id(device_id_page->buf, &pill_id);
+                    _start_pill_dfu_process(pill_id);
                 }
-                uint64_t pill_id = 0;
-                hble_hex_to_uint64_device_id(device_id_page->buf, &pill_id);
-                _start_pill_dfu_process(pill_id);
             }
             break;
         default:
@@ -952,6 +956,11 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
     }
 
     MSG_Base_ReleaseDataAtomic(data_page);
+
+    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
+    PRINTS("Big pool free: ");
+    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
+    PRINTS("\r\n");
 
 }
 
