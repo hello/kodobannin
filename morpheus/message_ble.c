@@ -874,6 +874,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OPERATION_SUCCESS:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SCAN_WIFI:
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_NEXT_WIFI_AP:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PUSH_DATA_AFTER_SET_TIMEZONE:
         {
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
