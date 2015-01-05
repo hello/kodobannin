@@ -8,6 +8,7 @@
 
 #include "led.h"
 #include "pwm.h"
+#include "battery.h"
 
 
 #ifdef PLATFORM_HAS_VLED
@@ -29,6 +30,7 @@ static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
 
 static uint8_t _led_index; // 0 off, 1 on, 2 warm, 3 play
 static adc_t _led_bat_ref[4]; // Vbat (pre/during/post load)
+static adc_t _led_bat_rel[4]; // Vbat (pre/during/post load)
 static adc_t _led_bat_off[4]; // Vbat (pre/during/post load)
 static adc_t _led_boost[4]; // Vrgb (offset, passive, active)
 static adc_t _led_sense[4]; // Vlad (zero, passive, active)
@@ -145,7 +147,7 @@ static adc_measure_callback_t led_adc_callback(adc_t adc_result, uint16_t adc_co
             next_adc_input = LDO_VBAT_ADC_INPUT;
             break;;
         case 3: // Vbat (zero) (passive) (current) (discharge)
-            _led_bat_rof[_led_index] = adc_result; // battery internal resistance
+            _led_bat_rel[_led_index] = adc_result; // battery internal resistance
     }
 
     _led_index += 1; // inc

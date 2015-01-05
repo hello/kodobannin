@@ -125,7 +125,7 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
     return _battery_level_percent;
 }
 
-uint8_t battery_set_offset_cached(adc_t adc_result) // need to average offset
+uint16_t battery_set_offset_cached(adc_t adc_result) // need to average offset
 {
  // if (_adc_config_psel == LDO_VBAT_ADC_INPUT) { // battery being measured
      // _adc_config_offset = adc_result;
@@ -191,7 +191,7 @@ void ADC_IRQHandler(void)
     if (next_measure_input == 0) battery_module_power_off();
 }
 
-uint32_t battery_get_voltage_cached(){
+uint16_t battery_get_voltage_cached(){
 #ifdef PLATFORM_HAS_VERSION
     return _battery_level_voltage;
 #else
@@ -242,8 +242,8 @@ void battery_module_power_on()
  // } else {
         _adc_config_psel = LDO_VBAT_ADC_INPUT;
 
-        _battery_initial_voltage = 0; // indicate start of measurement sequence
-        _battery_difference_voltage = 0; // indicate no droop during measurement
+     // _battery_initial_voltage = 0; // indicate start of measurement sequence
+     // _battery_difference_voltage = 0; // indicate no droop during measurement
 
         nrf_gpio_pin_clear(VBAT_VER_EN); // assert to active Vbat resistor divider
  // }

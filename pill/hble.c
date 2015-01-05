@@ -197,29 +197,30 @@ static void _advertising_data_init(uint8_t flags){
 static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
     uint32_t value, result;
-
+ // Battery Voltage  FFFF -3F90 ~~2.401+PE V, 55 %/
     switch (adc_count) { // for each adc reading
             case 1: battery_set_voltage_cached(adc_result);
-                    PRINTS(" ");
-                    value = result/256;
+                    PRINTS(" 0x");
+                    value = adc_result/256;
                     PRINT_BYTE(&value, 1);
                     PRINT_HEX(&result, 1);
                     return LDO_VRGB_ADC_INPUT; break; // for adc offset
             case 2: battery_set_offset_cached(adc_result);
-                    PRINTS("-");
-                    value = result/256;
+                    PRINTS("- 0x");
+                    value = adc_result/256;
                     PRINT_BYTE(&value, 1);
                     PRINT_HEX(&result, 1);
                 //  hble_update_battery_status(); //
                     return LDO_VBAT_ADC_INPUT; break; // spread print overhead
             case 3: result = battery_get_voltage_cached();
+                    PRINTS(" +");
                     value = result/1000;
                     PRINT_DEC(&value,1);
                     PRINTS(".");
                     PRINT_DEC(&result,3);
-                    return LDO_VRGB_ADC_INPUT; break; // spread print overhead
-            case 4: result = battery_get_percent_cached();
                     PRINTS(" V, ");
+                 // return LDO_VRGB_ADC_INPUT; break; // spread print overhead
+                    result = battery_get_percent_cached();
                     PRINT_DEC(&value,2);
                     PRINTS(" %\r\n");
                     break; // fall thru to end adc reading sequence
