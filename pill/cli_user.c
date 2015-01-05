@@ -41,6 +41,12 @@ _handle_command(int argc, char * argv[]){
     if(_strncmp(argv[0], "led", strlen("led")) == 0){
         test_led();
     }
+    if(_strncmp(argv[0], "bat", strlen("bat")) == 0){
+        test_bat();
+    }
+    if(_strncmp(argv[0], "rgb", strlen("rgb")) == 0){
+        test_rgb();
+    }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
         //Create a message object from uart string
