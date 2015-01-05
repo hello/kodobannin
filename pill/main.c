@@ -51,7 +51,7 @@ static void _init_rf_modules()
 	while(debounce > 0){
 		debounce--;
 	}
-    pill_ble_load_modules();  // MUST load brefore everything else is initialized.
+    pill_ble_load_modules();  // MUST load before everything else is initialized.
 
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
@@ -89,11 +89,11 @@ static void _init_rf_modules()
     hble_advertising_init(service_uuid);
 
     PRINTS("ble_init() done.\r\n");
-    hble_update_battery_level();
+ // hble_update_battery_level();
     hble_advertising_start();
 #else
-	battery_module_power_on();
-	battery_measurement_begin(NULL);
+ // battery_module_power_on();
+ // battery_measurement_begin(NULL);
 #endif
     PRINTS("INIT DONE.\r\n");
 }
@@ -108,16 +108,11 @@ static void _load_watchdog()
 void _start()
 {
     
-    battery_module_power_off();
+    led_init();
+    battery_init();
 
-	//HACK TO DISABLE PINS ON LED
-#ifdef PLATFORM_HAS_VLED
-	gpio_cfg_d0s1_output_disconnect_pull(LED3_ENABLE,NRF_GPIO_PIN_PULLDOWN);
-	gpio_cfg_d0s1_output_disconnect_pull(LED2_ENABLE,NRF_GPIO_PIN_PULLDOWN);
-	gpio_cfg_d0s1_output_disconnect_pull(LED1_ENABLE,NRF_GPIO_PIN_PULLDOWN);
-	gpio_cfg_d0s1_output_disconnect_pull(VRGB_ENABLE,NRF_GPIO_PIN_PULLDOWN);
-#endif
-	//END HACK
+    battery_module_power_on(); // prepare for the first battery level measurement
+
     {
         enum {
             SCHED_QUEUE_SIZE = 32,
@@ -144,6 +139,8 @@ void _start()
 
     _init_rf_modules();
     _load_watchdog();
+
+    hble_update_battery_level(); // make first battery level measurement
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

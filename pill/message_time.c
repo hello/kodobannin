@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <nrf_soc.h>
 #include "app_timer.h"
+#include "message_led.h"
 #include "message_time.h"
 #include "util.h"
 #include "platform.h"
@@ -123,8 +124,9 @@ static void _timer_handler(void * ctx){
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
     {
         _send_heartbeat_data_ant();
-        battery_module_power_on();
+        battery_module_power_on(); // settling time ?
         battery_measurement_begin(NULL);
+     // test_bat(); // measure battery voltage and internal resistance
     }
 #endif
     

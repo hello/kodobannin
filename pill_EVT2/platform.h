@@ -107,12 +107,17 @@ enum {
     LED1_SENSE   =  5,
 
     LED3_ENABLE  = 30,
-    LED2_ENABLE  = 28, // magentic reed switch
+    LED2_ENABLE  = 28, // magnetic reed switch
     LED1_ENABLE  =  7,
 };
-#define LED_BLUE_CHANNEL LED1_ENABLE
-#define LED_RED_CHANNEL LED3_ENABLE
-#define LED_GREEN_CHANNEL LED2_ENABLE
+
+#define LED_RED_SENSE      LED3_SENSE
+#define LED_GREEN_SENSE    LED2_SENSE
+#define LED_BLUE_SENSE     LED1_SENSE
+
+#define LED_RED_CHANNEL    LED3_ENABLE
+#define LED_GREEN_CHANNEL  LED2_ENABLE
+#define LED_BLUE_CHANNEL   LED1_ENABLE
 
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17

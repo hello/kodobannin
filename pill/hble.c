@@ -194,19 +194,36 @@ static void _advertising_data_init(uint8_t flags){
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
 
-
-static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
+static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
+    uint32_t value, result;
 
-    PRINTS("Battery level measured,  Voltage:");
-    PRINT_HEX(&batt_level_milli_volts, sizeof(batt_level_milli_volts));
-    PRINTS(", Percentage: ");
-    PRINT_HEX(&percentage_battery_level, sizeof(percentage_battery_level));
-    PRINTS(", ADC: ");
-    PRINT_HEX(&adc_result, sizeof(adc_result));
-    PRINTS("\r\n");
-
-    battery_module_power_off();
+    switch (adc_count) { // for each adc reading
+            case 1: battery_set_voltage_cached(adc_result);
+                    PRINTS(" ");
+                    value = result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&result, 1);
+                    return LDO_VRGB_ADC_INPUT; break; // for adc offset
+            case 2: battery_set_offset_cached(adc_result);
+                    PRINTS("-");
+                    value = result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&result, 1);
+                //  hble_update_battery_status(); //
+                    return LDO_VBAT_ADC_INPUT; break; // spread print overhead
+            case 3: result = battery_get_voltage_cached();
+                    value = result/1000;
+                    PRINT_DEC(&value,1);
+                    PRINTS(".");
+                    PRINT_DEC(&result,3);
+                    return LDO_VRGB_ADC_INPUT; break; // spread print overhead
+            case 4: result = battery_get_percent_cached();
+                    PRINTS(" V, ");
+                    PRINT_DEC(&value,2);
+                    PRINTS(" %\r\n");
+                    break; // fall thru to end adc reading sequence
+    }
 
     uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, adc_result);
     if ((err_code != NRF_SUCCESS) &&
@@ -217,9 +234,24 @@ static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_mil
         APP_ERROR_HANDLER(err_code);
     }
 
-    
+    return 0; // indicate no more adc conversions required
 }
 
+void hble_update_battery_status()
+{
+    uint32_t value, result;
+
+    PRINTS("Battery : ");
+    result = battery_get_voltage_cached();
+    value = result/1000;
+    PRINT_DEC(&value,1);
+    PRINTS(".");
+    PRINT_DEC(&result,3);
+    PRINTS(" V, ");
+    value = battery_get_percent_cached();
+    PRINT_DEC(&value,2);
+    PRINTS(" %\r\n");
+}
 
 void hble_advertising_init(ble_uuid_t service_uuid)
 {
@@ -304,7 +336,9 @@ void hble_stack_init()
 void hble_update_battery_level()
 {
 #ifdef PLATFORM_HAS_VERSION
-    battery_measurement_begin(_on_battery_level_measured);
+ // battery_module_power_on(); // must be done ahead of time to allow the
+    PRINTS("Battery Voltage "); // resistor divider (512K||215K) to settle
+    battery_measurement_begin(_on_battery_level_measured); // start adc reading
 #endif
 }
 

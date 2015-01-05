@@ -61,6 +61,53 @@ _play_boot_complete(int * out_r, int * out_g, int * out_b){
     }
     return 0;
 }
+static int
+_play_battery_test(int * out_r, int * out_g, int * out_b){
+    static const animation_node_t seq[] = {
+        {0   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
+    };
+    int i;
+    animation_node_t * current;
+    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
+        if(self.counter >= seq[i].time){
+            *out_r = seq[i].rgb[0];
+            *out_g = seq[i].rgb[1];
+            *out_b = seq[i].rgb[2];
+            current = &seq[i];
+        }
+    }
+    self.counter++;
+    if(current){
+        return current->valid;
+    }
+    return 0;
+}
+static int
+_play_led_rgb_test(int * out_r, int * out_g, int * out_b){
+    static const animation_node_t seq[] = {
+        {0   * BOOSTER_REFRESH_RATE, {0x28, 0xff, 0xff}, 1},
+        {0.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
+        {1   * BOOSTER_REFRESH_RATE, {0xff, 0x18, 0xff}, 1},
+        {1.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
+        {2   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0x08}, 1},
+        {2.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
+    };
+    int i;
+    animation_node_t * current;
+    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
+        if(self.counter >= seq[i].time){
+            *out_r = seq[i].rgb[0];
+            *out_g = seq[i].rgb[1];
+            *out_b = seq[i].rgb[2];
+            current = &seq[i];
+        }
+    }
+    self.counter++;
+    if(current){
+        return current->valid;
+    }
+    return 0;
+}
 static int _on_cycle(int * out_r, int * out_g, int * out_b){
     static int led;
     /*
@@ -71,6 +118,10 @@ static int _on_cycle(int * out_r, int * out_g, int * out_b){
             return 0;
         case LED_PLAY_BOOT_COMPLETE:
             return _play_boot_complete(out_r, out_g, out_b);
+        case LED_PLAY_BATTERY_TEST:
+            return _play_battery_test(out_r, out_g, out_b);
+        case LED_PLAY_LED_RGB_TEST:
+            return _play_led_rgb_test(out_r, out_g, out_b);
     }
 }
 
@@ -102,6 +153,12 @@ _play_animation(enum MSG_LEDAddress type){
 void test_led(){
     _play_animation(LED_PLAY_BOOT_COMPLETE);
 }
+void test_bat(){
+    _play_animation(LED_PLAY_BATTERY_TEST);
+}
+void test_rgb(){
+    _play_animation(LED_PLAY_LED_RGB_TEST);
+}
 static MSG_Status
 _destroy(void){
     return SUCCESS;
@@ -116,6 +173,12 @@ _handle_led_commands(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
         default:
             break;
         case LED_PLAY_BOOT_COMPLETE:
+            _play_animation(dst.submodule);
+            break;
+        case LED_PLAY_BATTERY_TEST:
+            _play_animation(dst.submodule);
+            break;
+        case LED_PLAY_LED_RGB_TEST:
             _play_animation(dst.submodule);
             break;
     }
