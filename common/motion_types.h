@@ -3,10 +3,11 @@
 
 #include <stdint.h>
 
+
 typedef struct {
-    uint32_t maxaccnorm;
+    uint32_t maxaccnormsq;
     uint16_t max_acc_range; 
     uint16_t num_times_woken_in_minute;
-} MotionPayload_t; 
+} __attribute__((packed))  MotionPayload_t; 
 
 #endif

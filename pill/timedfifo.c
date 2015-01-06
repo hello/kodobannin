@@ -1,3 +1,4 @@
+#include <string.h>
 #include "platform.h"
 #include "app.h"
 
@@ -74,11 +75,50 @@ uint16_t _decrease_index(uint16_t * idx){
 }
 
 bool TF_DumpPayload(MotionPayload_t * payload) {
-    payload->num_wakes = self.
-afsdfsdfwdfd left off here
+    int16_t * max = self.data.aux_data.max_accel;
+    int16_t * min = self.data.aux_data.min_accel;
+    uint16_t i;
+    uint16_t maxrange = 0;
+    uint16_t range;
+    uint16_t idx = self.current_idx;
+
+    //when will this ever happen?
+    if (!payload) {
+        return false;
+    }
+
+    //never woke up
+    if (self.data.aux_data.num_wakes == 0) {
+        return false;
+    }
+
+    payload->num_times_woken_in_minute = self.data.aux_data.num_wakes;
+
+    //compute max range
+    for (i = 0; i < 3; i++) {
+        range = (uint16_t) (max[i] - min[i]);
+        if (range > maxrange) {
+            maxrange = range;
+        }
+    } 
+
+    payload->max_acc_range = maxrange;
+
+    //get normal payload
+    idx = _decrease_index(&idx);
+    payload->maxaccnormsq =  self.data.data[idx]; 
+
+    //reset aux data struct
+    for (i = 0; i < 3; i++) {
+        min[i] = INT16_MAX;
+        max[i] = INT16_MIN;
+    }
+    self.data.aux_data.num_wakes = 0;
+
+    return true;
 }
 
-
+// for posterity -- this used to be used instead of dump payload
 bool TF_GetCondensed(uint32_t* buf, uint8_t length){
     bool has_data = false;
 

@@ -52,5 +52,6 @@ void TF_SetCurrent(tf_unit_t val);
 void TF_IncrementWakeCounts(void);
 auxillary_data_t * TF_GetAuxData(void);
 tf_data_t * TF_GetAll(void);
+bool TF_DumpPayload(MotionPayload_t * payload);
 bool TF_GetCondensed(uint32_t* buf, uint8_t length);
 uint8_t get_tick();

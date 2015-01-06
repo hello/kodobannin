@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <nrf_soc.h>
+#include <string.h>
 #include "app_timer.h"
 #include "message_time.h"
 #include "util.h"
@@ -51,7 +52,7 @@ static void _send_available_data_ant(){
     //if allocation worked
     if(data_page) {
         //ant data comes from the data page (allocated above, and freed at the end of this function)
-        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        MSG_ANT_PillData_t* ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
 
         //motion_data is a pointer to the blob of data that antdata->payload points to
         //the goal is to fill out the motion_data pointer
@@ -66,22 +67,23 @@ static void _send_available_data_ant(){
         ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t);
 
         //fill out the motion data payload
-        uint8_t TF_DumpPayload(MotionPayload_t * payload);
-        if(TF_GetPayload(&motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
+        if(TF_DumpPayload(&motion_data->payload))
         {
             uint8_t pool_size = 0;
 
-            //magic is magically pre-defined
-            motion_data->magic = MOTION_DATA_MAGIC;
+            //magic is pre-defined, assign it.
+            motion_data->magic_bytes = MOTION_DATA_MAGIC;
 
-            //do the nonce stuff (crypto-magic)  
+            //do the nonce stuff (encrypting it all)  
             if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
                 uint8_t nonce[8] = {0};
+
+                //this payload struct is packed (packed attributed in GCC)
                 uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
 
                 sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
 
-                aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic), get_aes128_key(), nonce);
+                aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
                 
                 memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
 
