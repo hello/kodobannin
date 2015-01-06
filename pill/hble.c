@@ -226,6 +226,8 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
                     break; // fall thru to end adc reading sequence
     }
 
+    battery_module_power_off(); // disable Vbat resistor (512K||215K) divider
+
     uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, adc_result);
     if ((err_code != NRF_SUCCESS) &&
         (err_code != NRF_ERROR_INVALID_STATE) &&
