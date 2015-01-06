@@ -13,6 +13,7 @@ static struct{
 static uint16_t _decrease_index(uint16_t * idx);
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
+    uint16_t i;
     memset(&self.data, 0, sizeof(self.data));
     self.data.length = sizeof(self.data);
     self.data.prev_idx = 0xFFFF;
@@ -20,7 +21,15 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
     self.current_idx = 0;
     self.tick = 0;
     self.data.mtime = init_time->monotonic_time;
+
+    for (i = 0; i < 3; i++) {
+        self.data.aux_data.min_accel[i] = INT16_MAX;
+        self.data.aux_data.max_accel[i] = INT16_MIN;
+    }
+    self.data.aux_data.num_wakes = 0;
+
 }
+
 
 
 void TF_TickOneSecond(uint64_t monotonic_time){
@@ -44,6 +53,14 @@ inline void TF_SetCurrent(tf_unit_t val){
     self.data.data[self.current_idx] = val;
 }
 
+inline void TF_IncrementWakeCounts(void) {
+   self.data.aux_data.num_wakes++;
+}
+
+inline auxillary_data_t * TF_GetAuxData(void) {
+    return &self.data.aux_data;
+}
+
 inline tf_data_t * TF_GetAll(void){
     return &self.data;
 }
@@ -55,6 +72,12 @@ uint16_t _decrease_index(uint16_t * idx){
         return (*idx - 1);
     }
 }
+
+bool TF_DumpPayload(MotionPayload_t * payload) {
+    payload->num_wakes = self.
+afsdfsdfwdfd left off here
+}
+
 
 bool TF_GetCondensed(uint32_t* buf, uint8_t length){
     bool has_data = false;

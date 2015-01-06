@@ -1,0 +1,384 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+ALL_OK	boot_test.c	/^#define ALL_OK /;"	d	file:
+ANT_PROTOCOL_VER	app.h	/^#define ANT_PROTOCOL_VER /;"	d
+ANT_UserInit	ant_user.c	/^MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){$/;"	f
+APP_ADV_INTERVAL	app.h	/^#define APP_ADV_INTERVAL /;"	d
+APP_ADV_TIMEOUT_IN_SECONDS	app.h	/^#define APP_ADV_TIMEOUT_IN_SECONDS /;"	d
+APP_DATA_END_ADDRESS	pstorage_platform.h	/^#define APP_DATA_END_ADDRESS /;"	d
+APP_DATA_START_ADDRESS	pstorage_platform.h	/^#define APP_DATA_START_ADDRESS /;"	d
+APP_TIMER_MAX_TIMERS	app.h	/^    APP_TIMER_MAX_TIMERS = 8,$/;"	e	enum:__anon2
+APP_TIMER_OP_QUEUE_SIZE	app.h	/^    APP_TIMER_OP_QUEUE_SIZE = 8,$/;"	e	enum:__anon2
+APP_TIMER_PRESCALER	app.h	/^    APP_TIMER_PRESCALER = 0,$/;"	e	enum:__anon2
+BATTERY_LEVEL_MEAS_INTERVAL	app.h	/^#define BATTERY_LEVEL_MEAS_INTERVAL /;"	d
+BLE_BONDMNGR_CCCD_COUNT	ble_bondmngr_cfg.h	/^#define BLE_BONDMNGR_CCCD_COUNT /;"	d
+BLE_BONDMNGR_CFG_H__	ble_bondmngr_cfg.h	/^#define BLE_BONDMNGR_CFG_H__$/;"	d
+BLE_BONDMNGR_MAX_BONDED_CENTRALS	ble_bondmngr_cfg.h	/^#define BLE_BONDMNGR_MAX_BONDED_CENTRALS /;"	d
+BLE_DEVICE_NAME	app.h	/^#define BLE_DEVICE_NAME /;"	d
+BLE_MANUFACTURER_ID	app.h	/^#define BLE_MANUFACTURER_ID /;"	d
+BLE_MANUFACTURER_NAME	app.h	/^#define BLE_MANUFACTURER_NAME /;"	d
+BLE_MODEL_NUM	app.h	/^#define BLE_MODEL_NUM /;"	d
+BLE_ORG_UNIQUE_ID	app.h	/^#define BLE_ORG_UNIQUE_ID /;"	d
+BLE_UUID_HELLO_BASE	pill_gatt.h	/^#define BLE_UUID_HELLO_BASE /;"	d
+BLE_UUID_PILL_SVC	pill_ble.h	/^    BLE_UUID_PILL_SVC = 0xE110,$/;"	e	enum:__anon19
+BOOSTER_REFRESH_RATE	led_booster_timer.h	/^#define BOOSTER_REFRESH_RATE /;"	d
+CONN_SUP_TIMEOUT	app.h	/^#define CONN_SUP_TIMEOUT /;"	d
+Cli_User_Init	cli_user.c	/^MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){$/;"	f
+DEFAULT_ANT_BOND_COUNT	message_config.h	/^#define DEFAULT_ANT_BOND_COUNT /;"	d
+DEVICE_KEY_ADDRESS	app.h	/^#define DEVICE_KEY_ADDRESS /;"	d
+FIRMWARE_VERSION_8BIT	app.h	/^#define FIRMWARE_VERSION_8BIT /;"	d
+FIRST_CONN_PARAMS_UPDATE_DELAY	app.h	/^#define FIRST_CONN_PARAMS_UPDATE_DELAY /;"	d
+HEARTBEAT_INTERVAL_SEC	app.h	/^#define HEARTBEAT_INTERVAL_SEC /;"	d
+IMU_ACTIVE_FREQ	app.h	/^#define IMU_ACTIVE_FREQ /;"	d
+IMU_ACTIVE_INTERVAL	app.h	/^#define IMU_ACTIVE_INTERVAL /;"	d
+IMU_ACTIVE_WOM	app.h	/^#define IMU_ACTIVE_WOM /;"	d
+IMU_COLLECTION_INTERVAL	message_imu.c	/^    IMU_COLLECTION_INTERVAL = 6553, \/\/ in timer ticks, so 200ms (0.2*32768)$/;"	e	enum:__anon8	file:
+IMU_CONSTANT_FREQ	app.h	/^#define IMU_CONSTANT_FREQ /;"	d
+IMU_DYNAMIC_SAMPLING	app.h	/^#define IMU_DYNAMIC_SAMPLING$/;"	d
+IMU_INACTIVE_FREQ	app.h	/^#define IMU_INACTIVE_FREQ /;"	d
+IMU_INACTIVE_WOM	app.h	/^#define IMU_INACTIVE_WOM /;"	d
+IMU_PING	message_imu.h	/^        IMU_PING=0,$/;"	e	enum:__anon9::__anon10
+IMU_READ_XYZ	message_imu.h	/^		IMU_READ_XYZ$/;"	e	enum:__anon9::__anon10
+LED_BOOSTER_EVENT_BLUE	led_booster_timer.c	/^    LED_BOOSTER_EVENT_BLUE,$/;"	e	enum:__anon5	file:
+LED_BOOSTER_EVENT_GREEN	led_booster_timer.c	/^    LED_BOOSTER_EVENT_GREEN,$/;"	e	enum:__anon5	file:
+LED_BOOSTER_EVENT_RED	led_booster_timer.c	/^    LED_BOOSTER_EVENT_RED$/;"	e	enum:__anon5	file:
+LED_BOOSTER_EVENT_START	led_booster_timer.c	/^    LED_BOOSTER_EVENT_START = 0,$/;"	e	enum:__anon5	file:
+LED_BOOSTER_STATE_COLD	led_booster_timer.c	/^    LED_BOOSTER_STATE_COLD = 0,$/;"	e	enum:__anon4	file:
+LED_BOOSTER_STATE_HOT	led_booster_timer.c	/^    LED_BOOSTER_STATE_HOT$/;"	e	enum:__anon4	file:
+LED_BOOSTER_STATE_WARM	led_booster_timer.c	/^    LED_BOOSTER_STATE_WARM,$/;"	e	enum:__anon4	file:
+LED_INIT_LIGHTUP_INTERAVL	app.h	/^#define LED_INIT_LIGHTUP_INTERAVL /;"	d
+LED_PLAY_BOOT_COMPLETE	message_led.h	/^    LED_PLAY_BOOT_COMPLETE = 1,$/;"	e	enum:MSG_LEDAddress
+MAX_CHARACTERISTICS	pill_gatt.c	/^#define MAX_CHARACTERISTICS /;"	d	file:
+MAX_CONN_INTERVAL	app.h	/^#define MAX_CONN_INTERVAL /;"	d
+MAX_CONN_PARAMS_UPDATE_COUNT	app.h	/^#define MAX_CONN_PARAMS_UPDATE_COUNT /;"	d
+MIN_CONN_INTERVAL	app.h	/^#define MIN_CONN_INTERVAL /;"	d
+MOTION_DATA_INTERVAL_SEC	app.h	/^#define MOTION_DATA_INTERVAL_SEC /;"	d
+MOTION_DATA_MAGIC	message_time.c	/^#define MOTION_DATA_MAGIC /;"	d	file:
+MSG_BASE_DATA_BUFFER_SIZE	message_config.h	/^#define MSG_BASE_DATA_BUFFER_SIZE /;"	d
+MSG_BASE_DATA_BUFFER_SIZE_BIG	message_config.h	/^#define MSG_BASE_DATA_BUFFER_SIZE_BIG /;"	d
+MSG_BASE_SHARED_POOL_SIZE	message_config.h	/^#define MSG_BASE_SHARED_POOL_SIZE /;"	d
+MSG_BASE_SHARED_POOL_SIZE_BIG	message_config.h	/^#define MSG_BASE_SHARED_POOL_SIZE_BIG /;"	d
+MSG_CENTRAL_MODULE_NUM	message_config.h	/^#define MSG_CENTRAL_MODULE_NUM /;"	d
+MSG_IMUCommand_t	message_imu.h	/^}MSG_IMUCommand_t;$/;"	t	typeref:struct:__anon9
+MSG_IMU_Init	message_imu.c	/^MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)$/;"	f
+MSG_LEDAddress	message_led.h	/^enum MSG_LEDAddress{$/;"	g
+MSG_LEDInit	message_led.c	/^MSG_Base_t * MSG_LEDInit(MSG_Central_t * parent){$/;"	f
+MSG_TimeCB_t	message_time.h	/^}MSG_TimeCB_t;$/;"	t	typeref:struct:__anon15
+MSG_TimeCommand_t	message_time.h	/^}MSG_TimeCommand_t;$/;"	t	typeref:struct:__anon16
+MSG_Time_GetMonotonicTime	message_time.c	/^MSG_Status MSG_Time_GetMonotonicTime(uint64_t * out_time){$/;"	f
+MSG_Time_GetTime	message_time.c	/^MSG_Status MSG_Time_GetTime(struct hlo_ble_time * out_time){$/;"	f
+MSG_Time_Init	message_time.c	/^MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){$/;"	f
+NEXT_CONN_PARAMS_UPDATE_DELAY	app.h	/^#define NEXT_CONN_PARAMS_UPDATE_DELAY /;"	d
+NUM_ANT_CHANNELS	message_config.h	/^#define NUM_ANT_CHANNELS /;"	d
+PILL_COMMAND_CALIBRATE	pill_ble.h	/^    PILL_COMMAND_CALIBRATE,$/;"	e	enum:pill_command_type
+PILL_COMMAND_DISCONNECT	pill_ble.h	/^    PILL_COMMAND_DISCONNECT,$/;"	e	enum:pill_command_type
+PILL_COMMAND_GET_BATTERY_LEVEL	pill_ble.h	/^    PILL_COMMAND_GET_BATTERY_LEVEL,$/;"	e	enum:pill_command_type
+PILL_COMMAND_GET_TIME	pill_ble.h	/^    PILL_COMMAND_GET_TIME,$/;"	e	enum:pill_command_type
+PILL_COMMAND_SEND_DATA	pill_ble.h	/^    PILL_COMMAND_SEND_DATA,$/;"	e	enum:pill_command_type
+PILL_COMMAND_SET_TIME	pill_ble.h	/^    PILL_COMMAND_SET_TIME,$/;"	e	enum:pill_command_type
+PILL_COMMAND_START_ACCELEROMETER	pill_ble.h	/^    PILL_COMMAND_START_ACCELEROMETER,$/;"	e	enum:pill_command_type
+PILL_COMMAND_STOP_ACCELEROMETER	pill_ble.h	/^    PILL_COMMAND_STOP_ACCELEROMETER = 0,$/;"	e	enum:pill_command_type
+PILL_COMMAND_WIPE_FIRMWARE	pill_ble.h	/^    PILL_COMMAND_WIPE_FIRMWARE,$/;"	e	enum:pill_command_type
+PILL_DATA_RESPONSE_ACK	pill_ble.h	/^    PILL_DATA_RESPONSE_ACK,$/;"	e	enum:pill_data_response_type
+PILL_DATA_RESPONSE_MISSING	pill_ble.h	/^    PILL_DATA_RESPONSE_MISSING,$/;"	e	enum:pill_data_response_type
+PILL_STREAM_COMMAND_START	pill_ble.h	/^    PILL_STREAM_COMMAND_START,$/;"	e	enum:pill_stream_command_type
+PILL_STREAM_COMMAND_STOP	pill_ble.h	/^    PILL_STREAM_COMMAND_STOP,$/;"	e	enum:pill_stream_command_type
+PSTORAGE_CMD_QUEUE_SIZE	pstorage_platform.h	/^#define PSTORAGE_CMD_QUEUE_SIZE /;"	d
+PSTORAGE_DATA_END_ADDR	pstorage_platform.h	/^#define PSTORAGE_DATA_END_ADDR /;"	d
+PSTORAGE_DATA_START_ADDR	pstorage_platform.h	/^#define PSTORAGE_DATA_START_ADDR /;"	d
+PSTORAGE_FLASH_EMPTY_MASK	pstorage_platform.h	/^#define PSTORAGE_FLASH_EMPTY_MASK /;"	d
+PSTORAGE_FLASH_PAGE_END	pstorage_platform.h	/^#define PSTORAGE_FLASH_PAGE_END	/;"	d
+PSTORAGE_FLASH_PAGE_SIZE	pstorage_platform.h	/^#define PSTORAGE_FLASH_PAGE_SIZE /;"	d
+PSTORAGE_MAX_APPLICATIONS	pstorage_platform.h	/^#define PSTORAGE_MAX_APPLICATIONS /;"	d
+PSTORAGE_MAX_BLOCK_SIZE	pstorage_platform.h	/^#define PSTORAGE_MAX_BLOCK_SIZE /;"	d
+PSTORAGE_MIN_BLOCK_SIZE	pstorage_platform.h	/^#define PSTORAGE_MIN_BLOCK_SIZE /;"	d
+PSTORAGE_PL_H__	pstorage_platform.h	/^#define PSTORAGE_PL_H__$/;"	d
+PSTORAGE_RAW_END_ADDR	pstorage_platform.h	/^#define PSTORAGE_RAW_END_ADDR /;"	d
+PSTORAGE_RAW_MODE_ENABLE	pstorage_platform.h	/^#define PSTORAGE_RAW_MODE_ENABLE$/;"	d
+PSTORAGE_RAW_START_ADDR	pstorage_platform.h	/^    #define PSTORAGE_RAW_START_ADDR /;"	d
+PSTORAGE_SWAP_ADDR	pstorage_platform.h	/^#define PSTORAGE_SWAP_ADDR /;"	d
+SECOND_10_MS_UNITS	app.h	/^#define SECOND_10_MS_UNITS /;"	d
+SECOND_1_25_MS_UNITS	app.h	/^#define SECOND_1_25_MS_UNITS /;"	d
+SEC_PARAM_BOND	app.h	/^#define SEC_PARAM_BOND /;"	d
+SEC_PARAM_IO_CAPABILITIES	app.h	/^#define SEC_PARAM_IO_CAPABILITIES /;"	d
+SEC_PARAM_MAX_KEY_SIZE	app.h	/^#define SEC_PARAM_MAX_KEY_SIZE /;"	d
+SEC_PARAM_MIN_KEY_SIZE	app.h	/^#define SEC_PARAM_MIN_KEY_SIZE /;"	d
+SEC_PARAM_MITM	app.h	/^#define SEC_PARAM_MITM /;"	d
+SEC_PARAM_OOB	app.h	/^#define SEC_PARAM_OOB /;"	d
+SEC_PARAM_TIMEOUT	app.h	/^#define SEC_PARAM_TIMEOUT /;"	d
+SHAKING_DATA_COUNT_THRESHOLD	shake_detect.c	/^#define SHAKING_DATA_COUNT_THRESHOLD /;"	d	file:
+SLAVE_LATENCY	app.h	/^#define SLAVE_LATENCY /;"	d
+SLIDING_WINDOW_SIZE_SEC	shake_detect.c	/^#define SLIDING_WINDOW_SIZE_SEC /;"	d	file:
+ShakeDetect	shake_detect.c	/^bool ShakeDetect(uint32_t accelmag){$/;"	f
+ShakeDetectDecWindow	shake_detect.c	/^void ShakeDetectDecWindow(void){$/;"	f
+ShakeDetectReset	shake_detect.c	/^void ShakeDetectReset(uint32_t threshold){$/;"	f
+TF_BUFFER_SIZE	timedfifo.h	/^#define TF_BUFFER_SIZE /;"	d
+TF_GetAll	timedfifo.c	/^inline tf_data_t * TF_GetAll(void){$/;"	f
+TF_GetCondensed	timedfifo.c	/^bool TF_GetCondensed(uint32_t* buf, uint8_t length){$/;"	f
+TF_GetCurrent	timedfifo.c	/^inline tf_unit_t TF_GetCurrent(void){$/;"	f
+TF_Initialize	timedfifo.c	/^void TF_Initialize(const struct hlo_ble_time * init_time){$/;"	f
+TF_SetCurrent	timedfifo.c	/^inline void TF_SetCurrent(tf_unit_t val){$/;"	f
+TF_TickOneSecond	timedfifo.c	/^void TF_TickOneSecond(uint64_t monotonic_time){$/;"	f
+TF_UNIT_TIME_MS	timedfifo.h	/^#define TF_UNIT_TIME_MS /;"	d
+TF_UNIT_TIME_S	timedfifo.h	/^#define TF_UNIT_TIME_S /;"	d
+TIME_PING	message_time.h	/^        TIME_PING=0,$/;"	e	enum:__anon16::__anon17
+TIME_SET_1S_RESOLUTION	message_time.h	/^        TIME_SET_1S_RESOLUTION,$/;"	e	enum:__anon16::__anon17
+TIME_SET_5S_RESOLUTION	message_time.h	/^        TIME_SET_5S_RESOLUTION,$/;"	e	enum:__anon16::__anon17
+TIME_SET_WAKEUP_CB	message_time.h	/^        TIME_SET_WAKEUP_CB$/;"	e	enum:__anon16::__anon17
+TIME_STOP_PERIODIC	message_time.h	/^        TIME_STOP_PERIODIC,$/;"	e	enum:__anon16::__anon17
+TIME_SYNC	message_time.h	/^        TIME_SYNC,$/;"	e	enum:__anon16::__anon17
+TWENTY_MS_1_25_MS_UNITS	app.h	/^#define TWENTY_MS_1_25_MS_UNITS /;"	d
+TX_POWER_LEVEL	app.h	/^#define TX_POWER_LEVEL	/;"	d
+USE_HLO_ANT_NETWORK	app.h	/^#define USE_HLO_ANT_NETWORK$/;"	d
+_advertising_data_init	hble.c	/^static void _advertising_data_init(uint8_t flags){$/;"	f	file:
+_aggregate_motion_data	message_imu.c	/^static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)$/;"	f	file:
+_ble_bas	hble.c	/^static ble_bas_t  _ble_bas;$/;"	v	file:
+_ble_evt_dispatch	hble.c	/^static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)$/;"	f	file:
+_bond_evt_handler	hble.c	/^static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)$/;"	f	file:
+_bond_manager_error_handler	hble.c	/^static void _bond_manager_error_handler(uint32_t nrf_error)$/;"	f	file:
+_calculate_total	pill_gatt.c	/^static inline uint8_t _calculate_total(uint16_t length){$/;"	f	file:
+_calibrate_imu	pill_ble.c	/^static void _calibrate_imu(void * p_event_data, uint16_t event_size)$/;"	f	file:
+_char_add	pill_gatt.c	/^_char_add(const uint16_t uuid,$/;"	f	file:
+_command_write_handler	pill_ble.c	/^static void _command_write_handler(ble_gatts_evt_write_t* event)$/;"	f	file:
+_connection_handle	pill_gatt.c	/^static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;$/;"	v	file:
+_data_ack_handler	pill_ble.c	/^static void _data_ack_handler(ble_gatts_evt_write_t* event)$/;"	f	file:
+_data_send_finished	pill_ble.c	/^_data_send_finished()$/;"	f	file:
+_decrease_index	timedfifo.c	/^uint16_t _decrease_index(uint16_t * idx){$/;"	f	file:
+_destroy	message_imu.c	/^static MSG_Status _destroy(void){$/;"	f	file:
+_destroy	message_led.c	/^_destroy(void){$/;"	f	file:
+_destroy	message_time.c	/^_destroy(void){$/;"	f	file:
+_dispatch_motion_data_via_ant	message_imu.c	/^static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)$/;"	f	file:
+_dispatch_packet	pill_gatt.c	/^_dispatch_packet(struct hlo_ble_packet * t){$/;"	f	file:
+_dispatch_write	pill_gatt.c	/^_dispatch_write(ble_evt_t *event) {$/;"	f	file:
+_flush	message_imu.c	/^static MSG_Status _flush(void){$/;"	f	file:
+_flush	message_led.c	/^_flush(void){$/;"	f	file:
+_flush	message_time.c	/^_flush(void){$/;"	f	file:
+_gpiote_user	message_imu.c	/^static app_gpiote_user_id_t _gpiote_user;$/;"	v	file:
+_handle_command	cli_user.c	/^_handle_command(int argc, char * argv[]){$/;"	f	file:
+_handle_led_commands	message_led.c	/^_handle_led_commands(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){$/;"	f	file:
+_imu_gpiote_process	message_imu.c	/^static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)$/;"	f	file:
+_imu_switch_mode	message_imu.c	/^static void _imu_switch_mode(bool is_active)$/;"	f	file:
+_init	message_imu.c	/^static MSG_Status _init(void){$/;"	f	file:
+_init	message_led.c	/^_init(void){$/;"	f	file:
+_init	message_time.c	/^_init(void){$/;"	f	file:
+_init_rf_modules	main.c	/^static void _init_rf_modules()$/;"	f	file:
+_last_active_time	message_imu.c	/^static uint32_t _last_active_time;$/;"	v	file:
+_last_connected_central	hble.c	/^static int8_t  _last_connected_central; $/;"	v	file:
+_last_packet_len	pill_gatt.c	/^static inline uint8_t _last_packet_len(uint16_t length){$/;"	f	file:
+_led_gpio_cfg_open_drain	led.c	/^static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)$/;"	f	file:
+_load_watchdog	main.c	/^static void _load_watchdog()$/;"	f	file:
+_make_packet	pill_gatt.c	/^_make_packet(void){$/;"	f	file:
+_notify_context	pill_gatt.c	/^static struct hlo_ble_notify_context _notify_context;$/;"	v	typeref:struct:hlo_ble_notify_context	file:
+_on_advertise_timeout	hble.c	/^static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)$/;"	f	file:
+_on_battery_level_measured	hble.c	/^static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)$/;"	f	file:
+_on_ble_evt	hble.c	/^static void _on_ble_evt(ble_evt_t* ble_evt)$/;"	f	file:
+_on_conn_params_error	hble.c	/^static void _on_conn_params_error(uint32_t nrf_error)$/;"	f	file:
+_on_conn_params_evt	hble.c	/^static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)$/;"	f	file:
+_on_cycle	message_led.c	/^static int _on_cycle(int * out_r, int * out_g, int * out_b){$/;"	f	file:
+_on_disconnect	hble.c	/^static void _on_disconnect(void * p_event_data, uint16_t event_size)$/;"	f	file:
+_on_message	ant_user.c	/^static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){$/;"	f	file:
+_on_motion_data_arrival	pill_ble.c	/^static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)$/;"	f	file:
+_on_pill_pairing_guesture_detected	message_imu.c	/^static void _on_pill_pairing_guesture_detected(void){$/;"	f	file:
+_on_status_update	ant_user.c	/^static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){$/;"	f	file:
+_on_sys_evt	hble.c	/^static void _on_sys_evt(uint32_t sys_evt)$/;"	f	file:
+_on_unknown_device	ant_user.c	/^static void _on_unknown_device(const hlo_ant_device_t * id, MSG_Data_t * msg){$/;"	f	file:
+_on_warm	message_led.c	/^static void _on_warm(void){$/;"	f	file:
+_on_wom_timer	message_imu.c	/^static void _on_wom_timer(void* context)$/;"	f	file:
+_p_uuid_handler	pill_gatt.c	/^static struct uuid_handler* _p_uuid_handler = _uuid_handlers;$/;"	v	typeref:struct:uuid_handler	file:
+_pill_service_handle	pill_ble.c	/^static uint16_t _pill_service_handle;$/;"	v	file:
+_play_animation	message_led.c	/^_play_animation(enum MSG_LEDAddress type){$/;"	f	file:
+_play_boot_complete	message_led.c	/^_play_boot_complete(int * out_r, int * out_g, int * out_b){$/;"	f	file:
+_rem	pill_gatt.c	/^_rem(const uint8_t * src, const uint8_t * dest){$/;"	f	file:
+_reply_time	pill_ble.c	/^static void _reply_time(void * p_event_data, uint16_t event_size)$/;"	f	file:
+_reset	shake_detect.c	/^static inline void _reset(void){$/;"	f	file:
+_reset_accel_range	message_imu.c	/^static inline void _reset_accel_range(enum imu_accel_range range)$/;"	f	file:
+_sec_params	hble.c	/^static ble_gap_sec_params_t _sec_params;$/;"	v	file:
+_send	message_imu.c	/^static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){$/;"	f	file:
+_send	message_time.c	/^static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){$/;"	f	file:
+_send_available_data_ant	message_time.c	/^static void _send_available_data_ant(){$/;"	f	file:
+_send_heartbeat_data_ant	message_time.c	/^static void _send_heartbeat_data_ant(){$/;"	f	file:
+_service_uuid	hble.c	/^static ble_uuid_t _service_uuid;$/;"	v	file:
+_settings	message_imu.c	/^static struct imu_settings _settings = {$/;"	v	typeref:struct:imu_settings	file:
+_setup	message_led.c	/^static void _setup(void){$/;"	f	file:
+_shake_detection_callback	shake_detect.c	/^    shake_detection_callback_t _shake_detection_callback;$/;"	m	struct:__anon30	file:
+_should_stream	pill_ble.c	/^static bool _should_stream = false;$/;"	v	file:
+_spi_context	message_imu.c	/^static SPI_Context _spi_context;$/;"	v	file:
+_start	main.c	/^void _start()$/;"	f
+_strncmp	cli_user.c	/^_strncmp(const char * s1, const char *s2, uint32_t n){$/;"	f	file:
+_teardown	message_led.c	/^static void _teardown(void){$/;"	f	file:
+_timer_handler	led_booster_timer.c	/^_timer_handler(void * ctx){$/;"	f	file:
+_timer_handler	message_time.c	/^static void _timer_handler(void * ctx){$/;"	f	file:
+_unhandled_msg_event	pill_ble.c	/^_unhandled_msg_event(void* event_data, uint16_t event_size){$/;"	f	file:
+_uuid_handlers	pill_gatt.c	/^static struct uuid_handler _uuid_handlers[MAX_CHARACTERISTICS];$/;"	v	typeref:struct:uuid_handler	file:
+_wom_timer	message_imu.c	/^static app_timer_id_t _wom_timer;$/;"	v	file:
+accel_range	message_imu.h	/^	enum imu_accel_range accel_range;$/;"	m	struct:imu_settings	typeref:enum:imu_settings::imu_accel_range
+acked_sequence_number	pill_ble.h	/^        uint8_t acked_sequence_number;$/;"	m	union:pill_data_response::__anon21
+active_sampling_rate	message_imu.h	/^	enum imu_hz active_sampling_rate;$/;"	m	struct:imu_settings	typeref:enum:imu_settings::imu_hz
+active_sensors	message_imu.h	/^    enum imu_sensor_set active_sensors;$/;"	m	struct:imu_settings	typeref:enum:imu_settings::imu_sensor_set
+active_wom_threshold	message_imu.h	/^	uint16_t active_wom_threshold; \/\/ in microgravities$/;"	m	struct:imu_settings
+animation	message_led.c	/^    enum MSG_LEDAddress animation;$/;"	m	struct:__anon13	typeref:enum:__anon13::MSG_LEDAddress	file:
+animation_node_t	message_led.c	/^}animation_node_t;$/;"	t	typeref:struct:__anon12	file:
+app_initialized	hble.c	/^static bool app_initialized = false;$/;"	v	file:
+base	message_imu.c	/^static MSG_Base_t base;$/;"	v	file:
+base	message_led.c	/^    MSG_Base_t base;$/;"	m	struct:__anon13	file:
+base	message_time.c	/^    MSG_Base_t base;$/;"	m	struct:__anon14	file:
+ble_time	message_time.c	/^    struct hlo_ble_time ble_time;  \/\/ Keep it here for debug, can see if pill crashed or not.$/;"	m	struct:__anon14	typeref:struct:__anon14::hlo_ble_time	file:
+ble_time	message_time.h	/^        struct hlo_ble_time ble_time;$/;"	m	union:__anon16::__anon18	typeref:struct:__anon16::__anon18::hlo_ble_time
+block_id	pstorage_platform.h	/^    pstorage_block_t    block_id;       \/**< Block ID.*\/$/;"	m	struct:__anon29
+body	pill_gatt.h	/^                } body;$/;"	m	union:hlo_ble_packet::__anon23::__anon24::__anon25	typeref:struct:hlo_ble_packet::__anon23::__anon24::__anon25::__anon27
+bytes	pill_gatt.h	/^        uint8_t bytes[20];$/;"	m	union:hlo_ble_packet::__anon23
+callback	pill_gatt.c	/^    hlo_ble_notify_callback callback;$/;"	m	struct:hlo_ble_notify_context	file:
+cb	message_time.h	/^    uint8_t (*cb)(const struct hlo_ble_time * time, uint64_t elapsed, void * ctx);$/;"	m	struct:__anon15
+central	message_time.c	/^    MSG_Central_t * central;$/;"	m	struct:__anon14	file:
+central	pill_ble.c	/^static MSG_Central_t * central;$/;"	v	file:
+characteristic_handle	pill_gatt.c	/^    uint16_t characteristic_handle;$/;"	m	struct:hlo_ble_notify_context	file:
+cmd	message_imu.h	/^    }cmd;$/;"	m	struct:__anon9	typeref:enum:__anon9::__anon10
+cmd	message_time.h	/^    }cmd;$/;"	m	struct:__anon16	typeref:enum:__anon16::__anon17
+cnt	shake_detect.c	/^    uint32_t thmag, cnt;$/;"	m	struct:__anon30	file:
+command	pill_ble.h	/^    enum pill_command_type command;$/;"	m	struct:pill_command	typeref:enum:pill_command::pill_command_type
+command	pill_ble.h	/^    enum pill_stream_command_type command;$/;"	m	struct:pill_stream_command	typeref:enum:pill_stream_command::pill_stream_command_type
+counter	message_led.c	/^    uint32_t counter;$/;"	m	struct:__anon13	file:
+ctx	message_time.h	/^    void * ctx;$/;"	m	struct:__anon15
+current	pill_gatt.c	/^	uint8_t *current; \/\/current pointer of the buffer to be sent$/;"	m	struct:hlo_ble_notify_context	file:
+current_idx	timedfifo.c	/^    uint16_t current_idx;$/;"	m	struct:__anon31	file:
+cycle_state	led_booster_timer.c	/^    led_booster_event_t cycle_state;$/;"	m	struct:__anon6	file:
+data	pill_gatt.h	/^                    uint8_t data[18];$/;"	m	struct:hlo_ble_packet::__anon23::__anon24::__anon25::__anon26
+data	pill_gatt.h	/^                    uint8_t data[19];$/;"	m	struct:hlo_ble_packet::__anon23::__anon24::__anon25::__anon27
+data	timedfifo.c	/^    tf_data_t data;$/;"	m	struct:__anon31	file:
+data	timedfifo.h	/^    tf_unit_t data[TF_BUFFER_SIZE];$/;"	m	struct:__anon32
+data_ready_callback	message_imu.h	/^    imu_data_ready_callback_t data_ready_callback;$/;"	m	struct:imu_settings
+end	pill_gatt.c	/^	uint8_t *end;\/\/end of the buffer to be sent$/;"	m	struct:hlo_ble_notify_context	file:
+footer	pill_gatt.h	/^                } footer;$/;"	m	union:hlo_ble_packet::__anon23::__anon24::__anon25	typeref:struct:hlo_ble_packet::__anon23::__anon24::__anon25::__anon28
+free	led_booster_timer.c	/^    volatile uint8_t free;$/;"	m	struct:__anon6	file:
+get_tick	timedfifo.c	/^inline uint8_t get_tick(){$/;"	f
+get_time	message_time.c	/^uint64_t* get_time()$/;"	f
+handler	pill_gatt.c	/^    hlo_ble_write_handler handler;$/;"	m	struct:uuid_handler	file:
+hble_advertising_init	hble.c	/^void hble_advertising_init(ble_uuid_t service_uuid)$/;"	f
+hble_advertising_start	hble.c	/^void hble_advertising_start()$/;"	f
+hble_bond_manager_init	hble.c	/^void hble_bond_manager_init()$/;"	f
+hble_evt_handler_t	hble.h	/^typedef void(*hble_evt_handler_t)(ble_evt_t* ble_evt);$/;"	t
+hble_params_init	hble.c	/^void hble_params_init(char* device_name)$/;"	f
+hble_stack_init	hble.c	/^void hble_stack_init()$/;"	f
+hble_update_battery_level	hble.c	/^void hble_update_battery_level()$/;"	f
+header	pill_gatt.h	/^                } header;$/;"	m	union:hlo_ble_packet::__anon23::__anon24::__anon25	typeref:struct:hlo_ble_packet::__anon23::__anon24::__anon25::__anon26
+hello_type	pill_gatt.c	/^uint8_t hello_type;$/;"	v
+hlo_ble_char_indicate_add	pill_gatt.c	/^hlo_ble_char_indicate_add(uint16_t uuid)$/;"	f
+hlo_ble_char_notify_add	pill_gatt.c	/^hlo_ble_char_notify_add(uint16_t uuid)$/;"	f
+hlo_ble_char_read_add	pill_gatt.c	/^hlo_ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)$/;"	f
+hlo_ble_char_write_command_add	pill_gatt.c	/^hlo_ble_char_write_command_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size)$/;"	f
+hlo_ble_char_write_request_add	pill_gatt.c	/^hlo_ble_char_write_request_add(uint16_t uuid, hlo_ble_write_handler write_handler, uint16_t max_buffer_size)$/;"	f
+hlo_ble_connect_handler	pill_gatt.h	/^typedef void (*hlo_ble_connect_handler)(void);$/;"	t
+hlo_ble_get_connection_handle	pill_gatt.c	/^uint16_t hlo_ble_get_connection_handle()$/;"	f
+hlo_ble_get_value_handle	pill_gatt.c	/^hlo_ble_get_value_handle(const uint16_t uuid)$/;"	f
+hlo_ble_init	pill_gatt.c	/^void hlo_ble_init()$/;"	f
+hlo_ble_notify	pill_gatt.c	/^hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback)$/;"	f
+hlo_ble_notify_callback	pill_gatt.h	/^typedef void (*hlo_ble_notify_callback)();$/;"	t
+hlo_ble_notify_context	pill_gatt.c	/^struct hlo_ble_notify_context {$/;"	s	file:
+hlo_ble_on_ble_evt	pill_gatt.c	/^void hlo_ble_on_ble_evt(ble_evt_t* event)$/;"	f
+hlo_ble_packet	pill_gatt.h	/^struct hlo_ble_packet {$/;"	s
+hlo_ble_write_handler	pill_gatt.h	/^typedef void (*hlo_ble_write_handler)(ble_gatts_evt_write_t *);$/;"	t
+imu_data_ready_callback_t	message_imu.h	/^typedef void(*imu_data_ready_callback_t)(uint16_t fifo_bytes_available);$/;"	t
+imu_get_settings	message_imu.c	/^inline void imu_get_settings(struct imu_settings *settings)$/;"	f
+imu_set_wom_callback	message_imu.c	/^void imu_set_wom_callback(imu_wom_callback_t callback)$/;"	f
+imu_settings	message_imu.h	/^struct imu_settings {$/;"	s
+imu_wom_callback_t	message_imu.h	/^typedef void(*imu_wom_callback_t)(const int16_t* raw_data_point, size_t len);$/;"	t
+inactive_sampling_rate	message_imu.h	/^    enum imu_hz inactive_sampling_rate;$/;"	m	struct:imu_settings	typeref:enum:imu_settings::imu_hz
+inactive_wom_threshold	message_imu.h	/^    uint16_t inactive_wom_threshold; \/\/ in microgravities$/;"	m	struct:imu_settings
+initialized	message_imu.c	/^static bool initialized = false;$/;"	v	file:
+initialized	message_time.c	/^    bool initialized;$/;"	m	struct:__anon14	file:
+is_active	message_imu.h	/^    bool is_active;$/;"	m	struct:imu_settings
+is_debug_enabled	pill_ble.c	/^int is_debug_enabled(){$/;"	f
+last_len	pill_gatt.c	/^	uint8_t last_len; \/\/ You have it!$/;"	m	struct:hlo_ble_notify_context	file:
+led_all_colors_off	led.c	/^void led_all_colors_off()$/;"	f
+led_all_colors_on	led.c	/^void led_all_colors_on()$/;"	f
+led_booster_context_t	led_booster_timer.h	/^}led_booster_context_t;$/;"	t	typeref:struct:__anon7
+led_booster_event_t	led_booster_timer.c	/^}led_booster_event_t;$/;"	t	typeref:enum:__anon5	file:
+led_booster_init	led_booster_timer.c	/^void led_booster_init(const led_booster_context_t * ctx){$/;"	f
+led_booster_is_free	led_booster_timer.c	/^uint8_t led_booster_is_free(void){$/;"	f
+led_booster_power_off	led_booster_timer.c	/^void led_booster_power_off(void){$/;"	f
+led_booster_power_on	led_booster_timer.c	/^void led_booster_power_on(void){$/;"	f
+led_booster_state_t	led_booster_timer.c	/^}led_booster_state_t;$/;"	t	typeref:enum:__anon4	file:
+led_init	led.c	/^void led_init()$/;"	f
+led_power_off	led.c	/^void led_power_off()$/;"	f
+led_power_on	led.c	/^void led_power_on()$/;"	f
+led_set	led.c	/^void led_set(int led_channel, int pwmval){$/;"	f
+led_warm_up	led.c	/^void led_warm_up(){$/;"	f
+length	timedfifo.h	/^    uint16_t length;$/;"	m	struct:__anon32
+listener	cli_user.c	/^    MSG_CliUserListener_t listener;$/;"	m	struct:__anon3	file:
+missing_packet_count	pill_ble.h	/^            uint8_t missing_packet_count;$/;"	m	struct:pill_data_response::__anon21::__anon22
+missing_packet_sequence_numbers	pill_ble.h	/^            uint8_t missing_packet_sequence_numbers[18];$/;"	m	struct:pill_data_response::__anon21::__anon22
+module_id	pstorage_platform.h	/^    uint32_t            module_id;      \/**< Module ID.*\/$/;"	m	struct:__anon29
+mtime	timedfifo.h	/^    uint64_t mtime;$/;"	m	struct:__anon32
+name	message_imu.c	/^static char * name = "IMU";$/;"	v	file:
+name	message_led.c	/^static const char * name = "LED";$/;"	v	file:
+name	message_time.c	/^static char * name = "TIME";$/;"	v	file:
+on_cycle	led_booster_timer.h	/^    int  (* on_cycle)(int * out_r, int * out_g, int * out_b);$/;"	m	struct:__anon7
+on_warm	led_booster_timer.h	/^    void (* on_warm)(void);$/;"	m	struct:__anon7
+orig	pill_gatt.c	/^	uint8_t *orig; \/\/origin of buffer to be sent$/;"	m	struct:hlo_ble_notify_context	file:
+out_accel	message_imu.h	/^		struct imu_accel16_sample out_accel;$/;"	m	union:__anon9::__anon11	typeref:struct:__anon9::__anon11::imu_accel16_sample
+packet_count	pill_gatt.h	/^                    uint8_t packet_count;$/;"	m	struct:hlo_ble_packet::__anon23::__anon24::__anon25::__anon26
+param	message_imu.h	/^    }param;$/;"	m	struct:__anon9	typeref:union:__anon9::__anon11
+param	message_time.h	/^    }param;$/;"	m	struct:__anon16	typeref:union:__anon16::__anon18
+parent	ant_user.c	/^    MSG_Central_t * parent;$/;"	m	struct:__anon1	file:
+parent	cli_user.c	/^    MSG_Central_t * parent;$/;"	m	struct:__anon3	file:
+parent	message_imu.c	/^static MSG_Central_t * parent;$/;"	v	file:
+parent	message_led.c	/^    const MSG_Central_t * parent;$/;"	m	struct:__anon13	file:
+pill_ble_evt_handler	pill_ble.c	/^void pill_ble_evt_handler(ble_evt_t* ble_evt)$/;"	f
+pill_ble_load_modules	pill_ble.c	/^void pill_ble_load_modules(void){$/;"	f
+pill_ble_services_init	pill_ble.c	/^pill_ble_services_init(void)$/;"	f
+pill_command	pill_ble.h	/^struct pill_command$/;"	s
+pill_command_type	pill_ble.h	/^enum pill_command_type {$/;"	g
+pill_data_response	pill_ble.h	/^struct pill_data_response$/;"	s
+pill_data_response_type	pill_ble.h	/^enum pill_data_response_type {$/;"	g
+pill_stream_command	pill_ble.h	/^struct pill_stream_command$/;"	s
+pill_stream_command_type	pill_ble.h	/^enum pill_stream_command_type {$/;"	g
+prev_idx	timedfifo.h	/^    uint16_t prev_idx;$/;"	m	struct:__anon32
+pstorage_block_t	pstorage_platform.h	/^typedef uint32_t pstorage_block_t;$/;"	t
+pstorage_handle_t	pstorage_platform.h	/^} pstorage_handle_t;$/;"	t	typeref:struct:__anon29
+pstorage_size_t	pstorage_platform.h	/^typedef uint16_t pstorage_size_t;      \/** Size of length and offset fields. *\/$/;"	t
+reserved_1	timedfifo.h	/^    uint8_t reserved_1;$/;"	m	struct:__anon32
+rgb	led_booster_timer.c	/^    int rgb[3];$/;"	m	struct:__anon6	file:
+rgb	message_led.c	/^    int16_t rgb[3];$/;"	m	struct:__anon12	file:
+self	ant_user.c	/^}self;$/;"	v	typeref:struct:__anon1	file:
+self	cli_user.c	/^}self;$/;"	v	typeref:struct:__anon3	file:
+self	led_booster_timer.c	/^}self;$/;"	v	typeref:struct:__anon6	file:
+self	message_led.c	/^}self;$/;"	v	typeref:struct:__anon13	file:
+self	message_time.c	/^}self;$/;"	v	typeref:struct:__anon14	file:
+self	shake_detect.c	/^}self;$/;"	v	typeref:struct:__anon30	file:
+self	timedfifo.c	/^}self;$/;"	v	typeref:struct:__anon31	file:
+seq	pill_gatt.c	/^    uint8_t seq; \/\/< number of packets queued to be sent$/;"	m	struct:hlo_ble_notify_context	file:
+sequence_number	pill_gatt.h	/^            uint8_t sequence_number;$/;"	m	struct:hlo_ble_packet::__anon23::__anon24
+set_shake_detection_callback	shake_detect.c	/^void set_shake_detection_callback(shake_detection_callback_t callback){$/;"	f
+set_time	pill_ble.h	/^        struct hlo_ble_time set_time;$/;"	m	union:pill_command::__anon20	typeref:struct:pill_command::__anon20::hlo_ble_time
+setup	led_booster_timer.h	/^    void (* setup )(void);$/;"	m	struct:__anon7
+sha19	pill_gatt.h	/^                    uint8_t sha19[19]; \/\/ First 19 bytes of SHA-1.$/;"	m	struct:hlo_ble_packet::__anon23::__anon24::__anon25::__anon28
+shake_counter	message_imu.c	/^static uint32_t shake_counter;$/;"	v	file:
+shake_detection_callback_t	shake_detect.h	/^typedef void(*shake_detection_callback_t)(void);  $/;"	t
+shaking_time_sec	shake_detect.c	/^    uint8_t shaking_time_sec;$/;"	m	struct:__anon30	file:
+state	led_booster_timer.c	/^    volatile led_booster_state_t state;$/;"	m	struct:__anon6	file:
+teardown	led_booster_timer.h	/^    void (* teardown)(void);$/;"	m	struct:__anon7
+test_led	message_led.c	/^void test_led(){$/;"	f
+test_ok	boot_test.c	/^void test_ok(const MSG_Central_t * parent, uint8_t mask){$/;"	f
+tf_data_t	timedfifo.h	/^}__attribute__((packed)) tf_data_t;$/;"	t	typeref:struct:__anon32
+tf_unit_t	timedfifo.h	/^typedef int32_t tf_unit_t;  \/\/ Good job, this is a keen design!$/;"	t
+thmag	shake_detect.c	/^    uint32_t thmag, cnt;$/;"	m	struct:__anon30	file:
+tick	timedfifo.c	/^    uint8_t tick;$/;"	m	struct:__anon31	file:
+time	message_led.c	/^    uint32_t time;$/;"	m	struct:__anon12	file:
+timer	led_booster_timer.c	/^    app_timer_id_t timer;$/;"	m	struct:__anon6	file:
+timer_id	message_time.c	/^    app_timer_id_t timer_id;$/;"	m	struct:__anon14	file:
+total	pill_gatt.c	/^    uint8_t total; \/\/< total number of packets to send$/;"	m	struct:hlo_ble_notify_context	file:
+type	pill_ble.h	/^    enum pill_data_response_type type;$/;"	m	struct:pill_data_response	typeref:enum:pill_data_response::pill_data_response_type
+uptime	message_time.c	/^    uint32_t uptime;$/;"	m	struct:__anon14	file:
+user	led_booster_timer.c	/^    led_booster_context_t user;$/;"	m	struct:__anon6	file:
+user_cb	message_time.c	/^    MSG_Data_t * user_cb;$/;"	m	struct:__anon14	file:
+uuid	pill_gatt.c	/^    uint16_t uuid;$/;"	m	struct:uuid_handler	file:
+uuid_handler	pill_gatt.c	/^struct uuid_handler {$/;"	s	file:
+valid	message_led.c	/^    int16_t valid;$/;"	m	struct:__anon12	file:
+value_handle	pill_gatt.c	/^    uint16_t value_handle;$/;"	m	struct:uuid_handler	file:
+version	timedfifo.h	/^    uint8_t version;$/;"	m	struct:__anon32
+wakeup_cb	message_time.h	/^        MSG_TimeCB_t wakeup_cb;$/;"	m	union:__anon16::__anon18
+wom_callback	message_imu.h	/^    imu_wom_callback_t wom_callback;$/;"	m	struct:imu_settings

@@ -43,31 +43,49 @@ _flush(void){
 #ifdef ANT_STACK_SUPPORT_REQD
 #define MOTION_DATA_MAGIC 0x5A5A
 static void _send_available_data_ant(){
-    size_t rawDataSize = TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t);
-    uint16_t magic = MOTION_DATA_MAGIC;
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
-        sizeof(MSG_ANT_EncryptedMotionData_t) + // Encrypted info headers (nonce)
-        rawDataSize +  // Raw/encrypted data
-        sizeof(magic));
 
-    if(data_page){
-        memset(&data_page->buf, 0, data_page->len);
+    //allocate memory
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
+        sizeof(MSG_ANT_EncryptedMotionData_t));
+
+    //if allocation worked
+    if(data_page) {
+        //ant data comes from the data page (allocated above, and freed at the end of this function)
         MSG_ANT_PillData_t* ant_data = &data_page->buf;
+
+        //motion_data is a pointer to the blob of data that antdata->payload points to
+        //the goal is to fill out the motion_data pointer
         MSG_ANT_EncryptedMotionData_t * motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
+
+        //zero out my blob
+        memset(&data_page->buf, 0, data_page->len);
+
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_DATA_ENCRYPTED;
         ant_data->UUID = GET_UUID_64();
-        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t) + rawDataSize + sizeof(magic);
+        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t);
 
-        if(TF_GetCondensed(motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
+        //fill out the motion data payload
+        uint8_t TF_DumpPayload(MotionPayload_t * payload);
+        if(TF_GetPayload(&motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
         {
             uint8_t pool_size = 0;
-            memcpy((uint8_t*)motion_data->payload + rawDataSize, &magic, sizeof(magic));
+
+            //magic is magically pre-defined
+            motion_data->magic = MOTION_DATA_MAGIC;
+
+            //do the nonce stuff (crypto-magic)  
             if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
                 uint8_t nonce[8] = {0};
+                uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
+
                 sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
-                aes128_ctr_encrypt_inplace(motion_data->payload, rawDataSize + sizeof(magic), get_aes128_key(), nonce);
+
+                aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic), get_aes128_key(), nonce);
+                
                 memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
+
+                //this sends out the data
                 self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
                 /*
                  *self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);

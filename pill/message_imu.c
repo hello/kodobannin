@@ -98,11 +98,15 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 
 static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
-	int16_t values[3];
-	memcpy(values, raw_xyz, len);
+    uint16_t i;
+    int16_t values[3];
+//    uint16_t range;
+//    uint16_t maxrange
+    auxillary_data_t * paux;
+    memcpy(values, raw_xyz, len);
 
-	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
-	uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
+    //int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
+    uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
     aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
 	
     /*
@@ -118,12 +122,39 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 
 	//TF_SetCurrent((uint16_t)values[0]);
 	
-	if(TF_GetCurrent() < aggregate ){
-		TF_SetCurrent((tf_unit_t)aggregate);
-		PRINTS("NEW MAX: ");
-		PRINT_HEX(&aggregate, sizeof(aggregate));
-	}
-	return aggregate;
+    if(TF_GetCurrent() < aggregate ){
+        TF_SetCurrent((tf_unit_t)aggregate);
+        PRINTS("NEW MAX: ");
+        PRINT_HEX(&aggregate, sizeof(aggregate));
+    }
+
+    paux = TF_GetAuxData();
+ 
+    //track max/min values of accelerometer      
+    for (i = 0; i < 3; i++) {
+        if (values[i] > paux->max_accel[i]) {
+            paux->max_accel[i] = values[i];
+        }
+  
+        if (values[i] < paux->min_accel[i]) {
+            paux->min_accel[i] = values[i];
+        }
+    }
+
+/* 
+    maxrange = 0;
+    for (i = 0; i < 3; i++) {
+        range = (uint16_t) (paux->max_accel[i] - paux->min_accel[i]);
+   
+        if (range > maxrange) {
+            maxrange = range;
+        }
+    }
+
+    paux->max_
+*/
+    return aggregate;
+      
 }
 
 static void _imu_switch_mode(bool is_active)
@@ -254,6 +285,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
                     if(!_settings.is_active)
                     {
                         _imu_switch_mode(true);
+
+                        TF_IncrementWakeCounts();
+
                         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
                     }
 #endif

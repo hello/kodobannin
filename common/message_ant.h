@@ -2,6 +2,7 @@
 #include "message_base.h"
 #include "ant_driver.h"
 #include "ant_packet.h"
+#include "motion_types.h"
 
 #define TF_CONDENSED_BUFFER_SIZE (1)
 
@@ -51,7 +52,8 @@ typedef struct{
 
 typedef struct{
     uint64_t nonce;
-    uint8_t payload[0];
+    MotionPayload_t payload;
+    uint16_t magic_bytes; //seriosuly this must be here, or Jackson will kill you
 }MSG_ANT_EncryptedMotionData_t;
 
 typedef struct 
