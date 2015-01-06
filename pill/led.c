@@ -25,7 +25,7 @@ static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
 
 // [0]   Vbat (internal resistance reference)
 // [1]   Vbat (after weak pullup load enabled)
-// [2]   Vbat (after weak pullup load enabled)
+// [2]   Vbat (after led's enabled)
 // [3]   Vbat (after led display completed)
 
 static uint8_t _led_index; // 0 off, 1 on, 2 warm, 3 play
@@ -41,42 +41,38 @@ static adc_t _led_red[4]; // Vbat/Vrgb/Vlad during led_set sequence
 static adc_t _led_grn[4];
 static adc_t _led_blu[4];
 
-/* void led_battery_status()
+void led_update_battery_status()
 {
-    uint32_t value, result;
+    uint8_t i;
+    uint32_t result, value;
 
-    PRINTS("Battery Voltage: ");
-    result = battery_get_voltage_cached();
-    value = result/1000;
-    PRINT_DEC(&value,1);
-    PRINTS(".");
-    PRINT_DEC(&result,3);
+    for (i=0;i<4;i++) { // battery reference at start
+      result = _led_bat_ref[i];
+      value = result/256;
+      PRINT_BYTE(&value, 1);
+      PRINT_HEX(&result, 1);
+    } PRINTS("\r\n");
 
-    PRINTS(" V, ");
-    value = battery_get_percent_cached();
-    PRINT_DEC(&value,2);
+    for (i=0;i<4;i++) { // adc offset voltage
+      result = _led_boost[i];
+      value = result/256;
+      PRINT_BYTE(&value, 1);
+      PRINT_HEX(&result, 1);
+    } PRINTS("\r\n");
 
-    result = hble_adc_start;
-    PRINTS("%, ADC: ");
-    value = result/256;
-    PRINT_BYTE(&value, 1);
-    PRINT_HEX(&result, 1);
-} */
+    for (i=0;i<4;i++) { // led forward current
+      result = _led_sense[i];
+      value = result/256;
+      PRINT_BYTE(&value, 1);
+      PRINT_HEX(&result, 1);
+    } PRINTS("\r\n");
 
-void led_set(int led_channel, int pwmval){
-
- // adc_begin(adc_callback); // capture Vrgb / Vlad for each color
-
-    int offset = 0;
-    led_all_colors_off();
-    if(led_channel == LED_GREEN_CHANNEL){
-        offset = 0x8;
-    }
-    if(pwmval < 0xff && pwmval - offset > 0){
-        nrf_gpio_pin_clear(led_channel);
-        APP_OK(pwm_set_value(PWM_Channel_1, pwmval - offset));
-    }
-
+    for (i=0;i<4;i++) { // battery after sustaining load
+      result = _led_bat_rel[i];
+      value = result/256;
+      PRINT_BYTE(&value, 1);
+      PRINT_HEX(&result, 1);
+    } PRINTS("\r\n");
 }
 
 void led_init()
@@ -127,10 +123,17 @@ void led_all_colors_off()
 #endif
 }
 
+//    off->on ->up ->set->off
+// Vbat 0263 0269 0000 0269  before
+// Vrgb 010A 01BF 0000 0201  offset
+// Vrgb 01F1 01F1 0000 0201  leds
+// Vbat 0262 0266 0000 0201  after  ( 2.9 V )
+//  ==>    1    3  <== f(internal resistance)
+
 // perform adc readings before led driver config transition
-static adc_measure_callback_t led_adc_callback(adc_t adc_result, uint16_t adc_count)
+static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_count)
 {
-    uint8_t next_adc_input = 0xff; // indicate end of adc reading sequence
+    adc_t next_adc_input = 0; // indicate end of adc reading sequence
 
     switch (adc_count) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
     {
@@ -148,23 +151,23 @@ static adc_measure_callback_t led_adc_callback(adc_t adc_result, uint16_t adc_co
             break;;
         case 3: // Vbat (zero) (passive) (current) (discharge)
             _led_bat_rel[_led_index] = adc_result; // battery internal resistance
+            break;;
     }
 
-    _led_index += 1; // inc
-    _led_index %= 4; // 0 -> 1 -> 2 -> 3 -> 0 ...
-
- /* if (_led_index)
+    switch (_led_index)
     {
         case 0: // off -> on
             switch (adc_count) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
             {
-                case 0: // off -> on
-                 // battery_set_voltage_cached(adc_result);
-                    _led_index=++;
+                case 0: // Vbat(off)
+                    battery_module_power_on();
                     break;;
-                case 1: // on Vrgb(offset)
-                    _led_index=0;
-                    _led_power_on();
+                case 1: // Vrgb(offset)
+                    break;;
+                case 2: //
+                    break;;
+                case 3: // Vbat(on)
+                 // led_power_on(0);
                     break;;
             }
             break;;
@@ -173,89 +176,135 @@ static adc_measure_callback_t led_adc_callback(adc_t adc_result, uint16_t adc_co
             {
                 case 0: // on -> warm  Vbat(pullup)
                  // battery_set_internal_resistance_cached(adc_result);
-                    _led_index=++;
+                    break;;
                 case 1: // warm -> set Vrgb(precharge)
-                    _led_index=0;
-                    _led_warm_up();
+                    break;;
+                case 2: //
+                    break;;
+                case 3: //
+                 // led_warm_up(0);
                     break;;
             }
             break;;
         case 2: // warm -> set
             switch (_led_index) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
             {
-                    _led_index=0;
-                    _led_set();
+                case 0: //
+                    break;;
+                case 1: //
+                    break;;
+                case 2: //
+                    break;;
+                case 3: //
+                 // led_run(0);
+                    break;;
             }
             break;;
         case 3: // on -> off
             switch (_led_index) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
             {
-                    _led_index=0;
-                    _led_power_off();
+                case 0: // warm -> off  Vbat
+                 // battery_set_voltage_cached(adc_result);
+                    break;;
+                case 1: //
+                    break;;
+                case 2: //
+                    break;;
+                case 3: //
+                 // battery_set_internal_resistance_cached(adc_result);
+                    battery_module_power_off();
+                 // led_power_off(0);
+                    break;;
             }
          // battery_set_internal_resistance(adc_result);
             break;;
-    } */
+    }
 
+    if (next_adc_input == 0) {
+        switch (_led_index) {
+            case 0: led_power_on(1);  break;;
+            case 1: led_warm_up(1);   break;;
+         // case 2: led_run(1);       break;;
+            case 3: led_power_off(1); break;;
+        }
+    }
     return next_adc_input;
 }
+     // battery_measurement_begin(led_adc_measured); // capture Vrgb / Vlad for each color
 
-void led_warm_up(){ // return battery state (internal resistance after weak pullup enable)
+void led_set(int led_channel, int pwmval){
+
+        led_all_colors_off();
+
+        if(pwmval < 0xff && pwmval > 0){
+        nrf_gpio_pin_clear(led_channel);
+        APP_OK(pwm_set_value(PWM_Channel_1, pwmval));
+        }
+ // }
+}
+
+void led_warm_up(uint8_t mode){ // internal resistance after weak pullup enable
 #ifdef PLATFORM_HAS_VLED
- // adc_begin(adc_callback); // Vbat(after weak load applied) / Vrgb (passive boost precharge)
+    if (mode == 0) { // perform adc readings before warm up config
 
-    PRINTS("===( LED power");
-    nrf_gpio_pin_clear(VLED_VDD_EN); // write 0 to enable pfet power control
-    PRINTS(" on )==="); // boost regulator powered on
+        _led_index=1;
+        battery_measurement_begin(led_adc_measured); // Vbat(after weak load applied) / Vrgb (passive boost precharge)
+
+    } else {
+
+        PRINTS("===( LED power");
+        nrf_gpio_pin_clear(VLED_VDD_EN); // write 0 to enable pfet power control
+        PRINTS(" on )==="); // boost regulator powered on
+    }
 #endif
 }
 
-// adc_callback_t _adc_offset_callback()
-// if next reading else led_power_on()
-
-// led_power_on_begin() // (uint8_t mode) w/o adc or w/adc reading sequence
-// { _begin(callback);
-
-void led_power_on() // (uint8_t mode) w/o adc or w/adc reading sequence
+void led_power_on(uint8_t mode) // w/o adc or w/adc reading sequence
 {
 #ifdef PLATFORM_HAS_VLED
- // if (mode) { // perform adc readings before power on config
- // adc_begin(adc_callback); // measure Vbat (reference load) / Vrgb (adc offset boost off)
+    if (mode == 0) { // perform adc readings before power on config
+
+        _led_index=0;
+        battery_measurement_begin(led_adc_measured); // measure Vbat (reference load) / Vrgb (adc offset boost off)
 
  // gpio_cfg_d0s1_output_disconnect_pull(LED_RED_SENSE, NRF_GPIO_PIN_PULLUP);
  // gpio_cfg_d0s1_output_disconnect_pull(LED_GREEN, NRF_GPIO_PIN_PULLUP);
  // gpio_cfg_d0s1_output_disconnect_pull(LED_BLUE_SENSE, NRF_GPIO_PIN_PULLUP);
 
- // } else { // default: perform led power on configuration
-    PRINTS("\r\n===( LED precharge");
-    nrf_gpio_pin_set(VRGB_ENABLE);  // precharge capacitors ( Vrgb / Vpwm )
+    } else { // default: perform led power on configuration
 
-    PRINTS(" pwm");
-    APP_OK(pwm_set_value(PWM_Channel_1, 0xEF)); // set initial Vrgb = Vmcu
-    PRINTS(" on )===");
- // }
+        PRINTS("\r\n===( LED precharge");
+        nrf_gpio_pin_set(VRGB_ENABLE);  // precharge capacitors ( Vrgb / Vpwm )
 
+        PRINTS(" pwm");
+        APP_OK(pwm_set_value(PWM_Channel_1, 0xEF)); // set initial Vrgb = Vmcu
+        PRINTS(" on )===");
+    }
 #endif
 }
 
-
-void led_power_off()
+void led_power_off(uint8_t mode)
 {
 #ifdef PLATFORM_HAS_VLED
- // adc_begin(adc_callback); // capture Vbat(after led load) / Vrgb(discharge)
+    if (mode == 0) { // perform adc readings before power off config
 
-    PRINTS(" LED shutdown"); // boost regulator powered on
-    nrf_gpio_pin_clear(VRGB_ENABLE); // boost disabled and then
+        _led_index=3;
+        battery_measurement_begin(led_adc_measured); // capture Vbat(after led load) / Vrgb(discharge)
 
-    PRINTS(" pwm");
-    pwm_disable();
+    } else { // default: perform led power off configuration
 
-    PRINTS(" power"); // boost regulator powered on
-    nrf_gpio_pin_set(VLED_VDD_EN); // regulator powered off
-    PRINTS(" off )===\r\n"); // boost regulator powered on
+        PRINTS(" LED shutdown"); // boost regulator powered on
+        nrf_gpio_pin_clear(VRGB_ENABLE); // boost disabled and then
+
+        PRINTS(" pwm");
+        pwm_disable();
+
+        PRINTS(" power"); // boost regulator powered on
+        nrf_gpio_pin_set(VLED_VDD_EN); // regulator powered off
+        PRINTS(" off )===\r\n"); // boost regulator powered on
+    }
 #endif
 }
-
 
 
 #endif

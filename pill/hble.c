@@ -196,32 +196,32 @@ static void _advertising_data_init(uint8_t flags){
 
 static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
-    uint32_t value, result;
- // Battery Voltage  FFFF -3F90 ~~2.401+PE V, 55 %/
+    uint32_t value, result;      //  Measured        Actual
+ // Battery Voltage  0x0267 - 0x010A +2.914 V,  80 %   2.9 V
     switch (adc_count) { // for each adc reading
-            case 1: battery_set_voltage_cached(adc_result);
+            case 0: battery_set_voltage_cached(adc_result);
                     PRINTS(" 0x");
                     value = adc_result/256;
                     PRINT_BYTE(&value, 1);
-                    PRINT_HEX(&result, 1);
+                    PRINT_HEX(&adc_result, 1);
                     return LDO_VRGB_ADC_INPUT; break; // for adc offset
-            case 2: battery_set_offset_cached(adc_result);
+            case 1: battery_set_offset_cached(adc_result);
                     PRINTS("- 0x");
                     value = adc_result/256;
                     PRINT_BYTE(&value, 1);
-                    PRINT_HEX(&result, 1);
-                //  hble_update_battery_status(); //
+                    PRINT_HEX(&adc_result, 1);
                     return LDO_VBAT_ADC_INPUT; break; // spread print overhead
-            case 3: result = battery_get_voltage_cached();
+            case 2: result = battery_get_voltage_cached();
                     PRINTS(" +");
                     value = result/1000;
                     PRINT_DEC(&value,1);
                     PRINTS(".");
                     PRINT_DEC(&result,3);
                     PRINTS(" V, ");
-                 // return LDO_VRGB_ADC_INPUT; break; // spread print overhead
-                    result = battery_get_percent_cached();
-                    PRINT_DEC(&value,2);
+                    return LDO_VBAT_ADC_INPUT; break; // spread print overhead
+            case 3: result = battery_get_percent_cached();
+                    PRINTS(" ");      // ToDo:  estimate internal resistance
+                    PRINT_DEC(&result,2);
                     PRINTS(" %\r\n");
                     break; // fall thru to end adc reading sequence
     }
@@ -237,6 +237,17 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
 
     return 0; // indicate no more adc conversions required
 }
+
+//   ADC    OFFSET  Vbat Measured    Actual
+// 0x02BC - 0x010A +3.626 V, 100 %   3.6 V
+// 0x028C - 0x010A +3.220 V, 100 %   3.2 V
+// 0x0273 - 0x010A +3.013 V, 100 %   3.0 V \
+// 0x0267 - 0x010A +2.914 V,  80 %   2.9 V |  normal battery
+// 0x025B - 0x010A +2.814 V,  40 %   2.8 V |  operating range
+// 0x024F - 0x010A +2.714 V,  05 %   2.7 V /
+// 0x0243 - 0x010A +2.614 V,  05 %   2.6 V
+// 0x022B - 0x010A +2.415 V,  05 %   2.2 V
+// 0x01FA - 0x010A +2.002 V,  05 %   2.0 V
 
 void hble_update_battery_status()
 {

@@ -156,6 +156,7 @@ static uint8_t _adc_config_count;
 
 void ADC_IRQHandler(void)
 {
+    uint16_t adc_count;
     uint8_t next_measure_input = 0; // indicate adc sequence complete
 
     if (NRF_ADC->EVENTS_END)
@@ -163,12 +164,11 @@ void ADC_IRQHandler(void)
         NRF_ADC->EVENTS_END     = 0;
         adc_t adc_result      = NRF_ADC->RESULT;
         NRF_ADC->TASKS_STOP     = 1;
-        uint16_t adc_count    = ++_adc_cycle_count;
 
         if(_adc_measure_callback && _adc_config_count--) // callback provided
         {
+            adc_count = _adc_cycle_count++; // 0 1 2 3 ... 63
             next_measure_input = _adc_measure_callback(adc_result, adc_count);
-         // if (next_measure_input = 0xFF) next_measure_input = _adc_config_psel;
 
             if (next_measure_input) // continue adc measurement
             {
@@ -184,11 +184,9 @@ void ADC_IRQHandler(void)
                 // Trigger a new ADC sampling, the callback will be called again
                 NRF_ADC->TASKS_START = 1; // start adc to make next reading
 
-            } // else { // adc measurement sequence complete
-        } // else { // no callback provided
+            } // adc measurement sequence complete
+        } // no callback provided or max adc reading usage limit reached
     }
-
-    if (next_measure_input == 0) battery_module_power_off();
 }
 
 uint16_t battery_get_voltage_cached(){
@@ -240,7 +238,6 @@ void battery_module_power_on()
  // if (_adc_config_psel) {
  //     return 0; // adc busy with prior reading sequence
  // } else {
-        _adc_config_psel = LDO_VBAT_ADC_INPUT;
 
      // _battery_initial_voltage = 0; // indicate start of measurement sequence
      // _battery_difference_voltage = 0; // indicate no droop during measurement
@@ -259,6 +256,7 @@ uint32_t battery_measurement_begin(adc_measure_callback_t callback)
 
     _adc_cycle_count = 0; // indicate number of adc cycles so far
     _adc_config_count = 64; // indicate max number of adc cycles
+    _adc_config_psel = LDO_VBAT_ADC_INPUT; // starting measurement
 
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;

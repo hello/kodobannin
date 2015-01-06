@@ -20,20 +20,20 @@ static void _setup(void){
     /*
      *PRINTS("Setup\r\n");
      */
-    led_power_on();
+    led_power_on(0); // perfrom Vbat/Vrgb measurements
 }
 static void _teardown(void){
     /*
      *PRINTS("Teardown\r\n");
      */
     led_all_colors_off();
-    led_power_off();
+    led_power_off(0);
 }
 static void _on_warm(void){
     /*
      *PRINTS("Warm\r\n");
      */
-    led_warm_up();
+    led_warm_up(0);
 }
 static int
 _play_boot_complete(int * out_r, int * out_g, int * out_b){
@@ -64,7 +64,11 @@ _play_boot_complete(int * out_r, int * out_g, int * out_b){
 static int
 _play_battery_test(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
-        {0   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
+        {0   * BOOSTER_REFRESH_RATE, {0xfe, 0xfe, 0xfe}, 0},
+        {0   * BOOSTER_REFRESH_RATE, {0xF7, 0xff, 0xff}, 1},
+        {0.5 * BOOSTER_REFRESH_RATE, {0xff, 0xF7, 0xff}, 1},
+        {1.0 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xF7}, 1},
+        {1.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
     };
     int i;
     animation_node_t * current;

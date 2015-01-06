@@ -47,6 +47,9 @@ _handle_command(int argc, char * argv[]){
     if(_strncmp(argv[0], "rgb", strlen("rgb")) == 0){
         test_rgb();
     }
+    if(_strncmp(argv[0], "upd", strlen("rgb")) == 0){
+        led_update_battery_status();
+    }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
         //Create a message object from uart string
