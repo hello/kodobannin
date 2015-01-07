@@ -45,3 +45,4 @@ bool imu_is_active();
 
 void imu_set_data_ready_callback(imu_data_ready_callback_t callback);
 void imu_set_wom_callback(imu_wom_callback_t callback);
+MSG_Base_t * MSG_IMU_GetBase(void);

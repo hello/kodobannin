@@ -214,20 +214,20 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
     uint32_t value, result;      //  Measured        Actual
  // Battery Voltage  0x0267 - 0x010A +2.914 V,  80 %   2.9 V
     switch (adc_count) { // for each adc reading
-            case 0: battery_set_voltage_cached(adc_result); Vref = adc_result;
+            case 1: battery_set_voltage_cached(adc_result); Vref = adc_result;
                     PRINTS(" 0x");
                     value = adc_result/256;
                     PRINT_BYTE(&value, 1);
                     PRINT_HEX(&adc_result, 1);
                     return LDO_VRGB_ADC_INPUT; break; // for adc offset
-            case 1: battery_set_offset_cached(adc_result); Voff = adc_result;
+            case 2: battery_set_offset_cached(adc_result); Voff = adc_result;
                  // led_all_colors_on();
                     PRINTS("- 0x");
                     value = adc_result/256;
                     PRINT_BYTE(&value, 1);
                     PRINT_HEX(&adc_result, 1);
                     return LDO_VBAT_ADC_INPUT; break; // spread print overhead
-            case 2: result = battery_get_voltage_cached(); Vrel = adc_result;
+            case 3: result = battery_get_voltage_cached(); Vrel = adc_result;
                  // led_all_colors_off();
                     PRINTS(" +");
                     value = result/1000;
@@ -236,7 +236,7 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
                     PRINT_DEC(&result,3);
                     PRINTS(" V, ");
                     return LDO_VBAT_ADC_INPUT; break; // spread print overhead
-            case 3: result = battery_get_percent_cached();
+            case 4: result = battery_get_percent_cached();
                     PRINTS(" ");
                     PRINT_DEC(&result,2);
                     if ( Vrel > Vref) {
@@ -378,9 +378,10 @@ void hble_stack_init()
 void hble_update_battery_level()
 {
 #ifdef PLATFORM_HAS_VERSION
- // battery_module_power_on(); // must be done ahead of time to allow the
+ // battery_module_power_on(); // must be done before first adc reading
     PRINTS("Battery Voltage "); // resistor divider (512K||215K) to settle
-    battery_measurement_begin(_on_battery_level_measured); // start adc reading
+    battery_measurement_begin(_on_battery_level_measured, 0); // Vmcu/Vbat/...
+ // battery_module_power_off(); // must be done after last adc reading
 #endif
 }
 

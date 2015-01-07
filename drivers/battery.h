@@ -30,7 +30,7 @@ typedef uint8_t(*adc_measure_callback_t)(adc_t adc_result, uint16_t adc_count); 
 
 /**@brief Function for making the ADC start a battery level conversion.
  */
-uint32_t battery_measurement_begin(adc_measure_callback_t callback);
+uint32_t battery_measurement_begin(adc_measure_callback_t callback, uint8_t count);
 
 void battery_init();
 void battery_module_power_on();

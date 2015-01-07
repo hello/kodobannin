@@ -89,12 +89,9 @@ static void _init_rf_modules()
     hble_advertising_init(service_uuid);
 
     PRINTS("ble_init() done.\r\n");
- // hble_update_battery_level();
     hble_advertising_start();
-#else
- // battery_module_power_on();
- // battery_measurement_begin(NULL);
 #endif
+    hble_update_battery_level(); // measure Vbat during init (high mcu load)
     PRINTS("INIT DONE.\r\n");
 }
 
@@ -139,8 +136,6 @@ void _start()
 
     _init_rf_modules();
     _load_watchdog();
-
-    hble_update_battery_level(); // make first battery level measurement
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

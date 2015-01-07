@@ -128,7 +128,7 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
 uint16_t battery_set_offset_cached(adc_t adc_result) // need to average offset
 {
  // if (_adc_config_psel == LDO_VBAT_ADC_INPUT) { // battery being measured
-     // _adc_config_offset = adc_result;
+        _adc_config_offset = adc_result;
      // battery_set_voltage_cached(_adc_config_reading);
  // }
     return _battery_level_voltage;
@@ -165,13 +165,24 @@ void ADC_IRQHandler(void)
         adc_t adc_result      = NRF_ADC->RESULT;
         NRF_ADC->TASKS_STOP     = 1;
 
-        if(_adc_measure_callback && _adc_config_count--) // callback provided
+        if(_adc_measure_callback) // provided for IRQ
         {
-            adc_count = _adc_cycle_count++; // 0 1 2 3 ... 63
-            next_measure_input = _adc_measure_callback(adc_result, adc_count);
+            if (adc_count) { // Vmcu:0, Vbat:1, ... enabled and settled
+                adc_count = _adc_cycle_count++; // 1 2 3 ... 63
+                next_measure_input = _adc_measure_callback(adc_result, adc_count);
+
+            } else { // still evaluating Vmcu to ensure that
+             // if (adc_result < 0x0300) { // resistor dividers
+                    _adc_cycle_count = 1; // are in process of settling
+                    next_measure_input = LDO_VBAT_ADC_INPUT;
+             // } else { // Vmcu not yet coming off the peg
+             //     next_measure_input = LDO_VMCU_ADC_INPUT;
+             // }
+            }
 
             if (next_measure_input) // continue adc measurement
             {
+              if (_adc_config_count--) { // failsafe
                 _adc_config_psel = next_measure_input; // save adc input selection
 
                 NRF_ADC->CONFIG = (ADC_CONFIG_RES_10bit << ADC_CONFIG_RES_Pos) |
@@ -184,8 +195,13 @@ void ADC_IRQHandler(void)
                 // Trigger a new ADC sampling, the callback will be called again
                 NRF_ADC->TASKS_START = 1; // start adc to make next reading
 
-            } // adc measurement sequence complete
-        } // no callback provided or max adc reading usage limit reached
+              } // sequence exceeded max number of readings limit
+            } // adc measurement sequence completed
+        } /* { // no callback provided or max adc reading usage limit reached
+            battery_module_power_off();
+         // if (_adc_config_psel == LDO_VBAT_ADC_INPUT) // have Vbat
+         //     battery_set_voltage_level_cached(); // update saved voltage
+        } */
     }
 }
 
@@ -247,16 +263,25 @@ void battery_module_power_on()
 #endif
 }
 
-uint32_t battery_measurement_begin(adc_measure_callback_t callback)
+uint32_t battery_measurement_begin(adc_measure_callback_t callback, uint16_t count)
 {
 #ifdef PLATFORM_HAS_VERSION
     uint32_t err_code;
 
     _adc_measure_callback = callback; // returning next adc input (result, count)
 
-    _adc_cycle_count = 0; // indicate number of adc cycles so far
+    if (count) { // start with Vbat, presume resistor divider already settled
+        _adc_cycle_count = 1; // use adc cycle count to indicate start with Vbat
+        _adc_config_psel = LDO_VBAT_ADC_INPUT; // start w/eval Vmcu < 0x3FF
+     // _adc_config_count = count; // indicate max number of adc cycles
+    } else { // confirm Vmcu settled, then Vbat
+        battery_module_power_on(); // enable Vbat/Vmcu resistor dividers
+        _adc_cycle_count = 0; // use adc cycle count to indicate start with Vmcu
+        _adc_config_psel = LDO_VMCU_ADC_INPUT; // start with Vmcu, then Vbat
+     // _adc_config_count = 64; // indicate max number of adc cycles
+    }
+
     _adc_config_count = 64; // indicate max number of adc cycles
-    _adc_config_psel = LDO_VBAT_ADC_INPUT; // starting measurement
 
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;

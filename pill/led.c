@@ -139,19 +139,19 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
 
     switch (adc_count) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
     {
-        case 0: // Vbat (reference) (passive) (illuminate) (extinguish)
+        case 1: // Vbat (reference) (passive) (illuminate) (extinguish)
             _led_bat_ref[_led_index] = adc_result; // battery internal resistance
             next_adc_input = LDO_VRGB_ADC_INPUT;
             break;;
-        case 1: // Vrgb (offset) (precharge) (current) (discharge)
+        case 2: // Vrgb (offset) (precharge) (current) (discharge)
             _led_boost[_led_index] = adc_result; // rgb led forward current
             next_adc_input = LED_GREEN_SENSE;
             break;;
-        case 2: // Vlad (zero) (passive) (current) (discharge)
+        case 3: // Vlad (zero) (passive) (current) (discharge)
             _led_sense[_led_index] = adc_result; // rgb led forward current
             next_adc_input = LDO_VBAT_ADC_INPUT;
             break;;
-        case 3: // Vbat (zero) (passive) (current) (discharge)
+        case 4: // Vbat (zero) (passive) (current) (discharge)
             _led_bat_rel[_led_index] = adc_result; // battery internal resistance
             break;;
     }
@@ -161,15 +161,15 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
         case 0: // off -> on
             switch (adc_count) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
             {
-                case 0: // Vbat(off)
-                    battery_module_power_on();
+                case 1: // Vbat(off)
+                    battery_module_power_on(); // enable Vbat/Vmcu resistor dividers
                     break;;
-                case 1: // Vrgb(offset)
+                case 2: // Vrgb(offset)
                     Voff = adc_result;
                     break;;
-                case 2: //
+                case 3: //
                     break;;
-                case 3: // Vbat(on)
+                case 4: // Vbat(on)
                  // led_power_on(0);
                     break;;
             }
@@ -177,15 +177,15 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
         case 1: // on -> warm
             switch (_led_index) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
             {
-                case 0: // on -> warm  Vbat(pullup)
+                case 1: // on -> warm  Vbat(pullup)
                     Vref = adc_result;
                  // battery_set_internal_resistance_cached(adc_result);
                     break;;
-                case 1: // warm -> set Vrgb(precharge)
-                    break;;
-                case 2: //
+                case 2: // warm -> set Vrgb(precharge)
                     break;;
                 case 3: //
+                    break;;
+                case 4: //
                     Vrel = adc_result;
                  // battery_set_internal_resistance_cached(adc_result);
                  // led_warm_up(0);
@@ -195,13 +195,13 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
         case 2: // warm -> set
             switch (_led_index) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
             {
-                case 0: //
-                    break;;
                 case 1: //
                     break;;
                 case 2: //
                     break;;
                 case 3: //
+                    break;;
+                case 4: //
                  // led_run(0);
                     break;;
             }
@@ -209,16 +209,16 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
         case 3: // on -> off
             switch (_led_index) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
             {
-                case 0: // warm -> off  Vbat
+                case 1: // warm -> off  Vbat
                  // battery_set_voltage_cached(adc_result);
-                    break;;
-                case 1: //
                     break;;
                 case 2: //
                     break;;
                 case 3: //
-                 // battery_set_internal_resistance_cached(adc_result);
-                    battery_module_power_off();
+                    break;;
+                case 4: //
+                 // battery_set_internal_resistance_cached(adc_result); 
+                    battery_module_power_off(); // disable Vbat/Vmcu resistor dividers
                  // led_power_off(0);
                     break;;
             }
@@ -230,13 +230,12 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
         switch (_led_index) {
             case 0: led_power_on(1);  break;;
             case 1: led_warm_up(1);   break;;
-         // case 2: led_run(1);       break;;
+         // case 2: led_run(1);       break;; // ToDo: log V/I led RGB in operation
             case 3: led_power_off(1); break;;
         }
     }
     return next_adc_input;
 }
-     // battery_measurement_begin(led_adc_measured); // capture Vrgb / Vlad for each color
 
 void led_set(int led_channel, int pwmval){
 
@@ -254,7 +253,7 @@ void led_warm_up(uint8_t mode){ // internal resistance after weak pullup enable
     if (mode == 0) { // perform adc readings before warm up config
 
         _led_index=1;
-        battery_measurement_begin(led_adc_measured); // Vbat(after weak load applied) / Vrgb (passive boost precharge)
+        battery_measurement_begin(led_adc_measured, 1); // Vbat(after weak load applied) / Vrgb (passive boost precharge)
 
     } else {
 
@@ -271,7 +270,7 @@ void led_power_on(uint8_t mode) // w/o adc or w/adc reading sequence
     if (mode == 0) { // perform adc readings before power on config
 
         _led_index=0;
-        battery_measurement_begin(led_adc_measured); // measure Vbat (reference load) / Vrgb (adc offset boost off)
+        battery_measurement_begin(led_adc_measured, 1); // measure Vbat (reference load) / Vrgb (adc offset boost off)
 
  // gpio_cfg_d0s1_output_disconnect_pull(LED_RED_SENSE, NRF_GPIO_PIN_PULLUP);
  // gpio_cfg_d0s1_output_disconnect_pull(LED_GREEN, NRF_GPIO_PIN_PULLUP);
@@ -295,7 +294,7 @@ void led_power_off(uint8_t mode)
     if (mode == 0) { // perform adc readings before power off config
 
         _led_index=3;
-        battery_measurement_begin(led_adc_measured); // capture Vbat(after led load) / Vrgb(discharge)
+        battery_measurement_begin(led_adc_measured, 1); // capture Vbat(after led load) / Vrgb(discharge)
 
     } else { // default: perform led power off configuration
 
@@ -312,5 +311,24 @@ void led_power_off(uint8_t mode)
 #endif
 }
 
+uint32_t led_check_reed_switch(void){ // assert if either (evt/dvt) active
+#ifdef PLATFORM_HAS_VLED
+    uint32_t ret;
+
+    nrf_gpio_cfg_input(LED2_ENABLE, NRF_GPIO_PIN_NOPULL); // evt
+    nrf_gpio_cfg_input(LED3_ENABLE, NRF_GPIO_PIN_NOPULL); // dvt
+
+    ret = nrf_gpio_pin_read(LED2_ENABLE) || nrf_gpio_pin_read(LED3_ENABLE);
+
+    nrf_gpio_pin_set(LED2_ENABLE); // grn led off ( open drain )
+    _led_gpio_cfg_open_drain(LED2_ENABLE); // evt's reed switch
+    nrf_gpio_pin_set(LED3_ENABLE); // red led off ( open drain )
+    _led_gpio_cfg_open_drain(LED3_ENABLE); // dvt's reed switch
+
+    return ret;
+#else
+    return 0;
+#endif
+}
 
 #endif
