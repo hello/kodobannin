@@ -97,11 +97,11 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
 {
     _battery_level_voltage = milli_volts;
 
-    if (_battery_level_voltage >= 2950)
+    if (_battery_level_voltage >= 3000) // 2950)
     {
         _battery_level_percent = 100;
     }
-    else if (_battery_level_voltage > 2900)
+ /* else if (_battery_level_voltage > 2900)
     {
         _battery_level_percent = 80;
     }
@@ -112,14 +112,14 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
     else if (_battery_level_voltage > 2800)
     {
         _battery_level_percent = 40;
-    }
-    else if (_battery_level_voltage > 2750)
+    } */
+    else if (_battery_level_voltage > 2700) // 2750)
     {
-        _battery_level_percent = 20;
+        _battery_level_percent = 100 - (((3000 - _battery_level_voltage) * 80) / 300);
     }
     else
     {
-        _battery_level_percent = 5;
+        _battery_level_percent = 5; // 20 - ( 4 x Vbat(ref-rel)adc ) // IR
     }
 
     return _battery_level_percent;
