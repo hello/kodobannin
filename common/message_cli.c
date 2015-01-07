@@ -64,18 +64,29 @@ _tokenize(char * string, char **argv){
     }
     return argc;
 }
+static int
+_strncmp(const char * s1, const char *s2, uint32_t n){
+    while(n--){
+        if(*s1++!=*s2++){
+            return *(uint8_t*)(s1-1) - *(uint8_t*)(s2-1);
+        }
+    }
+    return 0;
+}
+int match_command(const char * argv, const char * command){
+    int command_length = strlen(command);
+    if(command_length != strlen(argv)){
+        return -1;
+    }else{
+        return _strncmp(argv, command, command_length);
+    }
+}
 
 static MSG_Status
 _handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     char * argv[CLI_MAX_ARGS] = {0};
     int argc = _tokenize(data->buf,argv);
-    /*
-     *PRINTS("args: \r\n");
-     *for(i = 0; i < argc; i++){
-     *    PRINTS(argv[i]);
-     *    PRINTS("\r\n");
-     *}
-     */
+
     if(self.user.handle_command){
         self.user.handle_command(argc, argv);
     }
