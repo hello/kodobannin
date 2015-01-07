@@ -9,6 +9,9 @@
 #include "shake_detect.h"
 #include "timedfifo.h"
 
+#include "ble.h"
+#include "hble.h"
+
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
 #endif
@@ -83,7 +86,6 @@ static void _send_available_data_ant(){
     }
 }
 
-
 static void _send_heartbeat_data_ant(){
     // TODO: Jackson please do review & test this.
     // I packed all the struct and I am not sure it will work as expected.
@@ -108,6 +110,10 @@ static void _send_heartbeat_data_ant(){
 
 #endif
 
+void send_heartbeat_packet(void){
+    _send_heartbeat_data_ant();
+}
+
 static void _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
@@ -123,10 +129,9 @@ static void _timer_handler(void * ctx){
 
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
     {
-        _send_heartbeat_data_ant();
-        battery_module_power_on(); // settling time ?
-        battery_measurement_begin(NULL);
-     // test_bat(); // measure battery voltage and internal resistance
+        battery_module_power_on();
+        hble_update_battery_level(); // Vbat(ref), Vrgb(offset), Vbat(rel) for IR
+     // _send_heartbeat_data_ant(); // for Vbat resistor (512K||215K) divider
     }
 #endif
     

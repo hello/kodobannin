@@ -64,6 +64,7 @@ _play_boot_complete(int * out_r, int * out_g, int * out_b){
 static int
 _play_battery_test(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
+        {0   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
         {0   * BOOSTER_REFRESH_RATE, {0xfe, 0xfe, 0xfe}, 0},
         {0   * BOOSTER_REFRESH_RATE, {0xF7, 0xff, 0xff}, 1},
         {0.5 * BOOSTER_REFRESH_RATE, {0xff, 0xF7, 0xff}, 1},

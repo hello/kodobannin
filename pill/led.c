@@ -130,6 +130,8 @@ void led_all_colors_off()
 // Vbat 0262 0266 0000 0201  after  ( 2.9 V )
 //  ==>    1    3  <== f(internal resistance)
 
+static adc_t Vref,Vrel,Voff;
+
 // perform adc readings before led driver config transition
 static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_count)
 {
@@ -163,6 +165,7 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
                     battery_module_power_on();
                     break;;
                 case 1: // Vrgb(offset)
+                    Voff = adc_result;
                     break;;
                 case 2: //
                     break;;
@@ -175,6 +178,7 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
             switch (_led_index) // 0 (Vbat) 1 (Vrgb) [ 2 (Vlad) [ 3 (Vbat) ]]
             {
                 case 0: // on -> warm  Vbat(pullup)
+                    Vref = adc_result;
                  // battery_set_internal_resistance_cached(adc_result);
                     break;;
                 case 1: // warm -> set Vrgb(precharge)
@@ -182,6 +186,8 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
                 case 2: //
                     break;;
                 case 3: //
+                    Vrel = adc_result;
+                 // battery_set_internal_resistance_cached(adc_result);
                  // led_warm_up(0);
                     break;;
             }

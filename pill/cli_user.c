@@ -48,7 +48,10 @@ _handle_command(int argc, char * argv[]){
         test_rgb();
     }
     if(_strncmp(argv[0], "upd", strlen("rgb")) == 0){
+        battery_module_power_on();
         led_update_battery_status();
+        hble_update_battery_level(); // make battery capacity assessment
+        battery_module_power_off();
     }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
