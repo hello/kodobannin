@@ -3,6 +3,8 @@
 #include "ant_driver.h"
 #include <nrf_soc.h>
 #include "message_led.h"
+#include "app.h"
+#include <ble.h>
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -40,6 +42,44 @@ _handle_command(int argc, char * argv[]){
     }
     if(_strncmp(argv[0], "led", strlen("led")) == 0){
         test_led();
+    }
+    if(_strncmp(argv[0], "advstop", strlen("advstop")) == 0){
+        sd_ble_gap_adv_stop();
+    }
+    if(_strncmp(argv[0], "imuoff", strlen("imuoff")) == 0){
+        self.parent->unloadmod(MSG_IMU_GetBase());
+    }
+    if(_strncmp(argv[0], "imuon", strlen("imuon")) == 0){
+        self.parent->loadmod(MSG_IMU_GetBase());
+    }
+    if(_strncmp(argv[0], "ver", strlen("ver")) == 0){
+        MSG_Data_t * id = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
+        if(id){
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){UART,MSG_UART_STRING},//destination address, UART STRING
+                                    id);
+            MSG_Base_ReleaseDataAtomic(id);
+        }
+    }
+    if(_strncmp(argv[0], "boot", strlen("boot")) == 0){
+        //prints out id
+        MSG_Data_t * id = MSG_Base_AllocateDataAtomic(6);
+        if(id){
+            uint8_t id_copy[6] = {0};
+            memcpy(id_copy, NRF_FICR->DEVICEADDR, 6);
+            id->buf[0] = id_copy[5];
+            id->buf[1] = id_copy[4];
+            id->buf[2] = id_copy[3];
+            id->buf[3] = id_copy[2];
+            id->buf[4] = id_copy[1];
+            id->buf[5] = id_copy[0];
+            //transform for factory test
+            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                                    (MSG_Address_t){UART,1},//destination address, ANT
+                                    id);
+            //release message object after dispatch to prevent memory leak
+            MSG_Base_ReleaseDataAtomic(id);
+        }
     }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){

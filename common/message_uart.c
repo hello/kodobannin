@@ -44,14 +44,18 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(data){
         if(dst.submodule == 0){
             //meta command
-        }else if(dst.submodule == 1){
+        }else if(dst.submodule == MSG_UART_HEX){
             //only 1 connection
             _printblocking("\r\n<data>",8, 0);
             _printblocking(data->buf,data->len,1);
             _printblocking("</data>\r\n",9, 0);
-        }else if(dst.submodule == 2){
+        }else if(dst.submodule == MSG_UART_SLIP){
             uint8_t test_slip[] = {0xc0, 0xc1, 0xae, 0x00, 0x91, 0x02, 0x00, 0x00, 0x00, 0xb8, 0x43, 0x00, 0x00, 0xe1, 0x38, 0xc0};
             _printblocking(test_slip,sizeof(test_slip), 0);
+        }else if(dst.submodule == MSG_UART_STRING){
+            _printblocking("\r\n<data>",8, 0);
+            _printblocking(data->buf,data->len,0);
+            _printblocking("</data>\r\n",9, 0);
         }
     }
     return SUCCESS;

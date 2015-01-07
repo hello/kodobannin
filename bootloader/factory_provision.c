@@ -21,7 +21,6 @@ _pstorage_cb(pstorage_handle_t * handle, uint8_t op_code, uint32_t result, uint8
             status = 0;
             break;
         default:
-            /*SIMPRINTS("Unknown Opcode");*/
             break;
     }
 }
@@ -60,10 +59,6 @@ uint32_t factory_provision_start(void){
     uint32_t err_code = NRF_SUCCESS;
     pstorage_module_param_t info_params;
     status = 1;
-
-    /*
-     *SIMPRINT_HEX(&test_info, sizeof(test_info));
-     */
 
     info_params.cb          = _pstorage_cb;
     info_params.block_size  = sizeof(device_info_t);

@@ -118,6 +118,18 @@ void led_power_off()
 #endif
 }
 
+uint32_t led_check_reedswitch(void){
+#ifdef PLATFORM_HAS_VLED
+    uint32_t ret;
+    nrf_gpio_cfg_input(LED3_ENABLE, NRF_GPIO_PIN_NOPULL);
+    ret = nrf_gpio_pin_read(LED3_ENABLE);
+    nrf_gpio_pin_set(LED3_ENABLE); // grn led off ( open drain )
+    _led_gpio_cfg_open_drain(LED3_ENABLE); // nrf_gpio_cfg_output(LED2_ENABLE); // grn
+    return ret;
+#else
+    return 0;
+#endif
+}
 
 
 #endif
