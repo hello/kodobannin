@@ -69,15 +69,6 @@ _handle_command(int argc, char * argv[]){
         PRINT_HEX(&ret, 4);
         PRINTS("\r\n");
     }
-    if(_strncmp(argv[0], "ver", strlen("ver")) == 0){
-        MSG_Data_t * id = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
-        if(id){
-            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
-                                    (MSG_Address_t){UART,MSG_UART_STRING},//destination address, UART STRING
-                                    id);
-            MSG_Base_ReleaseDataAtomic(id);
-        }
-    }
     if(_strncmp(argv[0], "boot", strlen("boot")) == 0){
         //prints out id
         MSG_Data_t * id = MSG_Base_AllocateDataAtomic(6);
@@ -116,9 +107,6 @@ _handle_command(int argc, char * argv[]){
             //release message object after dispatch to prevent memory leak
             MSG_Base_ReleaseDataAtomic(data);
         }
-    }
-    if(_strncmp(argv[0], "dfu", strlen("dfu")) == 0){
-        REBOOT_TO_DFU();
     }
 #ifdef FACTORY_APP
     if(argc > 0 && _strncmp(argv[0], "dtm", strlen("dtm")) == 0){

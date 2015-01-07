@@ -43,6 +43,7 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 									sd_nvic_SystemReset();\
 								}\
 							}while(0)
+#define REBOOT() sd_nvic_SystemReset()
 #define AES128_BLOCK_SIZE 16
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);

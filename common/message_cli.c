@@ -82,10 +82,55 @@ int match_command(const char * argv, const char * command){
     }
 }
 
+#include <nrf_soc.h>
+#include "util.h"
 static MSG_Status
 _handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     char * argv[CLI_MAX_ARGS] = {0};
     int argc = _tokenize(data->buf,argv);
+
+    //default commands
+    if(argc > 0){
+        //reboots to dfu mode
+        if(!match_command(argv[0], "dfu")){
+            REBOOT_TO_DFU();
+        }
+
+        if(!match_command(argv[0], "ver")){
+            MSG_Data_t * msg = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
+            if(msg){
+                self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                        (MSG_Address_t){UART,MSG_UART_STRING},//destination address, UART STRING
+                        msg);
+                MSG_Base_ReleaseDataAtomic(msg);
+            }
+        }
+
+        if(!match_command(argv[0], "id")){
+            uint64_t id = GET_UUID_64();
+            MSG_Data_t * msg = MSG_Base_AllocateDataAtomic(sizeof(id));
+            if(msg){
+                memcpy(msg->buf, &id, sizeof(id));
+                self.parent->dispatch(  (MSG_Address_t){CLI, 0},
+                        (MSG_Address_t){UART,MSG_UART_HEX},
+                        msg);
+                MSG_Base_ReleaseDataAtomic(msg);
+            }
+
+        }
+
+        if(!match_command(argv[0], "rst")){
+            REBOOT();
+        }
+
+        if(!match_command(argv[0], "blemac")){
+
+        }
+
+        if(!match_command(argv[0], "antid")){
+
+        }
+    }
 
     if(self.user.handle_command){
         self.user.handle_command(argc, argv);
