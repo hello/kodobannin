@@ -84,12 +84,8 @@ int match_command(const char * argv, const char * command){
 
 #include <nrf_soc.h>
 #include "util.h"
-static MSG_Status
-_handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
-    char * argv[CLI_MAX_ARGS] = {0};
-    int argc = _tokenize(data->buf,argv);
-
-    //default commands
+static int
+_handle_default_commands(int argc, char * argv[]){
     if(argc > 0){
         //reboots to dfu mode
         if(!match_command(argv[0], "dfu")){
@@ -147,6 +143,14 @@ _handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
 
         }
     }
+    return 0;
+}
+static MSG_Status
+_handle_raw_command(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
+    char * argv[CLI_MAX_ARGS] = {0};
+    int argc = _tokenize(data->buf,argv);
+
+    _handle_default_commands(argc, argv);
 
     if(self.user.handle_command){
         self.user.handle_command(argc, argv);
