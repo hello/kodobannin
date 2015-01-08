@@ -113,9 +113,9 @@ _acquire_session(const hlo_ant_device_t * device){
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid != 0 && !self.entries[i].tx_obj){
             if(self.global_age - self.entries[i].age >= ANT_SESSION_AGE_LIMIT){
-                PRINTS("Sweep cid ");
-                PRINT_HEX(&cid,2);
-                PRINTS("\r\n");
+                DEBUGS("Sweep cid ");
+                DEBUG_HEX(&cid,2);
+                DEBUGS("\r\n");
                 _reset_session_rx(&(self.entries[i]));
                 self.entries[i].age = self.global_age;
                 self.entries[i].cid = cid;
