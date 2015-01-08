@@ -82,6 +82,13 @@ _play_enter_factory_mode(int * out_r, int * out_g, int * out_b){
     return 0;
 }
 static int
+_play_on(int * out_r, int * out_g, int * out_b){
+    *out_r = 0x18;
+    *out_g = 0x18;
+    *out_b = 0x18;
+    return 1;
+}
+static int
 _play_boot_complete(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
         {0   * BOOSTER_REFRESH_RATE, {0xff, 0x18, 0xff}, 1},
@@ -121,6 +128,8 @@ static int _on_cycle(int * out_r, int * out_g, int * out_b){
             return _play_enter_factory_mode(out_r, out_g, out_b);
         case LED_PLAY_TEST:
             return _play_test(out_r, out_g, out_b);
+        case LED_PLAY_ON:
+            return _play_on(out_r, out_g, out_b);
     }
 }
 
@@ -162,16 +171,11 @@ _flush(void){
 }
 static MSG_Status
 _handle_led_commands(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
-    switch(dst.submodule){
-        default:
-            break;
-        case LED_PLAY_TEST:
-        case LED_PLAY_ENTER_FACTORY_MODE:
-        case LED_PLAY_BOOT_COMPLETE:
-            _play_animation(dst.submodule);
-            break;
+    if(dst.submodule > 0 && dst.submodule < LED_COMMAND_SIZE){
+        _play_animation(dst.submodule);
+        return SUCCESS;
     }
-    return SUCCESS;
+    return FAIL;
 }
 
 MSG_Base_t * MSG_LEDInit(MSG_Central_t * parent){
