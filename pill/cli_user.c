@@ -12,35 +12,26 @@ static struct{
     MSG_CliUserListener_t listener;
 }self;
 
-static int
-_strncmp(const char * s1, const char *s2, uint32_t n){
-    while(n--){
-        if(*s1++!=*s2++){
-            return *(uint8_t*)(s1-1) - *(uint8_t*)(s2-1);
-        }
-    }
-    return 0;
-}
 static void
 _handle_command(int argc, char * argv[]){
     int i;
-    if(argc > 1 && _strncmp(argv[0], "echo", strlen("echo")) == 0){
+    if(argc > 1 && !match_command(argv[0], "echo")) ){
         PRINTS(argv[1]);
     }
-    if(_strncmp(argv[0], "led", strlen("led")) == 0){
+    if( !match_command(argv[0], "led") ){
         test_led();
     }
-    if(_strncmp(argv[0], "advstop", strlen("advstop")) == 0){
+    if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
-    if(_strncmp(argv[0], "imuoff", strlen("imuoff")) == 0){
+    if( !match_command(argv[0], "imuoff") ){
         self.parent->unloadmod(MSG_IMU_GetBase());
     }
-    if(_strncmp(argv[0], "imuon", strlen("imuon")) == 0){
+    if( !match_command(argv[0], "imuon") ){
         self.parent->loadmod(MSG_IMU_GetBase());
     }
     //dispatch message through ANT
-    if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
+    if(argc > 1 && !match_command("ant") ){
         //Create a message object from uart string
         MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
         if(data){
