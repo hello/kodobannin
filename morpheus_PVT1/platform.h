@@ -14,7 +14,7 @@
 #define HW_REVISION 3
 
 #define DEVICE_ID_SIZE        8
-#define BLE_MODEL_NUM         "DVT4.1"
+#define BLE_MODEL_NUM         "0.5.0"
 
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
