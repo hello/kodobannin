@@ -5,42 +5,12 @@ all: b m
 
 # apps & platforms
 
-TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
 APPS = bootloader bootloader_serial morpheus pill
+S310_PLATFORMS = morpheus_DVT1 pill_DVT1 morpheus_PVT1 pill_PVT1
 
-S110_PLATFORMS = band_EVT3 pca10001 pca10000
-S310_PLATFORMS = pca10003 morpheus_DVT1 pill_DVT1
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 UNAME := $(shell uname)
 
-# product aliases
-
-.PHONY: b
-b: band+band_EVT3 bootloader+band_EVT3
-
-.PHONY: m
-m: morpheus+EK bootloader+EK
-
-# program targets
-
-.PHONY: pb
-pb: p-band+band_EVT3
-
-.PHONY: pbb
-pbb: p-band+bootloader+band_EVT3
-
-.PHONY: pbl
-pbl: p-bootloader+band_EVT3
-
-.PHONY: pm
-pm: p-morpheus+EK
-
-# debug targets
-.PHONY: gb
-gb: g-band+band_EVT3
-
-.PHONY: gbl
-gbl: g-bootloader+band_EVT3
 
 # tool paths
 
