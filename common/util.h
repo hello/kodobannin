@@ -28,9 +28,11 @@ extern const uint8_t hex[16];
 #define SIMPRINTC(a) simple_uart_put(a)
 
 #ifdef VERBOSE_DEBUG
+#define DEBUG_HEX(a,b) MSG_Uart_PrintHex((uint8_t*)a,b)
 #define DEBUGS(a) MSG_Uart_Prints(a)
 #define DEBUGC(a) MSG_Uart_Printc(a)
 #else
+#define DEBUG_HEX(a,b) {}
 #define DEBUGS(a) {}
 #define DEBUGC(a) {}
 #endif
