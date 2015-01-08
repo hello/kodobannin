@@ -22,17 +22,7 @@ _strncmp(const char * s1, const char *s2, uint32_t n){
 }
 static void
 _handle_command(int argc, char * argv[]){
-    /*
-     * stub code
-     */
     int i;
-    PRINTS("Received Args:\r\n");
-    for(i = 0; i < argc; i++){
-        PRINTS(argv[i]);
-        PRINTS("\r\n");
-    }
-    //echo command
-    PRINTS("Handle Command: \r\n");
     if(argc > 1 && _strncmp(argv[0], "echo", strlen("echo")) == 0){
         PRINTS(argv[1]);
     }
