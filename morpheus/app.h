@@ -106,3 +106,6 @@ enum {
 
 //fatory app allows more capabilities
 #define FACTORY_APP
+//verbose app shows more txt for debugging
+#define VERBOSE_DEBUG
+
