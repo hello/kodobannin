@@ -84,6 +84,7 @@ int match_command(const char * argv, const char * command){
 
 #include <nrf_soc.h>
 #include "util.h"
+#include "platform.h"
 static int
 _handle_default_commands(int argc, char * argv[]){
     if(argc > 0){
@@ -93,7 +94,7 @@ _handle_default_commands(int argc, char * argv[]){
         }
 
         if(!match_command(argv[0], "ver")){
-            MSG_Data_t * msg = MSG_Base_AllocateStringAtomic(BLE_MODEL_NUM);
+            MSG_Data_t * msg = MSG_Base_AllocateStringAtomic(FW_VERSION_STRING);
             if(msg){
                 self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
                         (MSG_Address_t){UART,MSG_UART_STRING},//destination address, UART STRING
