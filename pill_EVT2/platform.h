@@ -9,6 +9,7 @@
 #define BLE_ENABLE
 
 #define HW_REVISION 2
+#define FW_VERSION_STRING "EVT1.0"
 
 /*
 // This is from EVT1, not used

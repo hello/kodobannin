@@ -13,7 +13,7 @@
 #define HW_REVISION 2
 
 #define DEVICE_ID_SIZE        6
-#define BLE_MODEL_NUM         "EVT2"
+#define FW_VERSION_STRING     "EVT2"
 
 enum {
     SERIAL_TX_PIN = 19,

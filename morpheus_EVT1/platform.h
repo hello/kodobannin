@@ -10,7 +10,7 @@
 #define HW_REVISION 1
 
 #define DEVICE_ID_SIZE        6
-#define BLE_MODEL_NUM         "EVT1"
+#define FW_VERSION_STRING     "EVT1"
 
 /* CS and MOSI are inverted in EVT1*/
 enum {

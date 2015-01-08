@@ -7,6 +7,7 @@
 #endif
 
 #define HW_REVISION 1
+#define FW_VERSION_STRING "EVT"
 //#define BLE_ENABLE
 //#define BATTERY_SERVICE_ENABLE
 //#define DEBUG_BATT_LVL
