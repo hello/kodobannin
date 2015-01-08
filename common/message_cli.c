@@ -140,7 +140,16 @@ _handle_default_commands(int argc, char * argv[]){
         }
 
         if(!match_command(argv[0], "antid")){
-
+            uint16_t device_number = GET_UUID_16();
+            MSG_Data_t * id = MSG_Base_AllocateDataAtomic(sizeof(device_number));
+            if(id){
+                memcpy(id->buf, &device_number, sizeof(device_number));
+                self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
+                        (MSG_Address_t){UART,MSG_UART_HEX},//destination address, ANT
+                        id);
+                //release message object after dispatch to prevent memory leak
+                MSG_Base_ReleaseDataAtomic(id);
+            }
         }
     }
     return 0;
