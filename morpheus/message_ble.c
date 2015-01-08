@@ -608,8 +608,17 @@ static void _on_boot_timer(void* context)
         case BOOT_COMPLETED:
         hble_advertising_start();
         nrf_delay_ms(100);
+        {
+            MSG_Data_t * dat = MSG_Base_AllocateStringAtomic("Boot completed");
+            if(dat){
+                self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){UART, MSG_UART_STRING}, dat);
+                MSG_Base_ReleaseDataAtomic(dat);
+            }else{
+                PRINTS("Boot completed!\r\n");
+            }
+        }
 
-        PRINTS("Boot completed!\r\n");
+
         break;
 
         case BOOT_CHECK:
