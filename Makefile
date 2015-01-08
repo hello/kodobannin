@@ -9,7 +9,7 @@ TEST_APPS = hello_world rtc_test imu_stream_test imu_wom_test ble_test
 APPS = bootloader bootloader_serial morpheus pill
 
 S110_PLATFORMS = band_EVT3 pca10001 pca10000
-S310_PLATFORMS = pca10003 pill_EVT2 morpheus_EVT3 morpheus_DVT1 pill_DVT1
+S310_PLATFORMS = pca10003 morpheus_DVT1 pill_DVT1
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 UNAME := $(shell uname)
 
