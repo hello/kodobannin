@@ -102,7 +102,12 @@ enum {
 #define TX_POWER_LEVEL (0)
 
 #define APP_PILL_PAIRING_TIMEOUT_INTERVAL	 (APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER))
-#define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER))
+#define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(2500, APP_TIMER_PRESCALER))
 
 //fatory app allows more capabilities
 #define FACTORY_APP
+//verbose app shows more txt for debugging
+/*
+ *#define VERBOSE_DEBUG
+ */
+
