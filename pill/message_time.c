@@ -7,7 +7,11 @@
 #include "platform.h"
 #include "app.h"
 #include "shake_detect.h"
+#include "message_led.h"
 #include "timedfifo.h"
+#include "led.h"
+#include <ble.h>
+#include "hble.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -22,6 +26,8 @@ static struct{
     app_timer_id_t timer_id;
     MSG_Data_t * user_cb;
     uint32_t uptime;
+    uint8_t reed_states;
+    uint8_t power_state;
 }self;
 
 static char * name = "TIME";
@@ -127,6 +133,7 @@ static void _send_heartbeat_data_ant(){
 
 #endif
 
+#define POWER_STATE_MASK 0x7
 static void _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
@@ -156,6 +163,27 @@ static void _timer_handler(void * ctx){
             MSG_Base_ReleaseDataAtomic(self.user_cb);
             self.user_cb = NULL;
         }
+    }
+    uint8_t current_reed_state = (uint8_t)led_check_reedswitch();
+    if(led_booster_is_free()){
+        current_reed_state = (uint8_t)led_check_reedswitch();
+    }else{
+        current_reed_state = 0;
+    }
+    self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
+    PRINT_HEX(&self.reed_states, 1);
+    PRINTS("\r\n");
+    if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
+        PRINTS("Going into Factory Mode");
+        self.power_state = 1;
+        self.central->unloadmod(MSG_IMU_GetBase());
+        sd_ble_gap_adv_stop();
+        self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE}, NULL);
+    }else if(self.reed_states == 0x00 && self.power_state == 1){
+        PRINTS("Going into User Mode");
+        self.power_state = 0;
+        self.central->loadmod(MSG_IMU_GetBase());
+        hble_advertising_start();
     }
 }
 

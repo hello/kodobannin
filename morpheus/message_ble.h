@@ -30,6 +30,7 @@ typedef enum {
 
 MSG_Base_t* MSG_BLE_Base(MSG_Central_t* parent);
 MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data);
+bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command);
 MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page);
 MSG_Status message_ble_remove_pill(MSG_Data_t* pill_id_page);
 void message_ble_reset();

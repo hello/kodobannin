@@ -25,17 +25,17 @@
 #include <stdint.h>
 
 #define PSTORAGE_FLASH_PAGE_SIZE    ((uint16_t)NRF_FICR->CODEPAGESIZE)   /**< Size of one flash page. */
-#define BOOTLOADER_LOCATION         (0x36000)
+#define APP_DATA_END_ADDRESS        (0x3EC00)                            /** defined in memory.ld */
+#define APP_DATA_START_ADDRESS      (0x3CC00)                            /** defined in memory.ld*/
 #define PSTORAGE_FLASH_EMPTY_MASK    0xFFFFFFFF                          /**< Bit mask that defines an empty address in flash. */
 
-#define PSTORAGE_FLASH_PAGE_END	(BOOTLOADER_LOCATION/PSTORAGE_FLASH_PAGE_SIZE)	
+#define PSTORAGE_FLASH_PAGE_END	(APP_DATA_END_ADDRESS/PSTORAGE_FLASH_PAGE_SIZE)	
 
 
 #define PSTORAGE_MAX_APPLICATIONS   3                                                           /**< Maximum number of applications that can be registered with the module, configurable based on system requirements. */
 #define PSTORAGE_MIN_BLOCK_SIZE     0x0010                                                      /**< Minimum size of block that can be registered with the module. Should be configured based on system requirements, recommendation is not have this value to be at least size of word. */
 
-#define PSTORAGE_DATA_START_ADDR    ((PSTORAGE_FLASH_PAGE_END - PSTORAGE_MAX_APPLICATIONS - 1) \
-                                    * PSTORAGE_FLASH_PAGE_SIZE)                                 /**< Start address for persistent data, configurable according to system requirements. */
+#define PSTORAGE_DATA_START_ADDR    APP_DATA_START_ADDRESS
 #define PSTORAGE_DATA_END_ADDR      ((PSTORAGE_FLASH_PAGE_END - 1) * PSTORAGE_FLASH_PAGE_SIZE)  /**< End address for persistent data, configurable according to system requirements. */
 #define PSTORAGE_SWAP_ADDR          PSTORAGE_DATA_END_ADDR                                      /**< Top-most page is used as swap area for clear and update. */
 

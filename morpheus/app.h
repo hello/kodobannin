@@ -5,6 +5,8 @@
 #include <nrf51.h>
 #include <nrf51_bitfields.h>
 
+#include "platform.h"
+
 enum {
     APP_TIMER_PRESCALER = 0,
     APP_TIMER_MAX_TIMERS = 6,
@@ -16,7 +18,7 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Sense"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "DVT4.0"
+#define BLE_MODEL_NUM         FW_VERSION_STRING
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -29,8 +31,6 @@ enum {
 #define PROTO_REPLY   // use protobuf for all reply, even in 0xD00D
 #define PROTOBUF_VERSION		(0)
 #define PROTOBUF_MAX_LEN        (100)
-
-#define DEVICE_ID_SIZE          8
 
 #ifdef DEBUG_SERIAL
 #define PB_NO_ERRMSG
@@ -102,9 +102,12 @@ enum {
 #define TX_POWER_LEVEL (0)
 
 #define APP_PILL_PAIRING_TIMEOUT_INTERVAL	 (APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER))
-#define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER))
+#define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(2500, APP_TIMER_PRESCALER))
 
 //fatory app allows more capabilities
 #define FACTORY_APP
-//use hello's ant network key
-#define USE_HLO_ANT_NETWORK
+//verbose app shows more txt for debugging
+/*
+ *#define VERBOSE_DEBUG
+ */
+

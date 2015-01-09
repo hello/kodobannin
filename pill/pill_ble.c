@@ -256,6 +256,9 @@ static void _test_send_available_data_ant(void *ctx){
 }
 */
 int is_debug_enabled(){
+#ifdef DEBUG_SERIAL
+	return 1;
+#endif
 #ifdef PLATFORM_HAS_SERIAL
 	uint32_t val = nrf_gpio_pin_read(SERIAL_RX_PIN);
 	/*

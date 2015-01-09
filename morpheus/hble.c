@@ -44,7 +44,11 @@ static uint64_t _device_id;
 static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
 
-
+// BLE event callbacks for message_ble.c
+static void(*_on_advertise_started)(bool);
+static bond_status_callback_t _bond_status_callback;
+static connected_callback_t _connect_callback;
+////
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
 static uint8_t _task_index;
@@ -71,6 +75,21 @@ static void _delay_task_store_bonds()
     APP_OK(ble_bondmngr_bonded_centrals_store());
     PRINTS("bond saved\r\n");
 #endif
+}
+
+void hble_set_advertise_callback(void(*advertise_started_callback)(bool))
+{
+    _on_advertise_started = advertise_started_callback;
+}
+
+void hble_set_bond_status_callback(bond_status_callback_t callback)
+{
+    _bond_status_callback = callback;
+}
+
+void hble_set_connected_callback(connected_callback_t callback)
+{
+    _connect_callback = callback;
 }
 
 void hble_delay_task_advertise_resume()
@@ -174,6 +193,15 @@ static void _delay_tasks(void* context)
 
 }
 
+static void _on_bond(void * p_event_data, uint16_t event_size)
+{
+    if(_bond_status_callback)
+    {
+        ble_bondmngr_evt_type_t* type = (ble_bondmngr_evt_type_t*)p_event_data;
+        _bond_status_callback(*type);
+    }
+}
+
 static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
@@ -181,6 +209,14 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
     hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
     PRINTS("delay task started\r\n");
 
+}
+
+static void _on_connected(void * p_event_data, uint16_t event_size)
+{
+    if(_connect_callback)
+    {
+        _connect_callback();
+    }
 }
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
@@ -244,6 +280,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
             _delay_task_resume_ant, 
             _delay_task_memory_checkpoint};
         memcpy(_tasks, tasks, sizeof(_tasks));
+        app_sched_event_put(NULL, 0, _on_connected);
     }
         break;
     case BLE_GAP_EVT_DISCONNECTED:
@@ -328,10 +365,24 @@ static void _bond_manager_error_handler(uint32_t nrf_error)
  */
 static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 {
+    PRINTS("Bond event ");
+    PRINT_HEX(&p_evt->evt_type, sizeof(p_evt->evt_type));
+    PRINTS("\r\n");
+
     _last_bond_central_id = p_evt->central_id;
     PRINTS("last bonded central: ");
     PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
     PRINTS("\r\n");
+
+    switch(p_evt->evt_type)
+    {
+        case BLE_BONDMNGR_EVT_ENCRYPTED:
+        {
+            // Notify message ble module, schedule the call
+            app_sched_event_put(&p_evt->evt_type, sizeof(p_evt->evt_type), _on_bond);
+        }
+        break;
+    }
 }
 
 void hble_erase_other_bonded_central()
@@ -453,6 +504,7 @@ void hble_advertising_start()
             }else{
                 flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;  // Just make it clear what we want to do.
                 PRINTS("NO whitelist retrieved. Advertising in pairing mode.\r\n");
+                _pairing_mode = true;
             }
         }else{
             PRINTS("get whitelist error: ");
@@ -460,6 +512,7 @@ void hble_advertising_start()
             PRINTS("\r\n");
             nrf_delay_ms(100);
             flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+            _pairing_mode = true;
         }
 
         APP_OK(err_code);
@@ -476,6 +529,12 @@ void hble_advertising_start()
     APP_OK(sd_ble_gap_adv_start(&adv_params));
 
     PRINTS("Advertising started.\r\n");
+
+    if(_on_advertise_started)
+    {
+        _on_advertise_started(_pairing_mode);
+    }
+
 }
 
 void hble_stack_init()
@@ -648,7 +707,10 @@ void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, mod_num);
 
-        char hex_device_id[DEVICE_ID_SIZE * 2 + 1];
+        // If _device_id != GET_UUID_64(), that means a MAC is fed in and the 
+        // mid is an old EVT build, use 6 bytes instead.
+        uint8_t int_size = _device_id == GET_UUID_64() ? DEVICE_ID_SIZE : 6;
+        char hex_device_id[int_size * 2 + 1];
         memset(hex_device_id, 0, sizeof(hex_device_id));
         size_t device_id_size = sizeof(hex_device_id);
 

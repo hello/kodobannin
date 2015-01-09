@@ -5,6 +5,8 @@
 #include <nrf51.h>
 #include <nrf51_bitfields.h>
 
+#include "platform.h"
+
 enum {
     APP_TIMER_PRESCALER = 0,
     APP_TIMER_MAX_TIMERS = 8,
@@ -16,7 +18,7 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Pill"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "DVT4.0"
+#define BLE_MODEL_NUM         FW_VERSION_STRING
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -54,7 +56,7 @@ enum {
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800 * 8
+#define APP_ADV_INTERVAL                     800
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           5 * 60
 
@@ -116,6 +118,6 @@ enum {
 #define HEARTBEAT_INTERVAL_SEC              (3600)
 #define MOTION_DATA_INTERVAL_SEC            (60)
 
-#define DEVICE_KEY_ADDRESS                   0x20003FF0
-//use hello's ant network key
-#define USE_HLO_ANT_NETWORK
+#define SHAKING_MOTION_THRESHOLD        (750000000)
+#define SLIDING_WINDOW_SIZE_SEC         (1)
+#define SHAKING_DATA_COUNT_THRESHOLD    (8)

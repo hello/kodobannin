@@ -51,10 +51,13 @@ static void _init_rf_modules()
 	//configure input
 	nrf_gpio_cfg_input(SERIAL_RX_PIN, GPIO_PIN_CNF_PULL_Pullup);
 #endif
+    /*
+    // WTF?
 	volatile int debounce = 2000000;//about 2 seconds debounce
 	while(debounce > 0){
 		debounce--;
 	}
+    */
     pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
 #ifdef ANT_ENABLE
