@@ -14,6 +14,7 @@
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
+#define MSG_BASE_USE_BIG_POOL
 
 /*
 // This is from EVT1, not used
