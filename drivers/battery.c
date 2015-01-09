@@ -148,7 +148,7 @@ static uint8_t _adc_config_count;
 
 void ADC_IRQHandler(void)
 {
-    uint16_t value,adc_count;
+    uint16_t value, adc_count;
     uint8_t next_measure_input = 0; // indicate adc sequence complete
 
     if (NRF_ADC->EVENTS_END)
@@ -178,7 +178,10 @@ void ADC_IRQHandler(void)
                 }
             }
 
-            if (next_measure_input <= 0x128) // continue adc measurement
+	 // if (next_measure_input == 0xFF) { // end adc measurement
+             // battery_module_power_off(); // leave battery module alone
+         // } else
+            if (next_measure_input) // continue adc measurement
             {
               if (_adc_config_count--) { // failsafe
                 _adc_config_psel = next_measure_input; // save adc input selection

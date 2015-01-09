@@ -18,20 +18,20 @@ static const char * name = "LED";
 
 static void _setup(void){
     /*
-     *PRINTS("Setup\r\n");
+     *PRINTS("su"); // Setup\r\n");
      */
     led_power_on(0); // perfrom Vbat/Vrgb measurements
 }
 static void _teardown(void){
     /*
-     *PRINTS("Teardown\r\n");
+     *PRINTS("td"); // Teardown\r\n");
      */
     led_all_colors_off();
     led_power_off(0);
 }
 static void _on_warm(void){
     /*
-     *PRINTS("Warm\r\n");
+     *PRINTS("wm"); // Warm\r\n");
      */
     led_warm_up(0);
 }
