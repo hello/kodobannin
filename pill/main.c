@@ -91,7 +91,6 @@ static void _init_rf_modules()
     PRINTS("ble_init() done.\r\n");
     hble_advertising_start();
 #endif
-    hble_update_battery_level(); // measure Vbat during init (high mcu load)
     PRINTS("INIT DONE.\r\n");
 }
 
@@ -107,8 +106,6 @@ void _start()
     
     led_init();
     battery_init();
-
-    battery_module_power_on(); // prepare for the first battery level measurement
 
     {
         enum {
@@ -135,7 +132,12 @@ void _start()
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
 
     _init_rf_modules();
+
+ // battery_module_power_on(); // prepare for the first battery level measurement
+
     _load_watchdog();
+
+    hble_update_battery_level(); // measure Vbat during init (high mcu load)
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

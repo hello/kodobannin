@@ -218,7 +218,7 @@ static adc_measure_callback_t led_adc_measured(adc_t adc_result, uint16_t adc_co
                     break;;
                 case 4: //
                  // battery_set_internal_resistance_cached(adc_result); 
-                    battery_module_power_off(); // disable Vbat/Vmcu resistor dividers
+                 // battery_module_power_off(); // disable Vbat/Vmcu resistor dividers
                  // led_power_off(0);
                     break;;
             }

@@ -238,7 +238,7 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
                     return LDO_VBAT_ADC_INPUT; break; // spread print overhead
             case 4: result = battery_get_percent_cached();
                     PRINTS(" ");
-                    PRINT_DEC(&result,2);
+                    PRINT_DEC(&result,3);
                     if ( Vrel > Vref) {
                         result = Vrel - Vref; 
                         PRINTS("% +");
@@ -254,7 +254,7 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
     }
 
     send_heartbeat_packet();
-    battery_module_power_off(); // disable Vbat resistor (512K||215K) divider
+    battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
 
     uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, adc_result);
     if ((err_code != NRF_SUCCESS) &&
@@ -379,7 +379,7 @@ void hble_update_battery_level()
 {
 #ifdef PLATFORM_HAS_VERSION
  // battery_module_power_on(); // must be done before first adc reading
-    PRINTS("Battery Voltage "); // resistor divider (512K||215K) to settle
+    PRINTS("Battery Voltage "); // resistor divider (523K||215K) to settle
     battery_measurement_begin(_on_battery_level_measured, 0); // Vmcu/Vbat/...
  // battery_module_power_off(); // must be done after last adc reading
 #endif

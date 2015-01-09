@@ -47,11 +47,11 @@ _handle_command(int argc, char * argv[]){
     if(_strncmp(argv[0], "rgb", strlen("rgb")) == 0){
         test_rgb();
     }
-    if(_strncmp(argv[0], "upd", strlen("rgb")) == 0){
-     // battery_module_power_on();
-        led_update_battery_status(); // display results of led driver
+    if(_strncmp(argv[0], "dsp", strlen("dsp")) == 0){
+        led_update_battery_status();
+    }
+    if(_strncmp(argv[0], "upd", strlen("upd")) == 0){
         hble_update_battery_level(); // make battery capacity assessment
-     // battery_module_power_off();
     }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){

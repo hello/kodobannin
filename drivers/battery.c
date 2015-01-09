@@ -90,6 +90,7 @@ inline void battery_module_power_off()
 #endif
 }
 
+static uint16_t _battery_level_startup; // measured battery voltage at startup
 static uint16_t _battery_level_voltage; // measured battery voltage
 static uint8_t _battery_level_percent; // computed remaining capacity
 
@@ -97,30 +98,21 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
 {
     _battery_level_voltage = milli_volts;
 
-    if (_battery_level_voltage >= 3000) // 2950)
+    if (_battery_level_voltage >= 3000) // 4.0 to 3.0 volts is 120 to 100 percent
     {
-        _battery_level_percent = 100;
+        _battery_level_percent = 100 + (((_battery_level_voltage - 3000) * 20) / 1000);
     }
- /* else if (_battery_level_voltage > 2900)
+    else if (_battery_level_voltage > 2700) // 3.0 to 2.7 volts is 100 to 10 percent
     {
-        _battery_level_percent = 80;
+     // _battery_level_percent = 100 - (((3000 - _battery_level_voltage) *  80) / 300); // 100 to 20 %
+        _battery_level_percent = 10 + (((_battery_level_voltage - 2700) *  90) / 300); // 100 to 10 %
     }
-    else if (_battery_level_voltage > 2850)
-    {
-        _battery_level_percent = 60;
-    }
-    else if (_battery_level_voltage > 2800)
-    {
-        _battery_level_percent = 40;
-    } */
-    else if (_battery_level_voltage > 2700) // 2750)
-    {
-        _battery_level_percent = 100 - (((3000 - _battery_level_voltage) * 80) / 300);
-    }
-    else
-    {
-        _battery_level_percent = 5; // 20 - ( 4 x Vbat(ref-rel)adc ) // IR
-    }
+    else // less than 10 %  ( Vbat(startup) > Vdd(1.8V) + 0.4V ) 2.7 V to 2.2 V is 10 to 0 percent
+    { // Vbat well above Vdd (1.8 + margin) operating threshold observed at startup
+         _battery_level_percent = 5; // 20 - ( 4 x Vbat(ref-rel)adc ) // IR
+               // battery_get_starup_voltage(); // first measured Vbat during initialization
+      // _battery_level_percent = (((_battery_level_voltage - 2200) *  10) / 500); // 10 to 0 %
+    } // this will ensure there is sufficient Vbat in reserve to survive next startup phase
 
     return _battery_level_percent;
 }
@@ -137,9 +129,9 @@ uint16_t battery_set_offset_cached(adc_t adc_result) // need to average offset
 uint16_t battery_set_voltage_cached(adc_t adc_result)
 {
  // if (_adc_config_psel == LDO_VBAT_ADC_INPUT) { // battery being measured
-     // _adc_config_reading = adc_result;
         _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
-        _battery_level_in_percent(_battery_level_voltage);
+    //  if (_battery_level_startup == 0) battery_set_voltage_startup(); // save Vbat under init load
+    //  _battery_level_in_percent(_battery_level_voltage);
  // }
     return _battery_level_voltage;
 }
@@ -156,7 +148,7 @@ static uint8_t _adc_config_count;
 
 void ADC_IRQHandler(void)
 {
-    uint16_t adc_count;
+    uint16_t value,adc_count;
     uint8_t next_measure_input = 0; // indicate adc sequence complete
 
     if (NRF_ADC->EVENTS_END)
@@ -165,22 +157,28 @@ void ADC_IRQHandler(void)
         adc_t adc_result      = NRF_ADC->RESULT;
         NRF_ADC->TASKS_STOP     = 1;
 
+        if (_adc_config_psel == LDO_VMCU_ADC_INPUT) {
+            value = adc_result/256;
+            PRINT_BYTE(&value,1);
+            PRINT_HEX(&adc_result,1);
+        }
+
         if(_adc_measure_callback) // provided for IRQ
         {
-            if (adc_count) { // Vmcu:0, Vbat:1, ... enabled and settled
+            if (_adc_cycle_count) { // Vmcu:0, Vbat:1, ... enabled and settled
                 adc_count = _adc_cycle_count++; // 1 2 3 ... 63
                 next_measure_input = _adc_measure_callback(adc_result, adc_count);
 
             } else { // still evaluating Vmcu to ensure that
-             // if (adc_result < 0x0300) { // resistor dividers
+                if (adc_result < 0x0300) { // 0x0259 resistor (523K||523K) dividers
                     _adc_cycle_count = 1; // are in process of settling
                     next_measure_input = LDO_VBAT_ADC_INPUT;
-             // } else { // Vmcu not yet coming off the peg
-             //     next_measure_input = LDO_VMCU_ADC_INPUT;
-             // }
+                } else { // Vmcu not yet coming off the peg
+                    next_measure_input = LDO_VMCU_ADC_INPUT;
+                }
             }
 
-            if (next_measure_input) // continue adc measurement
+            if (next_measure_input <= 0x128) // continue adc measurement
             {
               if (_adc_config_count--) { // failsafe
                 _adc_config_psel = next_measure_input; // save adc input selection
@@ -196,11 +194,13 @@ void ADC_IRQHandler(void)
                 NRF_ADC->TASKS_START = 1; // start adc to make next reading
 
               } // sequence exceeded max number of readings limit
-            } // adc measurement sequence completed
+            } else { // adc measurement sequence completed
+                battery_module_power_off();
+            }
         } /* { // no callback provided or max adc reading usage limit reached
             battery_module_power_off();
          // if (_adc_config_psel == LDO_VBAT_ADC_INPUT) // have Vbat
-         //     battery_set_voltage_level_cached(); // update saved voltage
+         //     battery_set_voltage_level_cached(adc_resulte); // update saved voltage
         } */
     }
 }
