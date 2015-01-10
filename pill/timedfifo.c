@@ -88,7 +88,6 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
 
             uint16_t maxrange = 0;
             uint16_t range = 0;
-            int i = 0;
             tf_unit_t datum = self.data.data[idx];
             payload[i].num_times_woken_in_minute = datum.num_wakes;
 
