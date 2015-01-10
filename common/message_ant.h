@@ -54,7 +54,7 @@ typedef struct{
     uint64_t nonce;
     MotionPayload_t payload;
     uint16_t magic_bytes; //this must be here at the end of the struct,  or Jackson will kill you
-}MSG_ANT_EncryptedMotionData_t;
+}__attribute__((packed)) MSG_ANT_EncryptedMotionData_t;
 
 typedef struct 
 {
