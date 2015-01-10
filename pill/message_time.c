@@ -78,7 +78,7 @@ static void _send_available_data_ant(){
         ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t);
 
         //fill out the motion data payload
-        if(TF_GetCondensed(&motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
+        if(TF_GetCondensed(motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
         {
             uint8_t pool_size = 0;
 
