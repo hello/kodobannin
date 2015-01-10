@@ -103,12 +103,11 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     int16_t values[3];
 //    uint16_t range;
 //    uint16_t maxrange
-    auxillary_data_t * paux;
+    //auxillary_data_t * paux;
     memcpy(values, raw_xyz, len);
 
     //int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
     uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
-    aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
 	
     /*
     tf_unit_t curr = TF_GetCurrent();
@@ -122,23 +121,21 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     */
 
 	//TF_SetCurrent((uint16_t)values[0]);
-	
-    if(TF_GetCurrent() < aggregate ){
-        TF_SetCurrent((tf_unit_t)aggregate);
+	tf_unit_t* current = TF_GetCurrent();
+    if(current->max_amp < aggregate){
+        current->max_amp = aggregate;
         PRINTS("NEW MAX: ");
         PRINT_HEX(&aggregate, sizeof(aggregate));
     }
-
-    paux = TF_GetAuxData();
- 
+    
     //track max/min values of accelerometer      
     for (i = 0; i < 3; i++) {
-        if (values[i] > paux->max_accel[i]) {
-            paux->max_accel[i] = values[i];
+        if (values[i] > current->max_accel[i]) {
+            current->max_accel[i] = values[i];
         }
   
-        if (values[i] < paux->min_accel[i]) {
-            paux->min_accel[i] = values[i];
+        if (values[i] < current->min_accel[i]) {
+            current->min_accel[i] = values[i];
         }
     }
 

@@ -23,11 +23,12 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
     self.tick = 0;
     self.data.mtime = init_time->monotonic_time;
 
+    tf_unit_t* current = TF_GetCurrent();
     for (i = 0; i < 3; i++) {
-        self.data.aux_data.min_accel[i] = INT16_MAX;
-        self.data.aux_data.max_accel[i] = INT16_MIN;
+        current->min_accel[i] = INT16_MAX;
+        current->max_accel[i] = INT16_MIN;
     }
-    self.data.aux_data.num_wakes = 0;
+    current->num_wakes = 0;
 
 }
 
@@ -39,34 +40,38 @@ void TF_TickOneSecond(uint64_t monotonic_time){
         self.tick = 0;
         self.data.prev_idx = self.current_idx;
         self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
-        self.data.data[self.current_idx] = 0;
+        //reset aux data struct
+
+        tf_unit_t* current_slot = TF_GetCurrent();
+        for (int i = 0; i < 3; i++) {
+            current_slot->min_accel[i] = INT16_MAX;
+            current_slot->max_accel[i] = INT16_MIN;
+        }
+        current_slot->num_wakes = 0;
         PRINTS("^");
     }else{
         PRINTS("*");
     }
 }
 
-inline tf_unit_t TF_GetCurrent(void){
-    return self.data.data[self.current_idx];
+inline tf_unit_t* TF_GetCurrent(void){
+    return &self.data.data[self.current_idx];
 }
 
-inline void TF_SetCurrent(tf_unit_t val){
-    self.data.data[self.current_idx] = val;
+inline void TF_SetCurrent(tf_unit_t* val){
+    tf_unit_t* current = TF_GetCurrent();
+    memcpy(current, val, sizeof(tf_unit_t));
 }
 
 inline void TF_IncrementWakeCounts(void) {
-   self.data.aux_data.num_wakes++;
-}
-
-inline auxillary_data_t * TF_GetAuxData(void) {
-    return &self.data.aux_data;
+   TF_GetCurrent()->num_wakes++;
 }
 
 inline tf_data_t * TF_GetAll(void){
     return &self.data;
 }
-static
-uint16_t _decrease_index(uint16_t * idx){
+
+static uint16_t _decrease_index(uint16_t * idx){
     if( *idx == 0){
         return TF_BUFFER_SIZE - 1;
     }else{
@@ -74,62 +79,36 @@ uint16_t _decrease_index(uint16_t * idx){
     }
 }
 
-bool TF_DumpPayload(MotionPayload_t * payload) {
-    int16_t * max = self.data.aux_data.max_accel;
-    int16_t * min = self.data.aux_data.min_accel;
-    uint16_t i;
-    uint16_t maxrange = 0;
-    uint16_t range;
-    uint16_t idx = self.current_idx;
-
-    //when will this ever happen?
-    if (!payload) {
-        return false;
-    }
-
-    //never woke up
-    if (self.data.aux_data.num_wakes == 0) {
-        return false;
-    }
-
-    payload->num_times_woken_in_minute = self.data.aux_data.num_wakes;
-
-    //compute max range
-    for (i = 0; i < 3; i++) {
-        range = (uint16_t) (max[i] - min[i]);
-        if (range > maxrange) {
-            maxrange = range;
-        }
-    } 
-
-    payload->max_acc_range = maxrange;
-
-    //get normal payload
-    idx = _decrease_index(&idx);
-    payload->maxaccnormsq =  self.data.data[idx]; 
-
-    //reset aux data struct
-    for (i = 0; i < 3; i++) {
-        min[i] = INT16_MAX;
-        max[i] = INT16_MIN;
-    }
-    self.data.aux_data.num_wakes = 0;
-
-    return true;
-}
 
 // for posterity -- this used to be used instead of dump payload
-bool TF_GetCondensed(uint32_t* buf, uint8_t length){
+bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
     bool has_data = false;
 
-    if(buf){
+    if(payload){
         uint16_t  i,idx = self.current_idx;
         //buf->time = self.data.mtime;
 
         for(i = 0; i < length; i++){
             idx = _decrease_index(&idx);
-            buf[i] = self.data.data[idx];
-            if(self.data.data[idx] != 0)
+
+            uint16_t maxrange = 0;
+            uint16_t range = 0;
+            int i = 0;
+            tf_unit_t datum = self.data.data[idx];
+            payload[i].num_times_woken_in_minute = datum.num_wakes;
+
+            //compute max range
+            for (i = 0; i < 3; i++) {
+                range = (uint16_t) (datum.max_accel[i] - datum.min_accel[i]);
+                if (range > maxrange) {
+                    maxrange = range;
+                }
+            } 
+
+            payload[i].max_acc_range = maxrange;
+            payload[i].maxaccnormsq = datum.max_amp; 
+
+            if(self.data.data[idx].num_wakes != 0)
             {
                 has_data = true;
             }

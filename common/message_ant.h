@@ -50,12 +50,6 @@ typedef struct{
     }param;
 }MSG_ANTCommand_t;
 
-typedef struct{
-    uint64_t nonce;
-    MotionPayload_t payload;
-    uint16_t magic_bytes; //this must be here at the end of the struct,  or Jackson will kill you
-}__attribute__((packed)) MSG_ANT_EncryptedMotionData_t;
-
 typedef struct 
 {
     uint8_t battery_level;

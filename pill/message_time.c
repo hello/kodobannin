@@ -17,6 +17,11 @@
 #include "message_ant.h"
 #endif
 
+typedef struct{
+    uint64_t nonce;
+    MotionPayload_t payload;
+    uint16_t magic_bytes; //this must be here at the end of the struct,  or Jackson will kill you
+}__attribute__((packed)) MSG_ANT_EncryptedMotionData_t;
 
 static struct{
     MSG_Base_t base;
@@ -62,7 +67,7 @@ static void _send_available_data_ant(){
 
         //motion_data is a pointer to the blob of data that antdata->payload points to
         //the goal is to fill out the motion_data pointer
-        MSG_ANT_EncryptedMotionData_t * motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
+        MSG_ANT_EncryptedMotionData_t* motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
 
         //zero out my blob
         memset(&data_page->buf, 0, data_page->len);
@@ -73,7 +78,7 @@ static void _send_available_data_ant(){
         ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t);
 
         //fill out the motion data payload
-        if(TF_DumpPayload(&motion_data->payload))
+        if(TF_GetCondensed(&motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
         {
             uint8_t pool_size = 0;
 
