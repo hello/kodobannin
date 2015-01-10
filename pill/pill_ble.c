@@ -81,11 +81,12 @@ static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
 {
 	if(_should_stream)
 	{
-        size_t new_len = len + sizeof(uint32_t);
-        uint32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
+        size_t new_len = len + sizeof(tf_unit_t);
+        int32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
+        aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
         uint8_t buffer[new_len];
         memcpy(buffer, raw_xyz, len);
-        memcpy(&buffer[len], &aggregate, sizeof(aggregate));
+        memcpy(&buffer[len], &aggregate, sizeof(tf_unit_t));
 
 		hlo_ble_notify(0xFEED, buffer, new_len, NULL);
 	}
