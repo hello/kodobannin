@@ -2,9 +2,6 @@
 #include "message_base.h"
 #include "ant_driver.h"
 #include "ant_packet.h"
-#include "motion_types.h"
-
-#define TF_CONDENSED_BUFFER_SIZE (1)
 
 /**
  *

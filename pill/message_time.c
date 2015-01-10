@@ -19,7 +19,7 @@
 
 typedef struct{
     uint64_t nonce;
-    MotionPayload_t payload;
+    MotionPayload_t payload[TF_CONDENSED_BUFFER_SIZE];
     uint16_t magic_bytes; //this must be here at the end of the struct,  or Jackson will kill you
 }__attribute__((packed)) MSG_ANT_EncryptedMotionData_t;
 

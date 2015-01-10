@@ -121,3 +121,5 @@ enum {
 #define SHAKING_MOTION_THRESHOLD        (750000000)
 #define SLIDING_WINDOW_SIZE_SEC         (1)
 #define SHAKING_DATA_COUNT_THRESHOLD    (8)
+
+#define TF_CONDENSED_BUFFER_SIZE        (1)
