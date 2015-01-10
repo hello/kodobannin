@@ -3,6 +3,8 @@
 #include "ant_driver.h"
 #include "ant_packet.h"
 
+#define TF_CONDENSED_BUFFER_SIZE (1)
+
 /**
  *
  * HLO ANT Air Protocol Constraints v0.2
@@ -46,6 +48,11 @@ typedef struct{
         }handle_message;
     }param;
 }MSG_ANTCommand_t;
+
+typedef struct{
+    uint64_t nonce;
+    uint8_t payload[0];
+}MSG_ANT_EncryptedMotionData_t;
 
 typedef struct 
 {
