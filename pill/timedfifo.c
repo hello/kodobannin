@@ -14,7 +14,6 @@ static struct{
 static uint16_t _decrease_index(uint16_t * idx);
 
 void TF_Initialize(const struct hlo_ble_time * init_time){
-    uint16_t i;
     memset(&self.data, 0, sizeof(self.data));
     self.data.length = sizeof(self.data);
     self.data.prev_idx = 0xFFFF;
@@ -24,7 +23,7 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
     self.data.mtime = init_time->monotonic_time;
 
     tf_unit_t* current = TF_GetCurrent();
-    for (i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) {
         current->min_accel[i] = INT16_MAX;
         current->max_accel[i] = INT16_MIN;
     }

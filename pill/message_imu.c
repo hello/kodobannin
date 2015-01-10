@@ -99,7 +99,6 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 
 static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
-    uint16_t i;
     int16_t values[3];
 //    uint16_t range;
 //    uint16_t maxrange
@@ -129,7 +128,7 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     }
     
     //track max/min values of accelerometer      
-    for (i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) {
         if (values[i] > current->max_accel[i]) {
             current->max_accel[i] = values[i];
         }
