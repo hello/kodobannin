@@ -49,7 +49,6 @@ void TF_Initialize(const struct hlo_ble_time * init_time);
 void TF_TickOneSecond(uint64_t monotonic_time);
 tf_unit_t* TF_GetCurrent(void);
 void TF_SetCurrent(tf_unit_t* val);
-void TF_IncrementWakeCounts(void);
 tf_data_t * TF_GetAll(void);
 bool TF_GetCondensed(MotionPayload_t* buf, uint8_t length);
 uint8_t get_tick();

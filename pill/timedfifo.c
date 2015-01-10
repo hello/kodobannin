@@ -63,10 +63,6 @@ inline void TF_SetCurrent(tf_unit_t* val){
     memcpy(current, val, sizeof(tf_unit_t));
 }
 
-inline void TF_IncrementWakeCounts(void) {
-   TF_GetCurrent()->num_wakes++;
-}
-
 inline tf_data_t * TF_GetAll(void){
     return &self.data;
 }

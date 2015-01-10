@@ -296,9 +296,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
                     if(!_settings.is_active)
                     {
                         _imu_switch_mode(true);
-
-                        TF_IncrementWakeCounts();
-
+                        TF_GetCurrent()->num_wakes++;
                         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
                     }
 #endif
