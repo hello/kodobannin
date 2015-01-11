@@ -88,6 +88,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         morpheus_command.pill_data.motion_data_entrypted.size = pill_data->payload_len;
 
                         memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
+                        
+                        morpheus_command.pill_data.has_firmware_version = true;
+                        morpheus_command.pill_data.firmware_version = pill_data->version;
 
                         morpheus_command.pill_data.timestamp = 0;
                         PRINTS("ANT Encrypted Pill Data Received:");
@@ -118,7 +121,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         morpheus_command.pill_data.uptime = heartbeat.uptime_sec;
 
                         morpheus_command.pill_data.has_firmware_version = true;
-                        morpheus_command.pill_data.firmware_version = heartbeat.firmware_version;
+                        morpheus_command.pill_data.firmware_version = pill_data->version;
 
                         memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
 
