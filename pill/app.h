@@ -22,7 +22,7 @@ enum {
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
-#define ANT_PROTOCOL_VER      (1)
+#define ANT_PROTOCOL_VER      (2)
 #define FIRMWARE_VERSION_8BIT (2)
 
 //#define BONDING_REQUIRED
@@ -121,3 +121,5 @@ enum {
 #define SHAKING_MOTION_THRESHOLD        (750000000)
 #define SLIDING_WINDOW_SIZE_SEC         (1)
 #define SHAKING_DATA_COUNT_THRESHOLD    (8)
+
+#define TF_CONDENSED_BUFFER_SIZE        (1)
