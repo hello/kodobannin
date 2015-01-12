@@ -33,7 +33,7 @@ typedef struct {
     int16_t min_accel[3];
     uint8_t duration;
     uint8_t has_motion;
-} auxillary_data_t;
+}__attribute__((packed)) auxillary_data_t;
 
 typedef auxillary_data_t tf_unit_t;
 
