@@ -4,7 +4,7 @@
  */
 #include "platform.h"
 
-#define MSG_BASE_SHARED_POOL_SIZE 10
+#define MSG_BASE_SHARED_POOL_SIZE 11
 #define MSG_BASE_DATA_BUFFER_SIZE 32
 
 #ifdef MSG_BASE_USE_BIG_POOL
