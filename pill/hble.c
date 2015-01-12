@@ -214,7 +214,7 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
     uint32_t value, result;      //  Measured        Actual
  // Battery Voltage  0x0267 - 0x010A +2.914 V,  80 %   2.9 V
     switch (adc_count) { // for each adc reading
-            case 1: battery_set_voltage_cached(adc_result); Vref = adc_result;
+            case 1: battery_set_result_cached(adc_result); Vref = adc_result;
                     PRINTS(" 0x");
                     value = adc_result/256;
                     PRINT_BYTE(&value, 1);
@@ -227,7 +227,11 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
                     PRINT_BYTE(&value, 1);
                     PRINT_HEX(&adc_result, 1);
                     return LDO_VBAT_ADC_INPUT; break; // spread print overhead
-            case 3: result = battery_get_voltage_cached(); Vrel = adc_result;
+            case 3: result = battery_set_voltage_cached(adc_result); Vrel = adc_result;
+                    PRINTS(" 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
                  // led_all_colors_off();
                     PRINTS(" +");
                     value = result/1000;
@@ -246,8 +250,6 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
                         PRINTS("% -");
                         result = Vref - Vrel; 
                     } // ToDo:  estimate internal resistance
-                 // value = result/256;
-                 // PRINT_BYTE(&value, 1);
                     PRINT_HEX(&result, 1);
                     PRINTS("\r\n");
                     break; // fall thru to end adc reading sequence

@@ -36,7 +36,8 @@ void battery_init();
 void battery_module_power_on();
 void battery_module_power_off();
 
-uint16_t battery_set_offset_cached(adc_t result);
+void battery_set_result_cached(adc_t result);
+void battery_set_offset_cached(adc_t result);
 uint16_t battery_set_voltage_cached(adc_t result);
 
 adc_t battery_get_offset_cached();
