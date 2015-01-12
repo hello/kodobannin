@@ -247,11 +247,11 @@ static bool _is_bond_db_full()
     return false;
 }
 
-static void _check_bonds_and_enter_pairing_mode()
+static void _erase_other_bonds_and_enter_pairing_mode()
 {
     if(_is_bond_db_full())
     {
-        hble_delay_tasks_erase_bonds();
+        hble_erase_other_bonded_central();
     }
 
     hble_set_advertising_mode(true);
@@ -263,7 +263,7 @@ static void _hold_to_enter_pairing_mode()
     {
         // Stop BLE radio, because the 2nd task will resume it.
         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-        hble_set_delay_task(0, _check_bonds_and_enter_pairing_mode);
+        hble_set_delay_task(0, _erase_other_bonds_and_enter_pairing_mode);
         hble_set_delay_task(1, hble_delay_task_advertise_resume);
         hble_set_delay_task(2, NULL);  // Indicates delay task end.
 
@@ -274,10 +274,29 @@ static void _hold_to_enter_pairing_mode()
     }else{
         if(_is_bond_db_full())
         {
-            hble_erase_all_bonded_central();
+            hble_erase_1st_bond();
         }
         hble_set_advertising_mode(true);
         // Need to wait the delay task to do the actual wipe.
+    }
+}
+
+static void _hold_to_enter_normal_mode()
+{
+    if(!hlo_ble_is_connected())
+    {
+        // Stop BLE radio, because the 2nd task will resume it.
+        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+        hble_set_advertising_mode(false);
+        hble_set_delay_task(0, hble_delay_task_advertise_resume);
+        hble_set_delay_task(1, NULL); // Indicates delay task end.
+
+        // If not connected, the delay task will not 
+        // triggered by disconnect, we need to manually 
+        // start it.
+        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+    }else{
+        // Do nothing
     }
 }
 
@@ -386,7 +405,9 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
                     _hold_to_enter_pairing_mode();
                 break;
-
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+                    _hold_to_enter_normal_mode();
+                break;
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 {
                     PRINTS("Factory reset from CC3200..\r\n");
