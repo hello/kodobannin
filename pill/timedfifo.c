@@ -91,7 +91,7 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
             tf_unit_t datum = self.data.data[idx];
 
             uint8_t payload_index = length - i - 1;
-            payload[payload_index].num_times_woken_in_minute = datum.num_wakes;
+            payload->num_times_woken_in_minute = (uint8_t)datum.num_wakes;
 
             //compute max range
             for (int k = 0; k < 3; k++) {
@@ -101,8 +101,8 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
                 }
             } 
 
-            payload[payload_index].max_acc_range = maxrange;
-            payload[payload_index].maxaccnormsq = datum.max_amp; 
+            payload->max_acc_range = maxrange;
+            payload->maxaccnormsq = datum.max_amp; 
 
             if(datum.num_wakes != 0)
             {
