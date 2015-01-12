@@ -10,7 +10,7 @@
 
 #define HW_REVISION 3
 
-#define FW_VERSION_STRING "0.5.0"
+#define FW_VERSION_STRING "0.5.1"
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
