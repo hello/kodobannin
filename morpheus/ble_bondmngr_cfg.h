@@ -24,7 +24,7 @@
 #define BLE_BONDMNGR_CFG_H__
 
 /**@brief Number of CCCDs used in the proximity application. */
-#define BLE_BONDMNGR_CCCD_COUNT            1
+#define BLE_BONDMNGR_CCCD_COUNT            4
 
 /**@brief Maximum number of bonded centrals. */
 #define BLE_BONDMNGR_MAX_BONDED_CENTRALS   3
