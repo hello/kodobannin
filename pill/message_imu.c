@@ -138,6 +138,9 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
         }
     }
 
+	//this second has motion
+	current->has_motion = 1;
+
 /* 
     maxrange = 0;
     for (i = 0; i < 3; i++) {

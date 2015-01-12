@@ -46,9 +46,16 @@ void TF_TickOneSecond(uint64_t monotonic_time){
             current_slot->min_accel[i] = INT16_MAX;
             current_slot->max_accel[i] = INT16_MIN;
         }
+        current_slot->has_motion = 0;
+        current_slot->duration = 0;
         current_slot->num_wakes = 0;
         PRINTS("^");
     }else{
+        tf_unit_t* current_slot = TF_GetCurrent();
+        if(current_slot->has_motion){
+            current_slot->duration += 1;
+        }
+        current_slot->has_motion = 0;
         PRINTS("*");
     }
 }
@@ -103,6 +110,7 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
 
             payload->max_acc_range = maxrange;
             payload->maxaccnormsq = datum.max_amp; 
+            payload->duration = datum.duration;
 
             if(datum.num_wakes != 0)
             {
