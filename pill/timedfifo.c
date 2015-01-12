@@ -108,9 +108,8 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
                 }
             } 
 
-            payload->max_acc_range = maxrange;
-            payload->maxaccnormsq = datum.max_amp; 
-            payload->duration = datum.duration;
+            payload[payload_index].max_acc_range = maxrange;
+            payload[payload_index].maxaccnormsq = datum.max_amp; 
 
             if(datum.num_wakes != 0)
             {
