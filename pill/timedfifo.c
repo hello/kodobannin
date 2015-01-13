@@ -15,10 +15,10 @@ static uint16_t _decrease_index(uint16_t * idx);
 
 static void
 _increment_duration(tf_unit_t * current){
-    if(current_slot->has_motion){
-        current_slot->duration += 1;
+    if(current->has_motion){
+        current->duration += 1;
     }
-    current_slot->has_motion = 0;
+    current->has_motion = 0;
 }
 static void
 _reset_tf_unit(tf_unit_t * current){
