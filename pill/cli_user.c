@@ -3,6 +3,7 @@
 #include "ant_driver.h"
 #include <nrf_soc.h>
 #include "message_led.h"
+#include "message_led.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -51,7 +52,7 @@ _handle_command(int argc, char * argv[]){
         led_update_battery_status();
     }
     if(_strncmp(argv[0], "upd", strlen("upd")) == 0){
-        hble_update_battery_level(); // make battery capacity assessment
+        hble_update_battery_level(1); // make battery capacity assessment
     }
     //dispatch message through ANT
     if(argc > 1 && _strncmp(argv[0], "ant", strlen("ant")) == 0){
