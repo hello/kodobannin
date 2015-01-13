@@ -72,7 +72,8 @@ static adc_t _adc_config_offset; // Vrgb adc reading (ground reference)
 static adc_t _adc_config_remain; // Vbat adc reading (battery remaining)
 
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)   ((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS / 1023 * ADC_PRE_SCALING_COMPENSATION)
-#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 1200 ) / 1023 ) * 7125 ) / 1000 )
+//#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 1200 ) / 1023 ) * 7125 ) / 1000 )
+#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
 //#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)     ((((ADC_REF_VOLTAGE_IN_MILLIVOLTS)))
 #define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)  (((ADC_VALUE) * 1200 ) / 1023 )
 
@@ -122,8 +123,8 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
         if (_battery_level_percent > 70 ) r--; // 1/2/3
         if (_battery_level_percent < 40 ) r++; // 3/4/5
 
-        if (_adc_config_remain > (_adc_config_result - r)) _battery_level_percent++; // lo IR
-        if (_adc_config_remain < (_adc_config_result - r)) _battery_level_percent--; // hi IR
+        if (_adc_config_result > (_adc_config_remain - r)) _battery_level_percent++; // lo IR
+        if (_adc_config_result < (_adc_config_remain - r)) _battery_level_percent--; // hi IR
     }
     else // less than 10 %  ( Vbat(startup) > Vdd(1.8V) + 0.5V ) 2.6 V to 2.3 V is 10 to 0 percent
     { // Vbat well above Vdd (1.8 + margin) operating threshold observed at startup
@@ -144,7 +145,6 @@ void battery_set_result_cached(adc_t adc_result) // initial battery reading
             _battery_level_startup = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
 
         _adc_config_remain = adc_result; // higher load (first battery reading)
-        _adc_config_result = adc_result; // nominal load (subsequent battery reading)
 }
 
 void battery_set_offset_cached(adc_t adc_result) // adc offset reading
@@ -156,6 +156,9 @@ uint16_t battery_set_voltage_cached(adc_t adc_result)
 { //  presently using fixed offset 0x____ emperically derived from nRF51422
   //  MILLI_VOLTS (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
     _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
+
+    _adc_config_result = adc_result; // nominal load (subsequent battery reading)
+
     _battery_level_in_percent(_battery_level_voltage);
     return _battery_level_voltage;
 }

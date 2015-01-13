@@ -132,9 +132,7 @@ static void _timer_handler(void * ctx){
 
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
     {
-     // battery_module_power_on();
-        hble_update_battery_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel) for IR
-     // _send_heartbeat_data_ant(); // for Vbat resistor (523K||215K) divider
+        hble_update_battery_level(1); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel) for IR
     }
 #endif
     

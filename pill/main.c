@@ -133,11 +133,9 @@ void _start()
 
     _init_rf_modules();
 
- // battery_module_power_on(); // prepare for the first battery level measurement
-
     _load_watchdog();
 
-    hble_update_battery_level(); // measure Vbat during init (high mcu load)
+    hble_update_battery_level(0); // measure Vbat during init (high mcu load)
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
