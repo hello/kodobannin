@@ -180,8 +180,7 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
 	uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(interrupt_status & INT_STS_WOM_INT)
 	{
-		MSG_PING(parent,IMU,IMU_READ_XYZ);
-        
+		parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 	}
 
 }
@@ -268,56 +267,45 @@ static MSG_Status _destroy(void){
 static MSG_Status _flush(void){
     return SUCCESS;
 }
-
+static MSG_Status _handle_read_xyz(void);
+	int16_t values[3];
+	uint32_t mag;
+	imu_accel_reg_read((uint8_t*)values);
+	//uint8_t interrupt_status = imu_clear_interrupt_status();
+	if(_settings.wom_callback){
+		_settings.wom_callback(values, sizeof(values));
+	}
+	mag = _aggregate_motion_data(values, sizeof(values));
+	ShakeDetect(mag);
+#ifdef IMU_DYNAMIC_SAMPLING        
+	app_timer_cnt_get(&_last_active_time);
+	if(!_settings.is_active)
+	{
+		_imu_switch_mode(true);
+		TF_GetCurrent()->num_wakes++;
+		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
+	}
+#endif
+	if(shake_counter++ == 0){
+		test_ok(parent, IMU_OK);
+	}
+	return SUCCESS;
+}
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
+	MSG_Status ret = SUCCESS;
 	switch(dst.submodule){
-		case 0:
+		default:
+		case IMU_PING:
+			PRINTS(name);
+			PRINTS("\r\n");
+			break;
+		case IMU_READ_XYZ:
+			ret = _handle_read_xyz();
+			break;
+		case IMU_SELF_TES:
 			break;
 	}
-	if(dst.submodule == 0 && data){
-		MSG_Base_AcquireDataAtomic(data);
-		MSG_IMUCommand_t * cmd = data->buf;
-		switch(cmd->cmd){
-			default:
-			case IMU_PING:
-				break;
-			case IMU_READ_XYZ:
-				{
-					int16_t values[3];
-					uint32_t mag;
-					imu_accel_reg_read((uint8_t*)values);
-					//uint8_t interrupt_status = imu_clear_interrupt_status();
-
-					if(_settings.wom_callback){
-						_settings.wom_callback(values, sizeof(values));
-					}
-
-					mag = _aggregate_motion_data(values, sizeof(values));
-
-					ShakeDetect(mag);
-					
-
-#ifdef IMU_DYNAMIC_SAMPLING        
-                    app_timer_cnt_get(&_last_active_time);
-                    if(!_settings.is_active)
-                    {
-                        _imu_switch_mode(true);
-                        TF_GetCurrent()->num_wakes++;
-                        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-                    }
-#endif
-					if(shake_counter++ == 0){
-						test_ok(parent, IMU_OK);
-					}
-				}
-
-
-				break;
-		}
-		MSG_Base_ReleaseDataAtomic(data);
-		PRINTS("\r\n");
-	}
-    return SUCCESS;
+	return ret;
 }
 
 
