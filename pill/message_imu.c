@@ -270,7 +270,7 @@ static MSG_Status _flush(void){
 }
 
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
-	if(data){
+	if(dst.submodule == 0 && data){
 		MSG_Base_AcquireDataAtomic(data);
 		MSG_IMUCommand_t * cmd = data->buf;
 		switch(cmd->cmd){
