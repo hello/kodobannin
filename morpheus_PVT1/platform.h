@@ -3,6 +3,7 @@
 // platform.h (ver 9/25/14) morpheus EVT2 pin assignments
 
 #pragma once
+#define NC 32
 
 #define BLE_ENABLE
 #define ANT_ENABLE
@@ -10,16 +11,19 @@
 #define MSG_BASE_USE_BIG_POOL
 
 #define PLATFORM_HAS_SERIAL
-#define HW_REVISION 2
+#define HW_REVISION 3
 
-#define DEVICE_ID_SIZE        6
-#define BLE_MODEL_NUM         "EVT2"
+#define DEVICE_ID_SIZE        8
+#define FW_VERSION_STRING         "0.5.1"
+
+//use hello's ant network key
+#define USE_HLO_ANT_NETWORK
 
 enum {
     SERIAL_TX_PIN = 19,
     SERIAL_RX_PIN = 17,
-    SERIAL_CTS_PIN = 0,
-    SERIAL_RTS_PIN = 0,
+    SERIAL_CTS_PIN = 20, //unconnected
+    SERIAL_RTS_PIN = 18, //unconnected
 };
 
 // uart serial diagnostic port
@@ -77,7 +81,7 @@ enum {
 // I2C_SCL  P29      // 48 P0.29
 // I2C_SDA  P28      // 47 P0.28
 
-#define PLATFORM_HAS_USB_ADC
+//#define PLATFORM_HAS_USB_ADC
 
 enum {
     USB_ADC_DM = 4,
@@ -91,10 +95,10 @@ enum {
 #define PLATFORM_HAS_SERIAL_CROSS_CONNECT
 
 enum {
-    CCU_TX_PIN = 20,
-    CCU_RX_PIN = 18,
-    CCU_CTS_PIN = 0,
-    CCU_RTS_PIN = 0,
+    CCU_TX_PIN = 4,
+    CCU_RX_PIN = 1,
+    CCU_CTS_PIN = NC,
+    CCU_RTS_PIN = NC,
 };
 
 // cross connect UART serial port

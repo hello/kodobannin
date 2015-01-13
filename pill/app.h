@@ -18,11 +18,11 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Pill"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
-#define BLE_MODEL_NUM         "DVT4.0"
+#define BLE_MODEL_NUM         FW_VERSION_STRING
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
-#define ANT_PROTOCOL_VER      (1)
+#define ANT_PROTOCOL_VER      (2)
 #define FIRMWARE_VERSION_8BIT (2)
 
 //#define BONDING_REQUIRED
@@ -56,7 +56,7 @@ enum {
  * BLE Connection Parameters
  */
 // Advertising interval (in units of 0.625 ms)
-#define APP_ADV_INTERVAL                     800 * 8
+#define APP_ADV_INTERVAL                     800
 // Advertising timeout in units of seconds.
 #define APP_ADV_TIMEOUT_IN_SECONDS           5 * 60
 
@@ -122,4 +122,4 @@ enum {
 #define SLIDING_WINDOW_SIZE_SEC             (1)
 #define SHAKING_DATA_COUNT_THRESHOLD        (8)
 
-#define MIN_SHAKE_DETECT_INTERVAL_SEC       (3)
+#define TF_CONDENSED_BUFFER_SIZE        (1)

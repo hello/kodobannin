@@ -524,11 +524,19 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 void morpheus_ble_on_notify_completed(const void* data, void* data_page)
 {
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
+    PRINTS("Big pool free: ");
+    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
+    PRINTS("\r\n");
 }
 
 void morpheus_ble_on_notify_failed(void* data_page)
 {
 	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
+    PRINTS("Big pool free: ");
+    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
+    PRINTS("\r\n");
 }
 
 bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
@@ -629,7 +637,6 @@ void morpheus_load_modules(void){
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
 #else
-#ifdef DEBUG_SERIAL
 		app_uart_comm_params_t uart_params = {
             SERIAL_RX_PIN,
             SERIAL_TX_PIN,
@@ -641,7 +648,6 @@ void morpheus_load_modules(void){
 		};
 
 		central->loadmod(MSG_Uart_Base(&uart_params, central));
-#endif
 #endif
 
 

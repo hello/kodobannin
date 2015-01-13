@@ -149,6 +149,30 @@ static void _delay_tasks_erase_other_bonds()
     }
 }
 
+void hble_erase_1st_bond()
+{
+    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+    if(paired_users_count == 0)
+    {
+        PRINTS("No paired centrals found.\r\n");
+        return;
+    }
+
+    PRINTS("Paired central count: ");
+    PRINT_HEX(&paired_users_count, sizeof(paired_users_count));
+    PRINTS("\r\n");
+
+    uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
+    memset(bonded_central_list, 0, sizeof(bonded_central_list));
+
+    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, &paired_users_count));
+    APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[0]));
+    PRINTS("Paired central ");
+    PRINT_HEX(&bonded_central_list[0], sizeof(bonded_central_list[0]));
+    PRINTS(" deleted.\r\n");
+}
+
 
 static void _delay_task_memory_checkpoint()
 {
@@ -376,8 +400,7 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 
     switch(p_evt->evt_type)
     {
-        case BLE_BONDMNGR_EVT_NEW_BOND:
-        case BLE_BONDMNGR_EVT_AUTH_STATUS_UPDATED:
+        case BLE_BONDMNGR_EVT_ENCRYPTED:
         {
             // Notify message ble module, schedule the call
             app_sched_event_put(&p_evt->evt_type, sizeof(p_evt->evt_type), _on_bond);

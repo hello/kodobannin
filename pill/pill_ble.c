@@ -43,6 +43,8 @@
 #include "nrf.h"
 #include "timedfifo.h"
 #include "cli_user.h"
+#include "gpio_nor.h"
+
 
 
 extern uint8_t hello_type;
@@ -79,12 +81,11 @@ static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
 {
 	if(_should_stream)
 	{
-        size_t new_len = len + sizeof(tf_unit_t);
-        int32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
-        aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
+        size_t new_len = len + sizeof(uint32_t);
+        uint32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
         uint8_t buffer[new_len];
         memcpy(buffer, raw_xyz, len);
-        memcpy(&buffer[len], &aggregate, sizeof(tf_unit_t));
+        memcpy(&buffer[len], &aggregate, sizeof(aggregate));
 
 		hlo_ble_notify(0xFEED, buffer, new_len, NULL);
 	}
@@ -253,24 +254,37 @@ static void _test_send_available_data_ant(void *ctx){
     _test_count++;
 }
 */
-
+int is_debug_enabled(){
+#ifdef DEBUG_SERIAL
+	return 1;
+#endif
+#ifdef PLATFORM_HAS_SERIAL
+	uint32_t val = nrf_gpio_pin_read(SERIAL_RX_PIN);
+	/*
+	 *gpio_input_disconnect(SERIAL_RX_PIN);
+	 */
+	gpio_cfg_d0s1_output_disconnect(SERIAL_RX_PIN);
+	return !val;
+#endif
+	return 0;
+}
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
 		central->loadmod(MSG_App_Base(central));
-#ifdef DEBUG_SERIAL
-		app_uart_comm_params_t uart_params = {
-			SERIAL_RX_PIN,
-			SERIAL_TX_PIN,
-			SERIAL_RTS_PIN,
-			SERIAL_CTS_PIN,
-    		APP_UART_FLOW_CONTROL_ENABLED,
-			0,
-			UART_BAUDRATE_BAUDRATE_Baud38400
-		};
-		central->loadmod(MSG_Uart_Base(&uart_params, central));
-        central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
-#endif
+		if(is_debug_enabled()){
+			app_uart_comm_params_t uart_params = {
+				SERIAL_RX_PIN,
+				SERIAL_TX_PIN,
+				SERIAL_RTS_PIN,
+				SERIAL_CTS_PIN,
+				APP_UART_FLOW_CONTROL_ENABLED,
+				0,
+				UART_BAUDRATE_BAUDRATE_Baud38400
+			};
+			central->loadmod(MSG_Uart_Base(&uart_params, central));
+			central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
+		}
 		central->loadmod(MSG_Time_Init(central));
 #ifdef PLATFORM_HAS_IMU
 		central->loadmod(MSG_IMU_Init(central));

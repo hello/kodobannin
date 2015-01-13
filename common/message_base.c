@@ -104,7 +104,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     CRITICAL_REGION_EXIT();
     if(ret){
         ret->len = size;
-        PRINTS("+");
+        DEBUGS("+");
     }
     return ret;
 }
@@ -129,7 +129,7 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
         CRITICAL_REGION_ENTER();
         incref(d);
         CRITICAL_REGION_EXIT();
-        PRINTS("+");
+        DEBUGS("+");
         return SUCCESS;
     }
     PRINTS("AcquireData FAILED! Cannot malloc NULL\r\n");
@@ -148,9 +148,9 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
         CRITICAL_REGION_EXIT();
         if(d->ref == 0){
             d->context = 0;
-            PRINTS("~");
+            DEBUGS("~");
         }else{
-            PRINTS("-");
+            DEBUGS("-");
         };
         return SUCCESS;
     }else{

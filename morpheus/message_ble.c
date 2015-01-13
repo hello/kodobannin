@@ -233,6 +233,72 @@ static void _init_ble_stack(const MorpheusCommand* command)
     }
 }
 
+static bool _is_bond_db_full()
+{
+    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+
+    if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS)
+    {
+        PRINTS("Pairing database full.\r\n");
+        return true;
+    }
+
+    return false;
+}
+
+static void _erase_1st_bonds_and_enter_pairing_mode()
+{
+    if(_is_bond_db_full())
+    {
+        hble_erase_1st_bond();
+    }
+
+    hble_set_advertising_mode(true);
+}
+
+static void _hold_to_enter_pairing_mode()
+{
+    if(!hlo_ble_is_connected())
+    {
+        // Stop BLE radio, because the 2nd task will resume it.
+        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+        hble_set_delay_task(0, _erase_1st_bonds_and_enter_pairing_mode);
+        hble_set_delay_task(1, hble_delay_task_advertise_resume);
+        hble_set_delay_task(2, NULL);  // Indicates delay task end.
+
+        // If not connected, the delay task will not 
+        // triggered by disconnect, we need to manually 
+        // start it.
+        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+    }else{
+        if(_is_bond_db_full())
+        {
+            hble_erase_1st_bond();
+        }
+        hble_set_advertising_mode(true);
+        // Need to wait the delay task to do the actual wipe.
+    }
+}
+
+static void _hold_to_enter_normal_mode()
+{
+    if(!hlo_ble_is_connected())
+    {
+        // Stop BLE radio, because the 2nd task will resume it.
+        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+        hble_set_advertising_mode(false);
+        hble_set_delay_task(0, hble_delay_task_advertise_resume);
+        hble_set_delay_task(1, NULL); // Indicates delay task end.
+
+        // If not connected, the delay task will not 
+        // triggered by disconnect, we need to manually 
+        // start it.
+        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+    }else{
+        // Do nothing
+    }
+}
 
 
 static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Data_t* data){
@@ -285,7 +351,16 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         }
 
     }
-    
+
+
+    if(src.module == CLI && dst.submodule == 10 && dst.module == BLE){
+        MorpheusCommand command = {0};
+        PRINTS("Booting Radio\r\n");
+        command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
+        _init_ble_stack(&command);
+        command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID;
+        _init_ble_stack(&command);
+    }
 
     if(src.module == SSPI && dst.submodule == 0 && dst.module == BLE){
         PRINTS("SPI to BLE Command received\r\n");
@@ -323,10 +398,16 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 break;
 
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
-                PRINTS("DFU from CC3200..\r\n");
+                    PRINTS("DFU from CC3200..\r\n");
                     _start_morpheus_dfu_process();  // It's just that simple.
                 break;
 
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
+                    _hold_to_enter_pairing_mode();
+                break;
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+                    _hold_to_enter_normal_mode();
+                break;
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 {
                     PRINTS("Factory reset from CC3200..\r\n");
@@ -364,6 +445,8 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                     hlo_ble_notify(0xB00B, data->buf, data->len,
                         &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
 
+                    
+                    
                     return SUCCESS;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
                 }
             }
@@ -543,8 +626,17 @@ static void _on_boot_timer(void* context)
         case BOOT_COMPLETED:
         hble_advertising_start();
         nrf_delay_ms(100);
+        {
+            MSG_Data_t * dat = MSG_Base_AllocateStringAtomic("Boot completed");
+            if(dat){
+                self.parent->dispatch((MSG_Address_t){BLE, 0},(MSG_Address_t){UART, MSG_UART_STRING}, dat);
+                MSG_Base_ReleaseDataAtomic(dat);
+            }else{
+                PRINTS("Boot completed!\r\n");
+            }
+        }
 
-        PRINTS("Boot completed!\r\n");
+
         break;
 
         case BOOT_CHECK:
@@ -678,21 +770,11 @@ static void _erase_bonded_users(){
 }
 
 
-
-static void _led_pairing_mode(void)
-{
-    // TODO: Notify the led
-}
-
-
 static void _morpheus_switch_mode(bool is_pairing_mode)
 {
     if(is_pairing_mode)
     {
-        uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
-        APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
-
-        if(paired_users_count == BLE_BONDMNGR_MAX_BONDED_CENTRALS)
+        if(_is_bond_db_full())
         {
             PRINTS("Pairing database full.\r\n");
             morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_DATABASE_FULL);
@@ -731,10 +813,10 @@ static void _pair_morpheus(MorpheusCommand* command)
         MSG_Base_AcquireDataAtomic(command->accountId.arg);
     }
 
-    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(DEVICE_ID_SIZE * 2 + 1);
+    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(DEVICE_ID_SIZE * 2 + 1);  // Fark this is a mac address
     if(!device_id_page)
     {
-        PRINTS(MSG_NO_MEMORY);
+        PRINTS("Fail to alloc device id\r\n");
         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
     }else{
         memset(device_id_page->buf, 0, device_id_page->len);
@@ -758,8 +840,10 @@ static void _pair_morpheus(MorpheusCommand* command)
             PRINTS("\r\n");
             if(!morpheus_ble_route_protobuf_to_cc3200(&pair_command))
             {
+                PRINTS("Rount pairing data to cc3200 failed\r\n");
                 morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_OPERATION_FAILED);
             }
+            PRINTS("Rount pairing data to cc3200 done!\r\n");
 
         }else{
             PRINTS("Convert device id failed\r\n");
@@ -781,6 +865,10 @@ bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
         return false;
     }
 
+    PRINTS("Proto len: ");
+    PRINT_HEX(&proto_len, sizeof(proto_len));
+    PRINTS("\r\n");
+
 
     MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
     if(!proto_page){
@@ -790,14 +878,7 @@ bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
 
 
     morpheus_ble_encode_protobuf(command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
-    if(message_ble_route_data_to_cc3200(proto_page) == FAIL)
-    {
-        MSG_Base_ReleaseDataAtomic(proto_page);
-        PRINTS(MSG_NO_MEMORY);
-        return false;
-    }
-
-
+    self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, proto_page);
     MSG_Base_ReleaseDataAtomic(proto_page);
 
     return true;
@@ -814,6 +895,21 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
 
     switch(command->type)
     {
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_BUSY:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_TRIPPY:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OPERATION_FAILED:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OPERATION_SUCCESS:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SCAN_WIFI:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_NEXT_WIFI_AP:
+        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PUSH_DATA_AFTER_SET_TIMEZONE:
+        {
+            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
+            {
+                PRINTS(MSG_NO_MEMORY);
+                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
+            }
+            break;
+        }
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
             _morpheus_switch_mode(true);
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
@@ -876,11 +972,11 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
                 MSG_Data_t* device_id_page = command->deviceId.arg;
                 if(!device_id_page){
                     PRINTS("No device id found for DFU.\r\n");
-                    return;
+                }else{
+                    uint64_t pill_id = 0;
+                    hble_hex_to_uint64_device_id(device_id_page->buf, &pill_id);
+                    _start_pill_dfu_process(pill_id);
                 }
-                uint64_t pill_id = 0;
-                hble_hex_to_uint64_device_id(device_id_page->buf, &pill_id);
-                _start_pill_dfu_process(pill_id);
             }
             break;
         default:
@@ -888,6 +984,11 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
     }
 
     MSG_Base_ReleaseDataAtomic(data_page);
+
+    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
+    PRINTS("Big pool free: ");
+    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
+    PRINTS("\r\n");
 
 }
 

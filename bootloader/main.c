@@ -106,34 +106,19 @@ _start()
 	NRF_CLOCK->TASKS_LFCLKSTART = 1;
 	while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
 
+#ifdef DEBUG_SERIAL
     simple_uart_config(SERIAL_RTS_PIN, SERIAL_TX_PIN, SERIAL_CTS_PIN, SERIAL_RX_PIN, false);
-
     SIMPRINTS("\r\nBootloader v");
 	SIMPRINTS(" is alive\r\n");
-
-	crash_log_save();
-
-#ifdef DEBUG
     SIMPRINTS("Device name: ");
     SIMPRINTS(BLE_DEVICE_NAME);
     SIMPRINTS("\r\n");
-
-	{
-		uint8_t mac_address[6];
-
-		// MAC address is stored backwards; reverse it.
-		unsigned i;
-		for(i = 0; i < 6; i++) {
-			mac_address[i] = ((uint8_t*)NRF_FICR->DEVICEADDR)[5-i];
-		}
-		/*
-		 *DEBUG("MAC address: ", mac_address);
-		 */
-	}
 #endif
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
+#ifdef DEBUG_SERIAL
         SIMPRINTS("Application crashed :(\r\n");
+#endif
     }
     bool should_dfu = false;
 
@@ -156,12 +141,16 @@ _start()
 	 */
 
     if(!bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
+#ifdef DEBUG_SERIAL
         SIMPRINTS("Firmware doesn't match expected CRC-16\r\n");
+#endif
         should_dfu = true;
 	}
 
     if((NRF_POWER->GPREGRET & GPREGRET_FORCE_DFU_ON_BOOT_MASK)) {
+#ifdef DEBUG_SERIAL
         SIMPRINTS("Forcefully booting into DFU mode.\r\n");
+#endif
         should_dfu = true;
 	}
 
@@ -170,18 +159,26 @@ _start()
         SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
         APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+#ifdef DEBUG_SERIAL
 		SIMPRINTS("Provisioning New Key...");
+#endif
+
 		ret = factory_provision_start();
+
+#ifdef DEBUG_SERIAL
 		if(ret == NRF_SUCCESS){
 			SIMPRINTS("Successful\r\n");
 		}else{
 			SIMPRINTS("Failed\r\n");
 		}
+#endif
 		NVIC_SystemReset();
 	}
 
     if(should_dfu) {
+#ifdef DEBUG_SERIAL
 	    SIMPRINTS("Bootloader: in DFU mode...\r\n");
+#endif
 
         SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
         APP_OK(softdevice_sys_evt_handler_set(pstorage_sys_event_handler));
@@ -192,12 +189,18 @@ _start()
 
 		if(bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
 			sd_power_gpregret_clr(GPREGRET_FORCE_DFU_ON_BOOT_MASK);
+#ifdef DEBUG_SERIAL
 			SIMPRINTS("DFU successful, rebooting...\r\n");
+#endif
 		}
 		NVIC_SystemReset();
     } else {
+		gpio_cfg_d0s1_output_disconnect(SERIAL_RX_PIN);
+		gpio_cfg_d0s1_output_disconnect(SERIAL_TX_PIN);
 		memcpy((uint8_t*)0x20003FF0, decrypt_key(), 0x10);
+#ifdef DEBUG_SERIAL
 	    SIMPRINTS("Bootloader kicking to app...\r\n");
+#endif
 		bootloader_app_start(CODE_REGION_1_START);
 	}
 }
