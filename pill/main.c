@@ -108,7 +108,6 @@ static void _load_watchdog()
 void _start()
 {
     
-    led_init();
     battery_init();
 
     {
