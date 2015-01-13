@@ -52,7 +52,7 @@ void TF_TickOneSecond(uint64_t monotonic_time){
     tf_unit_t* current_slot = TF_GetCurrent();
     _increment_duration(current_slot);
 
-    if(++self.tick > MOTION_DATA_INTERVAL_SEC){
+    if(++self.tick >= MOTION_DATA_INTERVAL_SEC){
 
         //increment index
         self.tick = 0;
