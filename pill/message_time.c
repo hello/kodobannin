@@ -100,8 +100,21 @@ static void _send_available_data_ant(){
 
                 //this sends out the data
                 self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
+
                 /*
+                 * //Uncomment me to debug
+                 * 
                  *self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
+
+                 *MSG_Data_t * dupe = MSG_Base_Dupe(data_page);
+                 *if(dupe){
+                 *    ant_data = (MSG_ANT_PillData_t *)&dupe->buf;
+                 *    motion_data = (MSG_ANT_EncryptedMotionData_t*)ant_data->payload;
+                 *    uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
+                 *    aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
+                 *    self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, dupe);
+                 *    MSG_Base_ReleaseDataAtomic(dupe);
+                 *}
                  */
             }else{
                 //pools closed
