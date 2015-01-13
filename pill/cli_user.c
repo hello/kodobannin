@@ -25,7 +25,7 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
-    if( !match_command(argv[0], "testimu") ){
+    if( !match_command(argv[0], "imutest") ){
         self.parent->dispatch( (MSG_Address_t){CLI,0},
                                 (MSG_Address_t){IMU, IMU_SELF_TEST},
                                 NULL);
