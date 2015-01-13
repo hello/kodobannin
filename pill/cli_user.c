@@ -24,15 +24,16 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
-    if(_strncmp(argv[0], "rgb", strlen("rgb")) == 0){
+    if( !match_command(argv[0], "rgb") ){
         test_rgb();
     }
-    if(_strncmp(argv[0], "dsp", strlen("dsp")) == 0){
+    if( !match_command(argv[0], "dsp") ){
         led_update_battery_status();
+    }
     if( !match_command(argv[0], "imuon") ){
         self.parent->loadmod(MSG_IMU_GetBase());
     }
-    if(_strncmp(argv[0], "upd", strlen("upd")) == 0){
+    if( !match_command(argv[0], "upd") ){
         hble_update_battery_level(1); // make battery capacity assessment
     }
     if( !match_command(argv[0], "advstop")){
