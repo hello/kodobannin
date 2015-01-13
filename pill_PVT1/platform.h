@@ -119,19 +119,19 @@ enum {
     LED1_ENABLE  =  7, // Vled pull down
 };
 
-#define LDO_VRGB_ADC_INPUT    0x20UL // P0.04 AIN5
+#define LDO_VRGB_ADC_INPUT    0x20UL /* P0.04 AIN5 */
 
-#define LED_RED_ADC_INPUT     0x10UL // P0.03 AIN4
-#define LED_GREEN_ADC_INPUT   0x04UL // P0.01 AIN2
-#define LED_BLUE_ADC_INPUT    0x40UL // P0.05 AIN6
+#define LED_RED_ADC_INPUT     0x10UL /* P0.03 AIN4 */
+#define LED_GREEN_ADC_INPUT   0x04UL /* P0.01 AIN2 */
+#define LED_BLUE_ADC_INPUT    0x40UL /* P0.05 AIN6 */
 
-#define LED_RED_SENSE       LED3_SENSE  // P0.03
-#define LED_GREEN_SENSE     LED2_SENSE  // P0.01
-#define LED_BLUE_SENSE      LED1_SENSE  // P0.05
+#define LED_RED_SENSE       LED3_SENSE  /* P0.03 */
+#define LED_GREEN_SENSE     LED2_SENSE  /* P0.01 */
+#define LED_BLUE_SENSE      LED1_SENSE  /* P0.05 */
 
-#define LED_RED_CHANNEL     LED3_ENABLE // P0.30
-#define LED_GREEN_CHANNEL   LED2_ENABLE // P0.28
-#define LED_BLUE_CHANNEL    LED1_ENABLE // P0.07
+#define LED_RED_CHANNEL     LED3_ENABLE /* P0.30 */
+#define LED_GREEN_CHANNEL   LED2_ENABLE /* P0.28 */
+#define LED_BLUE_CHANNEL    LED1_ENABLE /* P0.07 */
 
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
