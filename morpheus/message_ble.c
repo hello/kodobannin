@@ -247,11 +247,11 @@ static bool _is_bond_db_full()
     return false;
 }
 
-static void _erase_other_bonds_and_enter_pairing_mode()
+static void _erase_1st_bonds_and_enter_pairing_mode()
 {
     if(_is_bond_db_full())
     {
-        hble_erase_other_bonded_central();
+        hble_erase_1st_bond();
     }
 
     hble_set_advertising_mode(true);
@@ -263,7 +263,7 @@ static void _hold_to_enter_pairing_mode()
     {
         // Stop BLE radio, because the 2nd task will resume it.
         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-        hble_set_delay_task(0, _erase_other_bonds_and_enter_pairing_mode);
+        hble_set_delay_task(0, _erase_1st_bonds_and_enter_pairing_mode);
         hble_set_delay_task(1, hble_delay_task_advertise_resume);
         hble_set_delay_task(2, NULL);  // Indicates delay task end.
 
