@@ -38,7 +38,6 @@ extern const uint8_t hex[16];
 #define DEBUGS(a) {}
 #define DEBUGC(a) {}
 #endif
->>>>>>> pvt_base
 
 void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);
 
