@@ -6,7 +6,6 @@ enum MSG_LEDAddress{
     LED_PLAY_SHIP_MODE,
     LED_PLAY_BATTERY_TEST,
     LED_PLAY_LED_RGB_TEST,
-    LED_PLAY_ENTER_FACTORY_MODE,
     LED_PLAY_TEST,
     LED_PLAY_ON,
     LED_COMMAND_SIZE,//reserved, add commands above

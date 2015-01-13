@@ -28,7 +28,6 @@ void ShakeDetectDecWindow(void){
     if(self.shaking_time_sec > SLIDING_WINDOW_SIZE_SEC){
         // sliding window ends, reset all the counter
         if(self.cnt >= SHAKING_DATA_COUNT_THRESHOLD){ // The user shakes hard enough and long enough
-            self.last_shaking_time_sec = get_tick();
             if(self._shake_detection_callback){
                 self._shake_detection_callback();
             }
