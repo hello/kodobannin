@@ -14,6 +14,13 @@ static struct{
 static uint16_t _decrease_index(uint16_t * idx);
 
 static void
+_increment_duration(tf_unit_t * current){
+    if(current->has_motion){
+        current->duration += 1;
+    }
+    current->has_motion = 0;
+}
+static void
 _reset_tf_unit(tf_unit_t * current){
     for (int i = 0; i < 3; i++) {
         current->min_accel[i] = INT16_MAX;
@@ -41,21 +48,22 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
 
 void TF_TickOneSecond(uint64_t monotonic_time){
     self.data.mtime = monotonic_time;
-    if(++self.tick > MOTION_DATA_INTERVAL_SEC){
+
+    tf_unit_t* current_slot = TF_GetCurrent();
+    _increment_duration(current_slot);
+
+    if(++self.tick >= MOTION_DATA_INTERVAL_SEC){
+
+        //increment index
         self.tick = 0;
         self.data.prev_idx = self.current_idx;
         self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
-        //reset aux data struct
 
-        tf_unit_t* current_slot = TF_GetCurrent();
+        //reset next tf data
+        current_slot = TF_GetCurrent();
         _reset_tf_unit(current_slot);
         PRINTS("^");
     }else{
-        tf_unit_t* current_slot = TF_GetCurrent();
-        if(current_slot->has_motion){
-            current_slot->duration += 1;
-        }
-        current_slot->has_motion = 0;
         PRINTS("*");
     }
 }
