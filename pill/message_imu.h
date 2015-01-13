@@ -26,19 +26,10 @@ struct imu_settings {
 };
 
 typedef enum{
-	IMU_BASE_ADDRESS = 0,
-	IMU_PING,
+	IMU_PING = 0,
 	IMU_READ_XYZ,
 	IMU_SELF_TEST
 }MSG_IMUAddress;
-
-//legacy format for submodule 0
-typedef struct{
-	MSG_IMUAddress cmd;
-    union{
-		struct imu_accel16_sample out_accel;
-    }param;
-}MSG_IMUCommand_t;
 
 /* See README_IMU.md for an introduction to the IMU, and vocabulary
    that you may need to understand the rest of this. */
