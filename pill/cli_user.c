@@ -3,6 +3,7 @@
 #include "ant_driver.h"
 #include <nrf_soc.h>
 #include "message_led.h"
+#include "message_imu.h"
 #include "app.h"
 #include <ble.h>
 

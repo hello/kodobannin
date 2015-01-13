@@ -33,7 +33,7 @@ typedef enum{
 
 //legacy format for submodule 0
 typedef struct{
-	MSG_IMUAddress type;
+	MSG_IMUAddress cmd;
     union{
 		struct imu_accel16_sample out_accel;
     }param;
