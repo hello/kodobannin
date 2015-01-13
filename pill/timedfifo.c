@@ -13,6 +13,17 @@ static struct{
 
 static uint16_t _decrease_index(uint16_t * idx);
 
+static void
+_reset_tf_unit(tf_unit_t * current){
+    for (int i = 0; i < 3; i++) {
+        current->min_accel[i] = INT16_MAX;
+        current->max_accel[i] = INT16_MIN;
+    }
+    current->has_motion = 0;
+    current->duration = 0;
+    current->num_wakes = 0;
+    current->max_amp = 0;
+}
 void TF_Initialize(const struct hlo_ble_time * init_time){
     memset(&self.data, 0, sizeof(self.data));
     self.data.length = sizeof(self.data);
@@ -23,12 +34,7 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
     self.data.mtime = init_time->monotonic_time;
 
     tf_unit_t* current = TF_GetCurrent();
-    for (int i = 0; i < 3; i++) {
-        current->min_accel[i] = INT16_MAX;
-        current->max_accel[i] = INT16_MIN;
-    }
-    current->num_wakes = 0;
-
+    _reset_tf_unit(current);
 }
 
 
@@ -42,13 +48,7 @@ void TF_TickOneSecond(uint64_t monotonic_time){
         //reset aux data struct
 
         tf_unit_t* current_slot = TF_GetCurrent();
-        for (int i = 0; i < 3; i++) {
-            current_slot->min_accel[i] = INT16_MAX;
-            current_slot->max_accel[i] = INT16_MIN;
-        }
-        current_slot->has_motion = 0;
-        current_slot->duration = 0;
-        current_slot->num_wakes = 0;
+        _reset_tf_unit(current_slot);
         PRINTS("^");
     }else{
         tf_unit_t* current_slot = TF_GetCurrent();
