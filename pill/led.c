@@ -340,6 +340,9 @@ uint32_t led_check_reed_switch(void){ // assert if either (evt/dvt) active
     _led_gpio_cfg_open_drain(LED2_ENABLE); // evt's reed switch
     nrf_gpio_pin_set(LED3_ENABLE); // red led off ( open drain )
     _led_gpio_cfg_open_drain(LED3_ENABLE); // dvt's reed switch
+    return 0;
+#endif
+}
 
     return ret;
 #else
