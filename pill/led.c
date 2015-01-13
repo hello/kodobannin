@@ -124,10 +124,10 @@ void led_all_colors_off()
 }
 
 //    off->on ->up ->set->off
-// Vbat 0263 0269 0000 0269  before
-// Vrgb 010A 01BF 0000 0201  offset
-// Vrgb 01F1 01F1 0000 0201  leds
-// Vbat 0262 0266 0000 0201  after  ( 2.9 V )
+// Vbat 0266 0267 0000 0267  before
+// Vrgb 010A 01BF 0000 021E  offset
+// Vrgb 01EF 01EE 0000 01EA  leds
+// Vbat 0265 0264 0000 0267  after  ( 2.9 V )
 //  ==>    1    3  <== f(internal resistance)
 
 static adc_t Vref,Vrel,Voff;

@@ -160,14 +160,14 @@ static void _timer_handler(void * ctx){
  //     hble_update_battery_level(); // may/will need to avoide overlapping multiple call's
 
     if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
-     // hble_update_battery_level(); // issue ant heartbeat packet to signal suspending user mode
+        hble_update_battery_level(1); // issue ant heartbeat packet to signal suspending user mode
         PRINTS("Going into Ship Mode");
         self.power_state = 1;
         self.central->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
         self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_SHIP_MODE},NULL);
     }else if(self.reed_states == 0x00 && self.power_state == 1){
-     // hble_update_battery_level(); // issue ant heartbeat packet to signal resuming user mode
+        hble_update_battery_level(1); // issue ant heartbeat packet to signal resuming user mode
         PRINTS("Going into User Mode");
         self.power_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
