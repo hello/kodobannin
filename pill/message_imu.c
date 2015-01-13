@@ -267,6 +267,9 @@ static MSG_Status _destroy(void){
 static MSG_Status _flush(void){
     return SUCCESS;
 }
+static MSG_Status _handle_self_test(void){
+	return SUCCESS;
+}
 static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
 	uint32_t mag;
@@ -304,6 +307,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 			ret = _handle_read_xyz();
 			break;
 		case IMU_SELF_TEST:
+			ret = _handle_self_test();
 			break;
 	}
 	return ret;
