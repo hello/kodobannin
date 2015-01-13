@@ -45,7 +45,7 @@ static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
 
 // BLE event callbacks for message_ble.c
-static void(*_on_advertise_started)(bool);
+static void(*_on_advertise_started)(bool, uint16_t);
 static bond_status_callback_t _bond_status_callback;
 static connected_callback_t _connect_callback;
 ////
@@ -556,7 +556,9 @@ void hble_advertising_start()
 
     if(_on_advertise_started)
     {
-        _on_advertise_started(_pairing_mode);
+        uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+        APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
+        _on_advertise_started(_pairing_mode, bond_count);
     }
 
 }

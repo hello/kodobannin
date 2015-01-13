@@ -47,13 +47,16 @@ static void _start_morpheus_dfu_process(void)
     REBOOT_TO_DFU();
 }
 
-static void _on_advertise_started(bool is_pairing_mode)
+static void _on_advertise_started(bool is_pairing_mode, uint16_t bond_count)
 {
     PRINTS("advertise callback called\r\n");
     MorpheusCommand advertising_command;
     memset(&advertising_command, 0, sizeof(advertising_command));
     advertising_command.type = is_pairing_mode ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
+    advertising_command.ble_bond_count = bond_count;
+    advertising_command.has_ble_bond_count = true;
+    
     if(!morpheus_ble_route_protobuf_to_cc3200(&advertising_command))
     {
         PRINTS("Route protobuf to middle board failed\r\n");
