@@ -445,10 +445,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                     hlo_ble_notify(0xB00B, data->buf, data->len,
                         &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
 
-                    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
-                    PRINTS("Big pool free: ");
-                    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
-                    PRINTS("\r\n");
+                    
                     
                     return SUCCESS;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
                 }
