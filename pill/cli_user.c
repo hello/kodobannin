@@ -3,6 +3,7 @@
 #include "ant_driver.h"
 #include <nrf_soc.h>
 #include "message_led.h"
+#include "message_imu.h"
 #include "app.h"
 #include <ble.h>
 
@@ -24,11 +25,10 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
-    if( !match_command(argv[0], "imuoff") ){
-        self.parent->unloadmod(MSG_IMU_GetBase());
-    }
-    if( !match_command(argv[0], "imuon") ){
-        self.parent->loadmod(MSG_IMU_GetBase());
+    if( !match_command(argv[0], "imutest") ){
+        self.parent->dispatch( (MSG_Address_t){CLI,0},
+                                (MSG_Address_t){IMU, IMU_SELF_TEST},
+                                NULL);
     }
     //dispatch message through ANT
     if(argc > 1 && !match_command(argv[0], "ant") ){
