@@ -228,8 +228,9 @@ void ADC_IRQHandler(void)
             }
         }
     }
-    if (next_measure_input == 0) // end of adc measurement
+    if (next_measure_input == 0){ // end of adc measurement
         battery_module_power_off();
+    }
 }
 
 uint16_t battery_get_voltage_cached(){
