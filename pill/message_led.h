@@ -10,4 +10,3 @@ enum MSG_LEDAddress{
 };
 
 MSG_Base_t * MSG_LEDInit(MSG_Central_t * parent);
-void test_led();

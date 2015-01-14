@@ -19,9 +19,6 @@ _handle_command(int argc, char * argv[]){
     if(argc > 1 && !match_command(argv[0], "echo")){
         PRINTS(argv[1]);
     }
-    if( !match_command(argv[0], "led") ){
-        test_led();
-    }
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
