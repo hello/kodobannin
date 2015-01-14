@@ -217,6 +217,7 @@ void ADC_IRQHandler(void)
 
               }else{
                   // max number of readings limit exceeded
+                  // TODO double check with dyke
                   next_measure_input = 0;
               }
             } // no follow on measurement input given
