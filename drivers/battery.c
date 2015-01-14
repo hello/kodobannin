@@ -215,13 +215,17 @@ void ADC_IRQHandler(void)
                 // Trigger a new ADC sampling, the callback will be called again
                 NRF_ADC->TASKS_START = 1; // start adc to make next reading
 
-              } // max number of readings limit exceeded
+              }else{
+                  // max number of readings limit exceeded
+                  next_measure_input = 0;
+              }
             } // no follow on measurement input given
         } // no callback provided
         else
         {
-            if (_adc_config_psel == LDO_VBAT_ADC_INPUT) // have Vbat reading
+            if (_adc_config_psel == LDO_VBAT_ADC_INPUT){ // have Vbat reading
                 battery_set_voltage_cached(adc_result); // update saved voltage
+            }
         }
     }
     if (next_measure_input == 0) // end of adc measurement
