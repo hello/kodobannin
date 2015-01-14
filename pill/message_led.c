@@ -236,8 +236,6 @@ _flush(void){
 static MSG_Status
 _handle_led_commands(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(dst.submodule > 0 && dst.submodule < LED_COMMAND_SIZE){
-            _play_animation(dst.submodule);
-        _play_animation(dst.submodule);
         _play_animation(dst.submodule);
         return SUCCESS;
     }
