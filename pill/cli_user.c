@@ -29,7 +29,6 @@ _handle_command(int argc, char * argv[]){
         self.parent->dispatch( (MSG_Address_t){CLI,0},
                                 (MSG_Address_t){IMU, IMU_SELF_TEST},
                                 NULL);
-        test_rgb();
     }
     if( !match_command(argv[0], "dsp") ){
         led_update_battery_status();
