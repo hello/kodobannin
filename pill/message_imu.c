@@ -268,7 +268,7 @@ static MSG_Status _flush(void){
     return SUCCESS;
 }
 static MSG_Status _handle_self_test(void){
-	return SUCCESS;
+	return imu_self_test();
 }
 static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
