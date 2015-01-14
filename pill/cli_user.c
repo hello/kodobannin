@@ -42,7 +42,6 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
-    }
     //dispatch message through ANT
     if(argc > 1 && !match_command(argv[0], "ant") ){
         //Create a message object from uart string
