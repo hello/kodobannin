@@ -295,7 +295,9 @@ static MSG_Status _handle_read_xyz(void){
 	}
 #endif
 	if(shake_counter++ == 0){
-		test_ok(parent, IMU_OK);
+		/*
+		 *test_ok(parent, IMU_OK);
+		 */
 	}
 	return SUCCESS;
 }
