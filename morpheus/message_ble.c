@@ -949,7 +949,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             _erase_bonded_users();
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
-            hble_erase_other_bonded_central();
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS(MSG_NO_MEMORY);
