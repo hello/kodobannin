@@ -616,6 +616,10 @@ static void _cc3200_boot_check(){
     MorpheusCommand get_device_id_command;
     memset(&get_device_id_command, 0, sizeof(get_device_id_command));
     get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
+    uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
+    get_device_id_command.has_ble_bond_count = true;
+    get_device_id_command.ble_bond_count = bond_count;
 
 #ifdef HAS_CC3200
     morpheus_ble_route_protobuf_to_cc3200(&get_device_id_command);
