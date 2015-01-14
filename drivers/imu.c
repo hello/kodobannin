@@ -798,11 +798,11 @@ int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode,
 	return err;
 }
 int32_t
-_stream_avg(int32_t prev, uint16_t x,  int32_t n){
+_stream_avg(int32_t prev, int16_t x,  int32_t n){
 	if(n == 0){
 		return x;
 	}else{
-		return (((prev * n) + x) / (n + 1));
+		return (((prev * n) + (int32_t)x) / (n + 1));
 	}
 }
 uint32_t _otp(uint8_t code){
@@ -847,18 +847,29 @@ _pass_test(uint32_t st, uint8_t st_code){
 }
 static inline int32_t
 _abs(a){
-	return ((a<0)?-a:a);
+	/*
+	 *return ((a<0)?-a:a);
+	 */
+	return a;
 }
 int imu_self_test(void){
 	uint8_t ret = 0;
 	int i;
-	uint16_t values[3] = {0};
+	int16_t values[3] = {0};
 	int32_t ax_os, ay_os, az_os;
 	int32_t ax_st_os, ay_st_os, az_st_os;
 	int32_t axst, ayst, azst;
 	uint8_t factory[3] = {0};
+	imu_power_off();
+	nrf_delay_ms(20);
+	imu_power_on();
+	nrf_delay_ms(20);
 	imu_reset();
+	/*
+	 *imu_calibrate_zero();
+	 */
 
+	nrf_delay_ms(20);
 	//gyro
 	//_register_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_92bw);
 	//accel
@@ -867,7 +878,7 @@ int imu_self_test(void){
     //_register_write(MPU_REG_GYRO_CFG, GYRO_CFG_SCALE_250_DPS);
 	//accel
     _register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
-	PRINTS("R 200\r\n");
+	nrf_delay_ms(20);
 	for(i = 0; i < 200; i++){
 		imu_accel_reg_read((uint8_t *)values);
 		/*
@@ -891,7 +902,7 @@ int imu_self_test(void){
 
 	//enable self test
     //_register_write(MPU_REG_GYRO_CFG, GYRO_CFG_X_TEST | GYRO_CFG_Y_TEST | GYRO_CFG_Z_TEST);
-    _register_write(MPU_REG_ACC_CFG, ACCEL_CFG_X_TEST | ACCEL_CFG_Y_TEST | ACCEL_CFG_Z_TEST | ACCEL_CFG_SCALE_2G);
+    _register_write(MPU_REG_ACC_CFG, ACCEL_CFG_X_TEST | ACCEL_CFG_Y_TEST | ACCEL_CFG_Z_TEST);
 	nrf_delay_ms(20);
 	memset(values, 0, sizeof(values));
 	for(i = 0; i < 200; i++){
@@ -916,7 +927,7 @@ int imu_self_test(void){
 	 *PRINT_HEX(&az_st_os, 4);
 	 */
 
-	nrf_delay_ms(20);
+	nrf_delay_ms(40);
 
 
 	//diff
