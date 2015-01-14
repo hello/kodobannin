@@ -24,6 +24,9 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
+    if( !match_command(argv[0], "bat") ){
+        test_bat();
+    }
     if( !match_command(argv[0], "rgb") ){
         test_rgb();
     }
