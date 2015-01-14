@@ -321,13 +321,13 @@ void led_power_off(uint8_t mode)
 uint32_t led_check_reed_switch(void){ // assert if either (evt/dvt) active
     uint32_t ret = 0;
 #ifdef PLATFORM_HAS_VLED
-    nrf_gpio_cfg_input(LED2_ENABLE, NRF_GPIO_PIN_NOPULL); // evt
+ // nrf_gpio_cfg_input(LED2_ENABLE, NRF_GPIO_PIN_NOPULL); // evt
     nrf_gpio_cfg_input(LED3_ENABLE, NRF_GPIO_PIN_NOPULL); // dvt
 
-    ret = nrf_gpio_pin_read(LED2_ENABLE) || nrf_gpio_pin_read(LED3_ENABLE);
+    ret = /* nrf_gpio_pin_read(LED2_ENABLE) || */ nrf_gpio_pin_read(LED3_ENABLE);
 
-    nrf_gpio_pin_set(LED2_ENABLE); // grn led off ( open drain )
-    _led_gpio_cfg_open_drain(LED2_ENABLE); // evt's reed switch
+ // nrf_gpio_pin_set(LED2_ENABLE); // grn led off ( open drain )
+ // _led_gpio_cfg_open_drain(LED2_ENABLE); // evt's reed switch
     nrf_gpio_pin_set(LED3_ENABLE); // red led off ( open drain )
     _led_gpio_cfg_open_drain(LED3_ENABLE); // dvt's reed switch
     return ret;
