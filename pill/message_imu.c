@@ -268,7 +268,12 @@ static MSG_Status _flush(void){
     return SUCCESS;
 }
 static MSG_Status _handle_self_test(void){
-	return imu_self_test();
+	MSG_Status ret = FAIL;
+	if( !imu_self_test() ){
+		ret = SUCCESS;
+	}
+	parent->unloadmod(&base);
+	parent->loadmod(&base);
 }
 static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
