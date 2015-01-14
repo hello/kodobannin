@@ -314,8 +314,9 @@ uint32_t battery_measurement_begin(adc_measure_callback_t callback, uint16_t cou
      // _adc_config_count = 64; // indicate max number of adc cycles
     }
 
-    if (_adc_config_count == 0 ||_adc_config_count > 64)
+    if (_adc_config_count == 0 ||_adc_config_count > 64){
         _adc_config_count = 64; // indicate max number of adc cycles
+    }
 
     // Configure ADC
     NRF_ADC->INTENSET   = ADC_INTENSET_END_Msk;
