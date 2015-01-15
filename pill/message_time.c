@@ -211,6 +211,7 @@ static void _timer_handler(void * ctx){
     }else if(self.reed_states == 0x00 && self.power_state == 1){
         hble_update_battery_level(1); // issue ant heartbeat packet to signal resuming user mode
         PRINTS("Going into User Mode");
+        _send_heartbeat_data_ant();
         self.power_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();

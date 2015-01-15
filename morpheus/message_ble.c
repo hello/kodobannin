@@ -185,13 +185,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
                     nrf_delay_ms(100);
                     APP_ASSERT(0);
                 }
-
-                hble_stack_init();
-
-#ifdef BONDING_REQUIRED     
-                hble_bond_manager_init();
-                nrf_delay_ms(200);    
-#endif
                 
                 hble_params_init(device_name, device_id, command->firmwareVersion);
                 hble_services_init();
@@ -213,12 +206,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
         case BOOT_SYNC_DEVICE_ID:  // The sync device id command was sent
         {
             PRINTS("SYNC DEVICEID\r\n");
-            hble_stack_init();
-
-#ifdef BONDING_REQUIRED     
-            hble_bond_manager_init();
-            nrf_delay_ms(200);    
-#endif
             
             hble_params_init(device_name, GET_UUID_64(), command->firmwareVersion);
             hble_services_init();
@@ -618,6 +605,7 @@ static void _cc3200_boot_check(){
     get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
     uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
     APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
+
     get_device_id_command.has_ble_bond_count = true;
     get_device_id_command.ble_bond_count = bond_count;
 
@@ -669,6 +657,12 @@ static void _on_boot_timer(void* context)
 
 static MSG_Status _init(){
 
+    hble_stack_init();
+
+#ifdef BONDING_REQUIRED     
+    hble_bond_manager_init();
+    nrf_delay_ms(200);    
+#endif
 
     self.pill_pairing_request = (struct pill_pairing_request){0};
     app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
@@ -955,7 +949,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             _erase_bonded_users();
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
-            hble_erase_other_bonded_central();
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS(MSG_NO_MEMORY);

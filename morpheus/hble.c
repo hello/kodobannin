@@ -549,6 +549,9 @@ void hble_advertising_start()
     }
 #endif
 
+    uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
+
     _advertising_data_init(flags);
     APP_OK(sd_ble_gap_adv_start(&adv_params));
 
@@ -556,8 +559,6 @@ void hble_advertising_start()
 
     if(_on_advertise_started)
     {
-        uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
-        APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
         _on_advertise_started(_pairing_mode, bond_count);
     }
 
