@@ -1,0 +1,13 @@
+w4 4001e504 2 # NVMC: enable erase
+w4 4001e50c 1 # NVMC: erase all flash, including UICR
+sleep 50
+r
+w4 4001e504 1 # NVMC: enable writing
+loadbin $SOFTDEVICE_MAIN 0x0
+loadbin $SOFTDEVICE_UICR 0x10001000
+loadbin $APP 0x20000
+loadbin $BOOTLOADER 0x36000
+loadbin $APPCRC 0x3f000
+w4 10001014 36000  # boot from 0x36000
+r
+q

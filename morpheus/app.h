@@ -18,6 +18,7 @@ enum {
  */
 #define BLE_DEVICE_NAME       "Sense"
 #define BLE_MANUFACTURER_NAME "Hello Inc."
+#define BLE_MODEL_NUM         FW_VERSION_STRING
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
@@ -100,8 +101,13 @@ enum {
 
 #define TX_POWER_LEVEL (0)
 
-#define APP_PILL_PAIRING_TIMEOUT_INTERVAL	 (APP_TIMER_TICKS(60000, APP_TIMER_PRESCALER))
-#define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER))
+#define APP_PILL_PAIRING_TIMEOUT_INTERVAL	 (APP_TIMER_TICKS(30000, APP_TIMER_PRESCALER))
+#define BLE_BOOT_RETRY_INTERVAL              (APP_TIMER_TICKS(2500, APP_TIMER_PRESCALER))
 
 //fatory app allows more capabilities
 #define FACTORY_APP
+//verbose app shows more txt for debugging
+/*
+ *#define VERBOSE_DEBUG
+ */
+

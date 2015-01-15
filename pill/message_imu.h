@@ -25,15 +25,11 @@ struct imu_settings {
     bool is_active;
 };
 
-typedef struct{
-    enum{
-        IMU_PING=0,
-		IMU_READ_XYZ
-    }cmd;
-    union{
-		struct imu_accel16_sample out_accel;
-    }param;
-}MSG_IMUCommand_t;
+typedef enum{
+	IMU_PING = 0,
+	IMU_READ_XYZ,
+	IMU_SELF_TEST
+}MSG_IMUAddress;
 
 /* See README_IMU.md for an introduction to the IMU, and vocabulary
    that you may need to understand the rest of this. */

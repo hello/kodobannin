@@ -9,6 +9,7 @@
 #define BLE_ENABLE
 
 #define HW_REVISION 3
+#define FW_VERSION_STRING "DVT4.1"
 
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key

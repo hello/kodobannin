@@ -65,3 +65,5 @@ uint8_t imu_clear_interrupt_status();
 void imu_spi_enable();
 void imu_power_on();
 void imu_power_off();
+
+int imu_self_test(void);

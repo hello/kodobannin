@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <nrf_soc.h>
+#include <string.h>
 #include "app_timer.h"
 #include "message_time.h"
 #include "util.h"
@@ -16,6 +17,11 @@
 #include "message_ant.h"
 #endif
 
+typedef struct{
+    uint64_t nonce;
+    MotionPayload_t payload[TF_CONDENSED_BUFFER_SIZE];
+    uint16_t magic_bytes; //this must be here at the end of the struct,  or Jackson will kill you
+}__attribute__((packed)) MSG_ANT_EncryptedMotionData_t;
 
 static struct{
     MSG_Base_t base;
@@ -49,34 +55,66 @@ _flush(void){
 #ifdef ANT_STACK_SUPPORT_REQD
 #define MOTION_DATA_MAGIC 0x5A5A
 static void _send_available_data_ant(){
-    size_t rawDataSize = TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t);
-    uint16_t magic = MOTION_DATA_MAGIC;
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
-        sizeof(MSG_ANT_EncryptedMotionData_t) + // Encrypted info headers (nonce)
-        rawDataSize +  // Raw/encrypted data
-        sizeof(magic));
 
-    if(data_page){
+    //allocate memory
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
+        sizeof(MSG_ANT_EncryptedMotionData_t));
+
+    //if allocation worked
+    if(data_page) {
+        //ant data comes from the data page (allocated above, and freed at the end of this function)
+        MSG_ANT_PillData_t* ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
+
+        //motion_data is a pointer to the blob of data that antdata->payload points to
+        //the goal is to fill out the motion_data pointer
+        MSG_ANT_EncryptedMotionData_t* motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
+
+        //zero out my blob
         memset(&data_page->buf, 0, data_page->len);
-        MSG_ANT_PillData_t* ant_data = &data_page->buf;
-        MSG_ANT_EncryptedMotionData_t * motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
+
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_DATA_ENCRYPTED;
         ant_data->UUID = GET_UUID_64();
-        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t) + rawDataSize + sizeof(magic);
+        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t);
 
+        //fill out the motion data payload
         if(TF_GetCondensed(motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
         {
             uint8_t pool_size = 0;
-            memcpy((uint8_t*)motion_data->payload + rawDataSize, &magic, sizeof(magic));
+
+            //magic is pre-defined, assign it.
+            motion_data->magic_bytes = MOTION_DATA_MAGIC;
+
+            //do the nonce stuff (encrypting it all)  
             if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
                 uint8_t nonce[8] = {0};
+
+                //this payload struct is packed (packed attributed in GCC)
+                uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
+
                 sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
-                aes128_ctr_encrypt_inplace(motion_data->payload, rawDataSize + sizeof(magic), get_aes128_key(), nonce);
+
+                aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
+                
                 memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
+
+                //this sends out the data
                 self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
+
                 /*
+                 * //Uncomment me to debug
+                 * 
                  *self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
+
+                 *MSG_Data_t * dupe = MSG_Base_Dupe(data_page);
+                 *if(dupe){
+                 *    ant_data = (MSG_ANT_PillData_t *)&dupe->buf;
+                 *    motion_data = (MSG_ANT_EncryptedMotionData_t*)ant_data->payload;
+                 *    uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
+                 *    aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
+                 *    self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, dupe);
+                 *    MSG_Base_ReleaseDataAtomic(dupe);
+                 *}
                  */
             }else{
                 //pools closed
@@ -155,12 +193,14 @@ static void _timer_handler(void * ctx){
     PRINTS("\r\n");
     if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
         PRINTS("Going into Factory Mode");
+        _send_heartbeat_data_ant();
         self.power_state = 1;
         self.central->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
         self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE}, NULL);
     }else if(self.reed_states == 0x00 && self.power_state == 1){
         PRINTS("Going into User Mode");
+        _send_heartbeat_data_ant();
         self.power_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();

@@ -22,6 +22,8 @@ _ctr_inc_ctr(nrf_ecb_hal_data_t * ecb){
 #include "app.h"
 const uint8_t *
 get_aes128_key(void){
+	//Use encryption root for now
+	return (uint8_t*)NRF_FICR->ER;
 #ifdef DEVICE_KEY_ADDRESS
 	return (uint8_t*)DEVICE_KEY_ADDRESS;
 #else

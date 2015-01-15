@@ -231,29 +231,29 @@ void ant_handler(ant_evt_t * p_ant_evt){
         case EVENT_RX_FAIL:
             break;
         case EVENT_RX:
-            PRINTS("R");
+            DEBUGS("R");
             _handle_rx(ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
-            PRINTS("RXTO\r\n");
+            DEBUGS("RXTO\r\n");
             break;
         case EVENT_RX_FAIL_GO_TO_SEARCH:
-            PRINTS("RXFTS\r\n");
+            DEBUGS("RXFTS\r\n");
             break;
         case EVENT_TRANSFER_RX_FAILED:
-            PRINTS("RFFAIL\r\n");
+            DEBUGS("RFFAIL\r\n");
             break;
         case EVENT_TX:
-            PRINTS("T");
+            DEBUGS("T");
             _handle_tx(ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
             break;
         case EVENT_TRANSFER_TX_FAILED:
             break;
         case EVENT_CHANNEL_COLLISION:
-            PRINTS("XX\r\n");
+            DEBUGS("XX\r\n");
             break;
         case EVENT_CHANNEL_CLOSED:
-            PRINTS("X");
+            DEBUGS("X");
             sd_ant_channel_unassign(ant_channel);
             break;
         default:
