@@ -216,12 +216,15 @@ _play_animation(enum MSG_LEDAddress type){
         return -1;
     }
 }
-}
 void test_bat(){
     _play_animation(LED_PLAY_BATTERY_TEST);
 }
 void test_rgb(){
     _play_animation(LED_PLAY_LED_RGB_TEST);
+}
+void test_led(){
+    _play_animation(LED_PLAY_TEST);
+}
 static MSG_Status
 _destroy(void){
     return SUCCESS;

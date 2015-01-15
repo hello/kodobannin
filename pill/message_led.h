@@ -14,3 +14,4 @@ enum MSG_LEDAddress{
 MSG_Base_t * MSG_LEDInit(MSG_Central_t * parent);
 void test_bat();
 void test_rgb();
+void test_led();

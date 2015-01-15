@@ -27,6 +27,15 @@ _handle_command(int argc, char * argv[]){
                                 (MSG_Address_t){IMU, IMU_SELF_TEST},
                                 NULL);
     }
+    if( !match_command(argv[0], "bat") ){
+        test_bat();
+    }
+    if( !match_command(argv[0], "rgb") ){
+        test_rgb();
+    }
+    if( !match_command(argv[0], "led") ){
+        test_led();
+    }
     if( !match_command(argv[0], "dsp") ){
         led_update_battery_status();
     }
