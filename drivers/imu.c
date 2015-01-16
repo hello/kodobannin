@@ -797,3 +797,170 @@ int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode,
 
 	return err;
 }
+int32_t
+_stream_avg(int32_t prev, int16_t x,  int32_t n){
+	if(n == 0){
+		return x;
+	}else{
+		return (((prev * n) + (int32_t)x) / (n + 1));
+	}
+}
+uint32_t _otp(uint8_t code){
+	int i;
+	int base = 1010;
+	if(code == 1){
+		return 1;
+	}else{
+		for(i = 0; i < code - 2; i++){
+			base = base * 1010 / 1000;
+		}
+		return ((uint32_t)(2620 * (base / 1000)));
+	}
+}
+static uint8_t
+_pass_test(uint32_t st, uint8_t st_code){
+	if(st_code != 0){
+		uint32_t cmp = _otp(st_code);
+		uint32_t res = st * 100 / cmp;
+		if(res > 50 && res < 150){
+			return 1;
+		}else{
+			PRINTS("res ");
+			PRINT_HEX(&res, 4);
+			PRINTS("\r\n");
+			PRINTS("code ");
+			PRINT_HEX(&st_code, 1);
+			PRINTS("\r\n");
+			PRINTS("st ");
+			PRINT_HEX(&st, 4);
+			PRINTS("\r\n");
+			PRINTS("cmp ");
+			PRINT_HEX(&cmp, 4);
+			PRINTS("\r\n");
+			return 0;
+		}
+	}else{
+		PRINTS("x");
+		return 1;
+	}
+
+}
+static inline int32_t
+_abs(a){
+	/*
+	 *return ((a<0)?-a:a);
+	 */
+	return a;
+}
+int imu_self_test(void){
+	uint8_t ret = 0;
+	int i;
+	int16_t values[3] = {0};
+	int32_t ax_os, ay_os, az_os;
+	int32_t ax_st_os, ay_st_os, az_st_os;
+	int32_t axst, ayst, azst;
+	uint8_t factory[3] = {0};
+	imu_power_off();
+	nrf_delay_ms(20);
+	imu_power_on();
+	nrf_delay_ms(20);
+	imu_reset();
+	/*
+	 *imu_calibrate_zero();
+	 */
+
+	nrf_delay_ms(20);
+	//gyro
+	//_register_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_92bw);
+	//accel
+    _register_write(MPU_REG_ACC_CFG2, ACCEL_CFG2_LPF_1kHz_92bw);
+	//gyro
+    //_register_write(MPU_REG_GYRO_CFG, GYRO_CFG_SCALE_250_DPS);
+	//accel
+    _register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
+	nrf_delay_ms(20);
+	for(i = 0; i < 200; i++){
+		imu_accel_reg_read((uint8_t *)values);
+		/*
+		 *ax_os = _stream_avg(ax_os, (uint8_t)(values[0] & 0xFF), i);
+		 *ay_os = _stream_avg(ay_os, (uint8_t)(values[1] & 0xFF), i);
+		 *az_os = _stream_avg(az_os, (uint8_t)(values[2] & 0xFF), i);
+		 */
+		ax_os = _stream_avg(ax_os, values[0], i);
+		ay_os = _stream_avg(ay_os, values[1], i);
+		az_os = _stream_avg(az_os, values[2], i);
+		nrf_delay_ms(1);
+	}
+	/*
+	 *PRINTS("\r\nx: ");
+	 *PRINT_HEX(&ax_os, 4);
+	 *PRINTS("\r\ny: ");
+	 *PRINT_HEX(&ay_os, 4);
+	 *PRINTS("\r\nz: ");
+	 *PRINT_HEX(&az_os, 4);
+	 */
+
+	//enable self test
+    //_register_write(MPU_REG_GYRO_CFG, GYRO_CFG_X_TEST | GYRO_CFG_Y_TEST | GYRO_CFG_Z_TEST);
+    _register_write(MPU_REG_ACC_CFG, ACCEL_CFG_X_TEST | ACCEL_CFG_Y_TEST | ACCEL_CFG_Z_TEST);
+	nrf_delay_ms(20);
+	memset(values, 0, sizeof(values));
+	for(i = 0; i < 200; i++){
+		imu_accel_reg_read((uint8_t *)values);
+		/*
+		 *ax_st_os = _stream_avg(ax_st_os, (uint8_t)(values[0] & 0xFF), i);
+		 *ay_st_os = _stream_avg(ay_st_os, (uint8_t)(values[1] & 0xFF), i);
+		 *az_st_os = _stream_avg(az_st_os, (uint8_t)(values[2] & 0xFF), i);
+		 */
+		ax_st_os = _stream_avg(ax_st_os, values[0], i);
+		ay_st_os = _stream_avg(ay_st_os, values[1], i);
+		az_st_os = _stream_avg(az_st_os, values[2], i);
+		nrf_delay_ms(1);
+	}
+
+	/*
+	 *PRINTS("\r\nst_x: ");
+	 *PRINT_HEX(&ax_st_os, 4);
+	 *PRINTS("\r\nst_y: ");
+	 *PRINT_HEX(&ay_st_os, 4);
+	 *PRINTS("\r\nst_z: ");
+	 *PRINT_HEX(&az_st_os, 4);
+	 */
+
+	nrf_delay_ms(40);
+
+
+	//diff
+	axst = _abs(ax_st_os - ax_os);
+	ayst = _abs(ay_st_os - ay_os);
+	azst = _abs(az_st_os - az_os);
+
+	/*
+	 *PRINTS("\r\nast_x: ");
+	 *PRINT_HEX(&axst, 4);
+	 *PRINTS("\r\nast_y: ");
+	 *PRINT_HEX(&ayst, 4);
+	 *PRINTS("\r\nast_z: ");
+	 *PRINT_HEX(&azst, 4);
+	 */
+
+	//factory
+	_register_read(MPU_REG_ACC_SELF_TEST_X, &factory[0]);
+	_register_read(MPU_REG_ACC_SELF_TEST_Y, &factory[1]);
+	_register_read(MPU_REG_ACC_SELF_TEST_Z, &factory[2]);
+
+	nrf_delay_ms(20);
+
+	//calcualte OTP
+
+	if(_pass_test(axst, factory[0]) &&
+		_pass_test(ayst, factory[1]) &&
+		_pass_test(azst, factory[2])){
+		PRINTS("Pass\r\n");
+		return 0;
+	}else{
+		PRINTS("Fail\r\n");
+		return -1;
+	}
+
+}

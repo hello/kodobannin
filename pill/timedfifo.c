@@ -13,6 +13,24 @@ static struct{
 
 static uint16_t _decrease_index(uint16_t * idx);
 
+static void
+_increment_duration(tf_unit_t * current){
+    if(current->has_motion){
+        current->duration += 1;
+    }
+    current->has_motion = 0;
+}
+static void
+_reset_tf_unit(tf_unit_t * current){
+    for (int i = 0; i < 3; i++) {
+        current->min_accel[i] = INT16_MAX;
+        current->max_accel[i] = INT16_MIN;
+    }
+    current->has_motion = 0;
+    current->duration = 0;
+    current->num_wakes = 0;
+    current->max_amp = 0;
+}
 void TF_Initialize(const struct hlo_ble_time * init_time){
     memset(&self.data, 0, sizeof(self.data));
     self.data.length = sizeof(self.data);
@@ -23,30 +41,27 @@ void TF_Initialize(const struct hlo_ble_time * init_time){
     self.data.mtime = init_time->monotonic_time;
 
     tf_unit_t* current = TF_GetCurrent();
-    for (int i = 0; i < 3; i++) {
-        current->min_accel[i] = INT16_MAX;
-        current->max_accel[i] = INT16_MIN;
-    }
-    current->num_wakes = 0;
-
+    _reset_tf_unit(current);
 }
 
 
 
 void TF_TickOneSecond(uint64_t monotonic_time){
     self.data.mtime = monotonic_time;
-    if(++self.tick > MOTION_DATA_INTERVAL_SEC){
+
+    tf_unit_t* current_slot = TF_GetCurrent();
+    _increment_duration(current_slot);
+
+    if(++self.tick >= MOTION_DATA_INTERVAL_SEC){
+
+        //increment index
         self.tick = 0;
         self.data.prev_idx = self.current_idx;
         self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
-        //reset aux data struct
 
-        tf_unit_t* current_slot = TF_GetCurrent();
-        for (int i = 0; i < 3; i++) {
-            current_slot->min_accel[i] = INT16_MAX;
-            current_slot->max_accel[i] = INT16_MIN;
-        }
-        current_slot->num_wakes = 0;
+        //reset next tf data
+        current_slot = TF_GetCurrent();
+        _reset_tf_unit(current_slot);
         PRINTS("^");
     }else{
         PRINTS("*");
@@ -91,7 +106,7 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
             tf_unit_t datum = self.data.data[idx];
 
             uint8_t payload_index = length - i - 1;
-            payload[payload_index].num_times_woken_in_minute = datum.num_wakes;
+            payload->num_times_woken_in_minute = (uint8_t)datum.num_wakes;
 
             //compute max range
             for (int k = 0; k < 3; k++) {
@@ -103,6 +118,7 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
 
             payload[payload_index].max_acc_range = maxrange;
             payload[payload_index].maxaccnormsq = datum.max_amp; 
+            payload[payload_index].duration = datum.duration;
 
             if(datum.num_wakes != 0)
             {
