@@ -199,7 +199,7 @@ static void _timer_handler(void * ctx){
     PRINTS("]");
 
  // (self.reed_states == POWER_STATE_MASK ^^ self.power_state ==0)
- //     hble_update_battery_level(); // may/will need to avoide overlapping multiple call's
+ //     hble_update_battery_level(1); // may/will need to avoid overlapping multiple call's
 
     if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
         hble_update_battery_level(1); // issue ant heartbeat packet to signal suspending user mode

@@ -11,8 +11,6 @@
 #include "battery.h"
 
 
-#ifdef PLATFORM_HAS_VLED
-
 static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
 {
     /*lint -e{845} // A zero has been given as right argument to operator '|'" */
@@ -321,7 +319,6 @@ void led_power_off(uint8_t mode)
 uint32_t led_check_reed_switch(void){ // assert if either (evt/dvt) active
     uint32_t ret = 0;
 
-#ifdef PLATFORM_HAS_VLED
     nrf_gpio_cfg_input(LED3_ENABLE, NRF_GPIO_PIN_NOPULL); // dvt
  // nrf_gpio_cfg_input(LED2_ENABLE, NRF_GPIO_PIN_NOPULL); // evt
 
@@ -333,8 +330,4 @@ uint32_t led_check_reed_switch(void){ // assert if either (evt/dvt) active
  // _led_gpio_cfg_open_drain(LED2_ENABLE); // evt's reed switch
 
     return ret;
-#else
-    return 0;
-#endif
 }
-#endif

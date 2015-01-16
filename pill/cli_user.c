@@ -27,6 +27,10 @@ _handle_command(int argc, char * argv[]){
                                 (MSG_Address_t){IMU, IMU_SELF_TEST},
                                 NULL);
     }
+    if( !match_command(argv[0], "imuon") ){
+        self.parent->loadmod(MSG_IMU_GetBase());
+    }
+#ifdef PLATFORM_HAS_VLED
     if( !match_command(argv[0], "bat") ){
         test_bat();
     }
@@ -39,9 +43,7 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "dsp") ){
         led_update_battery_status();
     }
-    if( !match_command(argv[0], "imuon") ){
-        self.parent->loadmod(MSG_IMU_GetBase());
-    }
+#endif
     if( !match_command(argv[0], "upd") ){
         hble_update_battery_level(1); // make battery capacity assessment
     }

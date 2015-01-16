@@ -100,7 +100,7 @@ enum {
 // vbat and version measurement enable
 // VER      P00      //  4 P0.00
 
-#define PLATFORM_HAS_VLED
+// #define PLATFORM_HAS_VLED // exclude driver except for reed switch
 
 enum {
     VLED_VDD_EN  = 17, // boost power pfet
