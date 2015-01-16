@@ -45,7 +45,7 @@ static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
 
 // BLE event callbacks for message_ble.c
-static void(*_on_advertise_started)(bool);
+static void(*_on_advertise_started)(bool, uint16_t);
 static bond_status_callback_t _bond_status_callback;
 static connected_callback_t _connect_callback;
 ////
@@ -147,6 +147,30 @@ static void _delay_tasks_erase_other_bonds()
             PRINTS(" deleted.\r\n");
         }
     }
+}
+
+void hble_erase_1st_bond()
+{
+    uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
+    if(paired_users_count == 0)
+    {
+        PRINTS("No paired centrals found.\r\n");
+        return;
+    }
+
+    PRINTS("Paired central count: ");
+    PRINT_HEX(&paired_users_count, sizeof(paired_users_count));
+    PRINTS("\r\n");
+
+    uint16_t bonded_central_list[BLE_BONDMNGR_MAX_BONDED_CENTRALS];
+    memset(bonded_central_list, 0, sizeof(bonded_central_list));
+
+    APP_OK(ble_bondmngr_central_ids_get(bonded_central_list, &paired_users_count));
+    APP_OK(ble_bondmngr_bonded_central_delete(bonded_central_list[0]));
+    PRINTS("Paired central ");
+    PRINT_HEX(&bonded_central_list[0], sizeof(bonded_central_list[0]));
+    PRINTS(" deleted.\r\n");
 }
 
 
@@ -525,6 +549,9 @@ void hble_advertising_start()
     }
 #endif
 
+    uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
+
     _advertising_data_init(flags);
     APP_OK(sd_ble_gap_adv_start(&adv_params));
 
@@ -532,7 +559,7 @@ void hble_advertising_start()
 
     if(_on_advertise_started)
     {
-        _on_advertise_started(_pairing_mode);
+        _on_advertise_started(_pairing_mode, bond_count);
     }
 
 }

@@ -100,8 +100,21 @@ static void _send_available_data_ant(){
 
                 //this sends out the data
                 self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
+
                 /*
+                 * //Uncomment me to debug
+                 * 
                  *self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
+
+                 *MSG_Data_t * dupe = MSG_Base_Dupe(data_page);
+                 *if(dupe){
+                 *    ant_data = (MSG_ANT_PillData_t *)&dupe->buf;
+                 *    motion_data = (MSG_ANT_EncryptedMotionData_t*)ant_data->payload;
+                 *    uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
+                 *    aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
+                 *    self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, dupe);
+                 *    MSG_Base_ReleaseDataAtomic(dupe);
+                 *}
                  */
             }else{
                 //pools closed
@@ -180,12 +193,14 @@ static void _timer_handler(void * ctx){
     PRINTS("\r\n");
     if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
         PRINTS("Going into Factory Mode");
+        _send_heartbeat_data_ant();
         self.power_state = 1;
         self.central->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
         self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE}, NULL);
     }else if(self.reed_states == 0x00 && self.power_state == 1){
         PRINTS("Going into User Mode");
+        _send_heartbeat_data_ant();
         self.power_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();

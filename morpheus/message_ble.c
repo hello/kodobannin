@@ -47,13 +47,16 @@ static void _start_morpheus_dfu_process(void)
     REBOOT_TO_DFU();
 }
 
-static void _on_advertise_started(bool is_pairing_mode)
+static void _on_advertise_started(bool is_pairing_mode, uint16_t bond_count)
 {
     PRINTS("advertise callback called\r\n");
     MorpheusCommand advertising_command;
     memset(&advertising_command, 0, sizeof(advertising_command));
     advertising_command.type = is_pairing_mode ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
         MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
+    advertising_command.ble_bond_count = bond_count;
+    advertising_command.has_ble_bond_count = true;
+    
     if(!morpheus_ble_route_protobuf_to_cc3200(&advertising_command))
     {
         PRINTS("Route protobuf to middle board failed\r\n");
@@ -182,13 +185,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
                     nrf_delay_ms(100);
                     APP_ASSERT(0);
                 }
-
-                hble_stack_init();
-
-#ifdef BONDING_REQUIRED     
-                hble_bond_manager_init();
-                nrf_delay_ms(200);    
-#endif
                 
                 hble_params_init(device_name, device_id, command->firmwareVersion);
                 hble_services_init();
@@ -210,12 +206,6 @@ static void _init_ble_stack(const MorpheusCommand* command)
         case BOOT_SYNC_DEVICE_ID:  // The sync device id command was sent
         {
             PRINTS("SYNC DEVICEID\r\n");
-            hble_stack_init();
-
-#ifdef BONDING_REQUIRED     
-            hble_bond_manager_init();
-            nrf_delay_ms(200);    
-#endif
             
             hble_params_init(device_name, GET_UUID_64(), command->firmwareVersion);
             hble_services_init();
@@ -247,11 +237,11 @@ static bool _is_bond_db_full()
     return false;
 }
 
-static void _check_bonds_and_enter_pairing_mode()
+static void _erase_1st_bonds_and_enter_pairing_mode()
 {
     if(_is_bond_db_full())
     {
-        hble_delay_tasks_erase_bonds();
+        hble_erase_1st_bond();
     }
 
     hble_set_advertising_mode(true);
@@ -263,7 +253,7 @@ static void _hold_to_enter_pairing_mode()
     {
         // Stop BLE radio, because the 2nd task will resume it.
         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-        hble_set_delay_task(0, _check_bonds_and_enter_pairing_mode);
+        hble_set_delay_task(0, _erase_1st_bonds_and_enter_pairing_mode);
         hble_set_delay_task(1, hble_delay_task_advertise_resume);
         hble_set_delay_task(2, NULL);  // Indicates delay task end.
 
@@ -274,10 +264,29 @@ static void _hold_to_enter_pairing_mode()
     }else{
         if(_is_bond_db_full())
         {
-            hble_erase_all_bonded_central();
+            hble_erase_1st_bond();
         }
         hble_set_advertising_mode(true);
         // Need to wait the delay task to do the actual wipe.
+    }
+}
+
+static void _hold_to_enter_normal_mode()
+{
+    if(!hlo_ble_is_connected())
+    {
+        // Stop BLE radio, because the 2nd task will resume it.
+        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+        hble_set_advertising_mode(false);
+        hble_set_delay_task(0, hble_delay_task_advertise_resume);
+        hble_set_delay_task(1, NULL); // Indicates delay task end.
+
+        // If not connected, the delay task will not 
+        // triggered by disconnect, we need to manually 
+        // start it.
+        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+    }else{
+        // Do nothing
     }
 }
 
@@ -386,7 +395,9 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
                     _hold_to_enter_pairing_mode();
                 break;
-
+                case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+                    _hold_to_enter_normal_mode();
+                break;
                 case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 {
                     PRINTS("Factory reset from CC3200..\r\n");
@@ -424,10 +435,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                     hlo_ble_notify(0xB00B, data->buf, data->len,
                         &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
 
-                    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
-                    PRINTS("Big pool free: ");
-                    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
-                    PRINTS("\r\n");
+                    
                     
                     return SUCCESS;  // THIS IS A RETURN! DONOT release data here, it will be released in the callback.
                 }
@@ -534,7 +542,7 @@ MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
 #ifdef HAS_CC3200
     PRINTS("Waiting the pill to reply...\r\n");
-    if(!self.timer_id)
+    if( self.timer_id )
     {
         // One minute timeout
         if(NRF_SUCCESS == app_timer_start(self.timer_id, APP_PILL_PAIRING_TIMEOUT_INTERVAL, NULL))
@@ -595,6 +603,11 @@ static void _cc3200_boot_check(){
     MorpheusCommand get_device_id_command;
     memset(&get_device_id_command, 0, sizeof(get_device_id_command));
     get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
+    uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
+
+    get_device_id_command.has_ble_bond_count = true;
+    get_device_id_command.ble_bond_count = bond_count;
 
 #ifdef HAS_CC3200
     morpheus_ble_route_protobuf_to_cc3200(&get_device_id_command);
@@ -644,6 +657,12 @@ static void _on_boot_timer(void* context)
 
 static MSG_Status _init(){
 
+    hble_stack_init();
+
+#ifdef BONDING_REQUIRED     
+    hble_bond_manager_init();
+    nrf_delay_ms(200);    
+#endif
 
     self.pill_pairing_request = (struct pill_pairing_request){0};
     app_timer_create(&self.timer_id, APP_TIMER_MODE_SINGLE_SHOT, _pill_pairing_time_out);
@@ -930,7 +949,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             _erase_bonded_users();
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
-            hble_erase_other_bonded_central();
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
                 PRINTS(MSG_NO_MEMORY);

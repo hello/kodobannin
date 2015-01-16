@@ -158,9 +158,6 @@ _play_animation(enum MSG_LEDAddress type){
         return -1;
     }
 }
-void test_led(){
-    _play_animation(LED_PLAY_TEST);
-}
 static MSG_Status
 _destroy(void){
     return SUCCESS;
