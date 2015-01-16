@@ -23,7 +23,10 @@
 #include "util.h"
 #include "pill_gatt.h"
 
+#include "nrf_gpio.h"
+
 #include "battery.h"
+#include "message_time.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
@@ -194,19 +197,64 @@ static void _advertising_data_init(uint8_t flags){
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
 }
 
-
-static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
+static __INLINE void _hble_gpio_cfg_open_drain(uint32_t pin_number)
 {
+    /*lint -e{845} // A zero has been given as right argument to operator '|'" */
+    NRF_GPIO->PIN_CNF[pin_number] = (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) // no edge detect
+                                  | (GPIO_PIN_CNF_DRIVE_S0D1 << GPIO_PIN_CNF_DRIVE_Pos)     // nfet pull down only
+                                  | (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)   // resistor pullup
+                                  | (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)  // no input
+                                  | (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);      // output only
+}
 
-    PRINTS("Battery level measured,  Voltage:");
-    PRINT_HEX(&batt_level_milli_volts, sizeof(batt_level_milli_volts));
-    PRINTS(", Percentage: ");
-    PRINT_HEX(&percentage_battery_level, sizeof(percentage_battery_level));
-    PRINTS(", ADC: ");
-    PRINT_HEX(&adc_result, sizeof(adc_result));
-    PRINTS("\r\n");
+static adc_t Vref, Vrel, Voff;
+static uint8_t _hble_ant_packet_enable; // heartbeat periodic Vbat percentage
 
-    battery_module_power_off();
+static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint16_t adc_count)
+{
+    uint32_t value, result;      //  Measured        Actual
+ // Battery Voltage  0x0267 - 0x010A +2.914 V,  80 %   2.9 V
+    switch (adc_count) { // for each adc reading
+            case 1: battery_set_result_cached(adc_result); Vref = adc_result;
+                    PRINTS(" 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
+                    return LDO_VRGB_ADC_INPUT; break; // for adc offset
+            case 2: battery_set_offset_cached(adc_result); Voff = adc_result;
+                    PRINTS("- 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
+                    return LDO_VBAT_ADC_INPUT; break; // spread print overhead
+            case 3: result = battery_set_voltage_cached(adc_result); Vrel = adc_result;
+                    PRINTS(" 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
+                    PRINTS(" +");
+                    value = result/1000;
+                    PRINT_DEC(&value,1);
+                    PRINTS(".");
+                    PRINT_DEC(&result,3);
+                    PRINTS(" V, ");
+                    result = battery_get_percent_cached();
+                    PRINT_DEC(&result,3);
+                    if ( Vrel > Vref) {
+                        result = Vrel - Vref; 
+                        PRINTS("% +");
+                    } else {
+                        PRINTS("% -");
+                        result = Vref - Vrel; 
+                    } // estimate of battery internal resistance
+                    PRINT_HEX(&result, 1);
+                    PRINTS("\r\n");
+                    break; // fall thru to end adc reading sequence
+    }
+    battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
+
+    if (_hble_ant_packet_enable) // periodic Vbat percentage
+        send_heartbeat_packet();
 
     uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, adc_result);
     if ((err_code != NRF_SUCCESS) &&
@@ -217,9 +265,35 @@ static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_mil
         APP_ERROR_HANDLER(err_code);
     }
 
-    
+    return 0; // indicate no more adc conversions required
 }
 
+//   ADC    OFFSET  Vbat Measured    Actual
+// 0x02CE - 0x010A +4.011 V, 120 %   4.0 V
+// 0x028C - 0x010A +3.220 V, 102 %   3.2 V
+// 0x0273 - 0x010A +3.013 V, 100 %   3.0 V \
+// 0x0267 - 0x010A +2.914 V,  80 %   2.9 V |  normal battery
+// 0x025B - 0x010A +2.814 V,  40 %   2.8 V |  operating range
+// 0x0243 - 0x010A +2.714 V,  10 %   2.6 V /
+// 0x0240 - 0x010A +2.614 V,  05 %   2.4 V
+// 0x022B - 0x010A +2.415 V,  00 %   2.2 V
+// 0x01FA - 0x010A +2.002 V,  00 %   2.0 V
+
+void hble_update_battery_status()
+{
+    uint32_t value, result;
+
+    PRINTS("Battery : ");
+    result = battery_get_voltage_cached();
+    value = result/1000;
+    PRINT_DEC(&value,1);
+    PRINTS(".");
+    PRINT_DEC(&result,3);
+    PRINTS(" V, ");
+    value = battery_get_percent_cached();
+    PRINT_DEC(&value,2);
+    PRINTS(" %\r\n");
+}
 
 void hble_advertising_init(ble_uuid_t service_uuid)
 {
@@ -301,10 +375,14 @@ void hble_stack_init()
 
 }
 
-void hble_update_battery_level()
+void hble_update_battery_level(uint8_t mode)
 {
 #ifdef PLATFORM_HAS_VERSION
-    battery_measurement_begin(_on_battery_level_measured);
+    _hble_ant_packet_enable = mode;
+ // battery_module_power_on(); // must be done before first adc reading
+    PRINTS("Battery Voltage "); // resistor divider (523K||215K) to settle
+    battery_measurement_begin(_on_battery_level_measured, 0); // Vmcu/Vbat/...
+ // battery_module_power_off(); // must be done after last adc reading
 #endif
 }
 

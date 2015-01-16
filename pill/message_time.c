@@ -2,6 +2,7 @@
 #include <nrf_soc.h>
 #include <string.h>
 #include "app_timer.h"
+#include "message_led.h"
 #include "message_time.h"
 #include "util.h"
 #include "platform.h"
@@ -11,6 +12,9 @@
 #include "timedfifo.h"
 #include "led.h"
 #include <ble.h>
+#include "hble.h"
+
+#include "ble.h"
 #include "hble.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
@@ -126,7 +130,6 @@ static void _send_available_data_ant(){
     }
 }
 
-
 static void _send_heartbeat_data_ant(){
     // TODO: Jackson please do review & test this.
     // I packed all the struct and I am not sure it will work as expected.
@@ -152,6 +155,10 @@ static void _send_heartbeat_data_ant(){
 #endif
 
 #define POWER_STATE_MASK 0x7
+void send_heartbeat_packet(void){
+    _send_heartbeat_data_ant();
+}
+
 static void _timer_handler(void * ctx){
     //uint8_t carry;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
@@ -167,9 +174,7 @@ static void _timer_handler(void * ctx){
 
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
     {
-        _send_heartbeat_data_ant();
-        battery_module_power_on();
-        battery_measurement_begin(NULL);
+        hble_update_battery_level(1); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel) for IR
     }
 #endif
     
@@ -182,25 +187,31 @@ static void _timer_handler(void * ctx){
             self.user_cb = NULL;
         }
     }
-    uint8_t current_reed_state = (uint8_t)led_check_reedswitch();
+    uint8_t current_reed_state = (uint8_t)led_check_reed_switch();
     if(led_booster_is_free()){
-        current_reed_state = (uint8_t)led_check_reedswitch();
+        current_reed_state = (uint8_t)led_check_reed_switch();
     }else{
         current_reed_state = 0;
     }
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
-    PRINT_HEX(&self.reed_states, 1);
-    PRINTS("\r\n");
+    PRINTS("[");
+    PRINT_BYTE(&self.reed_states, 1);
+    PRINTS("]");
+
+ // (self.reed_states == POWER_STATE_MASK ^^ self.power_state ==0)
+ //     hble_update_battery_level(1); // may/will need to avoid overlapping multiple call's
+
     if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
-        PRINTS("Going into Factory Mode");
-        _send_heartbeat_data_ant();
+        hble_update_battery_level(1); // issue ant heartbeat packet to signal suspending user mode
+        PRINTS("Going into Ship Mode");
         self.power_state = 1;
         self.central->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
-        self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE}, NULL);
+        self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_SHIP_MODE},NULL);
     }else if(self.reed_states == 0x00 && self.power_state == 1){
+        hble_update_battery_level(1); // issue ant heartbeat packet to signal resuming user mode
         PRINTS("Going into User Mode");
-        _send_heartbeat_data_ant();
+     // _send_heartbeat_data_ant();
         self.power_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();
