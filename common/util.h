@@ -5,6 +5,7 @@
 #include <app_error.h>
 #include "message_uart.h"
 #include "hello_dfu.h"
+#include "app.h"
 
 extern const uint8_t hex[16];
 
@@ -26,6 +27,16 @@ extern const uint8_t hex[16];
 #define SIMPRINTS(a) simple_uart_putstring((const uint8_t *)a)
 #define SIMPRINTC(a) simple_uart_put(a)
 
+#ifdef VERBOSE_DEBUG
+#define DEBUG_HEX(a,b) MSG_Uart_PrintHex((uint8_t*)a,b)
+#define DEBUGS(a) MSG_Uart_Prints(a)
+#define DEBUGC(a) MSG_Uart_Printc(a)
+#else
+#define DEBUG_HEX(a,b) {}
+#define DEBUGS(a) {}
+#define DEBUGC(a) {}
+#endif
+
 void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks);
 
 #define DEBUG(a,b) {PRINTS(a); PRINT_HEX(&b, sizeof(b)); PRINTC('\r'); PRINTC('\n');}
@@ -43,6 +54,7 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 									sd_nvic_SystemReset();\
 								}\
 							}while(0)
+#define REBOOT() sd_nvic_SystemReset()
 #define AES128_BLOCK_SIZE 16
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);

@@ -99,12 +99,14 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 
 static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
-	int16_t values[3];
-	memcpy(values, raw_xyz, len);
+    int16_t values[3];
+//    uint16_t range;
+//    uint16_t maxrange
+    //auxillary_data_t * paux;
+    memcpy(values, raw_xyz, len);
 
-	//int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
-	uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
-    aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
+    //int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
+    uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
 	
     /*
     tf_unit_t curr = TF_GetCurrent();
@@ -118,13 +120,41 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     */
 
 	//TF_SetCurrent((uint16_t)values[0]);
-	
-	if(TF_GetCurrent() < aggregate ){
-		TF_SetCurrent((tf_unit_t)aggregate);
-		PRINTS("NEW MAX: ");
-		PRINT_HEX(&aggregate, sizeof(aggregate));
-	}
-	return aggregate;
+	tf_unit_t* current = TF_GetCurrent();
+    if(current->max_amp < aggregate){
+        current->max_amp = aggregate;
+        PRINTS("NEW MAX: ");
+        PRINT_HEX(&aggregate, sizeof(aggregate));
+    }
+    
+    //track max/min values of accelerometer      
+    for (int i = 0; i < 3; i++) {
+        if (values[i] > current->max_accel[i]) {
+            current->max_accel[i] = values[i];
+        }
+  
+        if (values[i] < current->min_accel[i]) {
+            current->min_accel[i] = values[i];
+        }
+    }
+
+	//this second has motion
+	current->has_motion = 1;
+
+/* 
+    maxrange = 0;
+    for (i = 0; i < 3; i++) {
+        range = (uint16_t) (paux->max_accel[i] - paux->min_accel[i]);
+   
+        if (range > maxrange) {
+            maxrange = range;
+        }
+    }
+
+    paux->max_
+*/
+    return aggregate;
+      
 }
 
 static void _imu_switch_mode(bool is_active)
@@ -150,8 +180,7 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
 	uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(interrupt_status & INT_STS_WOM_INT)
 	{
-		MSG_PING(parent,IMU,IMU_READ_XYZ);
-        
+		parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 	}
 
 }
@@ -238,51 +267,57 @@ static MSG_Status _destroy(void){
 static MSG_Status _flush(void){
     return SUCCESS;
 }
+static MSG_Status _handle_self_test(void){
+	MSG_Status ret = FAIL;
+	if( !imu_self_test() ){
+		ret = SUCCESS;
+	}
+	parent->unloadmod(&base);
+	parent->loadmod(&base);
+}
+static MSG_Status _handle_read_xyz(void){
+	int16_t values[3];
+	uint32_t mag;
+	imu_accel_reg_read((uint8_t*)values);
+	//uint8_t interrupt_status = imu_clear_interrupt_status();
+	if(_settings.wom_callback){
+		_settings.wom_callback(values, sizeof(values));
+	}
+	mag = _aggregate_motion_data(values, sizeof(values));
+	ShakeDetect(mag);
+#ifdef IMU_DYNAMIC_SAMPLING        
+	app_timer_cnt_get(&_last_active_time);
+	if(!_settings.is_active)
+	{
+		_imu_switch_mode(true);
+		TF_GetCurrent()->num_wakes++;
+		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
+	}
+#endif
+	if(shake_counter++ == 0){
+		/*
+		 *test_ok(parent, IMU_OK);
+		 */
+	}
+	return SUCCESS;
+}
 
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
-	if(data){
-		MSG_Base_AcquireDataAtomic(data);
-		MSG_IMUCommand_t * cmd = data->buf;
-		switch(cmd->cmd){
-			default:
-			case IMU_PING:
-				break;
-			case IMU_READ_XYZ:
-				{
-					int16_t values[3];
-					uint32_t mag;
-					imu_accel_reg_read((uint8_t*)values);
-					//uint8_t interrupt_status = imu_clear_interrupt_status();
-
-					if(_settings.wom_callback){
-						_settings.wom_callback(values, sizeof(values));
-					}
-
-					mag = _aggregate_motion_data(values, sizeof(values));
-
-					ShakeDetect(mag);
-					
-
-#ifdef IMU_DYNAMIC_SAMPLING        
-                    app_timer_cnt_get(&_last_active_time);
-                    if(!_settings.is_active)
-                    {
-                        _imu_switch_mode(true);
-                        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-                    }
-#endif
-					if(shake_counter++ == 0){
-						test_ok(parent, IMU_OK);
-					}
-				}
-
-
-				break;
-		}
-		MSG_Base_ReleaseDataAtomic(data);
-		PRINTS("\r\n");
+	MSG_Status ret = SUCCESS;
+	switch(dst.submodule){
+		default:
+		case IMU_PING:
+			PRINTS(name);
+			PRINTS("\r\n");
+			break;
+		case IMU_READ_XYZ:
+			ret = _handle_read_xyz();
+			break;
+		case IMU_SELF_TEST:
+			ret = _handle_self_test();
+			break;
 	}
-    return SUCCESS;
+	return ret;
 }
 
 

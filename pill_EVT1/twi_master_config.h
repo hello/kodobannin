@@ -1,6 +1,0 @@
-#pragma once
-
-enum {
-  TWI_MASTER_CONFIG_CLOCK_PIN_NUMBER = 23,
-  TWI_MASTER_CONFIG_DATA_PIN_NUMBER = 22,
-};

@@ -81,12 +81,11 @@ static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
 {
 	if(_should_stream)
 	{
-        size_t new_len = len + sizeof(tf_unit_t);
-        int32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
-        aggregate = aggregate >> ((sizeof(aggregate) - sizeof(tf_unit_t)) * 8);
+        size_t new_len = len + sizeof(uint32_t);
+        uint32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
         uint8_t buffer[new_len];
         memcpy(buffer, raw_xyz, len);
-        memcpy(&buffer[len], &aggregate, sizeof(tf_unit_t));
+        memcpy(&buffer[len], &aggregate, sizeof(aggregate));
 
 		hlo_ble_notify(0xFEED, buffer, new_len, NULL);
 	}
@@ -309,7 +308,7 @@ void pill_ble_load_modules(void){
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 #ifdef PLATFORM_HAS_VLED
-		central->loadmod(MSG_LEDInit(central));
+//		central->loadmod(MSG_LEDInit(central));
 #endif
 
         /*
