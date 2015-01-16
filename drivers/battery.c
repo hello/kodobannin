@@ -163,6 +163,25 @@ uint16_t battery_set_voltage_cached(adc_t adc_result)
     return _battery_level_voltage;
 }
 
+adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
+{
+    switch (adc_count) { // for each adc reading
+
+            case 1: battery_set_result_cached(adc_result); // save initial Vbat
+                    return LDO_VRGB_ADC_INPUT; break; // setup for adc offset
+
+            case 2: battery_set_offset_cached(adc_result); // save input ground reference
+                    return LDO_VBAT_ADC_INPUT; break; // setup for internal resistance
+
+            case 3: battery_set_voltage_cached(adc_result); // save subsequent Vbat
+                //  battery_set_percent_cached(); // presently performed w/in set voltage
+                    break; // fall thru to end adc reading sequence
+    }
+
+    battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
+    return 0; // indicate no more adc conversions required
+}
+
 static adc_measure_callback_t _adc_measure_callback;
 
 static int8_t _adc_cycle_count;

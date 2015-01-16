@@ -138,7 +138,10 @@ void _start()
 
     _load_watchdog();
 
-    hble_update_battery_level(0); // measure Vbat during init (high mcu load)
+    // integrate this call into scheduler wait
+    // to run first on resume from hibernate
+    // measure Vbat during init (initial mcu load)
+    battery_measurement_begin(battery_level_measured, 0);
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
