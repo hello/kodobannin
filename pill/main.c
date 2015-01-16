@@ -135,13 +135,9 @@ void _start()
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
 
     _init_rf_modules();
-
     _load_watchdog();
 
-    // integrate this call into scheduler wait
-    // to run first on resume from hibernate
-    // measure Vbat during init (initial mcu load)
-    battery_measurement_begin(battery_level_measured, 0);
+    battery_update_level();
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

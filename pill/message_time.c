@@ -171,10 +171,12 @@ static void _timer_handler(void * ctx){
         _send_available_data_ant();
     }
 
-
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
-    {
-        hble_update_battery_level(1); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel) for IR
+    { // notify and make next battery measurement capacity assessment
+        send_heartbeat_packet(); // using cached value of percent remaining
+        battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
+    } else { // monitor and update minimum battery measurement observed
+        battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
     

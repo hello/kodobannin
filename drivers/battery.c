@@ -141,10 +141,15 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
 
 void battery_set_result_cached(adc_t adc_result) // initial battery reading
 {
-        if (_adc_config_remain == 0) // high load (battery reading on wakeup from hibernate)
-            _battery_level_startup = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
-
+    if (_adc_config_remain == 0) { // intial battery reading after heartbeat packet
+        _battery_level_startup = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
         _adc_config_remain = adc_result; // higher load (first battery reading)
+    } else {
+        if (adc_result < _adc_config_remain) { // save new lowest droop observed
+            _battery_level_startup = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
+            _adc_config_remain = adc_result; // higher load (first battery reading)
+        }
+    }
 }
 
 void battery_set_offset_cached(adc_t adc_result) // adc offset reading
@@ -178,8 +183,38 @@ adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_cou
                     break; // fall thru to end adc reading sequence
     }
 
+    _adc_config_remain = 0; // clear battery droop monitor
     battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
     return 0; // indicate no more adc conversions required
+}
+
+void battery_update_level() // perform measurement and estimate capacity
+{
+    battery_measurement_begin(battery_level_measured, 0); // initiate measurement
+}
+
+adc_measure_callback_t battery_level_monitored(adc_t adc_result, uint16_t adc_count)
+{
+    switch (adc_count) { // for each adc reading
+
+            case 1: battery_set_result_cached(adc_result); // save initial Vbat
+                    return LDO_VRGB_ADC_INPUT; break; // setup for adc offset
+
+            case 2: battery_set_offset_cached(adc_result); // save input ground reference
+                    return LDO_VBAT_ADC_INPUT; break; // setup for internal resistance
+
+            case 3: battery_set_voltage_cached(adc_result); // save subsequent Vbat
+                //  battery_set_percent_cached(); // presently performed w/in set voltage
+                    break; // fall thru to end adc reading sequence
+    }
+
+    battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
+    return 0; // indicate no more adc conversions required
+}
+
+void battery_update_droop() // perform measurement and monitor droop
+{
+    battery_measurement_begin(battery_level_monitored, 0); // initiate monitor
 }
 
 static adc_measure_callback_t _adc_measure_callback;
@@ -251,6 +286,15 @@ void ADC_IRQHandler(void)
     if (next_measure_input == 0){ // end of adc measurement
         battery_module_power_off();
     }
+}
+
+uint16_t battery_get_startup_cached(uint8_t mode){
+#ifdef PLATFORM_HAS_VERSION
+    if (mode) _adc_config_remain = 0;
+    return _battery_level_startup;
+#else
+    return BATTERY_INVALID_MEASUREMENT;
+#endif
 }
 
 uint16_t battery_get_voltage_cached(){

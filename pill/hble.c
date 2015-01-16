@@ -238,6 +238,14 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
                     PRINTS(".");
                     PRINT_DEC(&result,3);
                     PRINTS(" V, ");
+                    return LDO_VBAT_ADC_INPUT; break; // spread print overhead
+            case 4: result = battery_get_startup_cached(_hble_ant_packet_enable);
+                    PRINTS(" +");
+                    value = result/1000;
+                    PRINT_DEC(&value,1);
+                    PRINTS(".");
+                    PRINT_DEC(&result,3);
+                    PRINTS(" V, ");
                     result = battery_get_percent_cached();
                     PRINT_DEC(&result,3);
                     if ( Vrel > Vref) {
@@ -251,7 +259,7 @@ static adc_measure_callback_t _on_battery_level_measured(adc_t adc_result, uint1
                     PRINTS("\r\n");
                     break; // fall thru to end adc reading sequence
     }
-    battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
+ // battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
 
     if (_hble_ant_packet_enable) // periodic Vbat percentage
         send_heartbeat_packet();

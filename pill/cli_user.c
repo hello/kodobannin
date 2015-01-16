@@ -5,6 +5,7 @@
 #include "message_led.h"
 #include "message_imu.h"
 #include "app.h"
+#include "battery.h"
 #include <ble.h>
 
 static struct{
@@ -34,6 +35,15 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "bat") ){
         test_bat();
     }
+    if( !match_command(argv[0], "red") ){
+        test_red();
+    }
+    if( !match_command(argv[0], "grn") ){
+        test_grn();
+    }
+    if( !match_command(argv[0], "blu") ){
+        test_blu();
+    }
     if( !match_command(argv[0], "rgb") ){
         test_rgb();
     }
@@ -44,8 +54,11 @@ _handle_command(int argc, char * argv[]){
         led_update_battery_status();
     }
 #endif
+    if( !match_command(argv[0], "mon") ){
+        hble_update_battery_level(0); // monitor droop
+    }
     if( !match_command(argv[0], "upd") ){
-        hble_update_battery_level(1); // make battery capacity assessment
+        hble_update_battery_level(1); // measure battery / issue ant packet
     }
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
