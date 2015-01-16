@@ -157,6 +157,7 @@ _play_led_red_test(int * out_r, int * out_g, int * out_b){
         return current->valid;
     }
     return 0;
+}
 static int
 _play_led_grn_test(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
@@ -178,6 +179,7 @@ _play_led_grn_test(int * out_r, int * out_g, int * out_b){
         return current->valid;
     }
     return 0;
+}
 static int
 _play_led_blu_test(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
