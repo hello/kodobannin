@@ -127,6 +127,8 @@ enum {
     VMCU_SENSE  = 2,
 };
 
+#define LDO_VRGB_ADC_INPUT NC
+#define LDO_VBAT_ADC_INPUT NC
 // power supply voltage dividers
 // VBUS     P06      // 10 P0.06 AIN7 VBUS 3.2 523/215
 // P3V3     P05      //  9 P0.05 AIN6 VDD  3.3 523/215
