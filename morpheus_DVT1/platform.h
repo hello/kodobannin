@@ -133,6 +133,8 @@ enum {
 // P1V8     P03      //  7 P0.03 AIN4 VDD  1.8 523/523
 #define LDO_VRGB_ADC_INPUT NC
 #define LDO_VBAT_ADC_INPUT NC
+#define LDO_VMCU_ADC_INPUT NC
+#define VBAT_VER_EN NC
 
 // version voltage divider
 // VMCU     P02      //  6 P0.02 AIN3 VMCU 523/523 Divider
