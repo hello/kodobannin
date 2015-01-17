@@ -170,6 +170,7 @@ uint16_t battery_set_voltage_cached(adc_t adc_result)
 
 adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
+#ifdef PLATFORM_HAS_BATTERY
     switch (adc_count) { // for each adc reading
 
             case 1: battery_set_result_cached(adc_result); // save initial Vbat
@@ -182,7 +183,7 @@ adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_cou
                 //  battery_set_percent_cached(); // presently performed w/in set voltage
                     break; // fall thru to end adc reading sequence
     }
-
+#endif
     _adc_config_remain = 0; // clear battery droop monitor
     battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
     return 0; // indicate no more adc conversions required
@@ -195,6 +196,7 @@ void battery_update_level() // perform measurement and estimate capacity
 
 adc_measure_callback_t battery_level_monitored(adc_t adc_result, uint16_t adc_count)
 {
+#ifdef PLATFORM_HAS_BATTERY
     switch (adc_count) { // for each adc reading
 
             case 1: battery_set_result_cached(adc_result); // save initial Vbat
@@ -207,7 +209,7 @@ adc_measure_callback_t battery_level_monitored(adc_t adc_result, uint16_t adc_co
                 //  battery_set_percent_cached(); // presently performed w/in set voltage
                     break; // fall thru to end adc reading sequence
     }
-
+#endif
     battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
     return 0; // indicate no more adc conversions required
 }

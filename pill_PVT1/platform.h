@@ -90,6 +90,8 @@ enum {
     VBAT_VER_EN = 0, // resistor divider enable pull down
 };
 
+#define PLATFORM_HAS_BATTERY
+
 #define LDO_VBAT_ADC_INPUT    0x80UL // P0.06 AIN7
 #define LDO_VMCU_ADC_INPUT    0x08UL // P0.02 AIN3
 
@@ -132,6 +134,10 @@ enum {
 #define LED_RED_CHANNEL     LED3_ENABLE /* P0.30 */
 #define LED_GREEN_CHANNEL   LED2_ENABLE /* P0.28 */
 #define LED_BLUE_CHANNEL    LED1_ENABLE /* P0.07 */
+
+#define PLATFORM_HAS_REED
+
+#define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
 
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
