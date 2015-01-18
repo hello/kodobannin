@@ -101,8 +101,8 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
         for(int i = 0; i < length; i++){
             idx = _decrease_index(&idx);
 
-            uint16_t maxrange = 0;
-            uint16_t range = 0;
+            int32_t maxrange = 0;
+            int32_t range = 0;
             tf_unit_t datum = self.data.data[idx];
 
             uint8_t payload_index = length - i - 1;
@@ -110,13 +110,21 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
 
             //compute max range
             for (int k = 0; k < 3; k++) {
-                range = (uint16_t) (datum.max_accel[k] - datum.min_accel[k]);
+                range = ((int32_t)datum.max_accel[k] - (int32_t)datum.min_accel[k]);
                 if (range > maxrange) {
                     maxrange = range;
                 }
             } 
 
-            payload[payload_index].max_acc_range = maxrange;
+            if (maxrange > UINT16_MAX) {
+                maxrange = UINT16_MAX;
+            }
+ 
+            if (maxrange < 0) {
+                maxrange = 0;
+            }
+
+            payload[payload_index].max_acc_range = (uint16_t)maxrange;
             payload[payload_index].maxaccnormsq = datum.max_amp; 
             payload[payload_index].duration = datum.duration;
 
