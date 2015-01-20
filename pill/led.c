@@ -10,8 +10,6 @@
 #include "pwm.h"
 
 
-#ifdef PLATFORM_HAS_VLED
-
 static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
 {
     /*lint -e{845} // A zero has been given as right argument to operator '|'" */
@@ -64,6 +62,7 @@ void led_init()
     pwm_disable(); // config pwm rate and power down
 }
 
+#ifdef PLATFORM_HAS_VLED
 
 void led_all_colors_on()
 {
@@ -118,18 +117,18 @@ void led_power_off()
 #endif
 }
 
-uint32_t led_check_reedswitch(void){
-#ifdef PLATFORM_HAS_VLED
-    uint32_t ret;
-    nrf_gpio_cfg_input(LED3_ENABLE, NRF_GPIO_PIN_NOPULL);
-    ret = nrf_gpio_pin_read(LED3_ENABLE);
-    nrf_gpio_pin_set(LED3_ENABLE); // grn led off ( open drain )
-    _led_gpio_cfg_open_drain(LED3_ENABLE); // nrf_gpio_cfg_output(LED2_ENABLE); // grn
-    return ret;
-#else
-    return 0;
 #endif
+
+uint32_t led_check_reed_switch(void){ // assert if reed switch closed
+    uint32_t ret = 0;
+#ifdef PLATFORM_HAS_REED
+    nrf_gpio_cfg_input(LED_REED_ENABLE, NRF_GPIO_PIN_NOPULL);
+
+    ret = nrf_gpio_pin_read(LED_REED_ENABLE);
+
+    nrf_gpio_pin_set(LED_REED_ENABLE); // red led off ( open drain )
+    _led_gpio_cfg_open_drain(LED_REED_ENABLE); // dvt's reed switch
+#endif
+    return ret;
 }
 
-
-#endif

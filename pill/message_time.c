@@ -162,14 +162,13 @@ static void _timer_handler(void * ctx){
     if(get_tick() == 0)
     {
         _send_available_data_ant();
-    }
-
-
-    if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
-    {
-        _send_heartbeat_data_ant();
-        battery_module_power_on();
-        battery_measurement_begin(NULL);
+    }else{
+        if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
+        {
+            battery_module_power_on();
+            _send_heartbeat_data_ant();
+            battery_measurement_begin(NULL);
+        }
     }
 #endif
     
@@ -182,15 +181,15 @@ static void _timer_handler(void * ctx){
             self.user_cb = NULL;
         }
     }
-    uint8_t current_reed_state = (uint8_t)led_check_reedswitch();
+    uint8_t current_reed_state = (uint8_t)led_check_reed_switch();
     if(led_booster_is_free()){
-        current_reed_state = (uint8_t)led_check_reedswitch();
+        current_reed_state = (uint8_t)led_check_reed_switch();
     }else{
         current_reed_state = 0;
     }
+
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
     PRINT_HEX(&self.reed_states, 1);
-    PRINTS("\r\n");
     if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
         PRINTS("Going into Factory Mode");
         _send_heartbeat_data_ant();
