@@ -44,6 +44,7 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 	PRINT_HEX(&error_code, sizeof(error_code));
 	PRINTS("\n");
 
+    //let watchdog expire
     nrf_delay_ms(30000);
 	
 
