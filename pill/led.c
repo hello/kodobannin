@@ -62,7 +62,6 @@ void led_init()
     pwm_disable(); // config pwm rate and power down
 }
 
-#ifdef PLATFORM_HAS_VLED
 
 void led_all_colors_on()
 {
@@ -117,7 +116,6 @@ void led_power_off()
 #endif
 }
 
-#endif
 
 uint32_t led_check_reed_switch(void){ // assert if reed switch closed
     uint32_t ret = 0;
