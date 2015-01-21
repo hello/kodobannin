@@ -189,16 +189,16 @@ static void _timer_handler(void * ctx){
             self.user_cb = NULL;
         }
     }
-    uint8_t current_reed_state = (uint8_t)led_check_reed_switch();
-    if(led_booster_is_free()){
+#ifdef PLATFORM_HAS_VLED
+    uint8_t current_reed_state = 0;
+    if(led_booster_is_free()) {
         current_reed_state = (uint8_t)led_check_reed_switch();
-    }else{
-        current_reed_state = 0;
     }
+#else
+    uint8_t current_reed_state = (uint8_t)led_check_reed_switch();
+#endif
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
-    PRINTS("[");
-    PRINT_BYTE(&self.reed_states, 1);
-    PRINTS("]");
+    PRINT_HEX(&self.reed_states, 1);
 
  // (self.reed_states == POWER_STATE_MASK ^^ self.power_state ==0)
  //     hble_update_battery_level(1); // may/will need to avoid overlapping multiple call's
@@ -206,6 +206,7 @@ static void _timer_handler(void * ctx){
     if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
         hble_update_battery_level(1); // issue ant heartbeat packet to signal suspending user mode
         PRINTS("Going into Ship Mode");
+     // _send_heartbeat_data_ant();
         self.power_state = 1;
         self.central->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
