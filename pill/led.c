@@ -21,6 +21,7 @@ static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
 }
 
 void led_set(int led_channel, int pwmval){
+#ifdef PLATFORM_HAS_VLED
     int offset = 0;
     led_all_colors_off();
     if(led_channel == LED_GREEN_CHANNEL){
@@ -30,11 +31,12 @@ void led_set(int led_channel, int pwmval){
         nrf_gpio_pin_clear(led_channel);
         APP_OK(pwm_set_value(PWM_Channel_1, pwmval - offset));
     }
-
+#endif
 }
 
 void led_init()
 {
+#ifdef PLATFORM_HAS_VLED
     uint32_t gpios[1] = {VRGB_ADJUST}; // port to use for pwm dac
 
     nrf_gpio_pin_set(VLED_VDD_EN); // set pfet gate high
@@ -60,6 +62,7 @@ void led_init()
 
     APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
     pwm_disable(); // config pwm rate and power down
+#endif
 }
 
 
