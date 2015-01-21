@@ -48,8 +48,13 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 
     nrf_delay_ms(5000);
 
+
     //TODO REBOOT or REBOOT TO DFU?
-	REBOOT();
+    if(0 == MSG_Uart_GetLastChar()){
+        REBOOT_TO_DFU();
+    }else{
+        REBOOT();
+    }
 
 /*
  *    //TODO restore this for later revisions
