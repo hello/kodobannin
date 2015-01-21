@@ -21,7 +21,6 @@ static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
 }
 
 void led_set(int led_channel, int pwmval){
-#ifdef PLATFORM_HAS_VLED
     int offset = 0;
     led_all_colors_off();
     if(led_channel == LED_GREEN_CHANNEL){
@@ -31,12 +30,10 @@ void led_set(int led_channel, int pwmval){
         nrf_gpio_pin_clear(led_channel);
         APP_OK(pwm_set_value(PWM_Channel_1, pwmval - offset));
     }
-#endif
 }
 
 void led_init()
 {
-#ifdef PLATFORM_HAS_VLED
     uint32_t gpios[1] = {VRGB_ADJUST}; // port to use for pwm dac
 
     nrf_gpio_pin_set(VLED_VDD_EN); // set pfet gate high
@@ -62,26 +59,21 @@ void led_init()
 
     APP_OK(pwm_init(PWM_1_Channel, gpios, PWM_Mode_32kHz_255));
     pwm_disable(); // config pwm rate and power down
-#endif
 }
 
 
 void led_all_colors_on()
 {
-#ifdef PLATFORM_HAS_VLED
     nrf_gpio_pin_clear(LED3_ENABLE); // red
     nrf_gpio_pin_clear(LED2_ENABLE); // grn
     nrf_gpio_pin_clear(LED1_ENABLE); // blu
-#endif
 }
 
 void led_all_colors_off()
 {
-#ifdef PLATFORM_HAS_VLED
     nrf_gpio_pin_set(LED3_ENABLE); // red
     nrf_gpio_pin_set(LED2_ENABLE); // grn
     nrf_gpio_pin_set(LED1_ENABLE); // blu
-#endif
 }
 
 void led_warm_up(){
@@ -91,22 +83,17 @@ void led_warm_up(){
 }
 void led_power_on()
 {
-#ifdef PLATFORM_HAS_VLED
-
     PRINTS("\r\n===( LED precharge");
     nrf_gpio_pin_set(VRGB_ENABLE);  // precharge capacitors ( Vrgb / Vpwm )
 
     PRINTS(" pwm");
     APP_OK(pwm_set_value(PWM_Channel_1, 0xEF)); // set initial Vrgb = Vmcu
     PRINTS(" on )===");
-
-#endif
 }
 
 
 void led_power_off()
 {
-#ifdef PLATFORM_HAS_VLED
     PRINTS(" LED shutdown"); // boost regulator powered on
     nrf_gpio_pin_clear(VRGB_ENABLE); // boost disabled and then
 
@@ -116,7 +103,6 @@ void led_power_off()
     PRINTS(" power"); // boost regulator powered on
     nrf_gpio_pin_set(VLED_VDD_EN); // regulator powered off
     PRINTS(" off )===\r\n"); // boost regulator powered on
-#endif
 }
 
 
