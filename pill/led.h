@@ -13,4 +13,4 @@ void led_all_colors_on();
 void led_all_colors_off();
 
 //reed switch
-uint32_t led_check_reed_switch(void);
+uint32_t led_check_reedswitch(void);
