@@ -50,7 +50,7 @@ app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filenam
 
 
     //TODO REBOOT or REBOOT TO DFU?
-    if(0 == MSG_Uart_GetLastChar()){
+    if('r' == MSG_Uart_GetLastChar()){
         REBOOT_TO_DFU();
     }else{
         REBOOT();
