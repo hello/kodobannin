@@ -182,9 +182,9 @@ static void _timer_handler(void * ctx){
             self.user_cb = NULL;
         }
     }
-    uint8_t current_reed_state = (uint8_t)led_check_reedswitch();
+    uint8_t current_reed_state = (uint8_t)led_check_reed_switch();
     if(led_booster_is_free()){
-        current_reed_state = (uint8_t)led_check_reedswitch();
+        current_reed_state = (uint8_t)led_check_reed_switch();
     }else{
         current_reed_state = 0;
     }
