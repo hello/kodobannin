@@ -29,21 +29,26 @@ _save_stack(uint8_t* stack_start, struct crash_log* crash_log)
     memcpy(&crash_log->stack[0], stack_start, crash_log->stack_size);
 }
 
+#include "platform.h"
 void
 app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filename)
 {
 	PRINTS("\r\n<FAULT>\r\n");
 
-	PRINTS("file name: ");
+	PRINTS("file: ");
 	PRINTS(filename);
 	PRINTS("\r\n");
 
-	PRINTS("line number: ");
+	PRINTS("line: ");
 	PRINT_HEX(&line_num, sizeof(line_num));
 	PRINTS("\r\n");
 
-	PRINTS("error code: ");
+	PRINTS("error: ");
 	PRINT_HEX(&error_code, sizeof(error_code));
+	PRINTS("\r\n");
+
+	PRINTS("ver: ");
+	PRINTS(FW_VERSION_STRING);
 	PRINTS("\r\n");
 
     nrf_delay_ms(5000);
