@@ -69,7 +69,7 @@
 
 static adc_t _adc_config_result; // Vbat adc reading (battery reference)
 static adc_t _adc_config_offset; // Vrgb adc reading (ground reference)
-static adc_t _adc_config_remain; // Vbat adc reading (battery remaining)
+static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)   ((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS / 1023 * ADC_PRE_SCALING_COMPENSATION)
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 1200 ) / 1023 ) * 7125 ) / 1000 )
@@ -97,9 +97,9 @@ inline void battery_module_power_off()
 #endif
 }
 
-static uint16_t _battery_level_startup; // measured battery voltage at startup
-static uint16_t _battery_level_voltage; // measured battery voltage
-static uint8_t _battery_level_percent; // computed remaining capacity
+static uint16_t _battery_level_initial; // measured battery voltage reference 
+static uint16_t _battery_level_voltage; // measured battery voltage in sequence
+static uint8_t _battery_level_percent; // computed estimated remainig capacity
 
 static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
 {
@@ -123,31 +123,31 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
         if (_battery_level_percent > 70 ) r--; // 1/2/3
         if (_battery_level_percent < 40 ) r++; // 3/4/5
 
-        if (_adc_config_result > (_adc_config_remain - r)) _battery_level_percent++; // lo IR
-        if (_adc_config_result < (_adc_config_remain - r)) _battery_level_percent--; // hi IR
+        if (_adc_config_result > (_adc_config_droop - r)) _battery_level_percent++; // lo IR
+        if (_adc_config_result < (_adc_config_droop - r)) _battery_level_percent--; // hi IR
     }
-    else // less than 10 %  ( Vbat(startup) > Vdd(1.8V) + 0.5V ) 2.6 V to 2.3 V is 10 to 0 percent
-    { // Vbat well above Vdd (1.8 + margin) operating threshold observed at startup
-        if (_battery_level_startup > _battery_level_voltage) // look for battery voltage continuing to
-            _battery_level_startup = _battery_level_voltage - 200; // fall after restart with pessimism
+    else // less than 10 %  ( Vbat(initial) > Vdd(1.8V) + 0.5V ) 2.6 V to 2.3 V is 10 to 0 percent
+    { // Vbat well above Vdd (1.8 + margin) operating threshold 
+        if (_battery_level_initial > _battery_level_voltage) // look for battery voltage continuing to
+            _battery_level_initial = _battery_level_voltage - 200; // fall after restart with pessimism
 
-        if (_battery_level_startup > 2600) _battery_level_percent = 9; else
-        if (_battery_level_startup < 2200) _battery_level_percent = 0; else
-            _battery_level_percent = (((_battery_level_startup - 2200) * 9) / 400);
-    } // ensure there is sufficient Vbat in reserve to survive next startup phase
+        if (_battery_level_initial > 2600) _battery_level_percent = 9; else
+        if (_battery_level_initial < 2200) _battery_level_percent = 0; else
+            _battery_level_percent = (((_battery_level_initial - 2200) * 9) / 400);
+    } // ensure there is sufficient Vbat in reserve to survive next restart
 
     return _battery_level_percent;
 }
 
 void battery_set_result_cached(adc_t adc_result) // initial battery reading
 {
-    if (_adc_config_remain == 0) { // intial battery reading after heartbeat packet
-        _battery_level_startup = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
-        _adc_config_remain = adc_result; // higher load (first battery reading)
+    if (_adc_config_droop == 0) { // intial battery reading after heartbeat packet
+        _battery_level_initial = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
+        _adc_config_droop = adc_result; // higher load (first battery reading)
     } else {
-        if (adc_result < _adc_config_remain) { // save new lowest droop observed
-            _battery_level_startup = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
-            _adc_config_remain = adc_result; // higher load (first battery reading)
+        if (adc_result < _adc_config_droop) { // save new lowest droop observed
+            _battery_level_initial = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
+            _adc_config_droop = adc_result; // higher load (first battery reading)
         }
     }
 }
@@ -184,7 +184,7 @@ adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_cou
                     break; // fall thru to end adc reading sequence
     }
 #endif
-    _adc_config_remain = 0; // clear battery droop monitor
+    _adc_config_droop = 0; // clear battery droop monitor
     battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
     return 0; // indicate no more adc conversions required
 }
@@ -290,10 +290,10 @@ void ADC_IRQHandler(void)
     }
 }
 
-uint16_t battery_get_startup_cached(uint8_t mode){
+uint16_t battery_get_initial_cached(uint8_t mode){
 #ifdef PLATFORM_HAS_VERSION
-    if (mode) _adc_config_remain = 0;
-    return _battery_level_startup;
+    if (mode) _adc_config_droop = 0;
+    return _battery_level_initial;
 #else
     return BATTERY_INVALID_MEASUREMENT;
 #endif
@@ -329,7 +329,7 @@ void battery_init()
 
     _adc_config_result = 0; // Vbat adc reading (battery reference)
     _adc_config_offset = 0; // Vrgb adc reading (ground reference)
-    _adc_config_remain = 0; // Vbat adc reading (battery remaining)
+    _adc_config_droop = 0; // Vbat adc reading (battery minimum)
 
     nrf_gpio_pin_set(VBAT_VER_EN); // negate open drain pin inactive to
     nrf_gpio_cfg_output(VBAT_VER_EN); // disable Vbat resistor divider

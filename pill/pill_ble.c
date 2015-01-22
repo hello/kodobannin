@@ -45,7 +45,7 @@
 #include "cli_user.h"
 #include "gpio_nor.h"
 
-
+#include "battery.h"
 
 extern uint8_t hello_type;
 
@@ -139,7 +139,18 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     	break;
 	case PILL_COMMAND_GET_BATTERY_LEVEL:
 #ifdef DEBUG_BATT_LVL
-		hble_update_battery_level();
+	//	battery_update_level();
+		uint8_t value, result;
+		PRINTS("Battery : ");
+		result = battery_get_voltage_cached();
+		value = result/1000;
+		PRINT_DEC(&value,1);
+		PRINTS(".");
+		PRINT_DEC(&result,3);
+		PRINTS(" V, ");
+		value = battery_get_percent_cached();
+		PRINT_DEC(&value,2);
+		PRINTS(" %\r\n");
 #endif
 		break;
 	case PILL_COMMAND_WIPE_FIRMWARE:
