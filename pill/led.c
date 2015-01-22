@@ -10,8 +10,6 @@
 #include "pwm.h"
 
 
-#ifdef PLATFORM_HAS_VLED
-
 static __INLINE void _led_gpio_cfg_open_drain(uint32_t pin_number)
 {
     /*lint -e{845} // A zero has been given as right argument to operator '|'" */
@@ -32,7 +30,6 @@ void led_set(int led_channel, int pwmval){
         nrf_gpio_pin_clear(led_channel);
         APP_OK(pwm_set_value(PWM_Channel_1, pwmval - offset));
     }
-
 }
 
 void led_init()
@@ -67,20 +64,16 @@ void led_init()
 
 void led_all_colors_on()
 {
-#ifdef PLATFORM_HAS_VLED
     nrf_gpio_pin_clear(LED3_ENABLE); // red
     nrf_gpio_pin_clear(LED2_ENABLE); // grn
     nrf_gpio_pin_clear(LED1_ENABLE); // blu
-#endif
 }
 
 void led_all_colors_off()
 {
-#ifdef PLATFORM_HAS_VLED
     nrf_gpio_pin_set(LED3_ENABLE); // red
     nrf_gpio_pin_set(LED2_ENABLE); // grn
     nrf_gpio_pin_set(LED1_ENABLE); // blu
-#endif
 }
 
 void led_warm_up(){
@@ -90,22 +83,17 @@ void led_warm_up(){
 }
 void led_power_on()
 {
-#ifdef PLATFORM_HAS_VLED
-
     PRINTS("\r\n===( LED precharge");
     nrf_gpio_pin_set(VRGB_ENABLE);  // precharge capacitors ( Vrgb / Vpwm )
 
     PRINTS(" pwm");
     APP_OK(pwm_set_value(PWM_Channel_1, 0xEF)); // set initial Vrgb = Vmcu
     PRINTS(" on )===");
-
-#endif
 }
 
 
 void led_power_off()
 {
-#ifdef PLATFORM_HAS_VLED
     PRINTS(" LED shutdown"); // boost regulator powered on
     nrf_gpio_pin_clear(VRGB_ENABLE); // boost disabled and then
 
@@ -115,21 +103,19 @@ void led_power_off()
     PRINTS(" power"); // boost regulator powered on
     nrf_gpio_pin_set(VLED_VDD_EN); // regulator powered off
     PRINTS(" off )===\r\n"); // boost regulator powered on
-#endif
 }
 
-uint32_t led_check_reedswitch(void){
-#ifdef PLATFORM_HAS_VLED
-    uint32_t ret;
-    nrf_gpio_cfg_input(LED3_ENABLE, NRF_GPIO_PIN_NOPULL);
-    ret = nrf_gpio_pin_read(LED3_ENABLE);
-    nrf_gpio_pin_set(LED3_ENABLE); // grn led off ( open drain )
-    _led_gpio_cfg_open_drain(LED3_ENABLE); // nrf_gpio_cfg_output(LED2_ENABLE); // grn
+
+uint32_t led_check_reed_switch(void){ // assert if reed switch closed
+    uint32_t ret = 0;
+#ifdef PLATFORM_HAS_REED
+    nrf_gpio_cfg_input(LED_REED_ENABLE, NRF_GPIO_PIN_NOPULL);
+
+    ret = nrf_gpio_pin_read(LED_REED_ENABLE);
+
+    nrf_gpio_pin_set(LED_REED_ENABLE); // red led off ( open drain )
+    _led_gpio_cfg_open_drain(LED_REED_ENABLE); // dvt's reed switch
+#endif
     return ret;
-#else
-    return 0;
-#endif
 }
 
-
-#endif

@@ -10,7 +10,7 @@
 
 #define HW_REVISION 3
 
-#define FW_VERSION_STRING "0.5.1"
+#define FW_VERSION_STRING "0.5.2"
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
@@ -97,7 +97,7 @@ enum {
 // vbat and version measurement enable
 // VER      P00      //  4 P0.00
 
-#define PLATFORM_HAS_VLED
+//#define PLATFORM_HAS_VLED
 
 enum {
     VLED_VDD_EN  = 17,
@@ -111,18 +111,21 @@ enum {
     LED2_SENSE   =  1,
     LED1_SENSE   =  5,
 
-    LED3_ENABLE  = 30,
-    LED2_ENABLE  = 28, // magentic reed switch
+    LED3_ENABLE  = 30, // magnetic reed switch (dvt/pvt)
+    LED2_ENABLE  = 28, // magnetic reed switch (evt)
     LED1_ENABLE  =  7,
 };
 #define LED_BLUE_CHANNEL LED1_ENABLE
 #define LED_RED_CHANNEL LED3_ENABLE
 #define LED_GREEN_CHANNEL LED2_ENABLE
 
+#define PLATFORM_HAS_REED
+
+#define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
+
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
 
-// Boost Converter Power Output Control
 // BOOST    P11      // 17 P0.11 Boost Converter Enable
 // LED_RGB  P09      // 15 P0.09 Red (1.7) or Grn/Blu (2.7)
 // LED_ADJ  P08      // 14 P0.08 Adjust RGB Voltage w/PWM RC DAC
