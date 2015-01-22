@@ -807,14 +807,14 @@ _stream_avg(int32_t prev, int16_t x,  int32_t n){
 }
 uint32_t _otp(uint8_t code){
 	int i;
-	int base = 1010;
+	uint32_t base = 33096;
 	if(code == 1){
 		return 1;
 	}else{
 		for(i = 0; i < code - 2; i++){
-			base = base * 1010 / 1000;
+			base = (base *  base) >> 15;
 		}
-		return ((uint32_t)(2620 * (base / 1000)));
+		return ((uint32_t)(85852160 * base ) >> 15);
 	}
 }
 static uint8_t
