@@ -105,20 +105,16 @@ void led_init()
 
 void led_all_colors_on()
 {
-#ifdef PLATFORM_HAS_VLED
     nrf_gpio_pin_clear(LED3_ENABLE); // red
     nrf_gpio_pin_clear(LED2_ENABLE); // grn
     nrf_gpio_pin_clear(LED1_ENABLE); // blu
-#endif
 }
 
 void led_all_colors_off()
 {
-#ifdef PLATFORM_HAS_VLED
     nrf_gpio_pin_set(LED3_ENABLE); // red
     nrf_gpio_pin_set(LED2_ENABLE); // grn
     nrf_gpio_pin_set(LED1_ENABLE); // blu
-#endif
 }
 
 //    off->on ->up ->set->off
@@ -316,21 +312,15 @@ void led_power_off(uint8_t mode)
 #endif
 }
 
-uint32_t led_check_reed_switch(void){ // assert if either (evt/dvt) active
+uint32_t led_check_reed_switch(void){ // assert if reed switch closed
     uint32_t ret = 0;
 #ifdef PLATFORM_HAS_REED
- // nrf_gpio_cfg_input(LED3_ENABLE, NRF_GPIO_PIN_NOPULL); // dvt
- // nrf_gpio_cfg_input(LED2_ENABLE, NRF_GPIO_PIN_NOPULL); // evt
     nrf_gpio_cfg_input(LED_REED_ENABLE, NRF_GPIO_PIN_NOPULL);
 
     ret = nrf_gpio_pin_read(LED_REED_ENABLE);
 
     nrf_gpio_pin_set(LED_REED_ENABLE); // red led off ( open drain )
     _led_gpio_cfg_open_drain(LED_REED_ENABLE); // dvt's reed switch
- // nrf_gpio_pin_set(LED3_ENABLE); // red led off ( open drain )
- // _led_gpio_cfg_open_drain(LED3_ENABLE); // dvt's reed switch
- // nrf_gpio_pin_set(LED2_ENABLE); // grn led off ( open drain )
- // _led_gpio_cfg_open_drain(LED2_ENABLE); // evt's reed switch
 #endif
     return ret;
 }

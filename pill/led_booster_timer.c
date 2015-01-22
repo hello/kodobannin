@@ -92,6 +92,7 @@ void led_booster_init(const led_booster_context_t * ctx){
 uint8_t led_booster_is_free(void){
     return self.free;
 }
+
 void led_booster_power_on(void){
     uint32_t ticks = APP_TIMER_TICKS(100, APP_TIMER_PRESCALER);
     CRITICAL_REGION_ENTER();

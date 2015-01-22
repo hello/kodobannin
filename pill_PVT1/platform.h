@@ -10,7 +10,7 @@
 
 #define HW_REVISION 3
 
-#define FW_VERSION_STRING "0.5.3" // bump as necessary
+#define FW_VERSION_STRING "0.5.21" // bump as necessary
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
@@ -139,10 +139,13 @@ enum {
 
 #define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
 
+#define PLATFORM_HAS_REED
+
+#define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
+
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
 
-// Boost Converter Power Output Control
 // BOOST    P11      // 17 P0.11 Boost Converter Enable
 // LED_RGB  P09      // 15 P0.09 Red (1.7) or Grn/Blu (2.7)
 // LED_ADJ  P08      // 14 P0.08 Adjust RGB Voltage w/PWM RC DAC

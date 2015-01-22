@@ -161,6 +161,7 @@ void send_heartbeat_packet(void){
 
 static void _timer_handler(void * ctx){
     //uint8_t carry;
+    uint8_t current_reed_state = 0;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
     self.uptime += 1;
 
@@ -190,7 +191,6 @@ static void _timer_handler(void * ctx){
         }
     }
 #ifdef PLATFORM_HAS_VLED
-    uint8_t current_reed_state = 0;
     if(led_booster_is_free()) {
         current_reed_state = (uint8_t)led_check_reed_switch();
     }

@@ -542,7 +542,7 @@ MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
 #ifdef HAS_CC3200
     PRINTS("Waiting the pill to reply...\r\n");
-    if(!self.timer_id)
+    if( self.timer_id )
     {
         // One minute timeout
         if(NRF_SUCCESS == app_timer_start(self.timer_id, APP_PILL_PAIRING_TIMEOUT_INTERVAL, NULL))
