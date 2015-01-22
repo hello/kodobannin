@@ -195,7 +195,7 @@ static void _timer_handler(void * ctx){
         current_reed_state = (uint8_t)led_check_reed_switch();
     }
 #else
-    uint8_t current_reed_state = (uint8_t)led_check_reed_switch();
+    current_reed_state = (uint8_t)led_check_reed_switch();
 #endif
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
     PRINT_HEX(&self.reed_states, 1);
