@@ -71,10 +71,15 @@ static adc_t _adc_config_result; // Vbat adc reading (battery reference)
 static adc_t _adc_config_offset; // Vrgb adc reading (ground reference)
 static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 
+// original scaling computation using battery.h #defings for scaling constants w/o offset compensation
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)   ((ADC_VALUE) * ADC_REF_VOLTAGE_IN_MILLIVOLTS / 1023 * ADC_PRE_SCALING_COMPENSATION)
+
+// first attempt scaling computation suffers from rounding error issue
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 1200 ) / 1023 ) * 7125 ) / 1000 )
+
+// presently using fixed offset 0x010A emperically derived by observing nRF51422 w/Vrgb at ground
 #define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
-//#define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)     ((((ADC_REF_VOLTAGE_IN_MILLIVOLTS)))
+// for use with low source resistance (511) versus above for high source resistance (523K||215K)
 #define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)  (((ADC_VALUE) * 1200 ) / 1023 )
 
 static uint8_t _adc_config_psel;
@@ -158,12 +163,9 @@ void battery_set_offset_cached(adc_t adc_result) // adc offset reading
 }
 
 uint16_t battery_set_voltage_cached(adc_t adc_result)
-{ //  presently using fixed offset 0x____ emperically derived from nRF51422
-  //  MILLI_VOLTS (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
-    _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
-
+{
     _adc_config_result = adc_result; // nominal load (subsequent battery reading)
-
+    _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
     _battery_level_in_percent(_battery_level_voltage);
     return _battery_level_voltage;
 }
@@ -180,43 +182,22 @@ adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_cou
                     return LDO_VBAT_ADC_INPUT; break; // setup for internal resistance
 
             case 3: battery_set_voltage_cached(adc_result); // save subsequent Vbat
-                //  battery_set_percent_cached(); // presently performed w/in set voltage
                     break; // fall thru to end adc reading sequence
     }
 #endif
-    _adc_config_droop = 0; // clear battery droop monitor
     battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
     return 0; // indicate no more adc conversions required
 }
 
 void battery_update_level() // perform measurement and estimate capacity
 {
+    _adc_config_droop = 0; // clear battery droop monitor
     battery_measurement_begin(battery_level_measured, 0); // initiate measurement
-}
-
-adc_measure_callback_t battery_level_monitored(adc_t adc_result, uint16_t adc_count)
-{
-#ifdef PLATFORM_HAS_BATTERY
-    switch (adc_count) { // for each adc reading
-
-            case 1: battery_set_result_cached(adc_result); // save initial Vbat
-                    return LDO_VRGB_ADC_INPUT; break; // setup for adc offset
-
-            case 2: battery_set_offset_cached(adc_result); // save input ground reference
-                    return LDO_VBAT_ADC_INPUT; break; // setup for internal resistance
-
-            case 3: battery_set_voltage_cached(adc_result); // save subsequent Vbat
-                //  battery_set_percent_cached(); // presently performed w/in set voltage
-                    break; // fall thru to end adc reading sequence
-    }
-#endif
-    battery_module_power_off(); // disable Vbat resistor (523K||215K) divider
-    return 0; // indicate no more adc conversions required
 }
 
 void battery_update_droop() // perform measurement and monitor droop
 {
-    battery_measurement_begin(battery_level_monitored, 0); // initiate monitor
+    battery_measurement_begin(battery_level_measured, 0); // initiate monitor
 }
 
 static adc_measure_callback_t _adc_measure_callback;
@@ -334,12 +315,12 @@ void battery_init()
     nrf_gpio_pin_set(VBAT_VER_EN); // negate open drain pin inactive to
     nrf_gpio_cfg_output(VBAT_VER_EN); // disable Vbat resistor divider
 
- // power_on gpio_config
+ // original power_on gpio_config
  // gpio_input_disconnect(VMCU_SENSE);
  // gpio_cfg_s0s1_output_connect(VBAT_VER_EN, 0);
  // nrf_gpio_cfg_input(VBAT_SENSE, NRF_GPIO_PIN_NOPULL);
 
- // power_off gpio_config
+ // original power_off gpio_config
  // gpio_cfg_s0s1_output_connect(VBAT_VER_EN, 1);
  // gpio_cfg_d0s1_output_disconnect(VBAT_VER_EN);  // on: 0
  // gpio_input_disconnect(VMCU_SENSE);
