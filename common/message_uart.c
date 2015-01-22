@@ -6,6 +6,7 @@ static struct{
     MSG_Base_t base;
     const MSG_Central_t * parent;
     bool initialized;
+    uint8_t last_char;
     MSG_Data_t * rx_buf;
     uint16_t rx_index;
     app_uart_comm_params_t uart_params;
@@ -60,6 +61,9 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     }
     return SUCCESS;
 }
+uint8_t MSG_Uart_GetLastChar(void){
+    return self.last_char;
+}
 static void
 _uart_event_handler(app_uart_evt_t * evt){
     uint8_t c;
@@ -67,6 +71,7 @@ _uart_event_handler(app_uart_evt_t * evt){
         /**< An event indicating that UART data has been received. The data is available in the FIFO and can be fetched using @ref app_uart_get. */
         case APP_UART_DATA_READY:
             while(!app_uart_get(&c)){
+                self.last_char = c;
                 switch(c){
                     case '\r':
                     case '\n':

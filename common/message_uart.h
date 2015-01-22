@@ -23,5 +23,7 @@ void MSG_Uart_Prints(const char * str);
 void MSG_Uart_Printc(char c);
 void MSG_Uart_PrintHex(const uint8_t * ptr, uint32_t len);
 
+uint8_t MSG_Uart_GetLastChar(void);
+
 
 #endif
