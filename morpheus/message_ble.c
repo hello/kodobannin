@@ -775,16 +775,11 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
 {
     if(is_pairing_mode)
     {
-        if(_is_bond_db_full())
-        {
-            PRINTS("Pairing database full.\r\n");
-            morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_DATABASE_FULL);
-            return;
-        }
+        _hold_to_enter_pairing_mode();
+    }else{
+        _hold_to_enter_normal_mode();
     }
-
-
-    hble_set_advertising_mode(is_pairing_mode);
+    
     // reply to 0xB00B
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
