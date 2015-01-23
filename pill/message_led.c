@@ -18,30 +18,28 @@ static const char * name = "LED";
 
 static void _setup(void){
     /*
-     *PRINTS("su"); // Setup\r\n");
+     *PRINTS("Setup\r\n");
      */
-    led_power_on(0); // perfrom Vbat/Vrgb measurements
+    led_power_on();
 }
 static void _teardown(void){
     /*
-     *PRINTS("td"); // Teardown\r\n");
+     *PRINTS("Teardown\r\n");
      */
     led_all_colors_off();
-    led_power_off(0);
+    led_power_off();
 }
 static void _on_warm(void){
     /*
-     *PRINTS("wm"); // Warm\r\n");
+     *PRINTS("Warm\r\n");
      */
-    led_warm_up(0);
+    led_warm_up();
 }
 static int
-_play_ship_mode(int * out_r, int * out_g, int * out_b){
+_play_test(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
-        {0    * BOOSTER_REFRESH_RATE, {0x28, 0x18, 0x08}, 1},
-        {0.25 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
-        {0.5  * BOOSTER_REFRESH_RATE, {0x28, 0x18, 0x08}, 1},
-        {0.75 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
+        {0    * BOOSTER_REFRESH_RATE, {0x18, 0x18, 0x18}, 1},
+        {3    * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
     };
     int i;
     animation_node_t * current;
@@ -60,10 +58,12 @@ _play_ship_mode(int * out_r, int * out_g, int * out_b){
     return 0;
 }
 static int
-_play_test(int * out_r, int * out_g, int * out_b){
+_play_enter_factory_mode(int * out_r, int * out_g, int * out_b){
     static const animation_node_t seq[] = {
         {0    * BOOSTER_REFRESH_RATE, {0x18, 0x18, 0x18}, 1},
-        {3    * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
+        {0.25 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
+        {0.5  * BOOSTER_REFRESH_RATE, {0x18, 0x18, 0x18}, 1},
+        {0.75 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
     };
     int i;
     animation_node_t * current;
@@ -114,123 +114,6 @@ _play_boot_complete(int * out_r, int * out_g, int * out_b){
     }
     return 0;
 }
-static int
-_play_battery_test(int * out_r, int * out_g, int * out_b){
-    static const animation_node_t seq[] = {
-        {0   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
-    };
-    int i;
-    animation_node_t * current;
-    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
-        if(self.counter >= seq[i].time){
-            *out_r = seq[i].rgb[0];
-            *out_g = seq[i].rgb[1];
-            *out_b = seq[i].rgb[2];
-            current = &seq[i];
-        }
-    }
-    self.counter++;
-    if(current){
-        return current->valid;
-    }
-    return 0;
-}
-#ifdef PLATFORM_HAS_VLED
-static int
-_play_led_red_test(int * out_r, int * out_g, int * out_b){
-    static const animation_node_t seq[] = {
-        {0   * BOOSTER_REFRESH_RATE, {0x28, 0xff, 0xff}, 1},
-        {3   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
-    };
-    int i;
-    animation_node_t * current;
-    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
-        if(self.counter >= seq[i].time){
-            *out_r = seq[i].rgb[0];
-            *out_g = seq[i].rgb[1];
-            *out_b = seq[i].rgb[2];
-            current = &seq[i];
-        }
-    }
-    self.counter++;
-    if(current){
-        return current->valid;
-    }
-    return 0;
-}
-static int
-_play_led_grn_test(int * out_r, int * out_g, int * out_b){
-    static const animation_node_t seq[] = {
-        {0   * BOOSTER_REFRESH_RATE, {0xff, 0x18, 0xff}, 1},
-        {3   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
-    };
-    int i;
-    animation_node_t * current;
-    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
-        if(self.counter >= seq[i].time){
-            *out_r = seq[i].rgb[0];
-            *out_g = seq[i].rgb[1];
-            *out_b = seq[i].rgb[2];
-            current = &seq[i];
-        }
-    }
-    self.counter++;
-    if(current){
-        return current->valid;
-    }
-    return 0;
-}
-static int
-_play_led_blu_test(int * out_r, int * out_g, int * out_b){
-    static const animation_node_t seq[] = {
-        {0   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0x08}, 1},
-        {3   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
-    };
-    int i;
-    animation_node_t * current;
-    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
-        if(self.counter >= seq[i].time){
-            *out_r = seq[i].rgb[0];
-            *out_g = seq[i].rgb[1];
-            *out_b = seq[i].rgb[2];
-            current = &seq[i];
-        }
-    }
-    self.counter++;
-    if(current){
-        return current->valid;
-    }
-    return 0;
-}
-static int
-_play_led_rgb_test(int * out_r, int * out_g, int * out_b){
-    static const animation_node_t seq[] = {
-        {0   * BOOSTER_REFRESH_RATE, {0x28, 0xff, 0xff}, 1},
-        {0.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
-        {1   * BOOSTER_REFRESH_RATE, {0xff, 0x18, 0xff}, 1},
-        {1.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
-        {2   * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0x08}, 1},
-        {2.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 1},
-        {3   * BOOSTER_REFRESH_RATE, {0x28, 0x18, 0x08}, 1},
-        {3.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
-    };
-    int i;
-    animation_node_t * current;
-    for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
-        if(self.counter >= seq[i].time){
-            *out_r = seq[i].rgb[0];
-            *out_g = seq[i].rgb[1];
-            *out_b = seq[i].rgb[2];
-            current = &seq[i];
-        }
-    }
-    self.counter++;
-    if(current){
-        return current->valid;
-    }
-    return 0;
-}
-#endif
 static int _on_cycle(int * out_r, int * out_g, int * out_b){
     static int led;
     /*
@@ -241,20 +124,8 @@ static int _on_cycle(int * out_r, int * out_g, int * out_b){
             return 0;
         case LED_PLAY_BOOT_COMPLETE:
             return _play_boot_complete(out_r, out_g, out_b);
-         case LED_PLAY_SHIP_MODE:
-             return _play_ship_mode(out_r, out_g, out_b);
-        case LED_PLAY_BATTERY_TEST:
-            return _play_battery_test(out_r, out_g, out_b);
-#ifdef PLATFORM_HAS_VLED
-        case LED_PLAY_LED_RED_TEST:
-            return _play_led_red_test(out_r, out_g, out_b);
-        case LED_PLAY_LED_GRN_TEST:
-            return _play_led_grn_test(out_r, out_g, out_b);
-        case LED_PLAY_LED_BLU_TEST:
-            return _play_led_blu_test(out_r, out_g, out_b);
-        case LED_PLAY_LED_RGB_TEST:
-            return _play_led_rgb_test(out_r, out_g, out_b);
-#endif
+        case LED_PLAY_ENTER_FACTORY_MODE:
+            return _play_enter_factory_mode(out_r, out_g, out_b);
         case LED_PLAY_TEST:
             return _play_test(out_r, out_g, out_b);
         case LED_PLAY_ON:
@@ -286,26 +157,6 @@ _play_animation(enum MSG_LEDAddress type){
         led_booster_power_off();
         return -1;
     }
-}
-void test_bat(){
-    _play_animation(LED_PLAY_BATTERY_TEST);
-}
-#ifdef PLATFORM_HAS_VLED
-void test_red(){
-    _play_animation(LED_PLAY_LED_RED_TEST);
-}
-void test_grn(){
-    _play_animation(LED_PLAY_LED_GRN_TEST);
-}
-void test_blu(){
-    _play_animation(LED_PLAY_LED_BLU_TEST);
-}
-void test_rgb(){
-    _play_animation(LED_PLAY_LED_RGB_TEST);
-}
-#endif
-void test_led(){
-    _play_animation(LED_PLAY_TEST);
 }
 static MSG_Status
 _destroy(void){
