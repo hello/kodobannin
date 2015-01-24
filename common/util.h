@@ -20,9 +20,7 @@ extern const uint8_t hex[16];
 #define BOOL_OK(expr) APP_ASSERT(expr);
 
 #include <simple_uart.h>
-#define PRINT_BYTE(a,b) MSG_Uart_PrintByte((uint8_t*)a,b)
 #define PRINT_HEX(a,b) MSG_Uart_PrintHex((uint8_t*)a,b)
-#define PRINT_DEC(a,b) MSG_Uart_PrintDec((int*)a,b)
 #define PRINTS(a) MSG_Uart_Prints(a)
 #define PRINTC(a) MSG_Uart_Printc(a)
 #define SIMPRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
