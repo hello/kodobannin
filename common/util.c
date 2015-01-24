@@ -211,19 +211,6 @@ binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
 }
 
 void
-binary_to_dec(uint8_t *ptr, uint32_t len, uint8_t* out) {
-    uint8_t dig;
-    uint32_t num;
-
-    num = *ptr;
-    while(len-- >0) {
-        dig = num % 10;
-		*(out++) = hex[0xF&(dig)];
-        num /= 10;
-    }
-}
-
-void
 debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t stop_ticks)
 {
 	uint32_t diff_ticks;
