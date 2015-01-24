@@ -4,9 +4,7 @@
 #include <nrf_soc.h>
 #include "message_led.h"
 #include "message_imu.h"
-#include "message_time.h"
 #include "app.h"
-#include "battery.h"
 #include <ble.h>
 
 static struct{
