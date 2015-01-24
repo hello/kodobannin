@@ -55,7 +55,7 @@ static void _init_rf_modules()
 	while(debounce > 0){
 		debounce--;
 	}
-    pill_ble_load_modules();  // MUST load before everything else is initialized.
+    pill_ble_load_modules();  // MUST load brefore everything else is initialized.
 
 #ifdef ANT_ENABLE
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
@@ -91,7 +91,6 @@ static void _init_rf_modules()
     };
 
     hble_advertising_init(service_uuid);
-
     PRINTS("ble_init() done.\r\n");
     hble_advertising_start();
 #endif
@@ -108,8 +107,15 @@ static void _load_watchdog()
 void _start()
 {
     
-    battery_init();
-
+	battery_init();
+	//HACK TO DISABLE PINS ON LED
+#ifdef PLATFORM_HAS_VLED
+	gpio_cfg_d0s1_output_disconnect_pull(LED3_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+	gpio_cfg_d0s1_output_disconnect_pull(LED2_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+	gpio_cfg_d0s1_output_disconnect_pull(LED1_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+	gpio_cfg_d0s1_output_disconnect_pull(VRGB_ENABLE,NRF_GPIO_PIN_PULLDOWN);
+#endif
+	//END HACK
     {
         enum {
             SCHED_QUEUE_SIZE = 32,
@@ -136,8 +142,7 @@ void _start()
 
     _init_rf_modules();
     _load_watchdog();
-
-    battery_update_level(); // first battery read (startup initialize)
+	battery_update_level();
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
