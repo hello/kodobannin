@@ -187,4 +187,3 @@ void MSG_Uart_PrintHex(const uint8_t * ptr, uint32_t len){
         }
     }
 }
-
