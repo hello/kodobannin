@@ -60,7 +60,6 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 #define AES128_BLOCK_SIZE 16
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
-void serial_print_byte(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
 void binary_to_dec(uint8_t *ptr, uint32_t len, uint8_t* out);
 
