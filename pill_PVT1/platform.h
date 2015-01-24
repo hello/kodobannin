@@ -123,6 +123,8 @@ enum {
 
 #define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
 
+#define LDO_VBAT_ADC_INPUT    0x80UL
+#define LDO_VMCU_ADC_INPUT    0x08UL
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
 
