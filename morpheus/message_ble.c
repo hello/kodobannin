@@ -262,11 +262,7 @@ static void _hold_to_enter_pairing_mode()
         // start it.
         hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
     }else{
-        if(_is_bond_db_full())
-        {
-            hble_erase_1st_bond();
-        }
-        hble_set_advertising_mode(true);
+        hble_set_delay_task(TASK_BOND_OP, _erase_1st_bonds_and_enter_pairing_mode);
         // Need to wait the delay task to do the actual wipe.
     }
 }
@@ -765,16 +761,11 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
 {
     if(is_pairing_mode)
     {
-        if(_is_bond_db_full())
-        {
-            PRINTS("Pairing database full.\r\n");
-            morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_DATABASE_FULL);
-            return;
-        }
+        _hold_to_enter_pairing_mode();
+    }else{
+        _hold_to_enter_normal_mode();
     }
 
-
-    hble_set_advertising_mode(is_pairing_mode);
     // reply to 0xB00B
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
