@@ -155,9 +155,6 @@ static void _send_heartbeat_data_ant(){
 #endif
 
 #define POWER_STATE_MASK 0x7
-void send_heartbeat_packet(void){
-    _send_heartbeat_data_ant();
-}
 
 static void _timer_handler(void * ctx){
     //uint8_t carry;
@@ -170,14 +167,12 @@ static void _timer_handler(void * ctx){
     if(get_tick() == 0)
     {
         _send_available_data_ant();
-    } else {
-        if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) {
-         // notify and make next battery measurement capacity assessment
-            send_heartbeat_packet(); // using cached value of percent remaining
-            battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
-        } else { // monitor and update minimum battery measurement observed
-               battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
-        }
+    }
+    if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) {
+        _send_heartbeat_data_ant();
+        battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
+    } else { // monitor and update minimum battery measurement observed
+        battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
     
