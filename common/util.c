@@ -203,14 +203,6 @@ serial_print_hex(uint8_t *ptr, uint32_t len) {
 }
 
 void
-serial_print_byte(uint8_t *ptr, uint32_t len) {
-	while(len-- >0) {
-		simple_uart_put(hex[0xF&(*ptr>>4)]);
-		simple_uart_put(hex[0xF&*ptr++]);
-	}
-}
-
-void
 binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out) {
 	while(len-- >0) {
 		*(out++) = hex[0xF&(*ptr>>4)];
