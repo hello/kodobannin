@@ -117,6 +117,7 @@ enum {
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_SEC              (3600)
 #define MOTION_DATA_INTERVAL_SEC            (60)
+#define BATT_MEASURE_INTERVAL_SEC           (1200)  // Measure battery level every 20 minutes
 
 #define SHAKING_MOTION_THRESHOLD        (750000000)
 #define SLIDING_WINDOW_SIZE_SEC         (1)

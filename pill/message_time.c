@@ -171,7 +171,9 @@ static void _timer_handler(void * ctx){
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) {
         _send_heartbeat_data_ant();
         battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
-    } else { // monitor and update minimum battery measurement observed
+    }
+
+    if(self.uptime % BATT_MEASURE_INTERVAL_SEC == 0) { // monitor and update minimum battery measurement observed
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
