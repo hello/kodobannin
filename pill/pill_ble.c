@@ -138,9 +138,6 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     	PRINTS("Streamming stopped\r\n");
     	break;
 	case PILL_COMMAND_GET_BATTERY_LEVEL:
-#ifdef DEBUG_BATT_LVL
-		hble_update_battery_level();
-#endif
 		break;
 	case PILL_COMMAND_WIPE_FIRMWARE:
 		REBOOT_TO_DFU();

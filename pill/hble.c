@@ -301,12 +301,6 @@ void hble_stack_init()
 
 }
 
-void hble_update_battery_level()
-{
-#ifdef PLATFORM_HAS_VERSION
-#endif
-}
-
 void hble_params_init(char* device_name)
 {
     // initialize GAP parameters
