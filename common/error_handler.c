@@ -29,72 +29,57 @@ _save_stack(uint8_t* stack_start, struct crash_log* crash_log)
     memcpy(&crash_log->stack[0], stack_start, crash_log->stack_size);
 }
 
+#include "platform.h"
 void
 app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filename)
 {
-	PRINTS("file name: ");
+	PRINTS("\r\n<FAULT>\r\n");
+
+	PRINTS("file: ");
 	PRINTS(filename);
-	PRINTS("\n");
+	PRINTS("\r\n");
 
-	PRINTS("line number: ");
+	PRINTS("line: ");
 	PRINT_HEX(&line_num, sizeof(line_num));
-	PRINTS("\n");
+	PRINTS("\r\n");
 
-	PRINTS("error code: ");
+	PRINTS("error: ");
 	PRINT_HEX(&error_code, sizeof(error_code));
-	PRINTS("\n");
-	
+	PRINTS("\r\n");
 
-	(void) sd_softdevice_disable();
+	PRINTS("ver: ");
+	PRINTS(FW_VERSION_STRING);
+	PRINTS("\r\n");
 
-	// let the bootloader know that we crashed
-	NRF_POWER->GPREGRET |= GPREGRET_APP_CRASHED_MASK;
+    nrf_delay_ms(5000);
 
-	struct crash_log* crash_log = CRASH_LOG_ADDRESS;
 
-    crash_log->signature = CRASH_LOG_SIGNATURE_APP_ERROR;
-	size_t filename_len = MAX(strlen((char* const)filename), sizeof(crash_log->app_error.filename));
-	memcpy(crash_log->app_error.filename, filename, filename_len);
-	crash_log->app_error.line_number = line_num;
-	crash_log->app_error.error_code = error_code;
+    //TODO REBOOT or REBOOT TO DFU?
+    if('r' == MSG_Uart_GetLastChar()){
+        REBOOT_TO_DFU();
+    }else{
+        REBOOT();
+    }
 
-    uint8_t* stack_start = (uint8_t*)&crash_log;
-    _save_stack(stack_start, crash_log);
+/*
+ *    //TODO restore this for later revisions
+ *    (void) sd_softdevice_disable();
+ *
+ *    // let the bootloader know that we crashed
+ *    NRF_POWER->GPREGRET |= GPREGRET_APP_CRASHED_MASK;
+ *
+ *    struct crash_log* crash_log = CRASH_LOG_ADDRESS;
+ *
+ *    crash_log->signature = CRASH_LOG_SIGNATURE_APP_ERROR;
+ *    size_t filename_len = MAX(strlen((char* const)filename), sizeof(crash_log->app_error.filename));
+ *    memcpy(crash_log->app_error.filename, filename, filename_len);
+ *    crash_log->app_error.line_number = line_num;
+ *    crash_log->app_error.error_code = error_code;
+ *
+ *    uint8_t* stack_start = (uint8_t*)&crash_log;
+ *    _save_stack(stack_start, crash_log);
+ */
 
-#define KODOBANNIN_APP_ERROR_BKPT
-
-#ifdef KODOBANNIN_APP_ERROR_BKPT
-    __asm("bkpt #0\n"); // Break into the debugger, or reboot if no debugger attached.
-#else
-    uint32_t error_led;
-
-	// look at the chip's hardware ID to make a guess of which type of device we're
-	// running on so that we can blink an LED to alert the user to the crash
-	switch ((NRF_FICR->CONFIGID & FICR_CONFIGID_HWID_Msk) >> FICR_CONFIGID_HWID_Pos)
-	{
-		// for WLCSP packages, which Hello uses in bands
-		case 0x31UL:
-		case 0x2FUL:
-			error_led = GPIO_HRS_PWM_G1;
-			nrf_gpio_cfg_output(GPIO_3v3_Enable);
-	    		nrf_gpio_pin_set(GPIO_3v3_Enable);
-			break;
-
-		// for other chips such as QFN that the Nordic Dev / Eval boards use
-		default:
-			error_led = 18;
-	}
-
-	// blink the error LED at 1Hz forever or until the watchdog reboots us
-	nrf_gpio_cfg_output(error_led);
-
-	while(1) {
-	    nrf_gpio_pin_set(error_led);
-	    nrf_delay_ms(500);
-	    nrf_gpio_pin_clear(error_led);
-	    nrf_delay_ms(500);
-	}
-#endif
 }
 
 void
