@@ -807,22 +807,22 @@ _stream_avg(int32_t prev, int16_t x,  int32_t n){
 }
 uint32_t _otp(uint8_t code){
 	int i;
-	int base = 1010;
+	uint32_t base = 33096;
 	if(code == 1){
 		return 1;
 	}else{
 		for(i = 0; i < code - 2; i++){
-			base = base * 1010 / 1000;
+			base = (33096 *  base) >> 15;
 		}
-		return ((uint32_t)(2620 * (base / 1000)));
+		return ((uint32_t)(2620 * base ) >> 15);
 	}
 }
 static uint8_t
 _pass_test(uint32_t st, uint8_t st_code){
 	if(st_code != 0){
 		uint32_t cmp = _otp(st_code);
-		uint32_t res = st * 100 / cmp;
-		if(res > 50 && res < 150){
+		uint32_t res = st * 10000 / cmp;
+		if(res > 5000 && res < 15000){
 			return 1;
 		}else{
 			PRINTS("res ");
