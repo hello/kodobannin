@@ -10,7 +10,7 @@
 
 #define HW_REVISION 3
 
-#define FW_VERSION_STRING "0.5.21" // bump as necessary
+#define FW_VERSION_STRING "0.5.3"
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
@@ -92,8 +92,8 @@ enum {
 
 #define PLATFORM_HAS_BATTERY
 
-#define LDO_VBAT_ADC_INPUT    0x80UL // P0.06 AIN7
-#define LDO_VMCU_ADC_INPUT    0x08UL // P0.02 AIN3
+#define LDO_VBAT_ADC_INPUT    0x80UL /* P0.06 AIN7 */
+#define LDO_VMCU_ADC_INPUT    0x08UL /* P0.02 AIN3 */
 
 // power supply voltage dividers
 // VBAT     P06      // 10 P0.06 AIN7 VBUS 3.2 523/215
