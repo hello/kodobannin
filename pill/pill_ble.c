@@ -45,7 +45,7 @@
 #include "cli_user.h"
 #include "gpio_nor.h"
 
-
+#include "battery.h"
 
 extern uint8_t hello_type;
 
@@ -139,7 +139,18 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     	break;
 	case PILL_COMMAND_GET_BATTERY_LEVEL:
 #ifdef DEBUG_BATT_LVL
-		hble_update_battery_level();
+	//	battery_update_level();
+		uint8_t value, result;
+		PRINTS("Battery : ");
+		result = battery_get_voltage_cached();
+		value = result/1000;
+		PRINT_DEC(&value,1);
+		PRINTS(".");
+		PRINT_DEC(&result,3);
+		PRINTS(" V, ");
+		value = battery_get_percent_cached();
+		PRINT_DEC(&value,2);
+		PRINTS(" %\r\n");
 #endif
 		break;
 	case PILL_COMMAND_WIPE_FIRMWARE:
@@ -308,9 +319,8 @@ void pill_ble_load_modules(void){
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 #ifdef PLATFORM_HAS_VLED
-//		central->loadmod(MSG_LEDInit(central));
+  		central->loadmod(MSG_LEDInit(central));
 #endif
-
         /*
 	    APP_OK(app_timer_create(&_ant_timer_id, APP_TIMER_MODE_REPEATED, _test_send_available_data_ant));
         APP_OK(app_timer_start(_ant_timer_id, APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER), NULL));

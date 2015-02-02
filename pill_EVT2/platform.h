@@ -137,7 +137,7 @@ enum {
 
 #define PLATFORM_HAS_REED
 
-#define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
+#define LED_REED_ENABLE     LED2_ENABLE /* P0.28 */
 
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
