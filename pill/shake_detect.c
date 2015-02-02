@@ -1,7 +1,6 @@
 #include "app.h"
 #include "shake_detect.h"
 #include "util.h"
-#include "timedfifo.h"
 
 static struct{
     uint32_t thmag, cnt;

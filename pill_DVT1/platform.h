@@ -9,15 +9,15 @@
 #define BLE_ENABLE
 
 #define HW_REVISION 3
+#define FW_VERSION_STRING "DVT4.1"
 
-#define FW_VERSION_STRING "0.5.3"
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
 
 /*
 // This is from EVT1, not used
-// TODO: Maybe just use something from PLATFORM_HAS_I2C?
+// TODO: Maybe just usesomething from PLATFORM_HAS_I2C?
 
 #define PLATFORM_HAS_GAUGE
 enum {
@@ -33,8 +33,8 @@ enum {
 enum {
     SERIAL_TX_PIN = 18,
     SERIAL_RX_PIN = 19,
-    SERIAL_CTS_PIN = 31, // the gpio not available
-    SERIAL_RTS_PIN = 31, // with qfn pinout, only fpbga
+    SERIAL_CTS_PIN = 31,
+    SERIAL_RTS_PIN = 31,
 };
 
 // uart serial diagnostic port
@@ -66,8 +66,8 @@ enum {
 #define PLATFORM_HAS_I2C
 
 enum {
-    I2C_SCL = 21, // rtc with alternate
-    I2C_SDA = 22, // low frequency clock source
+    I2C_SCL = 21,
+    I2C_SDA = 22,
 
     RTC_INT =  2,
     LDO_INT = 24,
@@ -84,16 +84,11 @@ enum {
 #define PLATFORM_HAS_VERSION
 
 enum {
-    VBAT_SENSE  = 6, // 523/215 resistor divider
-    VMCU_SENSE  = 2, // 523/523 resistor divider
+    VBAT_SENSE  = 6,
+    VMCU_SENSE  = 2,
 
-    VBAT_VER_EN = 0, // resistor divider enable pull down
+    VBAT_VER_EN = 0,
 };
-
-#define PLATFORM_HAS_BATTERY
-
-#define LDO_VBAT_ADC_INPUT    0x80UL // P0.06 AIN7
-#define LDO_VMCU_ADC_INPUT    0x08UL // P0.02 AIN3
 
 // power supply voltage dividers
 // VBAT     P06      // 10 P0.06 AIN7 VBUS 3.2 523/215
@@ -105,39 +100,24 @@ enum {
 #define PLATFORM_HAS_VLED
 
 enum {
-    VLED_VDD_EN  = 17, // boost power pfet
-    VRGB_ENABLE  = 11, // boost enable pin
+    VLED_VDD_EN  = 17,
+    VRGB_ENABLE  = 11,
 
     VRGB_SELECT  =  8,
-    VRGB_ADJUST  =  9, // pwm dac boost voltage control
-    VRGB_SENSE   =  4, // 523/215 resistor divider
+    VRGB_ADJUST  =  9,
+    VRGB_SENSE   =  4,
 
-    LED3_SENSE   =  3, // 511 Vlad current sense
-    LED2_SENSE   =  1, // 511
-    LED1_SENSE   =  5, // 511
+    LED3_SENSE   =  3,
+    LED2_SENSE   =  1,
+    LED1_SENSE   =  5,
 
-    LED3_ENABLE  = 30, // (dvt) magnetic reed switch
-    LED2_ENABLE  = 28, // (evt) magnetic reed switch
-    LED1_ENABLE  =  7, // Vled pull down
+    LED3_ENABLE  = 30,
+    LED2_ENABLE  = 28, // magentic reed switch
+    LED1_ENABLE  =  7,
 };
-
-#define LDO_VRGB_ADC_INPUT    0x20UL /* P0.04 AIN5 */
-
-#define LED_RED_ADC_INPUT     0x10UL /* P0.03 AIN4 */
-#define LED_GREEN_ADC_INPUT   0x04UL /* P0.01 AIN2 */
-#define LED_BLUE_ADC_INPUT    0x40UL /* P0.05 AIN6 */
-
-#define LED_RED_SENSE       LED3_SENSE  /* P0.03 */
-#define LED_GREEN_SENSE     LED2_SENSE  /* P0.01 */
-#define LED_BLUE_SENSE      LED1_SENSE  /* P0.05 */
-
-#define LED_RED_CHANNEL     LED3_ENABLE /* P0.30 */
-#define LED_GREEN_CHANNEL   LED2_ENABLE /* P0.28 */
-#define LED_BLUE_CHANNEL    LED1_ENABLE /* P0.07 */
-
-#define PLATFORM_HAS_REED
-
-#define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
+#define LED_BLUE_CHANNEL LED1_ENABLE
+#define LED_RED_CHANNEL LED3_ENABLE
+#define LED_GREEN_CHANNEL LED2_ENABLE
 
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
@@ -148,12 +128,12 @@ enum {
 // LED_ADJ  P08      // 14 P0.08 Adjust RGB Voltage w/PWM RC DAC
 
 // RGB LED Power Supply
-// VRGB     P04      //  8 P0.04 AIN5 (0010 0000) 523/215 Boost Voltage Divider
+// VRGB     P04      //  8 P0.04 AIN5 LED 523/215 Boost Voltage Divider
 
 // Led Current Sense Measurement Resister
-// LED3     P03      //  7 P0.03 AIN4 (0001 0000) Red
-// LED2     P01      //  5 P0.01 AIN2 (0000 0100) Green
-// LED1     P05      //  9 P0.05 AIN6 (0100 0000) Blue
+// LED3     P03      //  7 P0.03 AIN4 Green
+// LED2     P01      //  5 P0.01 AIN2 Red  Switch 1.3/1.3 VBAT Divider
+// LED1     P05      //  9 P0.05 AIN6 Blue
 
 // LED Current Sense Resistor Pull Down
 // LED3     P30      //  3 P0.30
