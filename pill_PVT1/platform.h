@@ -28,6 +28,11 @@ enum {
 
 */
 
+#define LDO_VRGB_ADC_INPUT NC
+#define LDO_VBAT_ADC_INPUT NC
+#define LDO_VMCU_ADC_INPUT NC
+#define VBAT_VER_EN NC
+
 #define PLATFORM_HAS_SERIAL
 
 enum {
@@ -123,6 +128,8 @@ enum {
 
 #define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
 
+#define LDO_VBAT_ADC_INPUT    0x80UL
+#define LDO_VMCU_ADC_INPUT    0x08UL
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
 
