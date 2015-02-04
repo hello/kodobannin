@@ -221,6 +221,7 @@ void ADC_IRQHandler(void)
         adc_t adc_result      = NRF_ADC->RESULT;
         NRF_ADC->TASKS_STOP     = 1;
 
+#ifdef PLATFORM_HAS_BATTERY
         if(_adc_measure_callback) // provided for IRQ
         {
             if (_adc_cycle_count > 0) { // Vmcu:0, Vbat:1, ... enabled and settled
@@ -265,6 +266,7 @@ void ADC_IRQHandler(void)
                 battery_set_voltage_cached(adc_result); // update saved voltage
             }
         }
+#endif
     }
     if (next_measure_input == 0){ // end of adc measurement
         battery_module_power_off();
@@ -344,7 +346,7 @@ void battery_module_power_on()
 
 uint32_t battery_measurement_begin(adc_measure_callback_t callback, uint16_t count)
 {
-#ifdef PLATFORM_HAS_VERSION
+#ifdef PLATFORM_HAS_BATTERY
     uint32_t err_code;
 
     _adc_measure_callback = callback; // returning next adc input (result, count)
