@@ -877,13 +877,8 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
 
     switch(command->type)
     {
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_BUSY:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_TRIPPY:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OPERATION_FAILED:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_LED_OPERATION_SUCCESS:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SCAN_WIFI:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_NEXT_WIFI_AP:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PUSH_DATA_AFTER_SET_TIMEZONE:
+        //pass the ball! (> ^ ^)>  ---- ()
+        default:
         {
             if(message_ble_route_data_to_cc3200(data_page) == FAIL)
             {
@@ -908,15 +903,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
                 morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
             }
             break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SET_WIFI_ENDPOINT:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_WIFI_ENDPOINT:
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_START_WIFISCAN:
-            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
-            {
-                PRINTS(MSG_NO_MEMORY);
-                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
-            }
-            break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
             {
                 MSG_Data_t* account_id_page = command->accountId.arg;
@@ -928,13 +914,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE:
             _erase_bonded_users();
-            break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
-            if(message_ble_route_data_to_cc3200(data_page) == FAIL)
-            {
-                PRINTS(MSG_NO_MEMORY);
-                morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
-            }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
         {
@@ -959,8 +938,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
                     _start_pill_dfu_process(pill_id);
                 }
             }
-            break;
-        default:
             break;
     }
 
