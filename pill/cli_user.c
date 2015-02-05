@@ -4,8 +4,106 @@
 #include <nrf_soc.h>
 #include "message_led.h"
 #include "message_imu.h"
+#include "message_time.h"
 #include "app.h"
+#include "battery.h"
 #include <ble.h>
+
+static adc_t Vref, Vrel, Voff;
+static uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
+
+static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
+{
+    uint32_t value, result;      //  Measured        Actual
+ // Battery Voltage  0x0267 - 0x010A +2.914 V,  80 %   2.9 V
+    switch (adc_count) { // for each adc reading
+            case 1: battery_set_result_cached(adc_result); Vref = adc_result;
+                    PRINTS(" 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
+                    return LDO_VRGB_ADC_INPUT; break; // for adc offset
+            case 2: battery_set_offset_cached(adc_result); Voff = adc_result;
+                    PRINTS("- 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
+                    return LDO_VBAT_ADC_INPUT; break; // spread print overhead
+            case 3: result = battery_set_voltage_cached(adc_result); Vrel = adc_result;
+                    PRINTS(" 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
+                    PRINTS(" +");
+                    value = result/1000;
+                    PRINT_DEC(&value,1);
+                    PRINTS(".");
+                    PRINT_DEC(&result,3);
+                    PRINTS(" V, ");
+                    return LDO_VBAT_ADC_INPUT; break; // spread print overhead
+            case 4: result = battery_get_initial_cached(cli_ant_packet_enable);
+                    PRINTS(" +");
+                    value = result/1000;
+                    PRINT_DEC(&value,1);
+                    PRINTS(".");
+                    PRINT_DEC(&result,3);
+                    PRINTS(" V, ");
+                    result = battery_get_percent_cached();
+                    PRINT_DEC(&result,3);
+                    if ( Vrel > Vref) {
+                        result = Vrel - Vref; 
+                        PRINTS("% +");
+                    } else {
+                        PRINTS("% -");
+                        result = Vref - Vrel; 
+                    } // estimate of battery internal resistance
+                    PRINT_HEX(&result, 1);
+                    PRINTS("\r\n");
+                    break; // fall thru to end adc reading sequence
+    }
+
+ // if (cli_ant_packet_enable) // periodic Vbat percentage
+ //     send_heartbeat_packet();
+
+    return 0; // indicate no more adc conversions required
+}
+
+//   ADC    OFFSET  Vbat Measured    Actual
+// 0x02CE - 0x010A +4.011 V, 120 %   4.0 V
+// 0x028C - 0x010A +3.220 V, 102 %   3.2 V
+// 0x0273 - 0x010A +3.013 V, 100 %   3.0 V \
+// 0x0267 - 0x010A +2.914 V,  80 %   2.9 V |  normal battery
+// 0x025B - 0x010A +2.814 V,  40 %   2.8 V |  operating range
+// 0x0243 - 0x010A +2.714 V,  10 %   2.6 V /
+// 0x0240 - 0x010A +2.614 V,  05 %   2.4 V
+// 0x022B - 0x010A +2.415 V,  00 %   2.2 V
+// 0x01FA - 0x010A +2.002 V,  00 %   2.0 V
+
+void cli_update_battery_status()
+{
+    uint32_t value, result;
+
+    PRINTS("Battery : ");
+    result = battery_get_voltage_cached();
+    value = result/1000;
+    PRINT_DEC(&value,1);
+    PRINTS(".");
+    PRINT_DEC(&result,3);
+    PRINTS(" V, ");
+    value = battery_get_percent_cached();
+    PRINT_DEC(&value,2);
+    PRINTS(" %\r\n");
+}
+
+void cli_update_battery_level(uint8_t mode)
+{
+#ifdef PLATFORM_HAS_VERSION
+    cli_ant_packet_enable = mode;
+    PRINTS("Battery Voltage "); // resistor divider (523K||215K) to settle
+    battery_measurement_begin(cli_battery_level_measured, 0); // Vmcu/Vbat/...
+#endif
+}
+
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -26,6 +124,41 @@ _handle_command(int argc, char * argv[]){
         self.parent->dispatch( (MSG_Address_t){CLI,0},
                                 (MSG_Address_t){IMU, IMU_SELF_TEST},
                                 NULL);
+    }
+    if( !match_command(argv[0], "imuon") ){
+        self.parent->loadmod(MSG_IMU_GetBase());
+    }
+#ifdef PLATFORM_HAS_VLED
+    if( !match_command(argv[0], "bat") ){
+        test_bat();
+    }
+    if( !match_command(argv[0], "red") ){
+        test_red();
+    }
+    if( !match_command(argv[0], "grn") ){
+        test_grn();
+    }
+    if( !match_command(argv[0], "blu") ){
+        test_blu();
+    }
+    if( !match_command(argv[0], "rgb") ){
+        test_rgb();
+    }
+    if( !match_command(argv[0], "led") ){
+        test_led();
+    }
+    if( !match_command(argv[0], "dsp") ){
+        led_update_battery_status();
+    }
+#endif
+    if( !match_command(argv[0], "mon") ){
+        cli_update_battery_level(0); // monitor droop
+    }
+    if( !match_command(argv[0], "upd") ){
+        cli_update_battery_level(1); // measure battery / issue ant packet
+    }
+    if( !match_command(argv[0], "advstop")){
+        sd_ble_gap_adv_stop();
     }
     //dispatch message through ANT
     if(argc > 1 && !match_command(argv[0], "ant") ){
