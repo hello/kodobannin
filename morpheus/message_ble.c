@@ -866,7 +866,7 @@ bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
     return true;
 }
 
-static void _pass_to_mid(MSG_Data_t * data_page){
+static void _pass_to_mid_and_handle_error(MSG_Data_t * data_page){
     if(message_ble_route_data_to_cc3200(data_page) == FAIL){
         PRINTS(MSG_NO_MEMORY);
         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
@@ -884,15 +884,15 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
     {
         //pass the ball! (> ^ ^)>  ---- ()
         default:
-            _pass_to_mid(data_page);
+            _pass_to_mid_and_handle_error(data_page);
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
             _morpheus_switch_mode(true);
-            _pass_to_mid(data_page);
+            _pass_to_mid_and_handle_error(data_page);
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
             _morpheus_switch_mode(false);
-            _pass_to_mid(data_page);
+            _pass_to_mid_and_handle_error(data_page);
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
             {
