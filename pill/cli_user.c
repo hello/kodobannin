@@ -128,29 +128,6 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "imuon") ){
         self.parent->loadmod(MSG_IMU_GetBase());
     }
-#ifdef PLATFORM_HAS_VLED
-    if( !match_command(argv[0], "bat") ){
-        test_bat();
-    }
-    if( !match_command(argv[0], "red") ){
-        test_red();
-    }
-    if( !match_command(argv[0], "grn") ){
-        test_grn();
-    }
-    if( !match_command(argv[0], "blu") ){
-        test_blu();
-    }
-    if( !match_command(argv[0], "rgb") ){
-        test_rgb();
-    }
-    if( !match_command(argv[0], "led") ){
-        test_led();
-    }
-    if( !match_command(argv[0], "dsp") ){
-        led_update_battery_status();
-    }
-#endif
     if( !match_command(argv[0], "mon") ){
         cli_update_battery_level(0); // monitor droop
     }
