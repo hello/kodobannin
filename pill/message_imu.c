@@ -177,11 +177,7 @@ static void _imu_switch_mode(bool is_active)
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
 
-	uint8_t interrupt_status = imu_clear_interrupt_status();
-	if(interrupt_status & INT_STS_WOM_INT)
-	{
-		parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
-	}
+	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 
 }
 
@@ -324,6 +320,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 			break;
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
+			imu_clear_interrupt_status();
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
