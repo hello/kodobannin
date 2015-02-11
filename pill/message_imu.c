@@ -206,7 +206,7 @@ static void _on_wom_timer(void* context)
 }
 
 void
-fix_int(void){
+fix_imu_interrupt(void){
 	uint32_t gpio_pin_state;
 	if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
 		if(gpio_pin_state & IMU_INT == 0){
