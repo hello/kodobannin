@@ -176,9 +176,7 @@ static void _imu_switch_mode(bool is_active)
 
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-
 	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
-
 }
 
 
@@ -208,12 +206,14 @@ static void _on_wom_timer(void* context)
 void
 fix_imu_interrupt(void){
 	uint32_t gpio_pin_state;
-	if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
-		if(gpio_pin_state & IMU_INT == 0){
-			parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+	if(initialized){
+		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
+			if(!(gpio_pin_state & (1<<IMU_INT))){
+				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+			}else{
+			}
+		}else{
 		}
-	}else{
-
 	}
 }
 
