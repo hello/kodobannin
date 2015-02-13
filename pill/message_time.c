@@ -162,6 +162,8 @@ static void _timer_handler(void * ctx){
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
     self.uptime += 1;
 
+    fix_imu_interrupt();
+
     TF_TickOneSecond(self.ble_time.monotonic_time);
 #ifdef ANT_ENABLE
     if(get_tick() == 0)
