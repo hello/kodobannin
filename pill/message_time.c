@@ -157,12 +157,16 @@ static void _send_heartbeat_data_ant(){
 #define POWER_STATE_MASK 0x7
 
 static void _timer_handler(void * ctx){
-    //uint8_t carry;
+    uint8_t value; // carry;
     uint8_t current_reed_state = 0;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
     self.uptime += 1;
 
-    fix_imu_interrupt();
+    value = fix_imu_interrupt(); // look for imu int stuck low
+    if (value) // look for imu int stuck low
+    {
+        battery_set_percent_cached(0xC8 + value); // notify missing interrupt(s)
+    }
 
     TF_TickOneSecond(self.ble_time.monotonic_time);
 #ifdef ANT_ENABLE
@@ -170,12 +174,11 @@ static void _timer_handler(void * ctx){
     {
         _send_available_data_ant();
     }
-    if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) {
+    if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) { // update percent battery capacity
         _send_heartbeat_data_ant();
         battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
     }
-
-    if(self.uptime % BATT_MEASURE_INTERVAL_SEC == 0) { // monitor and update minimum battery measurement observed
+    if(self.uptime % BATT_MEASURE_INTERVAL_SEC == 0) { // update minimum battery measurement
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
@@ -215,6 +218,8 @@ static void _timer_handler(void * ctx){
         self.power_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();
+    } else if(self.reed_states){
+        battery_update_droop();
     }
 }
 

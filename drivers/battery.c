@@ -37,6 +37,7 @@
 #include "softdevice_handler.h"
 #include "battery.h"
 #include "gpio_nor.h"
+#include "imu.h"
 
 //         Vbat          80% 3.0 2.8 20%
 //         Vrgb     4.2  3.6    2.2 1.6       0.0
@@ -170,6 +171,11 @@ uint16_t battery_set_voltage_cached(adc_t adc_result)
     return _battery_level_voltage;
 }
 
+void battery_set_percent_cached(int8_t value)
+{
+    _battery_level_percent = value;
+}
+
 adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
 #ifdef PLATFORM_HAS_BATTERY
@@ -192,6 +198,7 @@ adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_cou
 void battery_update_level() // perform measurement and estimate capacity
 {
     _adc_config_droop = 0; // clear battery droop monitor
+    clear_stuck_count(); // clear imu int stuck low counter
     battery_measurement_begin(battery_level_measured, 0); // initiate measurement
 }
 
