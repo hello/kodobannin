@@ -174,10 +174,12 @@ static void _timer_handler(void * ctx){
     {
         _send_available_data_ant();
     }
+ // else { // since no ant queue, will be first come, only served
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) { // update percent battery capacity
         _send_heartbeat_data_ant();
         battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
     }
+ // else { // since no ant queue, will be first come, only served
     if(self.uptime % BATT_MEASURE_INTERVAL_SEC == 0) { // update minimum battery measurement
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
