@@ -27,6 +27,7 @@
 typedef uint16_t adc_t;
 typedef uint8_t(*adc_measure_callback_t)(adc_t adc_result, uint16_t adc_count); // return next adc input port select
 #define BATTERY_INVALID_MEASUREMENT 0xFF
+#define BATTERY_EXCEPTION_BASE  0xC8
 
 /**@brief Function for making the ADC start a battery level conversion.
  */

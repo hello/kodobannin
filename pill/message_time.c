@@ -13,6 +13,7 @@
 #include "led.h"
 #include <ble.h>
 #include "hble.h"
+#include "battery.h"
 
 #include "ble.h"
 #include "hble.h"
@@ -165,7 +166,7 @@ static void _timer_handler(void * ctx){
     value = fix_imu_interrupt(); // look for imu int stuck low
     if (value) // look for imu int stuck low
     {
-        battery_set_percent_cached(0xC8 + value); // notify missing interrupt(s)
+        battery_set_percent_cached(BATTERY_EXCEPTION_BASE + value); // notify missing interrupt(s)
     }
 
     TF_TickOneSecond(self.ble_time.monotonic_time);
