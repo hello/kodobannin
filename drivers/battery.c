@@ -80,7 +80,9 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 
 // presently using fixed offset 0x010A emperically derived by observing nRF51422 w/Vrgb at ground
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
-#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - _adc_config_offset) * 7125 ) / 1023 ) * 12 ) / 10 )
+
+#define ADC_OFFSET 0x010A /* range 0x0108 thru 0x010E have been observed */
+#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - ADC_OFFSET) * 7125 ) / 1023 ) * 12 ) / 10 )
 
 // for use with low source resistance (511) versus above for high source resistance (523K||215K)
 #define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)  (((ADC_VALUE) * 1200 ) / 1023 )
@@ -162,15 +164,17 @@ void battery_set_result_cached(adc_t adc_result) // initial battery reading
 
 void battery_set_offset_cached(adc_t adc_result) // adc offset reading
 {
-    if (_adc_config_offset > 0x0120) { // 0x010E max observed
-        _battery_level_percent = 254; // indicate exception (high offset)
-        _adc_config_offset = 0x010A;
-    } else
-    if (_adc_config_offset < 0x0100) { // 0x0108 min observed
-        _battery_level_percent = 253; // indicate exception (low offset)
-        _adc_config_offset = 0x010A;
-    } else {
-        _adc_config_offset = adc_result;
+    if (_adc_config_droop == 0) { // intial battery reading after heartbeat packet
+        if (adc_result > (ADC_OFFSET + 8)) { // 0x010E max observed
+            _battery_level_percent = 254; // indicate exception (high offset)
+            _adc_config_offset = ADC_OFFSET; // nominal default value
+        } else
+        if (adc_result < ADC_OFFSET - 8) { // 0x0108 min observed
+            _battery_level_percent = 253; // indicate exception (low offset)
+            _adc_config_offset = ADC_OFFSET; // nominal default value
+        } else {
+            _adc_config_offset = adc_result;
+        }
     }
 }
 
@@ -338,7 +342,7 @@ void battery_init()
     _adc_config_psel = 0; // indicate adc released
 
     _adc_config_result = 0; // Vbat adc reading (battery reference)
-    _adc_config_offset = 0; // Vrgb adc reading (ground reference)
+    _adc_config_offset = ADC_OFFSET; // adc offset (ground reference)
     _adc_config_droop = 0; // Vbat adc reading (battery minimum)
 
 #ifdef PLATFORM_HAS_VERSION
