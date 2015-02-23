@@ -223,7 +223,7 @@ static void _timer_handler(void * ctx){
         self.in_ship_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();
-    } else if(self.reed_states){
+    } else if(self.reed_states && self.reed_states != POWER_STATE_MASK){
         battery_update_droop();
     }
 }
