@@ -177,7 +177,9 @@ static void _timer_handler(void * ctx){
     }
  // else { // since no ant queue, will be first come, only served
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) { // update percent battery capacity
-        _send_heartbeat_data_ant();
+        if( !self.power_state ){
+            _send_heartbeat_data_ant();
+        }
         battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
     }
  // else { // since no ant queue, will be first come, only served
