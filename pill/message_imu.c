@@ -204,7 +204,7 @@ static void _on_wom_timer(void* context)
     }
 }
 
-int8_t
+uint8_t
 clear_stuck_count(void)
 {
 	uint8_t value = stuck_counter;
@@ -212,7 +212,7 @@ clear_stuck_count(void)
 	return value;
 }
 
-int8_t
+uint8_t
 fix_imu_interrupt(void){
 	uint32_t gpio_pin_state;
 	uint8_t value = 0;
