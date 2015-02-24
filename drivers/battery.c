@@ -37,6 +37,7 @@
 #include "softdevice_handler.h"
 #include "battery.h"
 #include "gpio_nor.h"
+#include "imu.h"
 
 //         Vbat          80% 3.0 2.8 20%
 //         Vrgb     4.2  3.6    2.2 1.6       0.0
@@ -78,7 +79,11 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 1200 ) / 1023 ) * 7125 ) / 1000 )
 
 // presently using fixed offset 0x010A emperically derived by observing nRF51422 w/Vrgb at ground
-#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
+//#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
+
+#define ADC_OFFSET 0x010A /* range 0x0108 thru 0x010E have been observed */
+#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE, ADC_OFF)  (((((ADC_VALUE - ADC_OFF) * 7125 ) / 1023 ) * 12 ) / 10 )
+
 // for use with low source resistance (511) versus above for high source resistance (523K||215K)
 #define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)  (((ADC_VALUE) * 1200 ) / 1023 )
 
@@ -108,7 +113,6 @@ static uint8_t _battery_level_percent; // computed estimated remainig capacity
 
 static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
 {
-    _battery_level_voltage = milli_volts;
 
     if (_battery_level_voltage > 3000) // from 3.0 to 4.0 (6.0) volts is 100 to 120 (160) percent
     { // there are 360 adc counts at 3.0 volts (8.333 mV per adc count)
@@ -147,11 +151,11 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
 void battery_set_result_cached(adc_t adc_result) // initial battery reading
 {
     if (_adc_config_droop == 0) { // intial battery reading after heartbeat packet
-        _battery_level_initial = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
+        _battery_level_initial = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result, _adc_config_offset);
         _adc_config_droop = adc_result; // higher load (first battery reading)
     } else {
         if (adc_result < _adc_config_droop) { // save new lowest droop observed
-            _battery_level_initial = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
+            _battery_level_initial = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result, _adc_config_offset);
             _adc_config_droop = adc_result; // higher load (first battery reading)
         }
     }
@@ -159,15 +163,32 @@ void battery_set_result_cached(adc_t adc_result) // initial battery reading
 
 void battery_set_offset_cached(adc_t adc_result) // adc offset reading
 {
-        _adc_config_offset = adc_result;
+    if (_adc_config_droop == 0) { // intial battery reading after heartbeat packet
+        if (adc_result > (ADC_OFFSET + 8)) { // 0x010E max observed
+            _battery_level_percent = 254; // indicate exception (high offset)
+            _adc_config_offset = ADC_OFFSET; // nominal default value
+        } else if (adc_result < ADC_OFFSET - 8) { // 0x0108 min observed
+            _battery_level_percent = 253; // indicate exception (low offset)
+            _adc_config_offset = ADC_OFFSET; // nominal default value
+        } else {
+            _adc_config_offset = adc_result;
+        }
+    }
 }
 
 uint16_t battery_set_voltage_cached(adc_t adc_result)
 {
     _adc_config_result = adc_result; // nominal load (subsequent battery reading)
-    _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result);
-    _battery_level_in_percent(_battery_level_voltage);
+    _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result, _adc_config_offset);
+    if(_battery_level_percent <= 160){ // preserve exception indicator
+        _battery_level_in_percent(_battery_level_voltage);
+    }
     return _battery_level_voltage;
+}
+
+void battery_set_percent_cached(int8_t value)
+{
+    _battery_level_percent = value; // used to hijack percent to indicate exception
 }
 
 adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
@@ -192,6 +213,10 @@ adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_cou
 void battery_update_level() // perform measurement and estimate capacity
 {
     _adc_config_droop = 0; // clear battery droop monitor
+    if(_battery_level_percent > 160){ // clear exception indicator
+        _battery_level_percent = 160;
+    }
+    clear_stuck_count(); // clear imu int stuck low counter
     battery_measurement_begin(battery_level_measured, 0); // initiate measurement
 }
 
@@ -315,7 +340,7 @@ void battery_init()
     _adc_config_psel = 0; // indicate adc released
 
     _adc_config_result = 0; // Vbat adc reading (battery reference)
-    _adc_config_offset = 0; // Vrgb adc reading (ground reference)
+    _adc_config_offset = ADC_OFFSET; // adc offset (ground reference)
     _adc_config_droop = 0; // Vbat adc reading (battery minimum)
 
 #ifdef PLATFORM_HAS_VERSION
