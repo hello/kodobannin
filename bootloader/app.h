@@ -15,7 +15,7 @@ enum {
  * BLE Advertising Strings
  */
 #define BLE_DEVICE_NAME       "Pill"
-#define BLE_MANUFACTURER_NAME "Hello Inc."
+#define BLE_MANUFACTURER_NAME "Hello"
 #define BLE_MODEL_NUM         "MP"
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
