@@ -119,9 +119,9 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
         _battery_level_percent = 100 + (((_battery_level_voltage - 3000) * 20) / 1000);
     }
     else if (_battery_level_voltage > 2750) // 3.0 to 2.75 volts is 100 to 10 percent
-    { // 100  98 95 92 89 86 83 80 77 74 71  3.00 thru 2.91  +(0 1 2)-   initial
-      // (70) 68 65 62 59 56 53 50 47 44 41  2.92 thru 2.83  +(1 2 3)-     less
-      // (40) 38 35  30adc = 250mv 17 14 11  2.84 thru 2.75  +(2 3 4)-  subsequent
+    { // 100  98 95 92 89 86 83 80 77 74 71  3.00 thru 2.91  +(1 2 3)-   initial
+      // (70) 68 65 62 59 56 53 50 47 44 41  2.92 thru 2.83  +(2 3 4)-     less
+      // (40) 38 35  30adc = 250mv 17 14 11  2.84 thru 2.75  +(3 4 5)-  subsequent
         _battery_level_percent = 10 + (((_battery_level_voltage - 2750) * 90) / 250); // 100 to 10 %
         _battery_level_percent -= 1 + (_battery_level_percent % 3); // 98 95 .. 14 11
 
