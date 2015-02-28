@@ -2,6 +2,7 @@
 #include <nrf_soc.h>
 #include <string.h>
 #include "app_timer.h"
+#include "message_led.h"
 #include "message_time.h"
 #include "util.h"
 #include "platform.h"
@@ -11,6 +12,10 @@
 #include "timedfifo.h"
 #include "led.h"
 #include <ble.h>
+#include "hble.h"
+#include "battery.h"
+
+#include "ble.h"
 #include "hble.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
@@ -32,7 +37,7 @@ static struct{
     MSG_Data_t * user_cb;
     uint32_t uptime;
     uint8_t reed_states;
-    uint8_t power_state;
+    uint8_t in_ship_state;
 }self;
 
 static char * name = "TIME";
@@ -126,7 +131,6 @@ static void _send_available_data_ant(){
     }
 }
 
-
 static void _send_heartbeat_data_ant(){
     // TODO: Jackson please do review & test this.
     // I packed all the struct and I am not sure it will work as expected.
@@ -152,13 +156,18 @@ static void _send_heartbeat_data_ant(){
 #endif
 
 #define POWER_STATE_MASK 0x7
+
 static void _timer_handler(void * ctx){
-    //uint8_t carry;
+    uint8_t value; // carry;
     uint8_t current_reed_state = 0;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
     self.uptime += 1;
 
-    fix_imu_interrupt();
+    value = fix_imu_interrupt(); // look for imu int stuck low
+    if (value) // look for imu int stuck low
+    {
+        battery_set_percent_cached(BATTERY_EXCEPTION_BASE + value); // notify missing interrupt(s)
+    }
 
     TF_TickOneSecond(self.ble_time.monotonic_time);
 #ifdef ANT_ENABLE
@@ -166,13 +175,16 @@ static void _timer_handler(void * ctx){
     {
         _send_available_data_ant();
     }
-
-
-    if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0)
-    {
-        _send_heartbeat_data_ant();
-        battery_module_power_on();
-        battery_measurement_begin(NULL);
+ // else { // since no ant queue, will be first come, only served
+    if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) { // update percent battery capacity
+        if( !self.in_ship_state ){
+            _send_heartbeat_data_ant();
+        }
+        battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
+    }
+ // else { // since no ant queue, will be first come, only served
+    if(self.uptime % BATT_MEASURE_INTERVAL_SEC == 0) { // update minimum battery measurement
+        battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
     
@@ -186,31 +198,33 @@ static void _timer_handler(void * ctx){
         }
     }
 #ifdef PLATFORM_HAS_VLED
-    if(led_booster_is_free()){
-
+    if(led_booster_is_free()) {
         current_reed_state = (uint8_t)led_check_reed_switch();
-    }else{
-        current_reed_state = 0;
     }
 #else
     current_reed_state = (uint8_t)led_check_reed_switch();
 #endif
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
     PRINT_HEX(&self.reed_states, 1);
-    PRINTS("\r\n");
-    if(self.reed_states == POWER_STATE_MASK && self.power_state == 0){
-        PRINTS("Going into Factory Mode");
-        _send_heartbeat_data_ant();
-        self.power_state = 1;
+    PRINTS("\r");
+
+    if(self.reed_states == POWER_STATE_MASK && self.in_ship_state == 0){
+        PRINTS("Going into Ship Mode");
+        _send_heartbeat_data_ant(); // form ant packet
+        battery_update_level(); // make next battery reading
+        self.in_ship_state = 1;
         self.central->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
-        self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE}, NULL);
-    }else if(self.reed_states == 0x00 && self.power_state == 1){
+        self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE},NULL);
+    }else if(self.reed_states == 0x00 && self.in_ship_state == 1){
         PRINTS("Going into User Mode");
-        _send_heartbeat_data_ant();
-        self.power_state = 0;
+        _send_heartbeat_data_ant(); // form ant packet
+        battery_update_level(); // make next battery reading
+        self.in_ship_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();
+    } else if(self.reed_states && self.reed_states != POWER_STATE_MASK){
+        battery_update_droop();
     }
 }
 

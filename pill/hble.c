@@ -195,32 +195,6 @@ static void _advertising_data_init(uint8_t flags){
 }
 
 
-static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
-{
-
-    PRINTS("Battery level measured,  Voltage:");
-    PRINT_HEX(&batt_level_milli_volts, sizeof(batt_level_milli_volts));
-    PRINTS(", Percentage: ");
-    PRINT_HEX(&percentage_battery_level, sizeof(percentage_battery_level));
-    PRINTS(", ADC: ");
-    PRINT_HEX(&adc_result, sizeof(adc_result));
-    PRINTS("\r\n");
-
-    battery_module_power_off();
-
-    uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, adc_result);
-    if ((err_code != NRF_SUCCESS) &&
-        (err_code != NRF_ERROR_INVALID_STATE) &&
-        (err_code != BLE_ERROR_NO_TX_BUFFERS) &&
-        (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING))
-    {
-        APP_ERROR_HANDLER(err_code);
-    }
-
-    
-}
-
-
 void hble_advertising_init(ble_uuid_t service_uuid)
 {
     _service_uuid = service_uuid;
@@ -299,13 +273,6 @@ void hble_stack_init()
     // Register with the SoftDevice handler module for BLE events.
     APP_OK(softdevice_sys_evt_handler_set(_on_sys_evt));
 
-}
-
-void hble_update_battery_level()
-{
-#ifdef PLATFORM_HAS_VERSION
-    battery_measurement_begin(_on_battery_level_measured);
-#endif
 }
 
 void hble_params_init(char* device_name)

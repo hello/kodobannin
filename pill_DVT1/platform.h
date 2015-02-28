@@ -81,6 +81,7 @@ enum {
 // XTL_CLK  P27      // 46 P0.27 AIN1 // low frequency crystal input
 // XTL_OUT  P26      // 45 P0.26 AIN0 // low frequency crystal output
 
+#define PLATFORM_HAS_BATTERY
 #define PLATFORM_HAS_VERSION
 
 enum {
@@ -89,6 +90,9 @@ enum {
 
     VBAT_VER_EN = 0,
 };
+
+#define LDO_VBAT_ADC_INPUT    0x80UL
+#define LDO_VMCU_ADC_INPUT    0x08UL
 
 // power supply voltage dividers
 // VBAT     P06      // 10 P0.06 AIN7 VBUS 3.2 523/215
@@ -111,13 +115,32 @@ enum {
     LED2_SENSE   =  1,
     LED1_SENSE   =  5,
 
-    LED3_ENABLE  = 30,
-    LED2_ENABLE  = 28, // magentic reed switch
+    LED3_ENABLE  = 30, // magnetic reed switch (dvt/pvt)
+    LED2_ENABLE  = 28, // magnetic reed switch (evt)
     LED1_ENABLE  =  7,
 };
+
 #define LED_BLUE_CHANNEL LED1_ENABLE
 #define LED_RED_CHANNEL LED3_ENABLE
 #define LED_GREEN_CHANNEL LED2_ENABLE
+
+#define LDO_VRGB_ADC_INPUT    0x20UL /* P0.04 AIN5 */
+
+#define LED_RED_ADC_INPUT     0x10UL /* P0.03 AIN4 */
+#define LED_GREEN_ADC_INPUT   0x04UL /* P0.01 AIN2 */
+#define LED_BLUE_ADC_INPUT    0x40UL /* P0.05 AIN6 */
+
+#define LED_RED_SENSE       LED3_SENSE  /* P0.03 */
+#define LED_GREEN_SENSE     LED2_SENSE  /* P0.01 */
+#define LED_BLUE_SENSE      LED1_SENSE  /* P0.05 */
+
+#define LED_RED_CHANNEL     LED3_ENABLE /* P0.30 */
+#define LED_GREEN_CHANNEL   LED2_ENABLE /* P0.28 */
+#define LED_BLUE_CHANNEL    LED1_ENABLE /* P0.07 */
+
+#define PLATFORM_HAS_REED
+
+#define LED_REED_ENABLE     LED3_ENABLE /* P0.30 */
 
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17

@@ -25,15 +25,30 @@
 #define BATTERY_H__
 
 typedef uint16_t adc_t;
-typedef void(*batter_measure_callback_t)(adc_t adc, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level);
+typedef uint8_t(*adc_measure_callback_t)(adc_t adc_result, uint16_t adc_count); // return next adc input port select
 #define BATTERY_INVALID_MEASUREMENT 0xFF
+#define BATTERY_EXCEPTION_BASE  0xC8
 
 /**@brief Function for making the ADC start a battery level conversion.
  */
-uint32_t battery_measurement_begin(batter_measure_callback_t callback);
-void battery_module_power_off();
+uint32_t battery_measurement_begin(adc_measure_callback_t callback, uint16_t count);
+adc_measure_callback_t battery_level_measured(adc_t result, uint16_t count);
+
+void battery_update_level(); // issue  heartbeat packet
+void battery_update_droop(); // else monitor voltage droop
+
+void battery_init();
 void battery_module_power_on();
+void battery_module_power_off();
+
+void battery_set_result_cached(adc_t result);
+void battery_set_offset_cached(adc_t result);
+uint16_t battery_set_voltage_cached(adc_t result);
+
+adc_t battery_get_offset_cached();
 uint8_t battery_get_percent_cached();
+uint16_t battery_get_initial_cached(uint8_t mode);
+uint16_t battery_get_voltage_cached();
 
 #endif // BATTERY_H__
 

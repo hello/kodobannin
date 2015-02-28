@@ -138,9 +138,6 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     	PRINTS("Streamming stopped\r\n");
     	break;
 	case PILL_COMMAND_GET_BATTERY_LEVEL:
-#ifdef DEBUG_BATT_LVL
-		hble_update_battery_level();
-#endif
 		break;
 	case PILL_COMMAND_WIPE_FIRMWARE:
 		REBOOT_TO_DFU();
@@ -308,7 +305,7 @@ void pill_ble_load_modules(void){
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
 		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 #ifdef PLATFORM_HAS_VLED
-//		central->loadmod(MSG_LEDInit(central));
+  		central->loadmod(MSG_LEDInit(central));
 #endif
 
         /*
