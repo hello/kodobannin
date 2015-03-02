@@ -49,6 +49,12 @@ static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint1
                     PRINT_DEC(&result,3);
                     PRINTS(" V, ");
                     result = battery_get_percent_cached();
+                    value = (result%3);
+                    switch (value) {
+                        case 0: PRINTS("+");break; // better than expected
+                        case 2: PRINTS("=");break; // nominal 2/3/4 for each 30%
+                        case 1: PRINTS("-");break; // worse than expected
+                    }
                     PRINT_DEC(&result,3);
                     if ( Vrel > Vref) {
                         result = Vrel - Vref; 

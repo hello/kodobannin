@@ -82,7 +82,7 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
 
 #define ADC_OFFSET 0x010A /* range 0x0108 thru 0x010E have been observed */
-#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE, ADC_OFF)  (((((ADC_VALUE - ADC_OFF) * 7125 ) / 1023 ) * 12 ) / 10 )
+#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE, ADC_OFF)  (((((ADC_VALUE - _adc_config_offset) * 7125 ) / 1023 ) * 12 ) / 10 )
 
 // for use with low source resistance (511) versus above for high source resistance (523K||215K)
 #define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)  (((ADC_VALUE) * 1200 ) / 1023 )
@@ -119,9 +119,9 @@ static inline uint8_t _battery_level_in_percent(const uint16_t milli_volts)
         _battery_level_percent = 100 + (((_battery_level_voltage - 3000) * 20) / 1000);
     }
     else if (_battery_level_voltage > 2750) // 3.0 to 2.75 volts is 100 to 10 percent
-    { // 100  98 95 92 89 86 83 80 77 74 71  3.00 thru 2.91  +(0 1 2)-   initial
-      // (70) 68 65 62 59 56 53 50 47 44 41  2.92 thru 2.83  +(1 2 3)-     less
-      // (40) 38 35  30adc = 250mv 17 14 11  2.84 thru 2.75  +(2 3 4)-  subsequent
+    { // 100  98 95 92 89 86 83 80 77 74 71  3.00 thru 2.91  +(1 2 3)-   initial
+      // (70) 68 65 62 59 56 53 50 47 44 41  2.92 thru 2.83  +(2 3 4)-     less
+      // (40) 38 35  30adc = 250mv 17 14 11  2.84 thru 2.75  +(3 4 5)-  subsequent
         _battery_level_percent = 10 + (((_battery_level_voltage - 2750) * 90) / 250); // 100 to 10 %
         _battery_level_percent -= 1 + (_battery_level_percent % 3); // 98 95 .. 14 11
 
@@ -178,8 +178,17 @@ void battery_set_offset_cached(adc_t adc_result) // adc offset reading
 
 uint16_t battery_set_voltage_cached(adc_t adc_result)
 {
+    uint32_t value;
+
     _adc_config_result = adc_result; // nominal load (subsequent battery reading)
-    _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS((uint32_t) adc_result, _adc_config_offset);
+
+    if (_adc_config_droop > _adc_config_result) {
+        value = _adc_config_droop;
+    } else {
+        value = _adc_config_result;
+    }
+
+    _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS(value, _adc_config_offset);
     if(_battery_level_percent <= 160){ // preserve exception indicator
         _battery_level_in_percent(_battery_level_voltage);
     }
