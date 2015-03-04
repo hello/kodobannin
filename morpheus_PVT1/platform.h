@@ -14,7 +14,7 @@
 #define HW_REVISION 3
 
 #define DEVICE_ID_SIZE        8
-#define FW_VERSION_STRING         "0.5.5"
+#define FW_VERSION_STRING         "0.5.6"
 
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
