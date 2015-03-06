@@ -17,13 +17,13 @@ enum {
  * BLE Advertising Strings
  */
 #define BLE_DEVICE_NAME       "Pill"
-#define BLE_MANUFACTURER_NAME "Hello Inc."
+#define BLE_MANUFACTURER_NAME "Hello"
 #define BLE_MODEL_NUM         FW_VERSION_STRING
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
 
 #define ANT_PROTOCOL_VER      (2)
-#define FIRMWARE_VERSION_8BIT (3)
+#define FIRMWARE_VERSION_8BIT (4)
 
 //#define BONDING_REQUIRED
 //#define DATA_SCIENCE_TASK
