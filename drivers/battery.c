@@ -82,7 +82,7 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
 
 #define ADC_OFFSET 0x010A /* range 0x0108 thru 0x010E have been observed */
-#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE, ADC_OFF)  (((((ADC_VALUE - _adc_config_offset) * 7125 ) / 1023 ) * 12 ) / 10 )
+#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE, ADC_OFF)  (((((ADC_VALUE - ADC_OFF) * 7125 ) / 1023 ) * 12 ) / 10 )
 
 // for use with low source resistance (511) versus above for high source resistance (523K||215K)
 #define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)  (((ADC_VALUE) * 1200 ) / 1023 )
