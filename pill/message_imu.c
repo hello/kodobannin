@@ -46,6 +46,7 @@ static bool initialized = false;
 static MSG_Central_t * parent;
 static MSG_Base_t base;
 static uint32_t shake_counter;
+static uint8_t stuck_counter;
 
 
 static struct imu_settings _settings = {
@@ -203,18 +204,33 @@ static void _on_wom_timer(void* context)
     }
 }
 
-void
+uint8_t
+clear_stuck_count(void)
+{
+	uint8_t value = stuck_counter;
+	stuck_counter = 0;
+	return value;
+}
+
+uint8_t
 fix_imu_interrupt(void){
 	uint32_t gpio_pin_state;
+	uint8_t value = 0;
 	if(initialized){
 		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
 			if(!(gpio_pin_state & (1<<IMU_INT))){
 				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+				if (stuck_counter < 15)
+				{
+					++stuck_counter;
+				}
+				value = stuck_counter; // talley imu int stuck low
 			}else{
 			}
 		}else{
 		}
 	}
+	return value;
 }
 
 static void _on_pill_pairing_guesture_detected(void){
