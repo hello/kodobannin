@@ -28,6 +28,8 @@
  * +----------------------------------------------------+
  **/
 
+#define ANT_PROTOCOL_VER      (2)
+
 typedef struct{
     enum{
         ANT_PING=0,
