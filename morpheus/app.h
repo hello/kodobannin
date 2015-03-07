@@ -6,6 +6,7 @@
 #include <nrf51_bitfields.h>
 
 #include "platform.h"
+#include "app_info.h"
 
 enum {
     APP_TIMER_PRESCALER = 0,
