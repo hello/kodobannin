@@ -115,7 +115,6 @@ _play_boot_complete(int * out_r, int * out_g, int * out_b){
     return 0;
 }
 static int _on_cycle(int * out_r, int * out_g, int * out_b){
-    static int led;
     /*
      *PRINTS("cycle\r\n");
      */
