@@ -246,7 +246,7 @@ static uint8_t _adc_config_count;
 
 void ADC_IRQHandler(void)
 {
-    uint16_t value, adc_count;
+    uint16_t adc_count;
     uint8_t next_measure_input = 0; // indicate adc sequence complete
 
     if (NRF_ADC->EVENTS_END)
