@@ -200,6 +200,7 @@ static void _timer_handler(void * ctx){
         }
     }
 #ifdef PLATFORM_HAS_VLED
+#include "led_booster_timer.h"
     if(led_booster_is_free()) {
         current_reed_state = (uint8_t)led_check_reed_switch();
     }
