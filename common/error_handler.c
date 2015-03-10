@@ -29,7 +29,7 @@ _save_stack(uint8_t* stack_start, struct crash_log* crash_log)
     memcpy(&crash_log->stack[0], stack_start, crash_log->stack_size);
 }
 
-#include "platform.h"
+#include "app_info.h"
 void
 app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *filename)
 {

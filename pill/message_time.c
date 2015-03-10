@@ -6,6 +6,7 @@
 #include "message_time.h"
 #include "util.h"
 #include "platform.h"
+#include "app_info.h"
 #include "app.h"
 #include "shake_detect.h"
 #include "message_led.h"

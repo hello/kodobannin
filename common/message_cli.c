@@ -84,7 +84,7 @@ int match_command(const char * argv, const char * command){
 
 #include <nrf_soc.h>
 #include "util.h"
-#include "platform.h"
+#include "app_info.h"
 static int
 _handle_default_commands(int argc, char * argv[]){
     if(argc > 0){
