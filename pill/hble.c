@@ -312,7 +312,7 @@ void hble_params_init(char* device_name)
         char hex_device_id[hex_device_id_len];
         char device_id[device_id_len];
 
-        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len);
+        memcpy(device_id, (const uint8_t*)NRF_FICR->DEVICEID, device_id_len);
         memset(hex_device_id, 0, hex_device_id_len);
         const char* hex_table = "0123456789ABCDEF";
         
