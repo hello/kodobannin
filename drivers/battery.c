@@ -89,6 +89,8 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 
 static uint8_t _adc_config_psel;
 
+uint8_t clear_stuck_count(void);
+
 inline void battery_module_power_off()
 {
     if(ADC_ENABLE_ENABLE_Disabled != NRF_ADC->ENABLE)
