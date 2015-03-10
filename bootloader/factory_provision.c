@@ -4,6 +4,7 @@
 #include "util.h"
 #include "nrf_error.h"
 #include "pstorage_platform.h"
+#include <app_scheduler.h>
 #include "nrf_sdm.h"
 
 static pstorage_handle_t        __attribute__((aligned(4))) m_info_handle;
