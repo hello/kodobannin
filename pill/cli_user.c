@@ -12,7 +12,7 @@
 static adc_t Vref, Vrel, Voff;
 static uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
 
-static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
+static uint8_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
     uint32_t value, result;      //  Measured        Actual
  // Battery Voltage  0x0267 - 0x010A +2.914 V,  80 %   2.9 V

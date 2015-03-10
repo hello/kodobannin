@@ -200,7 +200,7 @@ void battery_set_percent_cached(int8_t value)
     _battery_level_percent = value; // used to hijack percent to indicate exception
 }
 
-adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
+uint8_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
 #ifdef PLATFORM_HAS_BATTERY
     switch (adc_count) { // for each adc reading
