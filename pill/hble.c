@@ -29,7 +29,9 @@
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 static ble_gap_sec_params_t _sec_params;
 static ble_bas_t  _ble_bas;
+#ifdef BONDING_REQUIRED
 static bool app_initialized = false;
+#endif
 
 static ble_uuid_t _service_uuid;
 static int8_t  _last_connected_central; 
@@ -148,9 +150,7 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
  */
 void hble_bond_manager_init()
 {
-    uint32_t            err_code;
     ble_bondmngr_init_t bond_init_data;
-    bool                bonds_delete;
 
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
