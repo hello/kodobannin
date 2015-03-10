@@ -27,6 +27,7 @@
 #endif
 
 #include <watchdog.h>
+#include "shake_detect.h"
 #include "gpio_nor.h"
 
 
@@ -41,7 +42,7 @@ static uint32_t _last_active_time;
 static char * name = "IMU";
 static bool initialized = false;
 
-static MSG_Central_t * parent;
+static const MSG_Central_t * parent;
 static MSG_Base_t base;
 static uint32_t shake_counter;
 static uint8_t stuck_counter;
@@ -238,7 +239,7 @@ static void _on_pill_pairing_guesture_detected(void){
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_shakedata_t));
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
-        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
 		pill_shakedata_t * shake_data = (pill_shakedata_t*)ant_data->payload;
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_SHAKING;
@@ -296,17 +297,16 @@ static MSG_Status _handle_self_test(void){
 	}
 	parent->unloadmod(&base);
 	parent->loadmod(&base);
+	return ret;
 }
 static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
-	uint32_t mag;
 	imu_accel_reg_read((uint8_t*)values);
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
 	}
-	mag = _aggregate_motion_data(values, sizeof(values));
-	ShakeDetect(mag);
+	_aggregate_motion_data(values, sizeof(values));
 #ifdef IMU_DYNAMIC_SAMPLING        
 	app_timer_cnt_get(&_last_active_time);
 	if(!_settings.is_active)
