@@ -44,6 +44,7 @@ void battery_module_power_off();
 void battery_set_result_cached(adc_t result);
 void battery_set_offset_cached(adc_t result);
 uint16_t battery_set_voltage_cached(adc_t result);
+void battery_set_percent_cached(int8_t value);
 
 adc_t battery_get_offset_cached();
 uint8_t battery_get_percent_cached();

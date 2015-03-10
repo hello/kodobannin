@@ -4,6 +4,7 @@
 #include "app_timer.h"
 #include "message_led.h"
 #include "message_time.h"
+#include "message_imu.h"
 #include "util.h"
 #include "platform.h"
 #include "app_info.h"
@@ -33,7 +34,7 @@ static struct{
     MSG_Base_t base;
     bool initialized;
     struct hlo_ble_time ble_time;  // Keep it here for debug, can see if pill crashed or not.
-    MSG_Central_t * central;
+    const MSG_Central_t * central;
     app_timer_id_t timer_id;
     MSG_Data_t * user_cb;
     uint32_t uptime;
@@ -144,7 +145,7 @@ static void _send_heartbeat_data_ant(){
         heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
         
         memset(&data_page->buf, 0, data_page->len);
-        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_HEARTBEAT;
         ant_data->UUID = GET_UUID_64();
@@ -233,7 +234,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
     if(data){
         uint32_t ticks;
         MSG_Base_AcquireDataAtomic(data);
-        MSG_TimeCommand_t * tmp = data->buf;
+        MSG_TimeCommand_t * tmp = (MSG_TimeCommand_t*)data->buf;
         switch(tmp->cmd){
             default:
             case TIME_PING:
