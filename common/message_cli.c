@@ -124,7 +124,7 @@ _handle_default_commands(int argc, char * argv[]){
             MSG_Data_t * id = MSG_Base_AllocateDataAtomic(6);
             if(id){
                 uint8_t id_copy[6] = {0};
-                memcpy(id_copy, NRF_FICR->DEVICEADDR, 6);
+                memcpy(id_copy, (const uint8_t*)NRF_FICR->DEVICEADDR, 6);
                 id->buf[0] = id_copy[5];
                 id->buf[1] = id_copy[4];
                 id->buf[2] = id_copy[3];
