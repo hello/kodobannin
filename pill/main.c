@@ -48,6 +48,7 @@
 static void _init_rf_modules()
 {
 #ifdef PLATFORM_HAS_SERIAL
+#include "gpio_nor.h"
 	//configure input
 	nrf_gpio_cfg_input(SERIAL_RX_PIN, GPIO_PIN_CNF_PULL_Pullup);
 #endif
