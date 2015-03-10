@@ -34,8 +34,6 @@ enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };
 
-static SPI_Context _spi_context;
-
 static app_timer_id_t _wom_timer;
 static app_gpiote_user_id_t _gpiote_user;
 static uint32_t _last_active_time;
