@@ -30,6 +30,7 @@
 #include <ant_parameters.h>
 #endif
 #ifdef ANT_ENABLE
+#include "ant_user.h"
 #include "message_ant.h"
 #include "ant_devices.h"
 #include "antutil.h"
@@ -72,7 +73,7 @@ static void _reply_time(void * p_event_data, uint16_t event_size)
 	uint64_t* current_time = get_time();
 	if(current_time)
 	{
-		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, current_time, sizeof(uint64_t), NULL);
+		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, (uint8_t *)current_time, sizeof(uint64_t), NULL);
 	}
 }
 
@@ -97,6 +98,7 @@ static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
 static void _calibrate_imu(void * p_event_data, uint16_t event_size)
 {
 #ifdef PLATFORM_HAS_IMU
+#include "imu.h"
         imu_calibrate_zero();
 #endif
         struct pill_command* command = (struct pill_command*)p_event_data;
@@ -116,8 +118,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
     case PILL_COMMAND_SEND_DATA:
-        //hlo_ble_notify(0xFEED, _daily_data, sizeof(_daily_data), _data_send_finished);
-		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
+		hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
 			app_sched_event_put(NULL, 0, _reply_time);
