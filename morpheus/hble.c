@@ -47,7 +47,7 @@ static app_timer_id_t _delay_timer;
 // BLE event callbacks for message_ble.c
 static bond_status_callback_t _bond_status_callback;
 static connected_callback_t _connect_callback;
-on_advertise_started_callback_t _on_advertise_started;
+static on_advertise_started_callback_t _on_advertise_started;
 ////
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
