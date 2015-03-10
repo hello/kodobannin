@@ -24,6 +24,7 @@
 #include "pill_gatt.h"
 
 #include "battery.h"
+#include "app_info.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
