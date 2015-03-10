@@ -119,7 +119,6 @@ static struct{
 
 static void
 _handle_command(int argc, char * argv[]){
-    int i;
     if(argc > 1 && !match_command(argv[0], "echo")){
         PRINTS(argv[1]);
     }
