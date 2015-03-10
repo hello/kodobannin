@@ -135,11 +135,6 @@ _slip_encode_simple(uint8_t * buffer, uint16_t buffer_size){
 void
 _start()
 {
-	uint32_t err_code;
-    volatile uint8_t* proposed_fw_sha1 = __app_sha1_start__;
-
-    uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
-
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 	APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
 
@@ -187,18 +182,11 @@ _start()
     const bootloader_settings_t* bootloader_settings;
     bootloader_util_settings_get(&bootloader_settings);
 
-    uint16_t* p_expected_crc = &bootloader_settings->bank_0_crc;
-
-    uint16_t* p_bank_0 = &bootloader_settings->bank_0;
-
-    uint16_t bank_0 = *p_bank_0;
-
-    uint32_t *p_bank_0_size = &bootloader_settings->bank_0_size;
-
-    uint32_t bank_0_size = *p_bank_0_size;
-
-    uint16_t expected_crc = *p_expected_crc;
-    ////SIMPRINTS("CRC-16 is %d\r\n", expected_crc);
+	/*
+	 *uint16_t* p_expected_crc = &bootloader_settings->bank_0_crc;
+	 *uint16_t expected_crc = *p_expected_crc;
+	 *SIMPRINTS("CRC-16 is %d\r\n", expected_crc);
+	 */
 
     if(!bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
         //SIMPRINTS("Firmware doesn't match expected CRC-16\r\n");
