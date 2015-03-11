@@ -123,23 +123,3 @@ MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size);
 MSG_Status INCREF MSG_Base_QueueAtomic(MSG_Queue_t * queue, MSG_Data_t * obj);
 MSG_Data_t * DECREF MSG_Base_DequeueAtomic(MSG_Queue_t * queue);
 
-#define MSG_PING(c,r,i) do{ \
-    MSG_Data_t * tmp = MSG_Base_AllocateDataAtomic(1); \
-    tmp->buf[0] = i; \
-    if(c) c->dispatch((MSG_Address_t){0,0},(MSG_Address_t){r,0}, tmp);\
-    MSG_Base_ReleaseDataAtomic(tmp); \
-    }while(0)
-
-#define MSG_SEND_CMD(_central, _recipient, _commandtype, _command, _param, _size) do{\
-    MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(_commandtype));\
-    if(obj){\
-        if(_central){\
-            _commandtype * type  = (_commandtype *)obj->buf;\
-            type->cmd = _command;\
-            memcpy((uint8_t*)&(type->param), (uint8_t*)_param, _size);\
-            _central->dispatch((MSG_Address_t){0,0},(MSG_Address_t){_recipient,0}, obj);\
-            /*central->dispatch( (MSG_Address_t){0,0}, (MSG_Address_t){UART, 1}, obj);*/\
-        }\
-        MSG_Base_ReleaseDataAtomic(obj);\
-    }\
-}while(0)
