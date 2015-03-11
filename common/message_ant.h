@@ -40,7 +40,7 @@ typedef enum{
     MSG_ANT_HANDLE_MESSAGE,
 }MSG_ANT_Commands;
 
-struct{
+typedef struct{
     hlo_ant_device_t device;
     MSG_Data_t * message;
 }MSG_ANT_Message_t;

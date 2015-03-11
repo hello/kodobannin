@@ -196,7 +196,11 @@ static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
             .id = *_id,
             .full_uid = pill_data->UUID,
         };
-        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, _id, sizeof(*_id));
+        MSG_Data_t * pid = MSG_Base_AllocateObjectAtomic(_id, sizeof(*_id));
+        if(pid){
+            self.parent->dispatch( ADDR(ANT, 0), ADDR(ANT, MSG_ANT_ADD_DEVICE), pid);
+            MSG_Base_ReleaseDataAtomic(pid);
+        }
     }
 }
 

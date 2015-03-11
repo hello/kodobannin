@@ -300,13 +300,13 @@ void pill_ble_load_modules(void){
 
 			MSG_Data_t * prole = MSG_Base_AllocateObjectAtomic(&role, sizeof(role));
 			if(prole){
-				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, ANT_SET_ROLE), prole);
+				central->dispatch( ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_SET_ROLE), prole);
 				MSG_Base_ReleaseDataAtomic(prole);
 			}
 
 			MSG_Data_t * pid = MSG_Base_AllocateObjectAtomic(&id, sizeof(id));
 			if(pid){
-				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, ANT_ADD_DEVICE), pid);
+				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_ADD_DEVICE), pid);
 				MSG_Base_ReleaseDataAtomic(pid);
 			}
         }

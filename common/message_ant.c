@@ -94,7 +94,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             case MSG_ANT_REMOVE_DEVICE:
                 if(data){
                     hlo_ant_device_t * device = (hlo_ant_device_t*)data->buf;
-                    int i = _find_paired(&device);
+                    int i = _find_paired(device);
                     if(i >= 0){
                         hlo_ant_device_t * dev = &self.paired_devices[(uint8_t)i];
                         dev->device_number = 0;
@@ -118,7 +118,7 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
                 break;
             case MSG_ANT_HANDLE_MESSAGE:
                 if(data){
-                    MSG_ANT_Message * msg = (MSG_ANT_Message *)data->buf;
+                    MSG_ANT_Message_t * msg = (MSG_ANT_Message_t *)data->buf;
                     _handle_message(&msg->device, msg->message);
                     MSG_Base_ReleaseDataAtomic(msg->message);
                 }
@@ -137,12 +137,12 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
         return;  // Do not use one line if: https://medium.com/@jonathanabrams/single-line-if-statements-2565c62ff492
     }
 
-    MSG_ANT_Message content = (MSG_ANT_Message){
-        .device = *device;
-        .message = message;
+    MSG_ANT_Message_t content = (MSG_ANT_Message_t){
+        .device = *device,
+        .message = message,
     };
 
-    MSG_Data_t * parcel = MSG_Base_AllocateObjectAtomic(&content, sizeof(MSG_ANTCommand_t));
+    MSG_Data_t * parcel = MSG_Base_AllocateObjectAtomic(&content, sizeof(content));
     if(parcel){
         MSG_Base_AcquireDataAtomic(message);
         self.parent->dispatch( ADDR(ANT,0), ADDR(ANT,MSG_ANT_HANDLE_MESSAGE), parcel);

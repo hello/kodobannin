@@ -106,6 +106,7 @@ bool MSG_Base_HasMemoryLeak(void);
 MSG_Status   INCREF MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
 MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);
 
+
 /**
  * Message queue object
  * Use to queue up onjects for async operation
