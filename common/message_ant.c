@@ -42,28 +42,6 @@ _flush(void){
 static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * message){
     MSG_Address_t default_src = {ANT, 0};
     self.user_handler->on_message(device, default_src, message);
-
-    /*
-    int src_submod = _find_paired(device);
-    if(src_submod >= 0){
-        default_src.submodule = (uint8_t)src_submod;
-        if(self.user_handler && self.user_handler->on_message)
-        {
-            self.user_handler->on_message(device, default_src, message);
-        }
-    }else{
-        if(self.user_handler && self.user_handler->on_unknown_device)
-        {
-            self.user_handler->on_unknown_device(device, message);
-        }
-    }
-    */
-    
-    //DEBUG print them out too
-    /*
-     *PRINTS("RAW: =\r\n");
-     *self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
-     */
 }
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
