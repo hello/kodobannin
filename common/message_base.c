@@ -114,14 +114,16 @@ MSG_Data_t * MSG_Base_AllocateStringAtomic(const char * str){
     if(!str){
         return NULL;
     }
-    uint32_t n = strlen(str)+1;
-    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(n);
+    return MSG_Base_AllocateObjectAtomic(str, strlen(str)+1);
+}
+MSG_Data_t * INCREF MSG_Base_AllocateObjectAtomic(const void * obj, size_t size){
+    MSG_Data_t * ret = MSG_Base_AllocateDataAtomic(size);
     if(ret){
-        memcpy(ret->buf, str, n);
-        return ret;
-    }else{
-        return NULL;
+        if(obj){
+            memcpy(ret->buf, (const uint8_t *)obj, size);
+        }
     }
+    return ret;
 }
 
 MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
