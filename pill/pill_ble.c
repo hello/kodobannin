@@ -303,16 +303,10 @@ void pill_ble_load_modules(void){
 
 #endif
 		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
-		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
 #endif
-
-        /*
-	    APP_OK(app_timer_create(&_ant_timer_id, APP_TIMER_MODE_REPEATED, _test_send_available_data_ant));
-        APP_OK(app_timer_start(_ant_timer_id, APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER), NULL));
-        */
-
+		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
     }else{
         PRINTS("FAIL");
     }

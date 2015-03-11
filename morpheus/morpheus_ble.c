@@ -685,7 +685,7 @@ void morpheus_load_modules(void){
             ANT_BondMgrForEach(create_bond);
         }
 #endif
-        MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD,NULL,0);
+		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
     }else{
         PRINTS("FAIL");
     }
