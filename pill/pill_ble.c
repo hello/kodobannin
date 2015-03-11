@@ -124,7 +124,11 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
             break;
     case PILL_COMMAND_SET_TIME:
         {
-			MSG_SEND_CMD(central,TIME,MSG_TimeCommand_t, TIME_SYNC, &command->set_time.bytes, sizeof(struct hlo_ble_time));
+			MSG_Data_t * ptime = MSG_Base_AllocateObjectAtomic(&command->set_time.bytes, sizeof(struct hlo_ble_time));
+			if(ptime){
+				central->dispatch( ADDR(BLE,0), ADDR(TIME, MSG_TIME_SYNC), ptime);
+				MSG_Base_ReleaseDataAtomic(ptime);
+			}
             break;
         }
     case PILL_COMMAND_START_ACCELEROMETER:
@@ -312,7 +316,7 @@ void pill_ble_load_modules(void){
         }
 
 #endif
-		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
+		central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_1S_RESOLUTION), NULL);
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
 #endif

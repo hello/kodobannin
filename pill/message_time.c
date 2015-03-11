@@ -35,7 +35,6 @@ static struct{
     struct hlo_ble_time ble_time;  // Keep it here for debug, can see if pill crashed or not.
     MSG_Central_t * central;
     app_timer_id_t timer_id;
-    MSG_Data_t * user_cb;
     uint32_t uptime;
     uint8_t reed_states;
     uint8_t in_ship_state;
@@ -191,13 +190,6 @@ static void _timer_handler(void * ctx){
     
     ShakeDetectDecWindow();
     
-    if(self.user_cb){
-        MSG_TimeCB_t * cb = &((MSG_TimeCommand_t*)(self.user_cb->buf))->param.wakeup_cb;
-        if(cb->cb(&self.ble_time,1000,cb->ctx)){
-            MSG_Base_ReleaseDataAtomic(self.user_cb);
-            self.user_cb = NULL;
-        }
-    }
 #ifdef PLATFORM_HAS_VLED
     if(led_booster_is_free()) {
         current_reed_state = (uint8_t)led_check_reed_switch();
@@ -230,44 +222,30 @@ static void _timer_handler(void * ctx){
 }
 
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
-    if(data){
-        uint32_t ticks;
-        MSG_Base_AcquireDataAtomic(data);
-        MSG_TimeCommand_t * tmp = data->buf;
-        switch(tmp->cmd){
-            default:
-            case TIME_PING:
-                PRINTS("TIMEPONG");
-                break;
-            case TIME_SYNC:
-                PRINTS("SETTIME = ");
-                self.ble_time.monotonic_time = tmp->param.ble_time.monotonic_time;
-                //TF_Initialize(&tmp->param.ble_time);
-                PRINT_HEX(&tmp->param.ble_time, sizeof(tmp->param.ble_time));
-                break;
-            case TIME_STOP_PERIODIC:
+    switch(dst.submodule){
+        default:
+        case MSG_TIME_PING:
+            break;
+        case MSG_TIME_SYNC:
+            if(data){
+                struct hlo_ble_time * ble_time = (struct hlo_ble_time *)data->buf;
+                self.ble_time.monotonic_time = ble_time->monotonic_time;
+                PRINT_HEX(ble_time, sizeof(*ble_time));
+            }
+            break;
+        case MSG_TIME_STOP_PERIODIC:
                 PRINTS("STOP_HEARTBEAT");
                 app_timer_stop(self.timer_id);
-                break;
-            case TIME_SET_1S_RESOLUTION:
+            break;
+        case MSG_TIME_SET_1S_RESOLUTION:
+            {
+                uint32_t ticks;
                 PRINTS("PERIODIC 1S");
                 ticks = APP_TIMER_TICKS(1000,APP_TIMER_PRESCALER);
                 app_timer_stop(self.timer_id);
                 app_timer_start(self.timer_id, ticks, NULL);
-                break;
-            case TIME_SET_5S_RESOLUTION:
-                PRINTS("PERIODIC 5S");
-                ticks = APP_TIMER_TICKS(5000,APP_TIMER_PRESCALER);
-                app_timer_stop(self.timer_id);
-                app_timer_start(self.timer_id, ticks, NULL);
-                break;
-            case TIME_SET_WAKEUP_CB:
-                MSG_Base_AcquireDataAtomic(data);
-                MSG_Base_ReleaseDataAtomic(self.user_cb);
-                self.user_cb = data;
-        }
-
-        MSG_Base_ReleaseDataAtomic(data);
+            }
+            break;
     }
     return SUCCESS;
 }
