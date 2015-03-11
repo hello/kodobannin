@@ -164,11 +164,13 @@ static void _imu_switch_mode(bool is_active)
     {
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
+        imu_enter_normal_mode();
         PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
+        imu_enter_low_power_mode();
         PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }

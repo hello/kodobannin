@@ -109,9 +109,6 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     struct pill_command* command = (struct pill_command*)event->data;
 
     switch(command->command) {
-    case PILL_COMMAND_CALIBRATE:
-    	app_sched_event_put(command, event->len, _calibrate_imu);
-        break;
     case PILL_COMMAND_DISCONNECT:
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;

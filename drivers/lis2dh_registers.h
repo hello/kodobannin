@@ -4,7 +4,7 @@
 
 // Based on LIS2DH datasheet
 
-#define CHIP_ID 0b00110011
+#define CHIP_ID 0x33
 
 typedef enum IMU_Registers {
     REG_STATUS_AUX = 0x7,
@@ -48,6 +48,8 @@ typedef enum IMU_Registers {
 
 } Register_t;
 
+#define ACCEL_CFG_SCALE_OFFSET 4
+
 enum IMU_Reg_Bits {
     //REG_TEMP_CFG
 	TEMPERATURE_DATA_OVERRUN  = 0x40,
@@ -79,7 +81,6 @@ enum IMU_Reg_Bits {
     //REG_CTRL_4
     BLOCKDATA_UPDATE = 0x80, //force atomic lsb and msb reads
     ENDIANNESS_SELECTION = 0x40,
-    FULL_SCALE = 0x30,
     HIGHRES = 0x8,
     SELFTEST_ENABLE = 0x6,
     SPI_SERIAL_MODE = 0x1, //0 == 4 wire, 1 == 3 wire
@@ -92,7 +93,7 @@ enum IMU_Reg_Bits {
     
     //REG_CTRL_6
     INT2_CLICK_ENABLE = 0x80,
-    INT2_OUTPUT_ON_LINE_1 = 0x40, //output interrupt generator 2 on interrupt line 1...
+    INT1_OUTPUT_ON_LINE_2 = 0x40, //output interrupt generator 2 on interrupt line 1...
     INT2_OUTPUT_ON_LINE_2 = 0x20,
     BOOT_INT2 = 0x8, //boot on assertion of interrupt 2
     INT_ACTIVE = 0x2, // 1 = active high, 0 = active low
