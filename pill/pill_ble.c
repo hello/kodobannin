@@ -32,7 +32,6 @@
 #ifdef ANT_ENABLE
 #include "message_ant.h"
 #include "ant_devices.h"
-#include "antutil.h"
 #include "ant_driver.h"
 #include "ant_packet.h"
 #endif

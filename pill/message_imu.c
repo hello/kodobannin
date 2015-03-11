@@ -22,7 +22,6 @@
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
-#include "antutil.h"
 #endif
 
 #include <watchdog.h>
