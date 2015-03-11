@@ -363,7 +363,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         case MSG_BLE_ACK_DEVICE_REMOVED:
             break;
         case MSG_BLE_ACK_DEVICE_ADDED:
-            {
+            if(data){
                 uint64_t * pill_uid = (uint64_t*)data->buf;
                 size_t hex_string_len = 0;
                 char hex_string[hex_string_len];
@@ -398,7 +398,13 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
             }
             break;
         case MSG_BLE_DEFAULT_CONNECTION:
-            return _route_protobuf_to_ble(data);
+            if(data){
+                return _route_protobuf_to_ble(data);
+            }else{
+                PRINTS("No data received from:");
+                PRINT_HEX(&src.module, 1);
+                PRINTS("\r\n");
+            }
     }
     return SUCCESS;
 }
@@ -519,8 +525,6 @@ MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
 #else
         MSG_Base_ReleaseDataAtomic(data);
 #endif
-        
-        
         return SUCCESS;
     }else{
         PRINTS("Acquire data failed, cannot route data to cc3200\r\n");
