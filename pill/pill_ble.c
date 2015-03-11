@@ -297,8 +297,18 @@ void pill_ble_load_modules(void){
 				.device_type = HLO_ANT_DEVICE_TYPE_PILL,
 				.transmit_type = 1
 			};
-            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id, sizeof(id));
+
+			MSG_Data_t * prole = MSG_Base_AllocateObjectAtomic(&role, sizeof(role));
+			if(prole){
+				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, ANT_SET_ROLE), prole);
+				MSG_Base_ReleaseDataAtomic(prole);
+			}
+
+			MSG_Data_t * pid = MSG_Base_AllocateObjectAtomic(&id, sizeof(id));
+			if(pid){
+				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, ANT_ADD_DEVICE), pid);
+				MSG_Base_ReleaseDataAtomic(pid);
+			}
         }
 
 #endif
