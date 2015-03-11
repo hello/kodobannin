@@ -66,6 +66,8 @@ typedef struct{
     uint8_t module;
     uint8_t submodule;
 }MSG_Address_t;
+
+#define ADDR(a,b) ((MSG_Address_t){a,b})
 /**
  * Message object.
  * All modules that implements message capability must define the struct
