@@ -602,56 +602,7 @@ static MSG_Status _init(){
     app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
     
 #else
-    
-    // Tests
-    // self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
-    MorpheusCommand get_device_id_command;
-    memset(&get_device_id_command, 0, sizeof(get_device_id_command));
-    get_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID;
-
-    char* fake_device_id = "0123456789AB";
-    MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(fake_device_id);
-
-    if(!device_id_page)
-    {
-        PRINTS(MSG_NO_MEMORY);
-        return FAIL;
-    }
-
-    get_device_id_command.deviceId.arg = device_id_page;
-
-    size_t protobuf_len = 0;
-    if(!morpheus_ble_encode_protobuf(&get_device_id_command, NULL, &protobuf_len))
-    {
-        MSG_Base_ReleaseDataAtomic(device_id_page);
-        return FAIL;
-    }
-
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(protobuf_len);
-    if(!data_page)
-    {
-        PRINTS(MSG_NO_MEMORY);
-        MSG_Base_ReleaseDataAtomic(device_id_page);
-        return FAIL;
-    }
-
-    memset(data_page->buf, 0, data_page->len);
-    if(!morpheus_ble_encode_protobuf(&get_device_id_command, data_page->buf, &protobuf_len))
-    {   
-        MSG_Base_ReleaseDataAtomic(device_id_page);
-        MSG_Base_ReleaseDataAtomic(data_page);
-        return FAIL;
-    }
-    
-    self.parent->dispatch((MSG_Address_t){SSPI, 1},(MSG_Address_t){BLE, 0}, data_page);
-    
-    MSG_Base_ReleaseDataAtomic(device_id_page);
-    MSG_Base_ReleaseDataAtomic(data_page);
-    
-    PRINTS("Debug SPI init command sent\r\n");
-
-    
-
+    //use boot command instead
 #endif
 
     return SUCCESS;
