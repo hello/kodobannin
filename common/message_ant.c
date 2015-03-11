@@ -65,7 +65,6 @@ static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * messag
      *self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
      */
 }
-#include "boot_test.h"
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(dst.submodule >= (uint8_t) MSG_ANT_CONNECTION_BASE &&
