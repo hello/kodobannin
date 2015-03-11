@@ -30,24 +30,20 @@
 
 #define ANT_PROTOCOL_VER      (2)
 
-typedef struct{
-    enum{
-        ANT_PING=0,
-        ANT_SET_ROLE,//sets device role
-        ANT_REMOVE_DEVICE,
-        ANT_ADD_DEVICE,
-        ANT_HANDLE_MESSAGE,
-        ANT_END_CMD,
-    }cmd;
-    union{
-        hlo_ant_role role;
-        hlo_ant_device_t device;
-        struct{
-            hlo_ant_device_t device;
-            MSG_Data_t * message;
-        }handle_message;
-    }param;
-}MSG_ANTCommand_t;
+
+typedef enum{
+    MSG_ANT_PING = 0,
+    MSG_ANT_CONNECTION_BASE,
+    MSG_ANT_SET_ROLE = 100,
+    MSG_ANT_REMOVE_DEVICE,
+    MSG_ANT_ADD_DEVICE,
+    MSG_ANT_HANDLE_MESSAGE,
+}MSG_ANT_Commands;
+
+struct{
+    hlo_ant_device_t device;
+    MSG_Data_t * message;
+}MSG_ANT_Message_t;
 
 typedef struct 
 {
