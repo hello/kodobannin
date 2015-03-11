@@ -134,7 +134,7 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
         DEBUGS("+");
         return SUCCESS;
     }
-    PRINTS("AcquireData FAILED! Cannot malloc NULL\r\n");
+    PRINTS("AcquireData FAILED! Cannot acquire NULL\r\n");
     //APP_ASSERT(0);
     return FAIL;
 }
