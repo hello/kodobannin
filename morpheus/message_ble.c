@@ -372,7 +372,7 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
                 ANT_UserSetPairing(0);
                 hble_uint64_to_hex_device_id(pill_uid, NULL, &hex_string_len);
 
-                if(sizeof(hex_string >= hex_string_len)){
+                if(sizeof(hex_string) >= hex_string_len){
                     hble_uint64_to_hex_device_id(pill_uid, hex_string, &hex_string_len);
                     if(self.pill_pairing_request.device_id){
                         MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.device_id);

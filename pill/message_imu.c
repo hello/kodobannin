@@ -42,7 +42,6 @@ static bool initialized = false;
 
 static const MSG_Central_t * parent;
 static MSG_Base_t base;
-static uint32_t shake_counter;
 static uint8_t stuck_counter;
 
 
