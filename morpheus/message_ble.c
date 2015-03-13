@@ -364,16 +364,16 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
             break;
         case MSG_BLE_ACK_DEVICE_ADDED:
             if(data){
-                uint64_t pill_uid = *(uint64_t*)data->buf;
+                uint64_t pill_uid = *((uint64_t*)data->buf);
                 size_t hex_string_len = 0;
                 char hex_string[17];
 
                 app_timer_stop(self.timer_id);
                 ANT_UserSetPairing(0);
-                hble_uint64_to_hex_device_id(&pill_uid, NULL, &hex_string_len);
+                hble_uint64_to_hex_device_id(pill_uid, NULL, &hex_string_len);
 
                 if(sizeof(hex_string >= hex_string_len)){
-                    hble_uint64_to_hex_device_id(&pill_uid, hex_string, &hex_string_len);
+                    hble_uint64_to_hex_device_id(pill_uid, hex_string, &hex_string_len);
                     if(self.pill_pairing_request.device_id){
                         MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.device_id);
                         self.pill_pairing_request.device_id = NULL;
