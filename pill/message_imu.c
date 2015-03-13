@@ -298,12 +298,14 @@ static MSG_Status _handle_self_test(void){
 }
 static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
+	uint32_t mag;
 	imu_accel_reg_read((uint8_t*)values);
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
 	}
-	_aggregate_motion_data(values, sizeof(values));
+	mag = _aggregate_motion_data(values, sizeof(values));
+	ShakeDetect(mag);
 #ifdef IMU_DYNAMIC_SAMPLING        
 	app_timer_cnt_get(&_last_active_time);
 	if(!_settings.is_active)
