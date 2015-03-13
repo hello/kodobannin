@@ -89,6 +89,8 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 
 static uint8_t _adc_config_psel;
 
+uint8_t clear_stuck_count(void);
+
 inline void battery_module_power_off()
 {
     if(ADC_ENABLE_ENABLE_Disabled != NRF_ADC->ENABLE)
@@ -200,7 +202,7 @@ void battery_set_percent_cached(int8_t value)
     _battery_level_percent = value; // used to hijack percent to indicate exception
 }
 
-adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
+uint8_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
 #ifdef PLATFORM_HAS_BATTERY
     switch (adc_count) { // for each adc reading
@@ -246,7 +248,7 @@ static uint8_t _adc_config_count;
 
 void ADC_IRQHandler(void)
 {
-    uint16_t value, adc_count;
+    uint16_t adc_count;
     uint8_t next_measure_input = 0; // indicate adc sequence complete
 
     if (NRF_ADC->EVENTS_END)

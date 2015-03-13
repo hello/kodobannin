@@ -846,19 +846,18 @@ _pass_test(uint32_t st, uint8_t st_code){
 
 }
 static inline int32_t
-_abs(a){
+_abs(int32_t a){
 	/*
 	 *return ((a<0)?-a:a);
 	 */
 	return a;
 }
 int imu_self_test(void){
-	uint8_t ret = 0;
 	int i;
 	int16_t values[3] = {0};
-	int32_t ax_os, ay_os, az_os;
-	int32_t ax_st_os, ay_st_os, az_st_os;
-	int32_t axst, ayst, azst;
+	int32_t ax_os = 0, ay_os = 0, az_os = 0;
+	int32_t ax_st_os = 0, ay_st_os = 0, az_st_os = 0;
+	int32_t axst = 0, ayst = 0, azst = 0;
 	uint8_t factory[3] = {0};
 	imu_power_off();
 	nrf_delay_ms(20);

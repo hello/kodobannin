@@ -1,4 +1,4 @@
-#pragma
+#pragma once
 /* 
  * A place to put all common defines
  */

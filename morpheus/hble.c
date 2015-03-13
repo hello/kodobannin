@@ -45,9 +45,9 @@ static int16_t  _last_bond_central_id;
 static app_timer_id_t _delay_timer;
 
 // BLE event callbacks for message_ble.c
-static void(*_on_advertise_started)(bool, uint16_t);
 static bond_status_callback_t _bond_status_callback;
 static connected_callback_t _connect_callback;
+static on_advertise_started_callback_t _on_advertise_started;
 ////
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
@@ -77,9 +77,9 @@ static void _delay_task_store_bonds()
 #endif
 }
 
-void hble_set_advertise_callback(void(*advertise_started_callback)(bool))
+void hble_set_advertise_callback(on_advertise_started_callback_t cb)
 {
-    _on_advertise_started = advertise_started_callback;
+    _on_advertise_started = cb;
 }
 
 void hble_set_bond_status_callback(bond_status_callback_t callback)
@@ -405,6 +405,12 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
             // Notify message ble module, schedule the call
             app_sched_event_put(&p_evt->evt_type, sizeof(p_evt->evt_type), _on_bond);
         }
+		break;
+		case BLE_BONDMNGR_EVT_NEW_BOND:
+		case BLE_BONDMNGR_EVT_CONN_TO_BONDED_CENTRAL:
+		case BLE_BONDMNGR_EVT_AUTH_STATUS_UPDATED:
+		case BLE_BONDMNGR_EVT_BOND_FLASH_FULL:
+		default:
         break;
     }
 }

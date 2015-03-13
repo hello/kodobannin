@@ -12,7 +12,7 @@
 static adc_t Vref, Vrel, Voff;
 static uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
 
-static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
+static uint8_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
     uint32_t value, result;      //  Measured        Actual
  // Battery Voltage  0x0267 - 0x010A +2.914 V,  80 %   2.9 V
@@ -74,16 +74,18 @@ static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint1
     return 0; // indicate no more adc conversions required
 }
 
-//   ADC    OFFSET  Vbat Measured    Actual
-// 0x02CE - 0x010A +4.011 V, 120 %   4.0 V
-// 0x028C - 0x010A +3.220 V, 102 %   3.2 V
-// 0x0273 - 0x010A +3.013 V, 100 %   3.0 V \
-// 0x0267 - 0x010A +2.914 V,  80 %   2.9 V |  normal battery
-// 0x025B - 0x010A +2.814 V,  40 %   2.8 V |  operating range
-// 0x0243 - 0x010A +2.714 V,  10 %   2.6 V /
-// 0x0240 - 0x010A +2.614 V,  05 %   2.4 V
-// 0x022B - 0x010A +2.415 V,  00 %   2.2 V
-// 0x01FA - 0x010A +2.002 V,  00 %   2.0 V
+/*
+ *  ADC    OFFSET  Vbat Measured    Actual
+ *0x02CE - 0x010A +4.011 V, 120 %   4.0 V
+ *0x028C - 0x010A +3.220 V, 102 %   3.2 V
+ *0x0273 - 0x010A +3.013 V, 100 %   3.0 V \
+ *0x0267 - 0x010A +2.914 V,  80 %   2.9 V |  normal battery
+ *0x025B - 0x010A +2.814 V,  40 %   2.8 V |  operating range
+ *0x0243 - 0x010A +2.714 V,  10 %   2.6 V /
+ *0x0240 - 0x010A +2.614 V,  05 %   2.4 V
+ *0x022B - 0x010A +2.415 V,  00 %   2.2 V
+ *0x01FA - 0x010A +2.002 V,  00 %   2.0 V
+ */
 
 void cli_update_battery_status()
 {
@@ -119,7 +121,6 @@ static struct{
 
 static void
 _handle_command(int argc, char * argv[]){
-    int i;
     if(argc > 1 && !match_command(argv[0], "echo")){
         PRINTS(argv[1]);
     }
