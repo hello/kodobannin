@@ -115,24 +115,19 @@ _flush(void){
 }
 static MSG_Status
 _send(MSG_Address_t src,MSG_Address_t dst, MSG_Data_t * data){
-    if(data){
-        MSG_Base_AcquireDataAtomic(data);
-        MSG_AppCommand_t * tmp = (MSG_AppCommand_t*)data->buf;
-        switch(tmp->cmd){
-            default:
-            case APP_PING:
-                break;
-            case APP_LSMOD:
-                PRINTS("Loaded Mods\r\n");
-                for(int i = 0; i < MSG_CENTRAL_MODULE_NUM; i++){
-                    if(self.mods[i]){
-                        PRINTS(self.mods[i]->typestr);
-                        PRINTS("\r\n");
-                    }
+    switch(dst.submodule){
+        default:
+        case MSG_APP_PING:
+            break;
+        case MSG_APP_LSMOD:
+            PRINTS("Loaded Mods\r\n");
+            for(int i = 0; i < MSG_CENTRAL_MODULE_NUM; i++){
+                if(self.mods[i]){
+                    PRINTS(self.mods[i]->typestr);
+                    PRINTS("\r\n");
                 }
-                break;
-        }
-        MSG_Base_ReleaseDataAtomic(data);
+            }
+            break;
     }
     return SUCCESS;
 }

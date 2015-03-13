@@ -3,6 +3,7 @@
 #pragma once
 
 #include <app_error.h>
+#include <nrf_soc.h>
 #include "message_uart.h"
 #include "hello_dfu.h"
 #include "app.h"
