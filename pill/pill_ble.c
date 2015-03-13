@@ -32,7 +32,6 @@
 #ifdef ANT_ENABLE
 #include "message_ant.h"
 #include "ant_devices.h"
-#include "antutil.h"
 #include "ant_driver.h"
 #include "ant_packet.h"
 #endif
@@ -124,7 +123,11 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
             break;
     case PILL_COMMAND_SET_TIME:
         {
-			MSG_SEND_CMD(central,TIME,MSG_TimeCommand_t, TIME_SYNC, &command->set_time.bytes, sizeof(struct hlo_ble_time));
+			MSG_Data_t * ptime = MSG_Base_AllocateObjectAtomic(&command->set_time.bytes, sizeof(struct hlo_ble_time));
+			if(ptime){
+				central->dispatch( ADDR(BLE,0), ADDR(TIME, MSG_TIME_SYNC), ptime);
+				MSG_Base_ReleaseDataAtomic(ptime);
+			}
             break;
         }
     case PILL_COMMAND_START_ACCELEROMETER:
@@ -297,22 +300,26 @@ void pill_ble_load_modules(void){
 				.device_type = HLO_ANT_DEVICE_TYPE_PILL,
 				.transmit_type = 1
 			};
-            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id, sizeof(id));
+
+			MSG_Data_t * prole = MSG_Base_AllocateObjectAtomic(&role, sizeof(role));
+			if(prole){
+				central->dispatch( ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_SET_ROLE), prole);
+				MSG_Base_ReleaseDataAtomic(prole);
+			}
+
+			MSG_Data_t * pid = MSG_Base_AllocateObjectAtomic(&id, sizeof(id));
+			if(pid){
+				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_ADD_DEVICE), pid);
+				MSG_Base_ReleaseDataAtomic(pid);
+			}
         }
 
 #endif
-		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
-		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
+		central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_1S_RESOLUTION), NULL);
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
 #endif
-
-        /*
-	    APP_OK(app_timer_create(&_ant_timer_id, APP_TIMER_MODE_REPEATED, _test_send_available_data_ant));
-        APP_OK(app_timer_start(_ant_timer_id, APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER), NULL));
-        */
-
+		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
     }else{
         PRINTS("FAIL");
     }

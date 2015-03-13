@@ -19,11 +19,9 @@
 #include "sensor_data.h"
 #include "message_base.h"
 #include "timedfifo.h"
-#include "boot_test.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
-#include "antutil.h"
 #endif
 
 #include <watchdog.h>
@@ -318,11 +316,6 @@ static MSG_Status _handle_read_xyz(void){
 		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 	}
 #endif
-	if(shake_counter++ == 0){
-		/*
-		 *test_ok(parent, IMU_OK);
-		 */
-	}
 	return SUCCESS;
 }
 

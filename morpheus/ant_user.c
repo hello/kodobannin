@@ -135,19 +135,12 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                     PRINTS("\r\n");
 
                     if(self.pair_enable){
-
-                        MSG_Data_t* ble_cmd_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
-                        if(!ble_cmd_page)
-                        {
-                            PRINTS("No Memory!\r\n");
-                        }else{
-                            memset(ble_cmd_page->buf, 0, ble_cmd_page->len);
-                            MSG_BLECommand_t* ble_cmd = (MSG_BLECommand_t*)ble_cmd_page->buf;
-                            ble_cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                            ble_cmd->param.pill_uid = pill_data->UUID;
-
-                            self.parent->dispatch(src, (MSG_Address_t){BLE, 0}, ble_cmd_page);
+                        MSG_Data_t* ble_cmd_page = MSG_Base_AllocateObjectAtomic(&pill_data->UUID, sizeof(pill_data->UUID));
+                        if(ble_cmd_page){
+                            self.parent->dispatch(ADDR(ANT,0), ADDR(BLE, MSG_BLE_ACK_DEVICE_ADDED), ble_cmd_page);
                             MSG_Base_ReleaseDataAtomic(ble_cmd_page);
+                        }else{
+                            PRINTS("No Memory!\r\n");
                         }
                     }else{
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_SHAKES;
@@ -196,7 +189,11 @@ static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
             .id = *_id,
             .full_uid = pill_data->UUID,
         };
-        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, _id, sizeof(*_id));
+        MSG_Data_t * pid = MSG_Base_AllocateObjectAtomic(_id, sizeof(*_id));
+        if(pid){
+            self.parent->dispatch( ADDR(ANT, 0), ADDR(ANT, MSG_ANT_ADD_DEVICE), pid);
+            MSG_Base_ReleaseDataAtomic(pid);
+        }
     }
 }
 
@@ -218,12 +215,9 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
             if(id->device_number == self.staging_bond.id.device_number){
                 PRINTS("DEVICE CONNECTED\r\n");
                 PRINTS("Staging match");
-                MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
+                MSG_Data_t * obj = MSG_Base_AllocateObjectAtomic(&self.staging_bond.full_uid, sizeof(self.staging_bond.full_uid));
                 if(obj){
-                    MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
-                    cmd->param.pill_uid = self.staging_bond.full_uid;
-                    cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                    self.parent->dispatch( (MSG_Address_t){ANT,0}, (MSG_Address_t){BLE, 0}, obj);
+                    self.parent->dispatch( ADDR(ANT,0), ADDR(BLE, MSG_BLE_ACK_DEVICE_ADDED), obj);
                     MSG_Base_ReleaseDataAtomic(obj);
                 }
                 {
