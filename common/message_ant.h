@@ -81,7 +81,6 @@ typedef enum{
     ANT_STATUS_CONNECTED
 }ANT_Status_t;
 
-#define ANT_ChannelID_t hlo_ant_device_t
 typedef struct{
     /* Called when a known and connected device sends a message */
     void (*on_message)(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg);
