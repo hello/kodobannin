@@ -64,6 +64,16 @@ static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint1
                         result = Vref - Vrel; 
                     } // estimate of battery internal resistance
                     PRINT_HEX(&result, 1);
+                    return LDO_VMCU_ADC_INPUT; break; // spread print overhead
+            case 5: result = battery_get_slope_cached();
+                    PRINTS("/ 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
+                    PRINTS(" 0x");
+                    value = result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&result, 1);
                     PRINTS("\r\n");
                     break; // fall thru to end adc reading sequence
     }
