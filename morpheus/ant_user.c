@@ -33,12 +33,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         return;
     }
 
-    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
-    {
-        PRINTS("Internal error.\r\n");
-        return;
-    }
-
     // TODO, this shit needs to be tested on CC3200 side.
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
 
@@ -176,7 +170,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 
     }
     morpheus_ble_free_protobuf(&morpheus_command);
-    MSG_Base_ReleaseDataAtomic(msg);
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
