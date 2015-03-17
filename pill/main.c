@@ -68,6 +68,11 @@ static void _init_rf_modules()
 #ifdef BONDING_REQUIRED   
     hble_bond_manager_init();
 #endif
+
+    // Initialize persistent storage module.
+    APP_OK(pstorage_init());
+ // nrf_delay_ms(100);
+
     // append something to device name
     char device_name[strlen(BLE_DEVICE_NAME)+4];
 

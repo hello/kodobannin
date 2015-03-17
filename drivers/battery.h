@@ -48,6 +48,7 @@ uint16_t battery_set_voltage_cached(adc_t result);
 adc_t battery_get_offset_cached();
 uint8_t battery_get_percent_cached();
 uint16_t battery_get_initial_cached(uint8_t mode);
+adc_t battery_get_reading_cached();
 uint16_t battery_get_voltage_cached();
 
 #endif // BATTERY_H__

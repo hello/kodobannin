@@ -49,12 +49,14 @@ static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint1
                     PRINT_DEC(&result,3);
                     PRINTS(" V, ");
                     result = battery_get_percent_cached();
-                    value = (result%3);
-                    switch (value) {
-                        case 0: PRINTS("+");break; // better than expected
-                        case 2: PRINTS("=");break; // nominal 2/3/4 for each 30%
-                        case 1: PRINTS("-");break; // worse than expected
-                    }
+                    if (value > 100 && value <9) {
+                        value = (result%3);
+                        switch (value) {
+                            case 0: PRINTS("+");break; // better than expected
+                            case 2: PRINTS("=");break; // nominal 2/3/4 for each 30%
+                            case 1: PRINTS("-");break; // worse than expected
+                        }
+                    } else PRINTS(" ");
                     PRINT_DEC(&result,3);
                     if ( Vrel > Vref) {
                         result = Vrel - Vref; 
@@ -130,7 +132,7 @@ static struct{
 static void
 _handle_command(int argc, char * argv[]){
     int i;
-    uint32_t value, result;
+    uint32_t value, result, reference;
     if(argc > 1 && !match_command(argv[0], "echo")){
         PRINTS(argv[1]);
     }
@@ -154,11 +156,14 @@ _handle_command(int argc, char * argv[]){
         result = battery_get_initial_cached(0);
         PRINTS(" +");
 
+        //  236 (2.000) 356 (3.000) 380 (3.200) 476(4.000)
+        value = (battery_get_reading_cached() / 12) * 100; // (result - offset)/12
+
         slope = 7125;
-        if (result > 3000)
-	  slope = 7125 - (((result - 3000) * 7125) / 3000);
-        if (result < 3000)
-          slope = 7125 + (((3000 - result) * 7125) / 3000);
+        if (result > value)
+	  slope = 7125 - (((result - value) * 7125) / value);
+        if (result < value)
+          slope = 7125 + (((value - result) * 7125) / value);
 
         value = slope/1000;
 
@@ -166,6 +171,7 @@ _handle_command(int argc, char * argv[]){
         PRINTS(".");
         PRINT_DEC(&slope,3);
         PRINTS(" V\r\n");
+
         battery_set_slope_cached(slope);
     }
     if( !match_command(argv[0], "upd") ){

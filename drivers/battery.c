@@ -68,7 +68,8 @@
  * @retval     Result converted to millivolts.
  */
 
-static adc_t _adc_config_result; // Vbat adc reading (battery reference)
+static adc_t _adc_config_reading; // Vbat adc reading (battery reference - offset)
+static adc_t _adc_config_result; // Vbat adc result (battery reference)
 static adc_t _adc_config_slope; // Vbat adc reading (battery calibrate)
 static adc_t _adc_config_offset; // Vrgb adc reading (ground reference)
 static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
@@ -82,7 +83,7 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 // presently using fixed offset 0x010A emperically derived by observing nRF51422 w/Vrgb at ground
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
 
-#define ADC_SLOPE 0x1BFD /* 0x1BD5 /* range 0x1B75 thru 0x1C55 have been observed */
+#define ADC_SLOPE 0x1BD5 /* 0x1BD5 /* range 0x1B75 thru 0x1C55 have been observed */
 #define ADC_OFFSET 0x010A /* range 0x0108 thru 0x010E have been observed */
 #define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - _adc_config_offset) * _adc_config_slope ) / 1023 ) * 12 ) / 10 )
 
@@ -194,6 +195,8 @@ uint16_t battery_set_voltage_cached(adc_t adc_result)
     } else {
         value = _adc_config_result;
     }
+
+    _adc_config_reading = _adc_config_result - _adc_config_offset;
 
     _battery_level_voltage = ADC_BATTERY_IN_MILLI_VOLTS(value);
     if(_battery_level_percent <= 160){ // preserve exception indicator
@@ -354,6 +357,14 @@ adc_t battery_get_offset_cached(){
 adc_t battery_get_slope_cached(){
 #ifdef PLATFORM_HAS_VERSION
     return _adc_config_slope;
+#else
+    return BATTERY_INVALID_MEASUREMENT;
+#endif
+}
+
+adc_t battery_get_reading_cached(){
+#ifdef PLATFORM_HAS_VERSION
+    return _adc_config_reading;
 #else
     return BATTERY_INVALID_MEASUREMENT;
 #endif
