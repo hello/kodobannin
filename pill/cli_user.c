@@ -130,6 +130,7 @@ static struct{
 static void
 _handle_command(int argc, char * argv[]){
     int i;
+    uint32_t value, result;
     if(argc > 1 && !match_command(argv[0], "echo")){
         PRINTS(argv[1]);
     }
@@ -146,6 +147,26 @@ _handle_command(int argc, char * argv[]){
     }
     if( !match_command(argv[0], "mon") ){
         cli_update_battery_level(0); // monitor droop
+    }
+    if( !match_command(argv[0], "cal") ){
+        uint32_t slope;
+        uint32_t diff;
+        result = battery_get_initial_cached(0);
+        PRINTS(" +");
+
+        slope = 7125;
+        if (result > 3000)
+	  slope = 7125 - (((result - 3000) * 7125) / 3000);
+        if (result < 3000)
+          slope = 7125 + (((3000 - result) * 7125) / 3000);
+
+        value = slope/1000;
+
+        PRINT_DEC(&value,1);
+        PRINTS(".");
+        PRINT_DEC(&slope,3);
+        PRINTS(" V\r\n");
+        battery_set_slope_cached(slope);
     }
     if( !match_command(argv[0], "upd") ){
         cli_update_battery_level(1); // measure battery / issue ant packet

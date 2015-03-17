@@ -69,8 +69,8 @@
  */
 
 static adc_t _adc_config_result; // Vbat adc reading (battery reference)
+static adc_t _adc_config_slope; // Vbat adc reading (battery calibrate)
 static adc_t _adc_config_offset; // Vrgb adc reading (ground reference)
-static adc_t _adc_config_slope; // Vmcu adc reading (523K/523K)
 static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 
 // original scaling computation using battery.h #defings for scaling constants w/o offset compensation
@@ -82,8 +82,9 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 // presently using fixed offset 0x010A emperically derived by observing nRF51422 w/Vrgb at ground
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
 
+#define ADC_SLOPE 0x1BFD /* 0x1BD5 /* range 0x1B75 thru 0x1C55 have been observed */
 #define ADC_OFFSET 0x010A /* range 0x0108 thru 0x010E have been observed */
-#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - _adc_config_offset) * 7125 ) / 1023 ) * 12 ) / 10 )
+#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - _adc_config_offset) * _adc_config_slope ) / 1023 ) * 12 ) / 10 )
 
 // for use with low source resistance (511) versus above for high source resistance (523K||215K)
 #define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)  (((ADC_VALUE) * 1200 ) / 1023 )
@@ -177,6 +178,11 @@ void battery_set_offset_cached(adc_t adc_result) // adc offset reading
     }
 }
 
+void battery_set_slope_cached(adc_t adc_result) // adc offset reading
+{
+            _adc_config_slope = adc_result;
+}
+
 uint16_t battery_set_voltage_cached(adc_t adc_result)
 {
     uint32_t value;
@@ -265,7 +271,6 @@ void ADC_IRQHandler(void)
             } else { // still evaluating Vmcu to ensure that
                 if (adc_result < 0x0300) { // 0x0259 resistor (523K||523K)
                     _adc_cycle_count = 1; // dividers have settled
-                    _adc_config_slope = adc_result;
 #ifdef PLATFORM_HAS_BATTERY
                     next_measure_input = LDO_VBAT_ADC_INPUT;
 #endif
@@ -360,6 +365,7 @@ void battery_init()
 
     _adc_config_result = 0; // Vbat adc reading (battery reference)
     _adc_config_offset = ADC_OFFSET; // adc offset (ground reference)
+    _adc_config_slope = ADC_SLOPE; // adc slope (3.000 reference)
     _adc_config_droop = 0; // Vbat adc reading (battery minimum)
 
 #ifdef PLATFORM_HAS_VERSION
