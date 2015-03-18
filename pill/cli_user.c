@@ -165,12 +165,18 @@ _handle_command(int argc, char * argv[]){
         if (result < value)
           slope = 7125 + (((value - result) * 7125) / value);
 
-        value = slope/1000;
+        PRINT_DEC(&slope,4);
 
-        PRINT_DEC(&value,1);
-        PRINTS(".");
-        PRINT_DEC(&slope,3);
-        PRINTS(" V\r\n");
+     /* value += 120;
+        slope = 7125;
+        if (result > value)
+	  slope = 7125 - (((result - value) * 7125) / value);
+        if (result < value)
+          slope = 7125 + (((value - result) * 7125) / value);
+
+        PRINT_DEC(&slope,4); */
+
+        PRINTS(" \r\n");
 
         battery_set_slope_cached(slope);
     }
