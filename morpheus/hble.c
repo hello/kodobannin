@@ -246,9 +246,9 @@ static void _on_connected(void * p_event_data, uint16_t event_size)
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
     delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
-        hble_delay_task_advertise_resume, 
         _delay_task_resume_ant, 
         _delay_task_memory_checkpoint,
+        hble_delay_task_advertise_resume,
         NULL
     };
     hble_start_delay_tasks(100, tasks, MAX_DELAY_TASKS);
@@ -300,9 +300,10 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         // define the tasks that will be performed when user disconnect
         delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
             _delay_task_store_bonds, 
-            hble_delay_task_advertise_resume, 
             _delay_task_resume_ant, 
-            _delay_task_memory_checkpoint};
+            _delay_task_memory_checkpoint,
+            hble_delay_task_advertise_resume,
+			NULL};
         memcpy(_tasks, tasks, sizeof(_tasks));
         app_sched_event_put(NULL, 0, _on_connected);
     }
