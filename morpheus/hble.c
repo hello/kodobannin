@@ -298,12 +298,12 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         hble_set_advertising_mode(false);
 
         // define the tasks that will be performed when user disconnect
+		// NULL is not needed at the end as long as # of functions == MAX_DELAY_TASKS
         delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
             _delay_task_store_bonds, 
             _delay_task_resume_ant, 
             _delay_task_memory_checkpoint,
-            hble_delay_task_advertise_resume,
-			NULL};
+            hble_delay_task_advertise_resume};
         memcpy(_tasks, tasks, sizeof(_tasks));
         app_sched_event_put(NULL, 0, _on_connected);
     }
