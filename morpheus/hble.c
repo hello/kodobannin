@@ -267,6 +267,15 @@ bool hble_set_delay_task(uint8_t index, const delay_task_t task)
     return true;
 }
 
+static void
+_reset_delay_tasks(void){
+	hble_set_delay_task(TASK_PAUSE_ANT, _delay_task_pause_ant);
+	hble_set_delay_task(TASK_BOND_OP, _delay_task_store_bonds);
+	hble_set_delay_task(TASK_RESUME_ANT, _delay_task_resume_ant);
+	hble_set_delay_task(TASK_BLE_ADV_OP, hble_delay_task_advertise_resume);
+	hble_set_delay_task(TASK_MEM_CHECK, _delay_task_memory_checkpoint);
+}
+
 void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks, uint8_t task_len)
 {
     if(task_len > MAX_DELAY_TASKS)
@@ -296,15 +305,9 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         morpheus_ble_transmission_layer_reset();
         // When new connection comes in, always set it back to non-pairing mode.
         hble_set_advertising_mode(false);
-
+		_reset_delay_tasks();
         // define the tasks that will be performed when user disconnect
 		// NULL is not needed at the end as long as # of functions == MAX_DELAY_TASKS
-        delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
-            _delay_task_store_bonds, 
-            _delay_task_resume_ant, 
-            _delay_task_memory_checkpoint,
-            hble_delay_task_advertise_resume};
-        memcpy(_tasks, tasks, sizeof(_tasks));
         app_sched_event_put(NULL, 0, _on_connected);
     }
         break;
