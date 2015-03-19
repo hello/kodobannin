@@ -92,6 +92,10 @@ void hble_set_connected_callback(connected_callback_t callback)
     _connect_callback = callback;
 }
 
+static void _delay_task_noop()
+{
+	PRINTS("Delay Task No OP\r\n");
+}
 void hble_delay_task_advertise_resume()
 {
     PRINTS("try to resume adv\r\n");
@@ -245,13 +249,7 @@ static void _on_connected(void * p_event_data, uint16_t event_size)
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
-    delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
-        _delay_task_resume_ant, 
-        _delay_task_memory_checkpoint,
-        hble_delay_task_advertise_resume,
-        NULL
-    };
-    hble_start_delay_tasks(100, tasks, MAX_DELAY_TASKS);
+	hble_start_delay_tasks(100, tasks, MAX_DELAY_TASKS);
 }
 
 
@@ -321,6 +319,14 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
+
+			//default minus bond_op
+			hble_set_delay_task(TASK_PAUSE_ANT, _delay_task_pause_ant);
+			hble_set_delay_task(TASK_BOND_OP, _delay_task_noop);
+			hble_set_delay_task(TASK_RESUME_ANT, _delay_task_resume_ant);
+			hble_set_delay_task(TASK_BLE_ADV_OP, hble_delay_task_advertise_resume);
+			hble_set_delay_task(TASK_MEM_CHECK, _delay_task_memory_checkpoint);
+
             app_sched_event_put(NULL, 0, _on_advertise_timeout);
         }
         break;
