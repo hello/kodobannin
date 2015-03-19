@@ -314,6 +314,9 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
                                        BLE_GAP_SEC_STATUS_SUCCESS,
                                        &_sec_params));
         break;
+	case BLE_GAP_EVT_AUTH_STATUS:
+		DEBUG("BLE Auth Status: ", ble_evt->evt.gap_evt.params.auth_status.auth_status);
+		break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
 
