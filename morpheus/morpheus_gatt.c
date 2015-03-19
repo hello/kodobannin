@@ -391,7 +391,11 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
 		}
 		break;
 	case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-		PRINTS("Attri missing\r\n");
+		{
+			uint32_t ret;
+			ret = sd_ble_gatts_sys_attr_set(_connection_handle,NULL, 0);
+			DEBUG("Attribute missing: ", ret);
+		}
 		break;
     default:
         PRINTS("Unknown BLE event: ");
