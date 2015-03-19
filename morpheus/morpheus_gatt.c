@@ -376,6 +376,23 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
 		}
         //_dispatch_queue_packet();
         break;
+	case BLE_GAP_EVT_CONN_PARAM_UPDATE:
+		{
+			uint32_t sl = event->evt.gap_evt.params.conn_param_update.conn_params.slave_latency * 1.25;
+			uint32_t interval = event->evt.gap_evt.params.conn_param_update.conn_params.max_conn_interval * 1.25;
+			uint32_t sto  = event->evt.gap_evt.params.conn_param_update.conn_params.conn_sup_timeout * 10;
+			PRINTS("Param Update in ms (sl, int, sto)\r\n");
+			PRINT_DEC(&sl, 4);
+			PRINTS(" ");
+			PRINT_DEC(&interval, 4);
+			PRINTS(" ");
+			PRINT_DEC(&sto, 4);
+			PRINTS("\r\n");
+		}
+		break;
+	case BLE_GATTS_EVT_SYS_ATTR_MISSING:
+		PRINTS("Attri missing\r\n");
+		break;
     default:
         PRINTS("Unknown BLE event: ");
         PRINT_HEX(&event->header.evt_id, sizeof(event->header.evt_id));
