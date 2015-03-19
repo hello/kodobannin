@@ -397,6 +397,9 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
 			DEBUG("Attribute missing: ", ret);
 		}
 		break;
+	case BLE_GAP_EVT_CONN_SEC_UPDATE:
+		PRINTS("BLE Security Updated: \r\n");
+		break;
     default:
         PRINTS("Unknown BLE event: ");
         PRINT_HEX(&event->header.evt_id, sizeof(event->header.evt_id));
