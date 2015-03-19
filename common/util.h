@@ -3,6 +3,7 @@
 #pragma once
 
 #include <app_error.h>
+#include <nrf_soc.h>
 #include "message_uart.h"
 #include "hello_dfu.h"
 #include "app.h"
@@ -20,7 +21,9 @@ extern const uint8_t hex[16];
 #define BOOL_OK(expr) APP_ASSERT(expr);
 
 #include <simple_uart.h>
-#define PRINT_HEX(a,b) MSG_Uart_PrintHex((uint8_t*)a,b)
+#define PRINT_BYTE(a,b) MSG_Uart_PrintByte((const uint8_t*)a,b)
+#define PRINT_HEX(a,b) MSG_Uart_PrintHex((const uint8_t*)a,b)
+#define PRINT_DEC(a,b) MSG_Uart_PrintDec((const uint32_t*)a,b)
 #define PRINTS(a) MSG_Uart_Prints(a)
 #define PRINTC(a) MSG_Uart_Printc(a)
 #define SIMPRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
@@ -58,7 +61,9 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 #define AES128_BLOCK_SIZE 16
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
+void serial_print_byte(uint8_t *ptr, uint32_t len);
 void binary_to_hex(uint8_t *ptr, uint32_t len, uint8_t* out);
+void binary_to_dec(uint8_t *ptr, uint32_t len, uint8_t* out);
 
 /// Sums all the bytes from the start pointer for len bytes modulo 256, and returns 256 minus the result.
 uint8_t memsum(void *start, unsigned len);

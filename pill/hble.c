@@ -24,12 +24,15 @@
 #include "pill_gatt.h"
 
 #include "battery.h"
+#include "app_info.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 static ble_gap_sec_params_t _sec_params;
 static ble_bas_t  _ble_bas;
+#ifdef BONDING_REQUIRED
 static bool app_initialized = false;
+#endif
 
 static ble_uuid_t _service_uuid;
 static int8_t  _last_connected_central; 
@@ -148,9 +151,7 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
  */
 void hble_bond_manager_init()
 {
-    uint32_t            err_code;
     ble_bondmngr_init_t bond_init_data;
-    bool                bonds_delete;
 
     // Initialize persistent storage module.
     APP_OK(pstorage_init());
@@ -192,32 +193,6 @@ static void _advertising_data_init(uint8_t flags){
     scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
     scanrsp.uuids_complete.p_uuids = adv_uuids;
     APP_OK(ble_advdata_set(&advdata, &scanrsp));
-}
-
-
-static void _on_battery_level_measured(adc_t adc_result, uint32_t batt_level_milli_volts, uint8_t percentage_battery_level)
-{
-
-    PRINTS("Battery level measured,  Voltage:");
-    PRINT_HEX(&batt_level_milli_volts, sizeof(batt_level_milli_volts));
-    PRINTS(", Percentage: ");
-    PRINT_HEX(&percentage_battery_level, sizeof(percentage_battery_level));
-    PRINTS(", ADC: ");
-    PRINT_HEX(&adc_result, sizeof(adc_result));
-    PRINTS("\r\n");
-
-    battery_module_power_off();
-
-    uint32_t err_code = ble_bas_battery_level_update(&_ble_bas, adc_result);
-    if ((err_code != NRF_SUCCESS) &&
-        (err_code != NRF_ERROR_INVALID_STATE) &&
-        (err_code != BLE_ERROR_NO_TX_BUFFERS) &&
-        (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING))
-    {
-        APP_ERROR_HANDLER(err_code);
-    }
-
-    
 }
 
 
@@ -301,13 +276,6 @@ void hble_stack_init()
 
 }
 
-void hble_update_battery_level()
-{
-#ifdef PLATFORM_HAS_VERSION
-    battery_measurement_begin(_on_battery_level_measured);
-#endif
-}
-
 void hble_params_init(char* device_name)
 {
     // initialize GAP parameters
@@ -345,7 +313,7 @@ void hble_params_init(char* device_name)
         char hex_device_id[hex_device_id_len];
         char device_id[device_id_len];
 
-        memcpy(device_id, NRF_FICR->DEVICEID, device_id_len);
+        memcpy(device_id, (const uint8_t*)NRF_FICR->DEVICEID, device_id_len);
         memset(hex_device_id, 0, hex_device_id_len);
         const char* hex_table = "0123456789ABCDEF";
         

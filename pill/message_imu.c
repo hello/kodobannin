@@ -19,22 +19,19 @@
 #include "sensor_data.h"
 #include "message_base.h"
 #include "timedfifo.h"
-#include "boot_test.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
-#include "antutil.h"
 #endif
 
 #include <watchdog.h>
+#include "shake_detect.h"
 #include "gpio_nor.h"
 
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };
-
-static SPI_Context _spi_context;
 
 static app_timer_id_t _wom_timer;
 static app_gpiote_user_id_t _gpiote_user;
@@ -43,9 +40,9 @@ static uint32_t _last_active_time;
 static char * name = "IMU";
 static bool initialized = false;
 
-static MSG_Central_t * parent;
+static const MSG_Central_t * parent;
 static MSG_Base_t base;
-static uint32_t shake_counter;
+static uint8_t stuck_counter;
 
 
 static struct imu_settings _settings = {
@@ -176,13 +173,7 @@ static void _imu_switch_mode(bool is_active)
 
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-
-	uint8_t interrupt_status = imu_clear_interrupt_status();
-	if(interrupt_status & INT_STS_WOM_INT)
-	{
-		parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
-	}
-
+	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 }
 
 
@@ -209,6 +200,35 @@ static void _on_wom_timer(void* context)
     }
 }
 
+uint8_t
+clear_stuck_count(void)
+{
+	uint8_t value = stuck_counter;
+	stuck_counter = 0;
+	return value;
+}
+
+uint8_t
+fix_imu_interrupt(void){
+	uint32_t gpio_pin_state;
+	uint8_t value = 0;
+	if(initialized){
+		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
+			if(!(gpio_pin_state & (1<<IMU_INT))){
+				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+				if (stuck_counter < 15)
+				{
+					++stuck_counter;
+				}
+				value = stuck_counter; // talley imu int stuck low
+			}else{
+			}
+		}else{
+		}
+	}
+	return value;
+}
+
 static void _on_pill_pairing_guesture_detected(void){
 	static uint8_t counter;
     //TODO: send pairing request packets via ANT
@@ -216,7 +236,7 @@ static void _on_pill_pairing_guesture_detected(void){
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_shakedata_t));
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
-        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
 		pill_shakedata_t * shake_data = (pill_shakedata_t*)ant_data->payload;
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_SHAKING;
@@ -274,6 +294,7 @@ static MSG_Status _handle_self_test(void){
 	}
 	parent->unloadmod(&base);
 	parent->loadmod(&base);
+	return ret;
 }
 static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
@@ -294,11 +315,6 @@ static MSG_Status _handle_read_xyz(void){
 		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 	}
 #endif
-	if(shake_counter++ == 0){
-		/*
-		 *test_ok(parent, IMU_OK);
-		 */
-	}
 	return SUCCESS;
 }
 
@@ -312,6 +328,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 			break;
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
+			imu_clear_interrupt_status();
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();

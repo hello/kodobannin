@@ -6,3 +6,4 @@ patches/*
 .clang_complete
 */.DS_Store
 .DS_Store
+tools/auto_release.sh

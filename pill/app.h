@@ -17,13 +17,10 @@ enum {
  * BLE Advertising Strings
  */
 #define BLE_DEVICE_NAME       "Pill"
-#define BLE_MANUFACTURER_NAME "Hello Inc."
+#define BLE_MANUFACTURER_NAME "Hello"
 #define BLE_MODEL_NUM         FW_VERSION_STRING
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
-
-#define ANT_PROTOCOL_VER      (2)
-#define FIRMWARE_VERSION_8BIT (2)
 
 //#define BONDING_REQUIRED
 //#define DATA_SCIENCE_TASK
@@ -116,7 +113,9 @@ enum {
 #define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_SEC              (3600)
+#define BATTERY_INTERVAL_SEC                (600)
 #define MOTION_DATA_INTERVAL_SEC            (60)
+#define BATT_MEASURE_INTERVAL_SEC           (1200)  /* Measure battery level every 20 minutes */
 
 #define SHAKING_MOTION_THRESHOLD        (750000000)
 #define SLIDING_WINDOW_SIZE_SEC         (1)

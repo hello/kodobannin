@@ -30,9 +30,9 @@
 #include <ant_parameters.h>
 #endif
 #ifdef ANT_ENABLE
+#include "ant_user.h"
 #include "message_ant.h"
 #include "ant_devices.h"
-#include "antutil.h"
 #include "ant_driver.h"
 #include "ant_packet.h"
 #endif
@@ -72,7 +72,7 @@ static void _reply_time(void * p_event_data, uint16_t event_size)
 	uint64_t* current_time = get_time();
 	if(current_time)
 	{
-		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, current_time, sizeof(uint64_t), NULL);
+		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, (uint8_t *)current_time, sizeof(uint64_t), NULL);
 	}
 }
 
@@ -97,6 +97,7 @@ static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
 static void _calibrate_imu(void * p_event_data, uint16_t event_size)
 {
 #ifdef PLATFORM_HAS_IMU
+#include "imu.h"
         imu_calibrate_zero();
 #endif
         struct pill_command* command = (struct pill_command*)p_event_data;
@@ -116,15 +117,18 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
     case PILL_COMMAND_SEND_DATA:
-        //hlo_ble_notify(0xFEED, _daily_data, sizeof(_daily_data), _data_send_finished);
-		hlo_ble_notify(0xFEED, TF_GetAll(), TF_GetAll()->length, _data_send_finished);
+		hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_GET_TIME:
 			app_sched_event_put(NULL, 0, _reply_time);
             break;
     case PILL_COMMAND_SET_TIME:
         {
-			MSG_SEND_CMD(central,TIME,MSG_TimeCommand_t, TIME_SYNC, &command->set_time.bytes, sizeof(struct hlo_ble_time));
+			MSG_Data_t * ptime = MSG_Base_AllocateObjectAtomic(&command->set_time.bytes, sizeof(struct hlo_ble_time));
+			if(ptime){
+				central->dispatch( ADDR(BLE,0), ADDR(TIME, MSG_TIME_SYNC), ptime);
+				MSG_Base_ReleaseDataAtomic(ptime);
+			}
             break;
         }
     case PILL_COMMAND_START_ACCELEROMETER:
@@ -138,9 +142,6 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     	PRINTS("Streamming stopped\r\n");
     	break;
 	case PILL_COMMAND_GET_BATTERY_LEVEL:
-#ifdef DEBUG_BATT_LVL
-		hble_update_battery_level();
-#endif
 		break;
 	case PILL_COMMAND_WIPE_FIRMWARE:
 		REBOOT_TO_DFU();
@@ -300,22 +301,26 @@ void pill_ble_load_modules(void){
 				.device_type = HLO_ANT_DEVICE_TYPE_PILL,
 				.transmit_type = 1
 			};
-            MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_SET_ROLE, &role,sizeof(role));
-			MSG_SEND_CMD(central, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, &id, sizeof(id));
+
+			MSG_Data_t * prole = MSG_Base_AllocateObjectAtomic(&role, sizeof(role));
+			if(prole){
+				central->dispatch( ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_SET_ROLE), prole);
+				MSG_Base_ReleaseDataAtomic(prole);
+			}
+
+			MSG_Data_t * pid = MSG_Base_AllocateObjectAtomic(&id, sizeof(id));
+			if(pid){
+				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_ADD_DEVICE), pid);
+				MSG_Base_ReleaseDataAtomic(pid);
+			}
         }
 
 #endif
-		MSG_SEND_CMD(central, TIME, MSG_TimeCommand_t, TIME_SET_1S_RESOLUTION, NULL, 0);
-		MSG_SEND_CMD(central, CENTRAL, MSG_AppCommand_t, APP_LSMOD, NULL, 0);
+		central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_1S_RESOLUTION), NULL);
 #ifdef PLATFORM_HAS_VLED
-//		central->loadmod(MSG_LEDInit(central));
+  		central->loadmod(MSG_LEDInit(central));
 #endif
-
-        /*
-	    APP_OK(app_timer_create(&_ant_timer_id, APP_TIMER_MODE_REPEATED, _test_send_available_data_ant));
-        APP_OK(app_timer_start(_ant_timer_id, APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER), NULL));
-        */
-
+		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
     }else{
         PRINTS("FAIL");
     }

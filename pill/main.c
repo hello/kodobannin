@@ -44,6 +44,7 @@
 #include "battery.h"
 
 #include <twi_master.h>
+#include "gpio_nor.h"
 
 static void _init_rf_modules()
 {
@@ -91,13 +92,8 @@ static void _init_rf_modules()
     };
 
     hble_advertising_init(service_uuid);
-
     PRINTS("ble_init() done.\r\n");
-    hble_update_battery_level();
     hble_advertising_start();
-#else
-	battery_module_power_on();
-	battery_measurement_begin(NULL);
 #endif
     PRINTS("INIT DONE.\r\n");
 }
@@ -112,8 +108,7 @@ static void _load_watchdog()
 void _start()
 {
     
-    battery_module_power_off();
-
+	battery_init();
 	//HACK TO DISABLE PINS ON LED
 #ifdef PLATFORM_HAS_VLED
 	gpio_cfg_d0s1_output_disconnect_pull(LED3_ENABLE,NRF_GPIO_PIN_PULLDOWN);
@@ -148,6 +143,7 @@ void _start()
 
     _init_rf_modules();
     _load_watchdog();
+	battery_update_level();
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
