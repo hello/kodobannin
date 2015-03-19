@@ -249,7 +249,7 @@ static void _on_connected(void * p_event_data, uint16_t event_size)
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
-	hble_start_delay_tasks(100, tasks, MAX_DELAY_TASKS);
+	hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
 }
 
 
