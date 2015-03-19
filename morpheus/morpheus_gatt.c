@@ -398,7 +398,7 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
 		}
 		break;
 	case BLE_GAP_EVT_AUTH_STATUS:
-		DEBUG("Auth Status: ", event->evt.gap_evt.params.auth_status.auth_status);
+		DEBUG("BLE Auth Status: ", event->evt.gap_evt.params.auth_status.auth_status);
 		break;
     default:
         PRINTS("Unknown BLE event: ");
