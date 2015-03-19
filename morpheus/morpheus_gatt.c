@@ -400,6 +400,12 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
 	case BLE_GAP_EVT_CONN_SEC_UPDATE:
 		PRINTS("BLE Security Updated: \r\n");
 		break;
+	case BLE_GAP_EVT_AUTH_STATUS:
+		DEBUG("Auth Status: ", event->evt.gap_evt.params.auth_status.auth_status);
+		break;
+	case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
+		PRINTS("BLE Security Request: \r\n");
+		break;
     default:
         PRINTS("Unknown BLE event: ");
         PRINT_HEX(&event->header.evt_id, sizeof(event->header.evt_id));
