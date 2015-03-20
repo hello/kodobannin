@@ -115,19 +115,20 @@ static void _delay_task_store_bonds()
 		case ERASE_1ST_BOND:
 			PRINTS("Erase 1st");
 			hble_erase_1st_bond();
-			_bond_mode = BOND_SAVE;
 			break;
 		case ERASE_OTHER_BOND:
 			PRINTS("Erase Other");
 			_delay_tasks_erase_other_bonds();
-			_bond_mode = BOND_SAVE;
 			break;
 		case ERASE_ALL_BOND:
 			PRINTS("Erase all");
 			_delay_tasks_erase_other_bonds();
-			_bond_mode = BOND_SAVE;
+			break;
+		case BOND_NO_OP:
+			PRINTS("No Op");
 			break;
 	}
+	_bond_mode = BOND_SAVE;
 	PRINTS("\r\n");
 #endif
 }

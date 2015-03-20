@@ -32,6 +32,7 @@ typedef enum{
 	ERASE_1ST_BOND,
 	ERASE_OTHER_BOND,
 	ERASE_ALL_BOND,
+    BOND_NO_OP,
 }bond_save_mode;
 
 //call above api before refreshing
