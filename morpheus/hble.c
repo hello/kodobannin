@@ -836,7 +836,7 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 		//disconnect
         APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
 	}else{
-        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+		uint32_t adv_err = sd_ble_gap_adv_stop();
 		APP_OK(_task_queue(_delay_task_pause_ant));
 		switch(m){
 			case BOND_SAVE:
@@ -856,7 +856,9 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 				break;
 		}
 		APP_OK(_task_queue(_delay_task_resume_ant));
-		APP_OK(_task_queue(hble_delay_task_advertise_resume));
+		if(adv_err == NRF_SUCCESS){
+			APP_OK(_task_queue(hble_delay_task_advertise_resume));
+		}
 		APP_OK(_task_queue(_delay_task_memory_checkpoint));
 		hble_start_delay_tasks();
 	}
