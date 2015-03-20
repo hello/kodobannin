@@ -19,8 +19,6 @@ void hble_services_init(void);
 void hble_advertising_init(ble_uuid_t service_uuid);
 void hble_advertising_start();
 void hble_set_advertising_mode(bool pairing_mode);
-void hble_erase_other_bonded_central();
-void hble_erase_all_bonded_central();
 bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_t* len);
 bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id);
 uint64_t hble_get_device_id();
@@ -32,6 +30,11 @@ void hble_set_advertise_callback(on_advertise_started_callback_t cb);
 void hble_set_bond_status_callback(bond_status_callback_t callback);
 void hble_set_connected_callback(connected_callback_t callback);
 
-void hble_delay_tasks_erase_bonds();
-void hble_delay_task_advertise_resume();
+typedef enum{
+	BOND_SAVE = 0,
+	ERASE_1ST_BOND,
+	ERASE_OTHER_BOND,
+	ERASE_ALL_BOND,
+}bond_save_mode;
+void hble_set_bond_save_mode(bond_save_mode m);
 

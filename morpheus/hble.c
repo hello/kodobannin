@@ -55,12 +55,7 @@ static uint8_t _task_write_index;
 static uint8_t _task_read_index;
 static uint8_t _task_count;
 
-static enum{
-	BOND_SAVE = 0,
-	ERASE_1ST_BOND,
-	ERASE_OTHER_BOND,
-	ERASE_ALL_BOND,
-}_bond_mode;
+bond_save_mode _bond_mode;
 
 static int32_t _task_queue(delay_task_t t){
 	int32_t ret = -1;
@@ -432,17 +427,9 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
         break;
     }
 }
-
-void hble_erase_other_bonded_central()
-{
-	_bond_mode = ERASE_OTHER_BOND;
+void hble_set_bond_save_mode(bond_save_mode m){
+	_bond_mode = m;
 }
-
-void hble_erase_all_bonded_central()
-{
-	_bond_mode = ERASE_ALL_BOND;
-}
-
 
 void hble_set_advertising_mode(bool pairing_mode)
 {
