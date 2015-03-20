@@ -4,14 +4,7 @@
 #include <ble_bondmngr.h>
 #include <ble.h>
 
-#define MAX_DELAY_TASKS         5
-
-#define TASK_PAUSE_ANT          0   /* task index for stop ant */
-#define TASK_BOND_OP            1   /* task index for bonding operations */
-#define TASK_RESUME_ANT         2   // task index for retsart ant
-#define TASK_BLE_ADV_OP         3   // task index for restart BLE advertise
-#define TASK_MEM_CHECK          4   /* task index for memory leak check */
-
+#define MAX_DELAY_TASKS         7
 
 typedef void(*hble_evt_handler_t)(ble_evt_t* ble_evt);
 typedef void(*delay_task_t)(void);
@@ -33,7 +26,6 @@ bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id
 uint64_t hble_get_device_id();
 
 bool hble_set_delay_task(uint8_t index, const delay_task_t task);
-void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks, uint8_t task_len);
 
 void hble_set_advertise_callback(on_advertise_started_callback_t cb);
 void hble_set_bond_status_callback(bond_status_callback_t callback);
