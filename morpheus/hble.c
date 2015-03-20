@@ -849,3 +849,6 @@ void hble_services_init(void)
     
     
 }
+int32_t hble_task_queue(delay_task_t t){
+	return _task_queue(t);
+}
