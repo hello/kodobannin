@@ -246,7 +246,7 @@ static void _hold_to_enter_pairing_mode()
 
 static void _hold_to_enter_normal_mode()
 {
-    hble_refresh_bonds(BOND_SAVE, false);
+    hble_refresh_bonds(BOND_NO_OP, false);
 }
 
 static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
