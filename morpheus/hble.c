@@ -48,6 +48,9 @@ static app_timer_id_t _delay_timer;
 static bond_status_callback_t _bond_status_callback;
 static connected_callback_t _connect_callback;
 static on_advertise_started_callback_t _on_advertise_started;
+static void hble_erase_1st_bond();
+static void _delay_tasks_erase_other_bonds();
+static void _delay_tasks_erase_other_bonds();
 ////
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
