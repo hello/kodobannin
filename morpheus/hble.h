@@ -34,5 +34,4 @@ void hble_set_connected_callback(connected_callback_t callback);
 
 void hble_delay_tasks_erase_bonds();
 void hble_delay_task_advertise_resume();
-void hble_erase_1st_bond();
 

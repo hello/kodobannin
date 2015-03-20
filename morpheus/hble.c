@@ -57,8 +57,9 @@ static uint8_t _task_count;
 
 static enum{
 	BOND_SAVE = 0,
+	ERASE_1ST_BOND,
 	ERASE_OTHER_BOND,
-	ERASE_ALL_BOND
+	ERASE_ALL_BOND,
 }_bond_mode;
 
 static int32_t _task_queue(delay_task_t t){
@@ -110,12 +111,16 @@ static void _delay_task_store_bonds()
 			APP_OK(ble_bondmngr_bonded_centrals_store());
 			PRINTS("bond saved\r\n");
 			break;
+		case ERASE_1ST_BOND:
+			hble_erase_1st_bond();
+			_bond_ = BOND_SAVE;
+			break;
 		case ERASE_OTHER_BOND:
 			_delay_tasks_erase_other_bonds();
 			_bond_ = BOND_SAVE;
 			break;
 		case ERASE_ALL_BOND:
-			hble_delay_tasks_erase_bonds();
+			_delay_tasks_erase_other_bonds();
 			_bond_ = BOND_SAVE;
 			break;
 	}
@@ -198,7 +203,7 @@ static void _delay_tasks_erase_other_bonds()
     }
 }
 
-void hble_erase_1st_bond()
+static void hble_erase_1st_bond()
 {
     uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
     APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
