@@ -869,7 +869,9 @@ int32_t hble_task_queue(delay_task_t t){
 void hble_refresh_bonds(){
 	if(hlo_ble_is_connected){
 		//disconnect
+        APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
 	}else{
         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+		_refresh_bonds();
 	}
 }
