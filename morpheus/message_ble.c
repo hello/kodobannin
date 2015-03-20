@@ -253,14 +253,11 @@ static void _hold_to_enter_pairing_mode()
     {
         // Stop BLE radio, because the 2nd task will resume it.
         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-        hble_set_delay_task(0, _erase_1st_bonds_and_enter_pairing_mode);
-        hble_set_delay_task(1, hble_delay_task_advertise_resume);
-        hble_set_delay_task(2, NULL);  // Indicates delay task end.
 
-        // If not connected, the delay task will not 
-        // triggered by disconnect, we need to manually 
-        // start it.
-        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+        hble_task_queue(_erase_1st_bonds_and_enter_pairing_mode);
+        hble_task_queue(hble_delay_task_advertise_resume);
+
+        hble_start_delay_tasks();
     }else{
         hble_set_delay_task(TASK_BOND_OP, _erase_1st_bonds_and_enter_pairing_mode);
         // Need to wait the delay task to do the actual wipe.
