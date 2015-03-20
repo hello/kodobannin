@@ -323,13 +323,14 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
                 if(!hlo_ble_is_connected()){
                     // Stop BLE radio, because the 2nd task will resume it.
                     APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-                    hble_set_delay_task(0, hble_delay_tasks_erase_bonds);
-                    hble_set_delay_task(1, hble_delay_task_advertise_resume);
-                    hble_set_delay_task(2, NULL);  // Indicates delay task end.
+
+                    hble_task_queue(hble_delay_tasks_erase_bonds);
+                    hble_task_queue(hble_delay_task_advertise_resume);
+
                     // If not connected, the delay task will not 
                     // triggered by disconnect, we need to manually 
                     // start it.
-                    hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+                    hble_start_delay_tasks();
                 }else{
                     hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
                     MSG_Base_AcquireDataAtomic(data);
