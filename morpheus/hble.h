@@ -25,6 +25,7 @@ bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_
 bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id);
 uint64_t hble_get_device_id();
 
+void hble_start_delay_tasks(void);
 int32_t hble_task_queue(delay_task_t t);
 
 void hble_set_advertise_callback(on_advertise_started_callback_t cb);

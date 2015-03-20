@@ -48,7 +48,6 @@ static app_timer_id_t _delay_timer;
 static bond_status_callback_t _bond_status_callback;
 static connected_callback_t _connect_callback;
 static on_advertise_started_callback_t _on_advertise_started;
-static void hble_start_delay_tasks(void);
 ////
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
@@ -267,7 +266,7 @@ static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 
 
 
-static void hble_start_delay_tasks(void){
+void hble_start_delay_tasks(void){
     APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
 }
 
