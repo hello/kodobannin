@@ -34,8 +34,6 @@ typedef enum{
 	ERASE_ALL_BOND,
 }bond_save_mode;
 
-void hble_set_advertising_mode(bool pairing_mode);
-void hble_set_bond_save_mode(bond_save_mode m);
 //call above api before refreshing
-void hble_refresh_bonds();
+void hble_refresh_bonds(bond_save_mode m, bool pairing_mode);
 

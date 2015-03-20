@@ -310,7 +310,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         // Reset transmission layer, clean out error states.
         morpheus_ble_transmission_layer_reset();
         // When new connection comes in, always set it back to non-pairing mode.
-        hble_set_advertising_mode(false);
+		_pairing_mode = false;
 
 		//sets default tasks
 		_delay_task_pause_ant();
@@ -433,15 +433,6 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
         break;
     }
 }
-void hble_set_bond_save_mode(bond_save_mode m){
-	_bond_mode = m;
-}
-
-void hble_set_advertising_mode(bool pairing_mode)
-{
-    _pairing_mode = pairing_mode;
-}
-
 /**@brief Function for the Bond Manager initialization.
  */
 void hble_bond_manager_init()
@@ -864,8 +855,12 @@ void hble_services_init(void)
     
     
 }
-void hble_refresh_bonds(){
-	if(hlo_ble_is_connected){
+void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
+
+    _pairing_mode = pairing_mode;
+	_bond_mode = m;
+
+	if(hlo_ble_is_connected()){
 		//disconnect
         APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
 	}else{
