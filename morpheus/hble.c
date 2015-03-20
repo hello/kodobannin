@@ -55,6 +55,12 @@ static uint8_t _task_write_index;
 static uint8_t _task_read_index;
 static uint8_t _task_count;
 
+static enum{
+	BOND_SAVE = 0,
+	ERASE_OTHER_BOND,
+	ERASE_ALL_BOND
+}_bond_mode;
+
 static int32_t _task_queue(delay_task_t t){
 	int32_t ret = -1;
 	CRITICAL_REGION_ENTER();
@@ -99,8 +105,20 @@ static void _delay_task_resume_ant()
 static void _delay_task_store_bonds()
 {
 #ifdef BONDING_REQUIRED
-    APP_OK(ble_bondmngr_bonded_centrals_store());
-    PRINTS("bond saved\r\n");
+	switch(_bond_mode){
+		case BOND_SAVE:
+			APP_OK(ble_bondmngr_bonded_centrals_store());
+			PRINTS("bond saved\r\n");
+			break;
+		case ERASE_OTHER_BOND:
+			_delay_tasks_erase_other_bonds();
+			_bond_ = BOND_SAVE;
+			break;
+		case ERASE_ALL_BOND:
+			hble_delay_tasks_erase_bonds();
+			_bond_ = BOND_SAVE;
+			break;
+	}
 #endif
 }
 
@@ -412,12 +430,12 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 
 void hble_erase_other_bonded_central()
 {
-    hble_set_delay_task(TASK_BOND_OP, _delay_tasks_erase_other_bonds);
+	_bond_mode = ERASE_OTHER_BOND;
 }
 
 void hble_erase_all_bonded_central()
 {
-    hble_set_delay_task(TASK_BOND_OP, hble_delay_tasks_erase_bonds);
+	_bond_mode = ERASE_ALL_BOND;
 }
 
 
