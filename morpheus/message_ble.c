@@ -237,29 +237,18 @@ static bool _is_bond_db_full()
     return false;
 }
 
-static void _erase_1st_bonds_and_enter_pairing_mode()
-{
-    if(_is_bond_db_full())
-    {
-        hble_erase_1st_bond();
-    }
-
-    hble_set_advertising_mode(true);
-}
-
 static void _hold_to_enter_pairing_mode()
 {
+    if(_is_bond_db_full()){
+        hble_set_bond_save_mode(ERASE_1ST_BOND);
+        hble_set_advertising_mode(true);
+    }
+
     if(!hlo_ble_is_connected())
     {
         // Stop BLE radio, because the 2nd task will resume it.
         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-
-        hble_task_queue(_erase_1st_bonds_and_enter_pairing_mode);
-        hble_task_queue(hble_delay_task_advertise_resume);
-
-        hble_start_delay_tasks();
     }else{
-        hble_set_delay_task(TASK_BOND_OP, _erase_1st_bonds_and_enter_pairing_mode);
         // Need to wait the delay task to do the actual wipe.
     }
 }
@@ -638,7 +627,7 @@ void message_ble_reset()
 static void _erase_bonded_users(){
     PRINTS("Trying to erase paired centrals....\r\n");
 
-    hble_erase_other_bonded_central();
+    hble_set_bond_save_mode(ERASE_OTHER_BOND);
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
     
