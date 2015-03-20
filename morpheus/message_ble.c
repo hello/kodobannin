@@ -240,16 +240,13 @@ static bool _is_bond_db_full()
 static void _hold_to_enter_pairing_mode()
 {
     if(_is_bond_db_full()){
-        hble_set_bond_save_mode(ERASE_1ST_BOND);
-        hble_set_advertising_mode(true);
-        hble_refresh_bonds();
+        hble_refresh_bonds(ERASE_1ST_BOND, true);
     }
 }
 
 static void _hold_to_enter_normal_mode()
 {
-    hble_set_advertising_mode(false);
-    hble_refresh_bonds();
+    hble_refresh_bonds(BOND_SAVE, false);
 }
 
 static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
@@ -286,9 +283,7 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
                 break;
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 PRINTS("Factory reset from CC3200..\r\n");
-                hble_set_advertising_mode(true);
-                hble_set_bond_save_mode(ERASE_ALL_BOND);
-                hble_refresh_bonds();
+                hble_refresh_bonds(ERASE_ALL_BOND, true);
                 //notify anyway
                 MSG_Base_AcquireDataAtomic(data);
                 hlo_ble_notify(0xB00B, data->buf, data->len,
@@ -598,8 +593,9 @@ void message_ble_reset()
 static void _erase_bonded_users(){
     PRINTS("Trying to erase paired centrals....\r\n");
 
-    hble_set_bond_save_mode(ERASE_OTHER_BOND);
-    hble_refresh_bonds();
+    //TODO what's the behavior for this?
+    hble_refresh_bonds(ERASE_OTHER_BOND, true);
+
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
     
