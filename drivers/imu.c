@@ -202,7 +202,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
     imu_set_accel_freq(sampling_rate);
     
     _register_write(REG_CTRL_4, (BLOCKDATA_UPDATE | HIGHPASS_AOI_INT1));
-    _register_write(REG_CTRL_6, (INT_ACTIVE));
+ // _register_write(REG_CTRL_6, (INT_ACTIVE)); // active low
     _register_write(REG_INT1_CFG, 0x3F); //all axis
     _register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
     _register_write(REG_CTRL_3, (INT1_AOI1));
