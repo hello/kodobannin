@@ -291,6 +291,14 @@ void hble_start_delay_tasks(void){
     APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
 }
 
+static void _refresh_bonds(void){
+		APP_OK(_task_queue(_delay_task_pause_ant));
+		APP_OK(_task_queue(_delay_task_store_bonds));
+		APP_OK(_task_queue(_delay_task_resume_ant));
+		APP_OK(_task_queue(hble_delay_task_advertise_resume));
+		APP_OK(_task_queue(_delay_task_memory_checkpoint));
+		hble_start_delay_tasks();
+}
 static void _on_ble_evt(ble_evt_t* ble_evt)
 {
     //static ble_gap_evt_auth_status_t _auth_status;
@@ -313,14 +321,8 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     }
         break;
     case BLE_GAP_EVT_DISCONNECTED:
-		APP_OK(_task_queue(_delay_task_pause_ant));
-		APP_OK(_task_queue(_delay_task_store_bonds));
-		APP_OK(_task_queue(_delay_task_resume_ant));
-		APP_OK(_task_queue(hble_delay_task_advertise_resume));
-		APP_OK(_task_queue(_delay_task_memory_checkpoint));
-
+		_refresh_bonds();
         app_sched_event_put(NULL, 0, _on_disconnect);
-		hble_start_delay_tasks();
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
         APP_OK(sd_ble_gap_sec_params_reply(hlo_ble_get_connection_handle(),
@@ -863,4 +865,11 @@ void hble_services_init(void)
 }
 int32_t hble_task_queue(delay_task_t t){
 	return _task_queue(t);
+}
+void hble_refresh_bonds(){
+	if(hlo_ble_is_connected){
+		//disconnect
+	}else{
+        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
+	}
 }
