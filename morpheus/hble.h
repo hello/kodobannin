@@ -29,6 +29,7 @@ int32_t hble_task_queue(delay_task_t t);
 void hble_set_advertise_callback(on_advertise_started_callback_t cb);
 void hble_set_bond_status_callback(bond_status_callback_t callback);
 void hble_set_connected_callback(connected_callback_t callback);
+void hble_delay_task_advertise_resume();
 
 typedef enum{
 	BOND_SAVE = 0,
