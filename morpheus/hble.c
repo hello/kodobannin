@@ -293,13 +293,12 @@ static void hble_start_delay_tasks(void){
     APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
 }
 
-static void _refresh_bonds(void){
+static void _push_default_bond_action(void){
 		APP_OK(_task_queue(_delay_task_pause_ant));
 		APP_OK(_task_queue(_delay_task_store_bonds));
 		APP_OK(_task_queue(_delay_task_resume_ant));
 		APP_OK(_task_queue(hble_delay_task_advertise_resume));
 		APP_OK(_task_queue(_delay_task_memory_checkpoint));
-		hble_start_delay_tasks();
 }
 static void _on_ble_evt(ble_evt_t* ble_evt)
 {
@@ -323,7 +322,8 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     }
         break;
     case BLE_GAP_EVT_DISCONNECTED:
-		_refresh_bonds();
+		_push_default_bond_action();
+		hble_start_delay_tasks();
         app_sched_event_put(NULL, 0, _on_disconnect);
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
