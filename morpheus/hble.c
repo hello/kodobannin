@@ -105,24 +105,30 @@ static void _delay_task_resume_ant()
 static void _delay_task_store_bonds()
 {
 #ifdef BONDING_REQUIRED
+
+	PRINTS("BLE Bond: ");
 	switch(_bond_mode){
 		case BOND_SAVE:
+			PRINTS("Save");
 			APP_OK(ble_bondmngr_bonded_centrals_store());
-			PRINTS("bond saved\r\n");
 			break;
 		case ERASE_1ST_BOND:
+			PRINTS("Erase 1st");
 			hble_erase_1st_bond();
 			_bond_mode = BOND_SAVE;
 			break;
 		case ERASE_OTHER_BOND:
+			PRINTS("Erase Other");
 			_delay_tasks_erase_other_bonds();
 			_bond_mode = BOND_SAVE;
 			break;
 		case ERASE_ALL_BOND:
+			PRINTS("Erase all");
 			_delay_tasks_erase_other_bonds();
 			_bond_mode = BOND_SAVE;
 			break;
 	}
+	PRINTS("\r\n");
 #endif
 }
 
@@ -365,7 +371,7 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 static void _on_sys_evt(uint32_t sys_evt)
 {
     PRINTS("_on_sys_evt: ");
-    PRINT_HEX(&sys_evt, sizeof(sys_evt));
+    PRINT_HEX(&sys_evt, 1);
     PRINTS("\r\n");
 
 #ifdef BONDING_REQUIRED
