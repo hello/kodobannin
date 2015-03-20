@@ -271,13 +271,12 @@ static void _hold_to_enter_normal_mode()
         // Stop BLE radio, because the 2nd task will resume it.
         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
         hble_set_advertising_mode(false);
-        hble_set_delay_task(0, hble_delay_task_advertise_resume);
-        hble_set_delay_task(1, NULL); // Indicates delay task end.
 
+        hble_task_queue(hble_delay_task_advertise_resume);
         // If not connected, the delay task will not 
         // triggered by disconnect, we need to manually 
         // start it.
-        hble_start_delay_tasks(APP_ADV_INTERVAL, NULL, 0);
+        hble_start_delay_tasks();
     }else{
         // Do nothing
     }
