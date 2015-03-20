@@ -235,20 +235,14 @@ static void hble_erase_1st_bond()
 
 static void _delay_task_memory_checkpoint()
 {
-    if(MSG_Base_HasMemoryLeak()){
-        PRINTS("Possible memory leak detected!\r\n");
-        uint8_t free_pages = 0;
-#ifndef MSG_BASE_USE_BIG_POOL
-        free_pages = MSG_Base_FreeCount();
-#else
-        free_pages = MSG_Base_FreeCount() + MSG_Base_BigPoolFreeCount();
-#endif
-        PRINTS("Free page count: ");
-        PRINT_HEX(&free_pages, sizeof(free_pages));
-        PRINTS("\r\n");
-    }else{
-        PRINTS("No memory leak.\r\n");
-    }
+	uint8_t small, big;
+	small = MSG_Base_FreeCount();
+	big = MSG_Base_BigPoolFreeCount();
+	PRINTS("Top Mem Free: ");
+	PRINT_HEX(&small, 1);
+	PRINTS(", ");
+	PRINT_HEX(&big, 1);
+	PRINTS("\r\n");
 }
 
 static void _delay_tasks(void* context)
