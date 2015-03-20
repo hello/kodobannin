@@ -59,7 +59,6 @@ static uint8_t _task_write_index;
 static uint8_t _task_read_index;
 static uint8_t _task_count;
 
-bond_save_mode _bond_mode;
 
 static int32_t _task_queue(delay_task_t t){
 	int32_t ret = -1;
@@ -105,32 +104,14 @@ static void _delay_task_resume_ant()
 static void _delay_task_store_bonds()
 {
 #ifdef BONDING_REQUIRED
-
-	PRINTS("BLE Bond: ");
-	switch(_bond_mode){
-		case BOND_SAVE:
-			PRINTS("Save");
-			APP_OK(ble_bondmngr_bonded_centrals_store());
-			break;
-		case ERASE_1ST_BOND:
-			PRINTS("Erase 1st");
-			hble_erase_1st_bond();
-			break;
-		case ERASE_OTHER_BOND:
-			PRINTS("Erase Other");
-			_delay_tasks_erase_other_bonds();
-			break;
-		case ERASE_ALL_BOND:
-			PRINTS("Erase all");
-			_delay_tasks_erase_other_bonds();
-			break;
-		case BOND_NO_OP:
-			PRINTS("No Op");
-			break;
-	}
-	_bond_mode = BOND_SAVE;
-	PRINTS("\r\n");
+	PRINTS("BLE Bond Save \r\n");
+	APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
+}
+static void _delay_tasks_erase_bonds()
+{
+    PRINTS("BLE Bond Delete All");
+    APP_OK(ble_bondmngr_bonded_centrals_delete());
 }
 
 void hble_set_advertise_callback(on_advertise_started_callback_t cb)
@@ -160,12 +141,6 @@ void hble_delay_task_advertise_resume()
     PRINTS("adv restarted\r\n");
 }
 
-void hble_delay_tasks_erase_bonds()
-{
-    PRINTS("Trying to erase paired centrals....\r\n");
-    APP_OK(ble_bondmngr_bonded_centrals_delete());
-    PRINTS("Erased\r\n");
-}
 
 static void _delay_tasks_erase_other_bonds()
 {
@@ -856,13 +831,33 @@ void hble_services_init(void)
 void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 
     _pairing_mode = pairing_mode;
-	_bond_mode = m;
 
 	if(hlo_ble_is_connected()){
 		//disconnect
         APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
 	}else{
         APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-		_refresh_bonds();
+		APP_OK(_task_queue(_delay_task_pause_ant));
+		switch(m){
+			case BOND_SAVE:
+				APP_OK(_task_queue(_delay_task_store_bonds));
+				break;
+			case ERASE_1ST_BOND:
+				APP_OK(_task_queue(hble_erase_1st_bond));
+				break;
+			case ERASE_OTHER_BOND:
+				APP_OK(_task_queue(_delay_tasks_erase_other_bonds));
+				break;
+			case ERASE_ALL_BOND:
+				APP_OK(_task_queue(_delay_tasks_erase_bonds));
+				break;
+			default:
+			case BOND_NO_OP:
+				break;
+		}
+		APP_OK(_task_queue(_delay_task_resume_ant));
+		APP_OK(_task_queue(hble_delay_task_advertise_resume));
+		APP_OK(_task_queue(_delay_task_memory_checkpoint));
+		hble_start_delay_tasks();
 	}
 }
