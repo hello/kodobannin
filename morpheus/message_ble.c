@@ -242,33 +242,14 @@ static void _hold_to_enter_pairing_mode()
     if(_is_bond_db_full()){
         hble_set_bond_save_mode(ERASE_1ST_BOND);
         hble_set_advertising_mode(true);
-    }
-
-    if(!hlo_ble_is_connected())
-    {
-        // Stop BLE radio, because the 2nd task will resume it.
-        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-    }else{
-        // Need to wait the delay task to do the actual wipe.
+        hble_refresh_bonds();
     }
 }
 
 static void _hold_to_enter_normal_mode()
 {
-    if(!hlo_ble_is_connected())
-    {
-        // Stop BLE radio, because the 2nd task will resume it.
-        APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-        hble_set_advertising_mode(false);
-
-        hble_task_queue(hble_delay_task_advertise_resume);
-        // If not connected, the delay task will not 
-        // triggered by disconnect, we need to manually 
-        // start it.
-        hble_start_delay_tasks();
-    }else{
-        // Do nothing
-    }
+    hble_set_advertising_mode(false);
+    hble_refresh_bonds();
 }
 
 static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
@@ -305,23 +286,13 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
                 break;
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 PRINTS("Factory reset from CC3200..\r\n");
-                if(!hlo_ble_is_connected()){
-                    // Stop BLE radio, because the 2nd task will resume it.
-                    APP_OK(sd_ble_gap_adv_stop());  // https://devzone.nordicsemi.com/question/15077/stop-advertising/
-
-                    hble_task_queue(hble_delay_tasks_erase_bonds);
-                    hble_task_queue(hble_delay_task_advertise_resume);
-
-                    // If not connected, the delay task will not 
-                    // triggered by disconnect, we need to manually 
-                    // start it.
-                    hble_start_delay_tasks();
-                }else{
-                    hble_erase_all_bonded_central(); // Need to wait the delay task to do the actual wipe.
-                    MSG_Base_AcquireDataAtomic(data);
-                    hlo_ble_notify(0xB00B, data->buf, data->len,
-                            &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
-                }
+                hble_set_advertising_mode(true);
+                hble_set_bond_save_mode(ERASE_ALL_BOND);
+                hble_refresh_bonds();
+                //notify anyway
+                MSG_Base_AcquireDataAtomic(data);
+                hlo_ble_notify(0xB00B, data->buf, data->len,
+                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
                 break;
             default:
                 // protobuf, dump the thing straight back?
@@ -628,6 +599,7 @@ static void _erase_bonded_users(){
     PRINTS("Trying to erase paired centrals....\r\n");
 
     hble_set_bond_save_mode(ERASE_OTHER_BOND);
+    hble_refresh_bonds();
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
     
