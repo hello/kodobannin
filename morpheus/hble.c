@@ -135,10 +135,8 @@ static void _delay_task_noop()
 }
 void hble_delay_task_advertise_resume()
 {
-    PRINTS("try to resume adv\r\n");
-    nrf_delay_ms(100);
+    PRINTS("Resume Adv\r\n");
     hble_advertising_start();
-    PRINTS("adv restarted\r\n");
 }
 
 
@@ -535,8 +533,6 @@ void hble_advertising_start()
 
     _advertising_data_init(flags);
     APP_OK(sd_ble_gap_adv_start(&adv_params));
-
-    PRINTS("Advertising started.\r\n");
 
     if(_on_advertise_started)
     {

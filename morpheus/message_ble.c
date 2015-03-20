@@ -49,7 +49,10 @@ static void _start_morpheus_dfu_process(void)
 
 static void _on_advertise_started(bool is_pairing_mode, uint16_t bond_count)
 {
-    PRINTS("advertise callback called\r\n");
+    PRINTS("Advertisement Started: ");
+    PRINT_HEX(&is_pairing_mode, 1);
+    PRINT_HEX(&bond_count, 1);
+    PRINTS("\r\n");
     MorpheusCommand advertising_command;
     memset(&advertising_command, 0, sizeof(advertising_command));
     advertising_command.type = is_pairing_mode ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
