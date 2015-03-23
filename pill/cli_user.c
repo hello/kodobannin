@@ -49,7 +49,7 @@ static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint1
                     PRINT_DEC(&result,3);
                     PRINTS(" V, ");
                     result = battery_get_percent_cached();
-                    if (value > 100 && value <9) {
+                    if (100 > result && result > 9) {
                         value = (result%3);
                         switch (value) {
                             case 0: PRINTS("+");break; // better than expected
