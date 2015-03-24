@@ -28,7 +28,7 @@
  * +----------------------------------------------------+
  **/
 
-#define ANT_PROTOCOL_VER      (2)
+#define ANT_PROTOCOL_VER      (3)
 
 
 typedef enum{
@@ -81,17 +81,13 @@ typedef enum{
     ANT_STATUS_CONNECTED
 }ANT_Status_t;
 
-#define ANT_ChannelID_t hlo_ant_device_t
 typedef struct{
     /* Called when a known and connected device sends a message */
     void (*on_message)(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg);
-
-    /* Called when an unknown device initiates advertisement */
-    void (*on_unknown_device)(const hlo_ant_device_t * id, MSG_Data_t * msg);
 
     void (*on_status_update)(const hlo_ant_device_t * id, ANT_Status_t status);
 }MSG_ANTHandler_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);
-/* returns the number of connected devices */
-uint8_t MSG_ANT_BondCount(void);
+/* Helper API an Object based on type */
+MSG_Data_t * INCREF MSG_ANT_AllocateObject(MSG_ANT_PillDataType_t type, void * payload);

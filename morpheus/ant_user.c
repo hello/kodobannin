@@ -33,12 +33,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         return;
     }
 
-    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
-    {
-        PRINTS("Internal error.\r\n");
-        return;
-    }
-
     // TODO, this shit needs to be tested on CC3200 side.
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
 
@@ -176,25 +170,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 
     }
     morpheus_ble_free_protobuf(&morpheus_command);
-    MSG_Base_ReleaseDataAtomic(msg);
-}
-
-static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
-    PRINTS("Unknown Device ID:");
-    PRINT_HEX(&_id->device_number, 2);
-    PRINTS("\r\n");
-    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
-    if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
-        self.staging_bond = (ANT_BondedDevice_t){
-            .id = *_id,
-            .full_uid = pill_data->UUID,
-        };
-        MSG_Data_t * pid = MSG_Base_AllocateObjectAtomic(_id, sizeof(*_id));
-        if(pid){
-            self.parent->dispatch( ADDR(ANT, 0), ADDR(ANT, MSG_ANT_ADD_DEVICE), pid);
-            MSG_Base_ReleaseDataAtomic(pid);
-        }
-    }
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
@@ -234,7 +209,6 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
 MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     static MSG_ANTHandler_t handler = {
         .on_message = _on_message,
-        .on_unknown_device = _on_unknown_device,
         .on_status_update = _on_status_update,
     };
     self.parent = central;
