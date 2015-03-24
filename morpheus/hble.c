@@ -313,10 +313,11 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_DISCONNECTED:
 		APP_OK(_task_queue(_delay_task_pause_ant));
-		APP_OK(_task_queue(_delay_task_store_bonds));
+		APP_OK(_queue_bond_task(_bonding_mode));
 		APP_OK(_task_queue(_delay_task_resume_ant));
 		APP_OK(_task_queue(hble_delay_task_advertise_resume));
 		APP_OK(_task_queue(_delay_task_memory_checkpoint));
+		_bonding_mode = BOND_SAVE;
 		hble_start_delay_tasks();
         app_sched_event_put(NULL, 0, _on_disconnect);
         break;
@@ -854,7 +855,7 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 	_bonding_mode = m;
 
 	if(hlo_ble_is_connected()){
-		//disconnect
+		//disconnect, delay task called from disconnect
         APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
 	}else{
 		uint32_t adv_err = sd_ble_gap_adv_stop();
