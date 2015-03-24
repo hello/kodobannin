@@ -244,6 +244,8 @@ static void _hold_to_enter_pairing_mode()
 {
     if(_is_bond_db_full()){
         hble_refresh_bonds(ERASE_1ST_BOND, true);
+    }else{
+        hble_refresh_bonds(BOND_NO_OP, true);
     }
 }
 
