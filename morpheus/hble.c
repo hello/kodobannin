@@ -866,6 +866,7 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 			APP_OK(_task_queue(hble_delay_task_advertise_resume));
 		}
 		APP_OK(_task_queue(_delay_task_memory_checkpoint));
+		_bonding_mode = BOND_SAVE;
 		hble_start_delay_tasks();
 	}
 }
