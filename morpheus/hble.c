@@ -267,6 +267,29 @@ static void hble_start_delay_tasks(void){
     APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
 }
 
+static uint32_t
+_queue_bond_task(bond_save_mode mode){
+	uint32_t ret = 0;
+	switch(mode){
+		case BOND_SAVE:
+			ret = _task_queue(_delay_task_store_bonds);
+			break;
+		case ERASE_1ST_BOND:
+			ret = _task_queue(hble_erase_1st_bond);
+			break;
+		case ERASE_OTHER_BOND:
+			ret = _task_queue(_delay_tasks_erase_other_bonds);
+			break;
+		case ERASE_ALL_BOND:
+			ret = _task_queue(_delay_tasks_erase_bonds);
+			break;
+		default:
+		case BOND_NO_OP:
+			break;
+	}
+	return ret;
+}
+
 static void _on_ble_evt(ble_evt_t* ble_evt)
 {
     //static ble_gap_evt_auth_status_t _auth_status;
@@ -836,23 +859,7 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 	}else{
 		uint32_t adv_err = sd_ble_gap_adv_stop();
 		APP_OK(_task_queue(_delay_task_pause_ant));
-		switch(m){
-			case BOND_SAVE:
-				APP_OK(_task_queue(_delay_task_store_bonds));
-				break;
-			case ERASE_1ST_BOND:
-				APP_OK(_task_queue(hble_erase_1st_bond));
-				break;
-			case ERASE_OTHER_BOND:
-				APP_OK(_task_queue(_delay_tasks_erase_other_bonds));
-				break;
-			case ERASE_ALL_BOND:
-				APP_OK(_task_queue(_delay_tasks_erase_bonds));
-				break;
-			default:
-			case BOND_NO_OP:
-				break;
-		}
+		APP_OK(_queue_bond_task(m));
 		APP_OK(_task_queue(_delay_task_resume_ant));
 		if(adv_err == NRF_SUCCESS){
 			APP_OK(_task_queue(hble_delay_task_advertise_resume));
