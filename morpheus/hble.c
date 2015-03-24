@@ -37,6 +37,7 @@ static uint16_t _morpheus_service_handle;
 static ble_gap_sec_params_t _sec_params;
 
 static bool _pairing_mode = false;
+static bond_save_mode _bonding_mode = BOND_SAVE;
 
 static ble_uuid_t _service_uuid;
 static uint64_t _device_id;
@@ -826,7 +827,8 @@ void hble_services_init(void)
 }
 void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 
-    _pairing_mode = pairing_mode;
+	_pairing_mode = pairing_mode;
+	_bonding_mode = m;
 
 	if(hlo_ble_is_connected()){
 		//disconnect
