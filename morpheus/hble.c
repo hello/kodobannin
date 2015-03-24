@@ -852,9 +852,9 @@ void hble_services_init(void)
 void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 
 	_pairing_mode = pairing_mode;
-	_bonding_mode = m;
 
 	if(hlo_ble_is_connected()){
+		_bonding_mode = m;
 		//disconnect, delay task called from disconnect
         APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
 	}else{
@@ -866,7 +866,6 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 			APP_OK(_task_queue(hble_delay_task_advertise_resume));
 		}
 		APP_OK(_task_queue(_delay_task_memory_checkpoint));
-		_bonding_mode = BOND_SAVE;
 		hble_start_delay_tasks();
 	}
 }
