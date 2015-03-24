@@ -4,6 +4,7 @@
 #include <string.h>
 #include "ant_driver.h"
 #include "app.h"
+#include "hble.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -36,6 +37,9 @@ _handle_command(int argc, char * argv[]){
             //release message object after dispatch to prevent memory leak
             MSG_Base_ReleaseDataAtomic(data);
         }
+    }
+    if( !match_command(argv[0], "factory") ){
+        hble_refresh_bonds(ERASE_ALL_BOND, true);
     }
     if( !match_command(argv[0], "resume") ){
         PRINTS("Resume radio = ");
