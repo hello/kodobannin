@@ -134,7 +134,7 @@ static void _delay_task_noop()
 {
 	PRINTS("Delay Task No OP\r\n");
 }
-void hble_delay_task_advertise_resume()
+static void _delay_task_advertise_resume()
 {
     PRINTS("Resume Adv\r\n");
     hble_advertising_start();
@@ -315,7 +315,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 		APP_OK(_task_queue(_delay_task_pause_ant));
 		APP_OK(_queue_bond_task(_bonding_mode));
 		APP_OK(_task_queue(_delay_task_resume_ant));
-		APP_OK(_task_queue(hble_delay_task_advertise_resume));
+		APP_OK(_task_queue(_delay_task_advertise_resume));
 		APP_OK(_task_queue(_delay_task_memory_checkpoint));
 		_bonding_mode = BOND_SAVE;
 		hble_start_delay_tasks();
@@ -328,7 +328,7 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
-			APP_OK(_task_queue(hble_delay_task_advertise_resume));
+			APP_OK(_task_queue(_delay_task_advertise_resume));
 			APP_OK(_task_queue(_delay_task_memory_checkpoint));
 
             app_sched_event_put(NULL, 0, _on_advertise_timeout);
@@ -863,7 +863,7 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 		APP_OK(_queue_bond_task(m));
 		APP_OK(_task_queue(_delay_task_resume_ant));
 		if(adv_err == NRF_SUCCESS){
-			APP_OK(_task_queue(hble_delay_task_advertise_resume));
+			APP_OK(_task_queue(_delay_task_advertise_resume));
 		}
 		APP_OK(_task_queue(_delay_task_memory_checkpoint));
 		hble_start_delay_tasks();
