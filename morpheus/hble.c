@@ -461,10 +461,7 @@ void hble_bond_manager_init()
 	err = ble_bondmngr_init(&bond_init_data);
 	if(err == NRF_ERROR_INVALID_DATA){
 		PRINTS("Bond Corruption\r\n");
-		ble_bondmngr_recover();
-		APP_OK(ble_bondmngr_bonded_centrals_delete());
-		nrf_delay_ms(1000);
-		REBOOT();
+		REBOOT_WITH_ERROR(GPREGRET_APP_RECOVER_BONDS);
 	}else{
 		APP_OK(err);
 	}
