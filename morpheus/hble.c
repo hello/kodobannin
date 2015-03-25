@@ -443,6 +443,7 @@ void hble_set_advertising_mode(bool pairing_mode)
 void hble_bond_manager_init()
 {
 
+	uint32_t err;
     ble_bondmngr_init_t bond_init_data;
     //PRINTS("pstorage_init() done.\r\n");
 
@@ -454,10 +455,27 @@ void hble_bond_manager_init()
 #ifdef IN_MEMORY_BONDING
     bond_init_data.bonds_delete            = true;
 #else
-    bond_init_data.bonds_delete            = false;
+	{
+		uint32_t reboot_err;
+		sd_power_gpregret_get(&reboot_err);
+		if(reboot_err & GPREGRET_APP_RECOVER_BONDS){
+			PRINTS("Attempt bond recovery.\r\n");
+			bond_init_data.bonds_delete            = true;
+			sd_power_gpregret_clr(GPREGRET_APP_RECOVER_BONDS);
+		}else{
+			bond_init_data.bonds_delete            = false;
+		}
+	}
 #endif
 
-    APP_OK(ble_bondmngr_init(&bond_init_data));
+	err = ble_bondmngr_init(&bond_init_data);
+	if(err == NRF_ERROR_INVALID_DATA){
+		PRINTS("Bond Corruption\r\n");
+		REBOOT_WITH_ERROR(GPREGRET_APP_RECOVER_BONDS);
+	}else{
+		APP_OK(err);
+	}
+
     //PRINTS("bond manager init.\r\n");
 }
 
