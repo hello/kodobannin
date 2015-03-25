@@ -434,6 +434,7 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
 void hble_bond_manager_init()
 {
 
+	uint32_t err;
     ble_bondmngr_init_t bond_init_data;
     //PRINTS("pstorage_init() done.\r\n");
 
@@ -448,7 +449,14 @@ void hble_bond_manager_init()
     bond_init_data.bonds_delete            = false;
 #endif
 
-    APP_OK(ble_bondmngr_init(&bond_init_data));
+	err = ble_bondmngr_init(&bond_init_data);
+	if(err == NRF_ERROR_INVALID_DATA){
+		PRINTS("Bond Corruption\r\n");
+		REBOOT();
+	}else{
+		APP_OK(err);
+	}
+
     //PRINTS("bond manager init.\r\n");
 }
 
