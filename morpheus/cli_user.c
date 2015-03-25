@@ -77,6 +77,9 @@ _handle_command(int argc, char * argv[]){
         sd_nvic_SystemReset();
     }
 #endif
+    if( !match_command(argv[0], "recover") ){
+		REBOOT_WITH_ERROR(GPREGRET_APP_RECOVER_BONDS);
+    }
 }
 
 MSG_CliUserListener_t *  Cli_User_Init(MSG_Central_t * parent, void * ctx){
