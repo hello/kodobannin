@@ -92,6 +92,10 @@ void hble_set_connected_callback(connected_callback_t callback)
     _connect_callback = callback;
 }
 
+static void _delay_task_noop()
+{
+	PRINTS("Delay Task No OP\r\n");
+}
 void hble_delay_task_advertise_resume()
 {
     PRINTS("try to resume adv\r\n");
@@ -245,13 +249,7 @@ static void _on_connected(void * p_event_data, uint16_t event_size)
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
-    delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
-        hble_delay_task_advertise_resume, 
-        _delay_task_resume_ant, 
-        _delay_task_memory_checkpoint,
-        NULL
-    };
-    hble_start_delay_tasks(100, tasks, MAX_DELAY_TASKS);
+	hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
 }
 
 
@@ -297,13 +295,14 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         // When new connection comes in, always set it back to non-pairing mode.
         hble_set_advertising_mode(false);
 
+		//sets default tasks
+		hble_set_delay_task(TASK_PAUSE_ANT, _delay_task_pause_ant);
+		hble_set_delay_task(TASK_BOND_OP, _delay_task_store_bonds);
+		hble_set_delay_task(TASK_RESUME_ANT, _delay_task_resume_ant);
+		hble_set_delay_task(TASK_BLE_ADV_OP, hble_delay_task_advertise_resume);
+		hble_set_delay_task(TASK_MEM_CHECK, _delay_task_memory_checkpoint);
         // define the tasks that will be performed when user disconnect
-        delay_task_t tasks[MAX_DELAY_TASKS] = { _delay_task_pause_ant, 
-            _delay_task_store_bonds, 
-            hble_delay_task_advertise_resume, 
-            _delay_task_resume_ant, 
-            _delay_task_memory_checkpoint};
-        memcpy(_tasks, tasks, sizeof(_tasks));
+		// NULL is not needed at the end as long as # of functions == MAX_DELAY_TASKS
         app_sched_event_put(NULL, 0, _on_connected);
     }
         break;
@@ -317,6 +316,14 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
+
+			//default minus bond_op
+			hble_set_delay_task(TASK_PAUSE_ANT, _delay_task_pause_ant);
+			hble_set_delay_task(TASK_BOND_OP, _delay_task_noop);
+			hble_set_delay_task(TASK_RESUME_ANT, _delay_task_resume_ant);
+			hble_set_delay_task(TASK_BLE_ADV_OP, hble_delay_task_advertise_resume);
+			hble_set_delay_task(TASK_MEM_CHECK, _delay_task_memory_checkpoint);
+
             app_sched_event_put(NULL, 0, _on_advertise_timeout);
         }
         break;
@@ -436,6 +443,7 @@ void hble_set_advertising_mode(bool pairing_mode)
 void hble_bond_manager_init()
 {
 
+	uint32_t err;
     ble_bondmngr_init_t bond_init_data;
     //PRINTS("pstorage_init() done.\r\n");
 
@@ -447,10 +455,27 @@ void hble_bond_manager_init()
 #ifdef IN_MEMORY_BONDING
     bond_init_data.bonds_delete            = true;
 #else
-    bond_init_data.bonds_delete            = false;
+	{
+		uint32_t reboot_err;
+		sd_power_gpregret_get(&reboot_err);
+		if(reboot_err & GPREGRET_APP_RECOVER_BONDS){
+			PRINTS("Attempt bond recovery.\r\n");
+			bond_init_data.bonds_delete            = true;
+			sd_power_gpregret_clr(GPREGRET_APP_RECOVER_BONDS);
+		}else{
+			bond_init_data.bonds_delete            = false;
+		}
+	}
 #endif
 
-    APP_OK(ble_bondmngr_init(&bond_init_data));
+	err = ble_bondmngr_init(&bond_init_data);
+	if(err == NRF_ERROR_INVALID_DATA){
+		PRINTS("Bond Corruption\r\n");
+		REBOOT_WITH_ERROR(GPREGRET_APP_RECOVER_BONDS);
+	}else{
+		APP_OK(err);
+	}
+
     //PRINTS("bond manager init.\r\n");
 }
 
