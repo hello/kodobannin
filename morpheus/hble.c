@@ -37,6 +37,7 @@ static uint16_t _morpheus_service_handle;
 static ble_gap_sec_params_t _sec_params;
 
 static bool _pairing_mode = false;
+static bond_save_mode _bonding_mode = BOND_SAVE;
 
 static ble_uuid_t _service_uuid;
 static uint64_t _device_id;
@@ -48,10 +49,42 @@ static app_timer_id_t _delay_timer;
 static bond_status_callback_t _bond_status_callback;
 static connected_callback_t _connect_callback;
 static on_advertise_started_callback_t _on_advertise_started;
+static void hble_start_delay_tasks(void);
+static void hble_erase_1st_bond();
+static void _delay_tasks_erase_other_bonds();
+static void _delay_tasks_erase_other_bonds();
 ////
 
 static delay_task_t _tasks[MAX_DELAY_TASKS];
-static uint8_t _task_index;
+static uint8_t _task_write_index;
+static uint8_t _task_read_index;
+static uint8_t _task_count;
+
+
+static int32_t _task_queue(delay_task_t t){
+	int32_t ret = -1;
+	CRITICAL_REGION_ENTER();
+	if(_task_count < MAX_DELAY_TASKS){
+		_tasks[_task_write_index] = t;
+		_task_write_index = (_task_write_index + 1) % MAX_DELAY_TASKS;
+		_task_count += 1;
+		ret = 0;
+	}
+	CRITICAL_REGION_EXIT();
+	return ret;
+}
+static delay_task_t _task_dequeue(){
+	delay_task_t ret = NULL;
+	CRITICAL_REGION_ENTER();
+	if(_task_count){
+		ret = _tasks[_task_read_index];
+		_task_read_index = (_task_read_index + 1) % MAX_DELAY_TASKS;
+		_task_count -= 1;
+	}
+	CRITICAL_REGION_EXIT();
+	return ret;
+}
+
 
 static void _delay_task_pause_ant()
 {
@@ -72,9 +105,14 @@ static void _delay_task_resume_ant()
 static void _delay_task_store_bonds()
 {
 #ifdef BONDING_REQUIRED
-    APP_OK(ble_bondmngr_bonded_centrals_store());
-    PRINTS("bond saved\r\n");
+	PRINTS("BLE Bond Save \r\n");
+	APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
+}
+static void _delay_tasks_erase_bonds()
+{
+    PRINTS("BLE Bond Delete All");
+    APP_OK(ble_bondmngr_bonded_centrals_delete());
 }
 
 void hble_set_advertise_callback(on_advertise_started_callback_t cb)
@@ -96,20 +134,12 @@ static void _delay_task_noop()
 {
 	PRINTS("Delay Task No OP\r\n");
 }
-void hble_delay_task_advertise_resume()
+static void _delay_task_advertise_resume()
 {
-    PRINTS("try to resume adv\r\n");
-    nrf_delay_ms(100);
+    PRINTS("Resume Adv\r\n");
     hble_advertising_start();
-    PRINTS("adv restarted\r\n");
 }
 
-void hble_delay_tasks_erase_bonds()
-{
-    PRINTS("Trying to erase paired centrals....\r\n");
-    APP_OK(ble_bondmngr_bonded_centrals_delete());
-    PRINTS("Erased\r\n");
-}
 
 static void _delay_tasks_erase_other_bonds()
 {
@@ -153,7 +183,7 @@ static void _delay_tasks_erase_other_bonds()
     }
 }
 
-void hble_erase_1st_bond()
+static void hble_erase_1st_bond()
 {
     uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
     APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
@@ -180,45 +210,26 @@ void hble_erase_1st_bond()
 
 static void _delay_task_memory_checkpoint()
 {
-    if(MSG_Base_HasMemoryLeak()){
-        PRINTS("Possible memory leak detected!\r\n");
-        uint8_t free_pages = 0;
-#ifndef MSG_BASE_USE_BIG_POOL
-        free_pages = MSG_Base_FreeCount();
-#else
-        free_pages = MSG_Base_FreeCount() + MSG_Base_BigPoolFreeCount();
-#endif
-        PRINTS("Free page count: ");
-        PRINT_HEX(&free_pages, sizeof(free_pages));
-        PRINTS("\r\n");
-    }else{
-        PRINTS("No memory leak.\r\n");
-    }
+	uint8_t small, big;
+	small = MSG_Base_FreeCount();
+	big = MSG_Base_BigPoolFreeCount();
+	PRINTS("Top Mem Free: ");
+	PRINT_HEX(&small, 1);
+	PRINTS(", ");
+	PRINT_HEX(&big, 1);
+	PRINTS("\r\n");
 }
 
 static void _delay_tasks(void* context)
 {
-    
-    if(_task_index == MAX_DELAY_TASKS)
-    {
+	delay_task_t t = _task_dequeue();
+    if(!t){
         PRINTS("All delay tasks done\r\n");
-        _last_bond_central_id = 0;
-        _task_index = 0;
         return;
-    }
-
-    if(_tasks[_task_index])
-    {
-        _tasks[_task_index]();
     }else{
-        PRINTS("All delay tasks done\r\n");
-        _last_bond_central_id = 0;
-        _task_index = 0;
-        return;
-    }
-    _task_index++;
-    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
-
+		t();
+		hble_start_delay_tasks();
+	}
 }
 
 static void _on_bond(void * p_event_data, uint16_t event_size)
@@ -234,7 +245,6 @@ static void _on_disconnect(void * p_event_data, uint16_t event_size)
 {
     // Reset transmission layer, clean out error states.
 	morpheus_ble_transmission_layer_reset();
-    hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
     PRINTS("delay task started\r\n");
 
 }
@@ -249,38 +259,35 @@ static void _on_connected(void * p_event_data, uint16_t event_size)
 
 static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 {
-	hble_start_delay_tasks(100, _tasks, MAX_DELAY_TASKS);
 }
 
 
-bool hble_set_delay_task(uint8_t index, const delay_task_t task)
-{
-    if(index > MAX_DELAY_TASKS - 1)
-    {
-        PRINTS("Delay task index too large\r\n");
-        return false;
-    }
 
-    _tasks[index] = task;
-    return true;
+static void hble_start_delay_tasks(void){
+    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
 }
 
-void hble_start_delay_tasks(uint32_t start_delay_ms, const delay_task_t* tasks, uint8_t task_len)
-{
-    if(task_len > MAX_DELAY_TASKS)
-    {
-        PRINTS("Too many tasks!\r\n");
-        return;
-    }
-
-    if(tasks != _tasks && tasks)
-    {
-        memset(_tasks, 0, sizeof(_tasks));
-        memcpy(_tasks, tasks, sizeof(delay_task_t) * task_len);
-    }
-    //nrf_delay_ms(100);
-    _task_index = 0;
-    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(start_delay_ms, APP_TIMER_PRESCALER), NULL));
+static uint32_t
+_queue_bond_task(bond_save_mode mode){
+	uint32_t ret = 0;
+	switch(mode){
+		case BOND_SAVE:
+			ret = _task_queue(_delay_task_store_bonds);
+			break;
+		case ERASE_1ST_BOND:
+			ret = _task_queue(hble_erase_1st_bond);
+			break;
+		case ERASE_OTHER_BOND:
+			ret = _task_queue(_delay_tasks_erase_other_bonds);
+			break;
+		case ERASE_ALL_BOND:
+			ret = _task_queue(_delay_tasks_erase_bonds);
+			break;
+		default:
+		case BOND_NO_OP:
+			break;
+	}
+	return ret;
 }
 
 static void _on_ble_evt(ble_evt_t* ble_evt)
@@ -293,20 +300,25 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         // Reset transmission layer, clean out error states.
         morpheus_ble_transmission_layer_reset();
         // When new connection comes in, always set it back to non-pairing mode.
-        hble_set_advertising_mode(false);
+		_pairing_mode = false;
 
 		//sets default tasks
-		hble_set_delay_task(TASK_PAUSE_ANT, _delay_task_pause_ant);
-		hble_set_delay_task(TASK_BOND_OP, _delay_task_store_bonds);
-		hble_set_delay_task(TASK_RESUME_ANT, _delay_task_resume_ant);
-		hble_set_delay_task(TASK_BLE_ADV_OP, hble_delay_task_advertise_resume);
-		hble_set_delay_task(TASK_MEM_CHECK, _delay_task_memory_checkpoint);
+		_delay_task_pause_ant();
+		APP_OK(_task_queue(_delay_task_resume_ant));
         // define the tasks that will be performed when user disconnect
 		// NULL is not needed at the end as long as # of functions == MAX_DELAY_TASKS
         app_sched_event_put(NULL, 0, _on_connected);
+		hble_start_delay_tasks();
     }
         break;
     case BLE_GAP_EVT_DISCONNECTED:
+		APP_OK(_task_queue(_delay_task_pause_ant));
+		APP_OK(_queue_bond_task(_bonding_mode));
+		APP_OK(_task_queue(_delay_task_resume_ant));
+		APP_OK(_task_queue(_delay_task_advertise_resume));
+		APP_OK(_task_queue(_delay_task_memory_checkpoint));
+		_bonding_mode = BOND_SAVE;
+		hble_start_delay_tasks();
         app_sched_event_put(NULL, 0, _on_disconnect);
         break;
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
@@ -316,15 +328,11 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
         break;
     case BLE_GAP_EVT_TIMEOUT:
         if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
-
-			//default minus bond_op
-			hble_set_delay_task(TASK_PAUSE_ANT, _delay_task_pause_ant);
-			hble_set_delay_task(TASK_BOND_OP, _delay_task_noop);
-			hble_set_delay_task(TASK_RESUME_ANT, _delay_task_resume_ant);
-			hble_set_delay_task(TASK_BLE_ADV_OP, hble_delay_task_advertise_resume);
-			hble_set_delay_task(TASK_MEM_CHECK, _delay_task_memory_checkpoint);
+			APP_OK(_task_queue(_delay_task_advertise_resume));
+			APP_OK(_task_queue(_delay_task_memory_checkpoint));
 
             app_sched_event_put(NULL, 0, _on_advertise_timeout);
+			hble_start_delay_tasks();
         }
         break;
     default:
@@ -353,7 +361,7 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 static void _on_sys_evt(uint32_t sys_evt)
 {
     PRINTS("_on_sys_evt: ");
-    PRINT_HEX(&sys_evt, sizeof(sys_evt));
+    PRINT_HEX(&sys_evt, 1);
     PRINTS("\r\n");
 
 #ifdef BONDING_REQUIRED
@@ -421,23 +429,6 @@ static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
         break;
     }
 }
-
-void hble_erase_other_bonded_central()
-{
-    hble_set_delay_task(TASK_BOND_OP, _delay_tasks_erase_other_bonds);
-}
-
-void hble_erase_all_bonded_central()
-{
-    hble_set_delay_task(TASK_BOND_OP, hble_delay_tasks_erase_bonds);
-}
-
-
-void hble_set_advertising_mode(bool pairing_mode)
-{
-    _pairing_mode = pairing_mode;
-}
-
 /**@brief Function for the Bond Manager initialization.
  */
 void hble_bond_manager_init()
@@ -585,8 +576,6 @@ void hble_advertising_start()
 
     _advertising_data_init(flags);
     APP_OK(sd_ble_gap_adv_start(&adv_params));
-
-    PRINTS("Advertising started.\r\n");
 
     if(_on_advertise_started)
     {
@@ -877,4 +866,24 @@ void hble_services_init(void)
 
     
     
+}
+void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
+
+	_pairing_mode = pairing_mode;
+
+	if(hlo_ble_is_connected()){
+		_bonding_mode = m;
+		//disconnect, delay task called from disconnect
+        APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
+	}else{
+		uint32_t adv_err = sd_ble_gap_adv_stop();
+		APP_OK(_task_queue(_delay_task_pause_ant));
+		APP_OK(_queue_bond_task(m));
+		APP_OK(_task_queue(_delay_task_resume_ant));
+		if(adv_err == NRF_SUCCESS){
+			APP_OK(_task_queue(_delay_task_advertise_resume));
+		}
+		APP_OK(_task_queue(_delay_task_memory_checkpoint));
+		hble_start_delay_tasks();
+	}
 }
