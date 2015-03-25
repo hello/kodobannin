@@ -19,8 +19,9 @@ typedef void(*bond_status_callback_t)(ble_bondmngr_evt_type_t t);
 typedef void(*connected_callback_t)(void);
 typedef void(*on_advertise_started_callback_t)(bool is_pairing, uint16_t bond_count);
 
-void hble_bond_manager_init();
+//call hble_stack_init before other inits
 void hble_stack_init();
+void hble_bond_manager_init();
 void hble_params_init(const char* device_name, uint64_t device_id, uint32_t middle_board_ver);
 void hble_services_init(void);
 void hble_advertising_init(ble_uuid_t service_uuid);
