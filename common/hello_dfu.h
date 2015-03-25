@@ -11,3 +11,6 @@
 
 /// Mask to boot app into dtm mode
 #define GPREGRET_APP_BOOT_TO_DTM ((uint32_t)0x04)
+
+/// Mask to boot app into bond recovery mode
+#define GPREGRET_APP_RECOVER_BONDS ((uint32_t)0x08)
