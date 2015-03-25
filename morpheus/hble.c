@@ -442,7 +442,17 @@ void hble_bond_manager_init()
 #ifdef IN_MEMORY_BONDING
     bond_init_data.bonds_delete            = true;
 #else
-    bond_init_data.bonds_delete            = false;
+	{
+		uint32_t reboot_err;
+		sd_power_gpregret_get(&reboot_err);
+		if(reboot_err & GPREGRET_APP_RECOVER_BONDS){
+			PRINTS("Attempt bond recovery.\r\n");
+			bond_init_data.bonds_delete            = true;
+			sd_power_gpregret_clr(GPREGRET_APP_RECOVER_BONDS);
+		}else{
+			bond_init_data.bonds_delete            = false;
+		}
+	}
 #endif
 
 	err = ble_bondmngr_init(&bond_init_data);
