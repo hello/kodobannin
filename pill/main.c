@@ -17,6 +17,8 @@
 #include <spi.h>
 #include <spi_nor.h>
 #include <util.h>
+#include "pstorage.h"
+#include "adc_calmgr.h"
 
 #ifdef PLATFORM_HAS_IMU
 #include "message_imu.h"
@@ -145,9 +147,12 @@ void _start()
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
 
+    ADC_CalMgr_Init();
+
     _init_rf_modules();
     _load_watchdog();
-	battery_update_level();
+
+    battery_update_level();
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

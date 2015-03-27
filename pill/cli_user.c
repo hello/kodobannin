@@ -7,10 +7,18 @@
 #include "message_time.h"
 #include "app.h"
 #include "battery.h"
+#include "adc_calmgr.h"
 #include <ble.h>
 
-static adc_t Vref, Vrel, Voff;
-static uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
+adc_t Vref, Vrel, Voff;
+uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
+
+ADC_CalValue_t calue = {
+     .res = 150, // thev
+     .type = 2, // pu/pd
+     .slope = 0x1BD5, // 7125
+     .offset = 0x010A //  226
+}, *p_calue;
 
 static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
@@ -149,6 +157,22 @@ _handle_command(int argc, char * argv[]){
     }
     if( !match_command(argv[0], "mon") ){
         cli_update_battery_level(0); // monitor droop
+    }
+    if( !match_command(argv[0], "add") ){
+        ADC_CalMgr_Add(p_calue);
+    }
+    if( !match_command(argv[0], "put") ){
+        ADC_CalMgr_Commit();
+    }
+    if( !match_command(argv[0], "num") ){
+        value = ADC_CalMgr_ForEach();
+        PRINT_DEC(&value,2);
+        PRINTS(" \r\n");
+    }
+    if( !match_command(argv[0], "get") ){
+        value = ADC_CalMgr_Query(2);
+        PRINT_DEC(&value,2);
+        PRINTS(" \r\n");
     }
     if( !match_command(argv[0], "cal") ){
         uint32_t slope;
