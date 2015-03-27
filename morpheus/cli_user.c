@@ -4,6 +4,7 @@
 #include <string.h>
 #include "ant_driver.h"
 #include "app.h"
+#include "hble.h"
 
 static struct{
     //parent is the reference to the dispatcher 
