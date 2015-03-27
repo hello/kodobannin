@@ -58,6 +58,12 @@ void debug_print_ticks(const char* const message, uint32_t start_ticks, uint32_t
 								}\
 							}while(0)
 #define REBOOT() sd_nvic_SystemReset()
+#define REBOOT_WITH_ERROR(err_mask) do{\
+								if(NRF_SUCCESS == sd_power_gpregret_set((uint32_t)err_mask)){\
+									sd_nvic_SystemReset();\
+								}\
+							}while(0)
+
 #define AES128_BLOCK_SIZE 16
 
 void serial_print_hex(uint8_t *ptr, uint32_t len);
