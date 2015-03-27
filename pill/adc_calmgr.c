@@ -187,7 +187,8 @@ uint32_t ADC_CalMgr_Add(const ADC_CalValue_t * p_value){
     {
         int i;
         for(i = 0; i < ADC_CAL_MANAGER_DATA_COUNT; i ++){
-            if(self.values[i].type == p_value->type){
+            if(self.values[i].pu == p_value->pu &&
+               self.values[i].pd == p_value->pd){
                 PRINTS("Already in flash");
                 return NRF_SUCCESS;
             }
@@ -203,9 +204,11 @@ uint32_t ADC_CalMgr_Remove(const ADC_CalValue_t * p_value){
         int i;
         ADC_CalValue_t * tmp = &self.values[self.cal_val_count - 1];
         for(i = 0; i < ADC_CAL_MANAGER_DATA_COUNT; i++){
-            if(self.values[i].type == p_value->type){
-                PRINTS("Erasing Type");
-                PRINT_HEX(&self.values[i].type, 2);
+            if(self.values[i].pu == p_value->pu &&
+               self.values[i].pd == p_value->pd){
+                PRINTS("Erasing PU/PD");
+                PRINT_HEX(&self.values[i].pu, 2);
+                PRINT_HEX(&self.values[i].pd, 2);
                 PRINTS("\r\n");
                 self.values[i] = *tmp;
                 self.cal_val_count--;
@@ -217,10 +220,11 @@ uint32_t ADC_CalMgr_Remove(const ADC_CalValue_t * p_value){
     PRINTS("Device not found\r\n");
     return 1;
 }
-ADC_CalValue_t * ADC_CalMgr_Query(const uint32_t type){
+ADC_CalValue_t * ADC_CalMgr_Query(const uint32_t pu, const uint32_t pd){
     int i;
     for(i = 0; i < self.cal_val_count; i++){
-        if(self.values[i].type == type){
+        if(self.values[i].pu == pu &&
+           self.values[i].pd == pd){
             return &self.values[i];
         }
     }

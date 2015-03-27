@@ -14,8 +14,8 @@ adc_t Vref, Vrel, Voff;
 uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
 
 ADC_CalValue_t calue = {
-     .res = 150, // thev
-     .type = 2, // pu/pd
+     .pu = 523, // pullup
+     .pd = 215, // pulldown
      .slope = 0x1BD5, // 7125
      .offset = 0x010A //  226
 }, *p_calue;
@@ -170,7 +170,7 @@ _handle_command(int argc, char * argv[]){
         PRINTS(" \r\n");
     }
     if( !match_command(argv[0], "get") ){
-        value = ADC_CalMgr_Query(2);
+        value = ADC_CalMgr_Query(523,215);
         PRINT_DEC(&value,2);
         PRINTS(" \r\n");
     }

@@ -6,8 +6,8 @@
  **/
 
 typedef struct{
-    uint32_t res;
-    uint32_t type; // pullup/down
+    uint32_t pu;
+    uint32_t pd;
     uint32_t slope;
     uint32_t offset;
 }ADC_CalValue_t;
@@ -25,7 +25,7 @@ uint32_t ADC_CalMgr_Commit(void);
 uint32_t ADC_CalMgr_Remove(const ADC_CalValue_t * id);
 
 //Queries the entry by adc id
-ADC_CalValue_t * ADC_CalMgr_Query(const uint32_t type);
+ADC_CalValue_t * ADC_CalMgr_Query(const uint32_t pu, const uint32_t pd);
 
 //erases all from flash
 uint32_t ADC_CalMgr_EraseAll(void);
