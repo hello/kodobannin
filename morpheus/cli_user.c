@@ -38,9 +38,6 @@ _handle_command(int argc, char * argv[]){
             MSG_Base_ReleaseDataAtomic(data);
         }
     }
-    if( !match_command(argv[0], "factory") ){
-        hble_refresh_bonds(ERASE_ALL_BOND, true);
-    }
     if( !match_command(argv[0], "resume") ){
         PRINTS("Resume radio = ");
         int32_t ret = hlo_ant_resume_radio();
