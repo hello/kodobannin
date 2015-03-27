@@ -4,7 +4,7 @@
 #include <ble_bondmngr.h>
 #include <ble.h>
 
-#define MAX_DELAY_TASKS         7
+#define MAX_DELAY_TASKS         10
 
 typedef void(*hble_evt_handler_t)(ble_evt_t* ble_evt);
 typedef void(*delay_task_t)(void);
