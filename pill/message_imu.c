@@ -19,22 +19,19 @@
 #include "sensor_data.h"
 #include "message_base.h"
 #include "timedfifo.h"
-#include "boot_test.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
-#include "antutil.h"
 #endif
 
 #include <watchdog.h>
+#include "shake_detect.h"
 #include "gpio_nor.h"
 
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };
-
-static SPI_Context _spi_context;
 
 static app_timer_id_t _wom_timer;
 static app_gpiote_user_id_t _gpiote_user;
@@ -43,9 +40,8 @@ static uint32_t _last_active_time;
 static char * name = "IMU";
 static bool initialized = false;
 
-static MSG_Central_t * parent;
+static const MSG_Central_t * parent;
 static MSG_Base_t base;
-static uint32_t shake_counter;
 static uint8_t stuck_counter;
 
 
@@ -240,7 +236,7 @@ static void _on_pill_pairing_guesture_detected(void){
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_shakedata_t));
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
-        MSG_ANT_PillData_t* ant_data = &data_page->buf;
+        MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
 		pill_shakedata_t * shake_data = (pill_shakedata_t*)ant_data->payload;
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_SHAKING;
@@ -298,6 +294,7 @@ static MSG_Status _handle_self_test(void){
 	}
 	parent->unloadmod(&base);
 	parent->loadmod(&base);
+	return ret;
 }
 static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
@@ -318,11 +315,6 @@ static MSG_Status _handle_read_xyz(void){
 		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 	}
 #endif
-	if(shake_counter++ == 0){
-		/*
-		 *test_ok(parent, IMU_OK);
-		 */
-	}
 	return SUCCESS;
 }
 

@@ -42,7 +42,7 @@ _play_test(int * out_r, int * out_g, int * out_b){
         {3    * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
     };
     int i;
-    animation_node_t * current;
+    const animation_node_t * current;
     for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
         if(self.counter >= seq[i].time){
             *out_r = seq[i].rgb[0];
@@ -66,7 +66,7 @@ _play_enter_factory_mode(int * out_r, int * out_g, int * out_b){
         {0.75 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
     };
     int i;
-    animation_node_t * current;
+    const animation_node_t * current;
     for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
         if(self.counter >= seq[i].time){
             *out_r = seq[i].rgb[0];
@@ -99,7 +99,7 @@ _play_boot_complete(int * out_r, int * out_g, int * out_b){
         {2.5 * BOOSTER_REFRESH_RATE, {0xff, 0xff, 0xff}, 0},
     };
     int i;
-    animation_node_t * current;
+    const animation_node_t * current;
     for(i = 0; i < sizeof(seq)/sizeof(seq[0]); i++){
         if(self.counter >= seq[i].time){
             *out_r = seq[i].rgb[0];
@@ -115,7 +115,6 @@ _play_boot_complete(int * out_r, int * out_g, int * out_b){
     return 0;
 }
 static int _on_cycle(int * out_r, int * out_g, int * out_b){
-    static int led;
     /*
      *PRINTS("cycle\r\n");
      */
