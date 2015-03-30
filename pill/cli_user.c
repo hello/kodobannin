@@ -171,8 +171,10 @@ _handle_command(int argc, char * argv[]){
         PRINTS(" \r\n");
     }
     if( !match_command(argv[0], "get") ){
-        value = ADC_CalMgr_Query(523,215);
-        PRINT_DEC(&value,2);
+        ADC_CalValue_t  * ret;
+        //TODO dyke what is the proper value to print
+        ret = ADC_CalMgr_Query(523,215);
+        PRINT_DEC(&ret->pu,2);
         PRINTS(" \r\n");
     }
     if( !match_command(argv[0], "cal") ){

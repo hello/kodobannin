@@ -83,7 +83,7 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 // presently using fixed offset 0x010A emperically derived by observing nRF51422 w/Vrgb at ground
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
 
-#define ADC_SLOPE 0x1BD5 /* 0x1BD5 /* range 0x1B75 thru 0x1C55 have been observed */
+#define ADC_SLOPE 0x1BD5 /* range 0x1B75 thru 0x1C55 have been observed */
 #define ADC_OFFSET 0x010A /* range 0x0108 thru 0x010E have been observed */
 #define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - _adc_config_offset) * 7125 ) / 1023 ) * 12 ) / 10 )
 
