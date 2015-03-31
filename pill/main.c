@@ -46,6 +46,7 @@
 #include "battery.h"
 
 #include <twi_master.h>
+#include "gpio_nor.h"
 
 static void _init_rf_modules()
 {
@@ -147,11 +148,11 @@ void _start()
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
 
-    ADC_CalMgr_Init();
 
     _init_rf_modules();
     _load_watchdog();
 
+    ADC_CalMgr_Init();
     battery_update_level();
 
     for(;;) {

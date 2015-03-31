@@ -6,19 +6,10 @@
 #include "message_base.h"
 #include <app_timer.h>
 
-
-typedef struct{
-    enum{
-        APP_PING=0,
-        APP_LSMOD,
-        APP_LOADBASE,
-        APP_UNLOAD
-    }cmd;
-    union{
-        MSG_Base_t * base;
-        MSG_ModuleType unloadtype;
-    }param;
-}MSG_AppCommand_t;
+typedef enum{
+    MSG_APP_PING = 0,
+    MSG_APP_LSMOD,
+}MSG_App_Commands;
 
 MSG_Central_t * MSG_App_Central( app_sched_event_handler_t unknown_handler );
 MSG_Base_t * MSG_App_Base(MSG_Central_t * parent);
