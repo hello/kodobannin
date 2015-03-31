@@ -44,6 +44,7 @@
 #include "battery.h"
 
 #include <twi_master.h>
+#include "gpio_nor.h"
 
 static void _init_rf_modules()
 {

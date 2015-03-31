@@ -33,12 +33,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         return;
     }
 
-    if(SUCCESS != MSG_Base_AcquireDataAtomic(msg))
-    {
-        PRINTS("Internal error.\r\n");
-        return;
-    }
-
     // TODO, this shit needs to be tested on CC3200 side.
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
 
@@ -135,19 +129,12 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                     PRINTS("\r\n");
 
                     if(self.pair_enable){
-
-                        MSG_Data_t* ble_cmd_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
-                        if(!ble_cmd_page)
-                        {
-                            PRINTS("No Memory!\r\n");
-                        }else{
-                            memset(ble_cmd_page->buf, 0, ble_cmd_page->len);
-                            MSG_BLECommand_t* ble_cmd = (MSG_BLECommand_t*)ble_cmd_page->buf;
-                            ble_cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                            ble_cmd->param.pill_uid = pill_data->UUID;
-
-                            self.parent->dispatch(src, (MSG_Address_t){BLE, 0}, ble_cmd_page);
+                        MSG_Data_t* ble_cmd_page = MSG_Base_AllocateObjectAtomic(&pill_data->UUID, sizeof(pill_data->UUID));
+                        if(ble_cmd_page){
+                            self.parent->dispatch(ADDR(ANT,0), ADDR(BLE, MSG_BLE_ACK_DEVICE_ADDED), ble_cmd_page);
                             MSG_Base_ReleaseDataAtomic(ble_cmd_page);
+                        }else{
+                            PRINTS("No Memory!\r\n");
                         }
                     }else{
                         morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_SHAKES;
@@ -183,21 +170,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 
     }
     morpheus_ble_free_protobuf(&morpheus_command);
-    MSG_Base_ReleaseDataAtomic(msg);
-}
-
-static void _on_unknown_device(const hlo_ant_device_t * _id, MSG_Data_t * msg){
-    PRINTS("Unknown Device ID:");
-    PRINT_HEX(&_id->device_number, 2);
-    PRINTS("\r\n");
-    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
-    if(pill_data->type == ANT_PILL_SHAKING && self.pair_enable){
-        self.staging_bond = (ANT_BondedDevice_t){
-            .id = *_id,
-            .full_uid = pill_data->UUID,
-        };
-        MSG_SEND_CMD(self.parent, ANT, MSG_ANTCommand_t, ANT_ADD_DEVICE, _id, sizeof(*_id));
-    }
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
@@ -218,12 +190,9 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
             if(id->device_number == self.staging_bond.id.device_number){
                 PRINTS("DEVICE CONNECTED\r\n");
                 PRINTS("Staging match");
-                MSG_Data_t * obj = MSG_Base_AllocateDataAtomic(sizeof(MSG_BLECommand_t));
+                MSG_Data_t * obj = MSG_Base_AllocateObjectAtomic(&self.staging_bond.full_uid, sizeof(self.staging_bond.full_uid));
                 if(obj){
-                    MSG_BLECommand_t * cmd = (MSG_BLECommand_t*)obj->buf;
-                    cmd->param.pill_uid = self.staging_bond.full_uid;
-                    cmd->cmd = BLE_ACK_DEVICE_ADDED;
-                    self.parent->dispatch( (MSG_Address_t){ANT,0}, (MSG_Address_t){BLE, 0}, obj);
+                    self.parent->dispatch( ADDR(ANT,0), ADDR(BLE, MSG_BLE_ACK_DEVICE_ADDED), obj);
                     MSG_Base_ReleaseDataAtomic(obj);
                 }
                 {
@@ -240,7 +209,6 @@ static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status)
 MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     static MSG_ANTHandler_t handler = {
         .on_message = _on_message,
-        .on_unknown_device = _on_unknown_device,
         .on_status_update = _on_status_update,
     };
     self.parent = central;

@@ -42,74 +42,12 @@ _flush(void){
 static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * message){
     MSG_Address_t default_src = {ANT, 0};
     self.user_handler->on_message(device, default_src, message);
-
-    /*
-    int src_submod = _find_paired(device);
-    if(src_submod >= 0){
-        default_src.submodule = (uint8_t)src_submod;
-        if(self.user_handler && self.user_handler->on_message)
-        {
-            self.user_handler->on_message(device, default_src, message);
-        }
-    }else{
-        if(self.user_handler && self.user_handler->on_unknown_device)
-        {
-            self.user_handler->on_unknown_device(device, message);
-        }
-    }
-    */
-    
-    //DEBUG print them out too
-    /*
-     *PRINTS("RAW: =\r\n");
-     *self.parent->dispatch(default_src, (MSG_Address_t){UART, 1}, message);
-     */
 }
-#include "boot_test.h"
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
-    if(dst.submodule == 0){
-        MSG_ANTCommand_t * antcmd = (MSG_ANTCommand_t*)data->buf;
-        switch(antcmd->cmd){
-            default:
-                break;
-            case ANT_SET_ROLE:
-                if(0 == hlo_ant_init(antcmd->param.role, hlo_ant_packet_init(&self.message_listener))){
-                    test_ok(self.parent, ANT_OK);
-                }
-                break;
-            case ANT_REMOVE_DEVICE:
-                {
-                    int i = _find_paired(&antcmd->param.device);
-                    if(i >= 0){
-                        hlo_ant_device_t * dev = &self.paired_devices[(uint8_t)i];
-                        dev->device_number = 0;
-                        if(self.user_handler && self.user_handler->on_status_update){
-                            self.user_handler->on_status_update(&antcmd->param.device, ANT_STATUS_DISCONNECTED);
-                        }
-                    }
-                }
-                break;
-            case ANT_ADD_DEVICE:
-                {
-                    int i = _find_empty();
-                    if(i >= 0){
-                        self.paired_devices[(uint8_t)i] = antcmd->param.device;
-                        if(self.user_handler && self.user_handler->on_status_update){
-                            self.user_handler->on_status_update(&antcmd->param.device, ANT_STATUS_CONNECTED);
-                        }
-                    }
-                }
-                break;
-            case ANT_HANDLE_MESSAGE:
-                {
-                    _handle_message(&antcmd->param.handle_message.device, antcmd->param.handle_message.message);
-                    MSG_Base_ReleaseDataAtomic(antcmd->param.handle_message.message);
-                }
-        }
-    }else if(dst.submodule <= DEFAULT_ANT_BOND_COUNT){
-        int idx = dst.submodule - 1;
-        //donp't have queue atm, dropping extra data for now
+    if(dst.submodule >= (uint8_t) MSG_ANT_CONNECTION_BASE &&
+            dst.submodule < (uint8_t)(MSG_ANT_CONNECTION_BASE + DEFAULT_ANT_BOND_COUNT)){
+        int idx = dst.submodule - MSG_ANT_CONNECTION_BASE;
         if(self.paired_devices[idx].device_number){
             int ret = hlo_ant_packet_send_message(&self.paired_devices[idx], data);
             if(ret == 0){
@@ -117,6 +55,51 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             }else{
                 //what do?
             }
+        }
+    }else{
+        switch(dst.submodule){
+            default:
+            case MSG_ANT_PING:
+                break;
+            case MSG_ANT_SET_ROLE:
+                if(data){
+                    hlo_ant_role * role = (hlo_ant_role*)data->buf;
+                    if(0 == hlo_ant_init(*role, hlo_ant_packet_init(&self.message_listener))){
+                    }
+                }
+                break;
+            case MSG_ANT_REMOVE_DEVICE:
+                if(data){
+                    hlo_ant_device_t * device = (hlo_ant_device_t*)data->buf;
+                    int i = _find_paired(device);
+                    if(i >= 0){
+                        hlo_ant_device_t * dev = &self.paired_devices[(uint8_t)i];
+                        dev->device_number = 0;
+                        if(self.user_handler && self.user_handler->on_status_update){
+                            self.user_handler->on_status_update(device, ANT_STATUS_DISCONNECTED);
+                        }
+                    }
+                }
+                break;
+            case MSG_ANT_ADD_DEVICE:
+                if(data){
+                    hlo_ant_device_t * device = (hlo_ant_device_t*)data->buf;
+                    int i = _find_empty();
+                    if(i >= 0){
+                        self.paired_devices[(uint8_t)i] = *device;
+                        if(self.user_handler && self.user_handler->on_status_update){
+                            self.user_handler->on_status_update(device, ANT_STATUS_CONNECTED);
+                        }
+                    }
+                }
+                break;
+            case MSG_ANT_HANDLE_MESSAGE:
+                if(data){
+                    MSG_ANT_Message_t * msg = (MSG_ANT_Message_t *)data->buf;
+                    _handle_message(&msg->device, msg->message);
+                    MSG_Base_ReleaseDataAtomic(msg->message);
+                }
+                break;
         }
     }
     return SUCCESS;
@@ -127,24 +110,21 @@ _destroy(void){
     return SUCCESS;
 }
 static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
-    if(!message) 
-    {
+    if(!message){
         return;  // Do not use one line if: https://medium.com/@jonathanabrams/single-line-if-statements-2565c62ff492
     }
 
-    MSG_Address_t default_addr = {ANT,0};
+    MSG_ANT_Message_t content = (MSG_ANT_Message_t){
+        .device = *device,
+        .message = message,
+    };
 
-    MSG_Data_t * parcel = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANTCommand_t));
+    MSG_Data_t * parcel = MSG_Base_AllocateObjectAtomic(&content, sizeof(content));
     if(parcel){
-        MSG_ANTCommand_t * command = (MSG_ANTCommand_t*)parcel->buf;
         MSG_Base_AcquireDataAtomic(message);
-        command->cmd = ANT_HANDLE_MESSAGE;
-        command->param.handle_message.device = *device;
-        command->param.handle_message.message = message;
-        self.parent->dispatch(default_addr, default_addr, parcel);
+        self.parent->dispatch( ADDR(ANT,0), ADDR(ANT,MSG_ANT_HANDLE_MESSAGE), parcel);
         MSG_Base_ReleaseDataAtomic(parcel);
     }
-
 }
 
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){
