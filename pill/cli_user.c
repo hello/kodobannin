@@ -160,6 +160,7 @@ _handle_command(int argc, char * argv[]){
         cli_update_battery_level(0); // monitor droop
     }
     if( !match_command(argv[0], "add") ){
+        p_calue = &calue;
         ADC_CalMgr_Add(p_calue);
     }
     if( !match_command(argv[0], "put") ){
@@ -172,9 +173,13 @@ _handle_command(int argc, char * argv[]){
     }
     if( !match_command(argv[0], "get") ){
         ADC_CalValue_t  * ret;
-        //TODO dyke what is the proper value to print
         ret = ADC_CalMgr_Query(523,215);
-        PRINT_DEC(&ret->pu,2);
+        PRINT_DEC(&ret->pu,4);
+        PRINTS(":");
+        PRINT_DEC(&ret->pd,4);
+        PRINTS(" ");
+        PRINT_HEX(&ret->slope,3);
+        PRINT_HEX(&ret->offset,3);
         PRINTS(" \r\n");
     }
     if( !match_command(argv[0], "cal") ){
