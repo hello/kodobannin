@@ -18,7 +18,9 @@ ADC_CalValue_t calue = {
      .pd = 215, // pulldown
      .slope = 0x1B87, // 7047
      .offset = 0x010A //  226
-}, *p_calue;
+};
+
+ADC_CalValue_t *p_calue;
 
 static adc_measure_callback_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
@@ -159,6 +161,7 @@ _handle_command(int argc, char * argv[]){
         cli_update_battery_level(0); // monitor droop
     }
     if( !match_command(argv[0], "add") ){
+     // ADC_CalValue_t *p_value;
         p_calue = &calue;
         ADC_CalMgr_Add(p_calue);
     }
@@ -170,11 +173,9 @@ _handle_command(int argc, char * argv[]){
         PRINT_DEC(&value,2);
         PRINTS(" \r\n");
     }
-    if( !match_command(argv[0], "erase") ){
-        ADC_CalMgr_EraseAll();
-    }
     if( !match_command(argv[0], "get") ){
         p_calue = ADC_CalMgr_Query(523,215);
+        if (p_calue) {
         value = p_calue->pu;
         PRINT_DEC(&value,4);
         PRINTS(":");
@@ -186,25 +187,36 @@ _handle_command(int argc, char * argv[]){
         value = p_calue->offset;
         PRINT_HEX(&value,4);
         PRINTS(" \r\n");
+        } else PRINTS("oops");
+    }
+    if( !match_command(argv[0], "remove") ){
+        ADC_CalMgr_Remove(p_calue);
+    }
+    if( !match_command(argv[0], "erase") ){
+        ADC_CalMgr_EraseAll();
     }
     if( !match_command(argv[0], "cal") ){
         uint32_t slope;
         uint32_t diff;
+
         result = battery_get_initial_cached(0);
+
         PRINTS(" +");
 
         //  236 (2.000) 356 (3.000) 380 (3.200) 476(4.000)
         value = (battery_get_reading_cached() / 12) * 100; // (result - offset)/12
+        value = (value/2) *2 ;
 
         slope = 7125;
         if (result > value)
 	  slope = 7125 - (((result - value) * 7125) / value);
         if (result < value)
           slope = 7125 + (((value - result) * 7125) / value);
-
+ 
         PRINT_DEC(&value,4);
         PRINTS(":");
         PRINT_DEC(&slope,4);
+    /**
         PRINTS("/");
 
         value = 3000; // += 120;
@@ -217,7 +229,7 @@ _handle_command(int argc, char * argv[]){
         PRINT_DEC(&value,4);
         PRINTS(":");
         PRINT_DEC(&slope,4);
-
+    **/
         PRINTS(" \r\n");
 
         battery_set_slope_cached(slope);

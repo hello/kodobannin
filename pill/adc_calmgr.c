@@ -56,7 +56,6 @@ static uint32_t values_info_load_from_flash(ADC_CalValue_t * p_value, pstorage_s
     uint32_t          crc;
     uint32_t        m_crc_cal_val_info;
     uint16_t          crc_header;
-    
 
     // Get block pointer from base
     err_code = pstorage_block_identifier_get(&self.mp_flash_cal_val_info,
@@ -186,7 +185,7 @@ uint32_t ADC_CalMgr_Add(const ADC_CalValue_t * p_value){
     // Check if in cache
     {
         int i;
-        for(i = 0; i < ADC_CAL_MANAGER_DATA_COUNT; i ++){
+        for(i = 0; i < self.cal_val_count; i ++){
             if(self.values[i].pu == p_value->pu &&
                self.values[i].pd == p_value->pd){
                 PRINTS("Already in flash");
@@ -247,13 +246,17 @@ uint32_t ADC_CalMgr_EraseAll(void){
 //only call on init
 static uint32_t load_all_from_flash(){
     ADC_CalValue_t value;
-    uint32_t err;
-    do{
-        err = values_info_load_from_flash(&value, &self.cal_val_count);
-        self.values[self.cal_val_count] = value;
-    }while(err == NRF_SUCCESS);
-    PRINTS("ADC Calibration Count = ");
-    PRINT_HEX(&self.cal_val_count, 2);
+    uint32_t err,val;
+    while(1){
+         err = values_info_load_from_flash(&value, &self.cal_val_count);
+        if(err != NRF_SUCCESS){
+            break;
+        }else{
+            self.values[self.cal_val_count-1] = value;
+        }
+    }
+    PRINTS("ADC Cal Count = ");
+    PRINT_DEC(&self.cal_val_count, 2);
     return err;
 }
 static void bm_pstorage_cb_handler(pstorage_handle_t * handle,
