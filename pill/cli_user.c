@@ -16,7 +16,7 @@ uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
 ADC_CalValue_t calue = {
      .pu = 523, // pullup
      .pd = 215, // pulldown
-     .slope = 0x1BD5, // 7125
+     .slope = 0x1B87, // 7047
      .offset = 0x010A //  226
 }, *p_calue;
 
@@ -159,6 +159,7 @@ _handle_command(int argc, char * argv[]){
         cli_update_battery_level(0); // monitor droop
     }
     if( !match_command(argv[0], "add") ){
+        p_calue = &calue;
         ADC_CalMgr_Add(p_calue);
     }
     if( !match_command(argv[0], "put") ){
@@ -169,9 +170,21 @@ _handle_command(int argc, char * argv[]){
         PRINT_DEC(&value,2);
         PRINTS(" \r\n");
     }
+    if( !match_command(argv[0], "erase") ){
+        ADC_CalMgr_EraseAll();
+    }
     if( !match_command(argv[0], "get") ){
-        value = ADC_CalMgr_Query(523,215);
-        PRINT_DEC(&value,2);
+        p_calue = ADC_CalMgr_Query(523,215);
+        value = p_calue->pu;
+        PRINT_DEC(&value,4);
+        PRINTS(":");
+        value = p_calue->pd;
+        PRINT_DEC(&value,4);
+        PRINTS(" ");
+        value = p_calue->slope;
+        PRINT_HEX(&value,4);
+        value = p_calue->offset;
+        PRINT_HEX(&value,4);
         PRINTS(" \r\n");
     }
     if( !match_command(argv[0], "cal") ){
@@ -189,7 +202,10 @@ _handle_command(int argc, char * argv[]){
         if (result < value)
           slope = 7125 + (((value - result) * 7125) / value);
 
+        PRINT_DEC(&value,4);
+        PRINTS(":");
         PRINT_DEC(&slope,4);
+        PRINTS("/");
 
         value = 3000; // += 120;
         slope = 7125;
@@ -198,6 +214,8 @@ _handle_command(int argc, char * argv[]){
         if (result < value)
           slope = 7125 + (((value - result) * 7125) / value);
 
+        PRINT_DEC(&value,4);
+        PRINTS(":");
         PRINT_DEC(&slope,4);
 
         PRINTS(" \r\n");
