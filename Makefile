@@ -165,7 +165,7 @@ ifeq ($(DEBUG), 1)
 OPTFLAGS=-O1 -fno-inline -fno-strict-aliasing -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
-OPTFLAGS=-O1 -fno-strict-aliasing -fno-inline -DuECC_ASM=2
+OPTFLAGS=-O1 -fno-strict-aliasing -fno-inline -DuECC_ASM=2 -Werror
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 endif
 
@@ -174,7 +174,7 @@ NRFFLAGS=-DBOARD_PCA10001 -DNRF51 -DDO_NOT_USE_DEPRECATED -D$(NRFREV) -DBLE_STAC
 MICROECCFLAGS=-DECC_CURVE=6 # see ecc.h for details
 ARCHFLAGS=-mcpu=cortex-m0 -mthumb -march=armv6-m
 LDFLAGS := `$(CC) $(ARCHFLAGS) -print-libgcc-file-name` --gc-sections -Lstartup -Map=build/build.map
-WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format -Wno-sign-compare -Wno-nonnull -Wno-pointer-sign
+WARNFLAGS=-Wall -Wno-packed-bitfield-compat -Wno-format -Wno-sign-compare -Wno-nonnull -Wno-pointer-sign -Werror=unused-variable
 ASFLAGS := $(ARCHFLAGS)
 CFLAGS := -std=gnu99 -fdata-sections -ffunction-sections $(ARCHFLAGS) $(MICROECCFLAGS) $(NRFFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 

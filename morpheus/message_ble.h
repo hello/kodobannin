@@ -11,16 +11,13 @@ struct pill_pairing_request {
 };
 
 
-typedef struct{
-    enum{
-        BLE_PING=0,
-        BLE_ACK_DEVICE_REMOVED,
-        BLE_ACK_DEVICE_ADDED
-    }cmd;
-    union{
-        uint64_t pill_uid;
-    }param;
-}MSG_BLECommand_t;
+typedef enum{
+    MSG_BLE_PING = 0,
+    MSG_BLE_DEFAULT_CONNECTION = 1,
+    MSG_BLE_BOOT_RADIO = 10,
+    MSG_BLE_ACK_DEVICE_REMOVED = 100,
+    MSG_BLE_ACK_DEVICE_ADDED
+}MSG_BLECommands;
 
 typedef enum {
     BOOT_CHECK = 0,

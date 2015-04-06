@@ -29,6 +29,7 @@
 #include "util.h"
 #include "git_description.h"
 #include "factory_provision.h"
+#include "gpio_nor.h"
 
 
 enum {
@@ -40,55 +41,6 @@ enum {
     SCHED_QUEUE_SIZE = 20,
 };
 
-static void
-_sha1_fw_area(uint8_t *hash)
-{
-
-	uint32_t code_size    = DFU_IMAGE_MAX_SIZE_FULL;
-	uint8_t *code_address = (uint8_t *)CODE_REGION_1_START;
-	uint32_t *index = (uint32_t *)BOOTLOADER_REGION_START - DFU_APP_DATA_RESERVED;
-
-	// walk back to the end of the actual firmware
-	while (index > CODE_REGION_1_START && *--index == EMPTY_FLASH_MASK && code_size > 0)
-		code_size -= 4;
-
-    // only measure if there is something to measure
-    memset(hash, 0, SHA1_DIGEST_LENGTH);
-    if (code_size ==  0)
-        return;
-
-	NRF_RTC1->TASKS_START = 1;
-
-	uint32_t start_ticks, stop_ticks;
-
-	start_ticks = NRF_RTC1->COUNTER;
-    sha1_calc(code_address, code_size, hash);
-	stop_ticks = NRF_RTC1->COUNTER;
-
-	debug_print_ticks("SHA1 time in ticks: ", start_ticks, stop_ticks);
-
-	NRF_RTC1->TASKS_STOP = 1;
-}
-
-static bool
-_verify_fw_sha1(uint8_t *valid_hash)
-{
-	uint8_t sha1[SHA1_DIGEST_LENGTH];
-    uint8_t comp = 0;
-    int i = 0;
-
-    _sha1_fw_area(sha1);
-
-#ifdef DEBUG
-    DEBUG("SHA1: ", sha1);
-#endif
-
-    for (i = 0; i < SHA1_DIGEST_LENGTH; i++)
-        comp |= sha1[i] ^ valid_hash[i];
-
-    return comp == 0;
-}
-
 bool dfu_success = false;
 
 extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
@@ -96,11 +48,6 @@ extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
 void
 _start()
 {
-	uint32_t err_code;
-    volatile uint8_t* proposed_fw_sha1 = __app_sha1_start__;
-
-    uint8_t new_fw_sha1[SHA1_DIGEST_LENGTH];
-
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, true);
 
 	NRF_CLOCK->TASKS_LFCLKSTART = 1;
@@ -125,19 +72,10 @@ _start()
     const bootloader_settings_t* bootloader_settings;
     bootloader_util_settings_get(&bootloader_settings);
 
-    uint16_t* p_expected_crc = &bootloader_settings->bank_0_crc;
-
-    uint16_t* p_bank_0 = &bootloader_settings->bank_0;
-
-    uint16_t bank_0 = *p_bank_0;
-
-    uint32_t *p_bank_0_size = &bootloader_settings->bank_0_size;
-
-    uint32_t bank_0_size = *p_bank_0_size;
-
-    uint16_t expected_crc = *p_expected_crc;
 	/*
-     *SIMPRINT("CRC-16 is %d\r\n", expected_crc);
+	 *uint16_t* p_expected_crc = &bootloader_settings->bank_0_crc;
+	 *uint16_t expected_crc = *p_expected_crc;
+	 *SIMPRINT("CRC-16 is %d\r\n", expected_crc);
 	 */
 
     if(!bootloader_app_is_valid(DFU_BANK_0_REGION_START)) {
@@ -165,13 +103,15 @@ _start()
 
 		ret = factory_provision_start();
 
-#ifdef DEBUG_SERIAL
 		if(ret == NRF_SUCCESS){
+#ifdef DEBUG_SERIAL
 			SIMPRINTS("Successful\r\n");
-		}else{
-			SIMPRINTS("Failed\r\n");
-		}
 #endif
+		}else{
+#ifdef DEBUG_SERIAL
+			SIMPRINTS("Failed\r\n");
+#endif
+		}
 		NVIC_SystemReset();
 	}
 

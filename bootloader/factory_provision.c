@@ -4,6 +4,7 @@
 #include "util.h"
 #include "nrf_error.h"
 #include "pstorage_platform.h"
+#include <app_scheduler.h>
 #include "nrf_sdm.h"
 
 static pstorage_handle_t        __attribute__((aligned(4))) m_info_handle;
@@ -44,7 +45,6 @@ bool factory_needs_provisioning(void){
     return !validate_device_fast(DEVICE_INFO_ADDRESS);
 }
 void _gen_key(void * data, uint16_t size){
-    uint32_t err_code;
     generate_new_device(&test_info);
 
     pstorage_raw_clear(&m_info_handle, sizeof(test_info));

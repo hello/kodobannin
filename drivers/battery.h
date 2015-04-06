@@ -32,7 +32,7 @@ typedef uint8_t(*adc_measure_callback_t)(adc_t adc_result, uint16_t adc_count); 
 /**@brief Function for making the ADC start a battery level conversion.
  */
 uint32_t battery_measurement_begin(adc_measure_callback_t callback, uint16_t count);
-adc_measure_callback_t battery_level_measured(adc_t result, uint16_t count);
+uint8_t battery_level_measured(adc_t result, uint16_t count);
 
 void battery_update_level(); // issue  heartbeat packet
 void battery_update_droop(); // else monitor voltage droop
@@ -44,6 +44,7 @@ void battery_module_power_off();
 void battery_set_result_cached(adc_t result);
 void battery_set_offset_cached(adc_t result);
 uint16_t battery_set_voltage_cached(adc_t result);
+void battery_set_percent_cached(int8_t value);
 
 adc_t battery_get_offset_cached();
 uint8_t battery_get_percent_cached();
