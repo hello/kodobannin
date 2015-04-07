@@ -177,38 +177,16 @@ static void _init_ble_stack(const MorpheusCommand* command)
         case BOOT_COMPLETED:
         PRINTS("BLE already initialized!\r\n");
         break;
-        case BOOT_CHECK:   // The boot check command was sent. backward compatible TODO remove this case for production
+        case BOOT_CHECK:
         {
             if(command->deviceId.arg){
-                PRINTS("EVT3 middle board detected.\r\n");
-                MSG_Data_t* data_page = (MSG_Data_t*)command->deviceId.arg;
-                PRINTS("Hex device id:");
-                PRINTS(data_page->buf);
-                PRINTS("\r\n");
-                uint64_t device_id = 0;
-                
-                if(!hble_hex_to_uint64_device_id(data_page->buf, &device_id))
-                {
-                    PRINTS("Get device id failed.\r\n");
-                    nrf_delay_ms(100);
-                    APP_ASSERT(0);
-                }
-                
-                hble_params_init(device_name, device_id, command->firmwareVersion);
-                hble_services_init();
-
-                ble_uuid_t service_uuid = {
-                    .type = hello_type,
-                    .uuid = BLE_UUID_MORPHEUS_SVC
-                };
-
-                hble_advertising_init(service_uuid);
-                self.boot_state = BOOT_COMPLETED;  // set state, wait for boot timer start advertising and end itself.
-            }else{
-                PRINTS("DVT middle board detected. CC boot detected.\r\n");
-                self.boot_state = BOOT_SYNC_DEVICE_ID;  // set state, wait for the boot timer call _sync_device_id()
-                _sync_device_id();
+                //backward compatibility, instead of supporting EVT middle board fw ad infinitum we just warn user instead
+                nrf_delay_ms(100);
+                PRINTS("WARNING: Deprecated GET_DEVICE_ID behavior\r\n");
+                nrf_delay_ms(100);
             }
+            self.boot_state = BOOT_SYNC_DEVICE_ID;  // set state, wait for the boot timer call _sync_device_id()
+            _sync_device_id();
         }
         break;
         case BOOT_SYNC_DEVICE_ID:  // The sync device id command was sent
