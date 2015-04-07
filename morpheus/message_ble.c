@@ -148,7 +148,7 @@ static void _sync_device_id()
     //write key
     sync_device_id_command.has_aes_key = true;
     sync_device_id_command.aes_key.size = 16;
-    memcpy(sync_device_id_command.aes_key.bytes, get_aes128_key, 16);
+    memcpy(sync_device_id_command.aes_key.bytes, get_aes128_key(), 16);
 
     if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command))
     {
