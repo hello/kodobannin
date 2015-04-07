@@ -159,16 +159,11 @@ static void _send_heartbeat_data_ant(){
 #define POWER_STATE_MASK 0x7
 
 static void _timer_handler(void * ctx){
-    uint8_t value; // carry;
     uint8_t current_reed_state = 0;
     self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
     self.uptime += 1;
 
-    value = fix_imu_interrupt(); // look for imu int stuck low
-    if (value) // look for imu int stuck low
-    {
-        battery_set_percent_cached(BATTERY_EXCEPTION_BASE + value); // notify missing interrupt(s)
-    }
+    fix_imu_interrupt(); // look for imu int stuck low
 
     TF_TickOneSecond(self.ble_time.monotonic_time);
 #ifdef ANT_ENABLE
