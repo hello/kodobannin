@@ -145,6 +145,11 @@ static void _sync_device_id()
     sync_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID;
     sync_device_id_command.deviceId.arg = device_id_page;
 
+    //write key
+    sync_device_id_command.has_aes_key = true;
+    sync_device_id_command.aes_key.size = 16;
+    memcpy(sync_device_id_command.aes_key.bytes, get_aes128_key, 16);
+
     if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command))
     {
         PRINTS("Encode sync deviceId protobuf failed.\r\n");
