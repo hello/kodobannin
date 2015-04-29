@@ -5,14 +5,20 @@
 #include "message_base.h"
 #include "util.h"
 
+#ifdef MSG_BASE_USE_HEAP
+#include "heap.h"
+#endif
+
 #define POOL_OBJ_SIZE(buf_size) (buf_size + sizeof(MSG_Data_t))
 
+#ifndef MSG_BASE_USE_HEAP
 static struct{
     uint8_t pool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE) * MSG_BASE_SHARED_POOL_SIZE];
 #ifdef MSG_BASE_USE_BIG_POOL
     uint8_t bigpool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG) * MSG_BASE_SHARED_POOL_SIZE_BIG];
 #endif
 }self;
+#endif
 
 static inline uint8_t decref(MSG_Data_t * obj){
     if(obj->ref){
@@ -24,7 +30,10 @@ static inline uint8_t incref(MSG_Data_t * obj){
 }
 
 uint32_t MSG_Base_FreeCount(void){
-    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
+#ifdef MSG_BASE_USE_HEAP
+	return xPortGetFreeHeapSize();
+#else
+	uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
     uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
     uint8_t * p = self.pool;
     uint32_t ret = 0;
@@ -35,6 +44,7 @@ uint32_t MSG_Base_FreeCount(void){
         }
     }
     return ret;
+#endif
 }
 
 uint32_t MSG_Base_BigPoolFreeCount(void){
@@ -57,24 +67,33 @@ uint32_t MSG_Base_BigPoolFreeCount(void){
 }
 
 bool MSG_Base_HasMemoryLeak(void){
-#ifndef MSG_BASE_USE_BIG_POOL
-    return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE;
+#ifdef MSG_BASE_USE_HEAP
+	return false; //todo stub
 #else
-    return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE || MSG_Base_BigPoolFreeCount() != MSG_BASE_SHARED_POOL_SIZE_BIG;
+#ifdef MSG_BASE_USE_BIG_POOL
+	return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE || MSG_Base_BigPoolFreeCount() != MSG_BASE_SHARED_POOL_SIZE_BIG;
+#else
+	return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE;
+#endif
 #endif
 }
 
-
-
 MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
+#ifdef MSG_BASE_USE_HEAP
+    APP_OK(0);
+#else
     MSG_Data_t * dupe = MSG_Base_AllocateDataAtomic(orig->len);
     if(dupe){
         memcpy(dupe->buf, orig->buf, orig->len);
         return dupe;
     }
+#endif
     return NULL;
 }
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
+#ifdef MSG_BASE_USE_HEAP
+	return (MSG_Data_t*)pvPortMalloc(size);
+#else
     MSG_Data_t * ret = NULL;
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
     uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
@@ -107,6 +126,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
         DEBUGS("+");
     }
     return ret;
+#endif
 }
 //TODO
 //this method is unsafe, switch to strncpy later
@@ -141,6 +161,10 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
 
 
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
+
+#ifdef MSG_BASE_USE_HEAP
+	vPortFree(d);
+#else
     if(d){
         CRITICAL_REGION_ENTER();
         decref(d);
@@ -160,6 +184,7 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
         //APP_ASSERT(0);
         return FAIL;
     }
+#endif
 }
 static void
 _inspect(MSG_Data_t * o){
