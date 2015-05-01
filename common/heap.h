@@ -72,7 +72,7 @@
  * memory management pages of http://www.FreeRTOS.org for more information.
  */
 typedef unsigned int size_t;
-#define configTOTAL_HEAP_SIZE 512
+#include "platform.h"
 
 void *pvPortRealloc( void *pv, size_t xWantedSize );
 void *pvPortMalloc( size_t xWantedSize );
