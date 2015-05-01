@@ -28,7 +28,12 @@ static inline uint8_t incref(MSG_Data_t * obj){
 
 uint32_t MSG_Base_FreeCount(void){
 #ifdef MSG_BASE_USE_HEAP
-	return xPortGetFreeHeapSize();
+    size_t free;
+    
+    CRITICAL_REGION_ENTER();
+    free = xPortGetFreeHeapSize();
+    CRITICAL_REGION_EXIT();
+	return free;
 #else
 	uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
     uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
@@ -66,7 +71,11 @@ MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
 }
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
 #ifdef MSG_BASE_USE_HEAP
-	return (MSG_Data_t*)pvPortMalloc(size);
+    void * mem;
+    CRITICAL_REGION_ENTER();
+    mem = pvPortMalloc(size);
+    CRITICAL_REGION_EXIT();
+	return (MSG_Data_t*)mem;
 #else
     MSG_Data_t * ret = NULL;
     uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
@@ -127,7 +136,9 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
 
 #ifdef MSG_BASE_USE_HEAP
+    CRITICAL_REGION_ENTER();
 	vPortFree(d);
+    CRITICAL_REGION_EXIT();	
 #else
     if(d){
         CRITICAL_REGION_ENTER();
