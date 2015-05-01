@@ -14,9 +14,6 @@
 #ifndef MSG_BASE_USE_HEAP
 static struct{
     uint8_t pool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE) * MSG_BASE_SHARED_POOL_SIZE];
-#ifdef MSG_BASE_USE_BIG_POOL
-    uint8_t bigpool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG) * MSG_BASE_SHARED_POOL_SIZE_BIG];
-#endif
 }self;
 #endif
 
@@ -47,34 +44,11 @@ uint32_t MSG_Base_FreeCount(void){
 #endif
 }
 
-uint32_t MSG_Base_BigPoolFreeCount(void){
-
-#ifndef MSG_BASE_USE_BIG_POOL
-    return 0;
-#else
-    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG);
-    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE_BIG;
-    uint8_t * p = self.bigpool;
-    uint32_t ret = 0;
-    for(int i = 0; i < step_limit; i++){
-        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
-        if(tmp->ref == 0){
-            ret++;
-        }
-    }
-    return ret;
-#endif
-}
-
 bool MSG_Base_HasMemoryLeak(void){
 #ifdef MSG_BASE_USE_HEAP
 	return false; //todo stub
 #else
-#ifdef MSG_BASE_USE_BIG_POOL
-	return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE || MSG_Base_BigPoolFreeCount() != MSG_BASE_SHARED_POOL_SIZE_BIG;
-#else
 	return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE;
-#endif
 #endif
 }
 
@@ -99,17 +73,7 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
     uint8_t * p = self.pool;
     if( size > MSG_BASE_DATA_BUFFER_SIZE ){
-#ifdef MSG_BASE_USE_BIG_POOL
-        if( size <= MSG_BASE_DATA_BUFFER_SIZE_BIG ){
-            step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG);
-            step_limit = MSG_BASE_SHARED_POOL_SIZE_BIG;
-            p = self.bigpool;
-        }else{
-            return NULL;
-        }
-#else
         return NULL;
-#endif
     }
     CRITICAL_REGION_ENTER();
     for(int i = 0; i < step_limit; i++){
@@ -205,14 +169,6 @@ MSG_Base_BufferTest(void){
         //_inspect(o);
     }
     PRINTS("B");
-#ifdef MSG_BASE_USE_BIG_POOL
-    for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE_BIG; i++){
-        MSG_Data_t * o = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE_BIG); 
-        if(!o)goto fail;
-        _inspect(o);
-    }
-    objbig = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE_BIG); 
-#endif
     obj = MSG_Base_AllocateDataAtomic(1); 
     if(obj || objbig){
         PRINTS("Failed Test\r\n");

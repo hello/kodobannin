@@ -520,19 +520,19 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 
 void morpheus_ble_on_notify_completed(const void* data, void* data_page)
 {
-	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
-    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
-    PRINTS("Big pool free: ");
-    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
+    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+    uint32_t pool_free = MSG_Base_FreeCount();
+    PRINTS("pool free: ");
+    PRINT_HEX(&pool_free, sizeof(pool_free));
     PRINTS("\r\n");
 }
 
 void morpheus_ble_on_notify_failed(void* data_page)
 {
-	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
-    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
-    PRINTS("Big pool free: ");
-    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
+    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+    uint32_t pool_free = MSG_Base_FreeCount();
+    PRINTS("pool free: ");
+    PRINT_HEX(&pool_free, sizeof(pool_free));
     PRINTS("\r\n");
 }
 
