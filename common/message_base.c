@@ -72,8 +72,12 @@ MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
 #ifdef MSG_BASE_USE_HEAP
     void * mem;
+    MSG_Data_t * msg;
     CRITICAL_REGION_ENTER();
-    mem = pvPortMalloc(size);
+    mem = pvPortMalloc(size + sizeof(MSG_Data_t));
+    msg = (MSG_Data_t*)mem;
+    msg->len = size;
+    msg->ref = 0;
     CRITICAL_REGION_EXIT();
 	return (MSG_Data_t*)mem;
 #else
@@ -138,7 +142,7 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
 #ifdef MSG_BASE_USE_HEAP
     CRITICAL_REGION_ENTER();
 	vPortFree(d);
-    CRITICAL_REGION_EXIT();	
+    CRITICAL_REGION_EXIT();
 #else
     if(d){
         CRITICAL_REGION_ENTER();
