@@ -46,7 +46,7 @@ static struct{
      * Only one queue_tx right now
      */
     uint8_t dummy[4];
-    uint8_t tx_queue_buffer[4 * sizeof(MSG_Data_t *)];
+    uint8_t tx_queue_buffer[5 * sizeof(MSG_Data_t *)];
     MSG_Queue_t * tx_queue;
 }self;
 

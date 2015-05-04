@@ -73,11 +73,13 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
 #ifdef MSG_BASE_USE_HEAP
     void * mem;
     MSG_Data_t * msg;
+    DEBUGS("+");
     CRITICAL_REGION_ENTER();
     mem = pvPortMalloc(size + sizeof(MSG_Data_t));
     msg = (MSG_Data_t*)mem;
     msg->len = size;
     msg->ref = 0;
+    incref(msg);
     CRITICAL_REGION_EXIT();
 	return (MSG_Data_t*)mem;
 #else
@@ -139,11 +141,6 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
 
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
 
-#ifdef MSG_BASE_USE_HEAP
-    CRITICAL_REGION_ENTER();
-	vPortFree(d);
-    CRITICAL_REGION_EXIT();
-#else
     if(d){
         CRITICAL_REGION_ENTER();
         decref(d);
@@ -154,6 +151,12 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
         if(d->ref == 0){
             d->context = 0;
             DEBUGS("~");
+            
+#ifdef MSG_BASE_USE_HEAP
+            CRITICAL_REGION_ENTER();
+            vPortFree(d);
+            CRITICAL_REGION_EXIT();
+#endif
         }else{
             DEBUGS("-");
         };
@@ -163,7 +166,6 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
         //APP_ASSERT(0);
         return FAIL;
     }
-#endif
 }
 static void
 _inspect(MSG_Data_t * o){
