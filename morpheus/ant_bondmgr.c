@@ -184,7 +184,7 @@ uint32_t ANT_BondMgrAdd(const ANT_BondedDevice_t * p_bond){
     // Check if in cache
     {
         int i;
-        for(i = 0; i < ANT_BOND_MANAGER_DATA_COUNT; i ++){
+        for(i = 0; i < self.bond_count; i ++){
             if(self.devices[i].full_uid == p_bond->full_uid){
                 PRINTS("Already in flash");
                 return NRF_SUCCESS;
@@ -243,12 +243,17 @@ uint32_t ANT_BondMgr_EraseAll(void){
 static uint32_t load_all_from_flash(){
     ANT_BondedDevice_t dev;
     uint32_t err;
-    do{
+
+    while(1){
         err = bonding_info_load_from_flash(&dev, &self.bond_count);
-        self.devices[self.bond_count] = dev;
-    }while(err == NRF_SUCCESS);
+        if(err != NRF_SUCCESS){
+            break;
+        }else{
+            self.devices[self.bond_count-1] = dev;
+        }
+    }
     PRINTS("ANT BOND COUNT = ");
-    PRINT_HEX(&self.bond_count, 2);
+    PRINT_DEC(&self.bond_count, 2);
     return err;
 }
 static void bm_pstorage_cb_handler(pstorage_handle_t * handle,
