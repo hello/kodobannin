@@ -10,7 +10,7 @@
 #include "util.h"
 #include "crc16.h"
 
-#define ADC_CAL_MANAGER_DATA_SIGNATURE  0x53540000
+#define ADC_CAL_MANAGER_DATA_SIGNATURE  0x53940000
 #define ADC_CAL_MANAGER_DATA_COUNT  4
 
 typedef struct{
