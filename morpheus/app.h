@@ -6,6 +6,7 @@
 #include <nrf51_bitfields.h>
 
 #include "platform.h"
+#include "app_info.h"
 
 enum {
     APP_TIMER_PRESCALER = 0,
@@ -17,7 +18,7 @@ enum {
  * BLE Advertising Strings
  */
 #define BLE_DEVICE_NAME       "Sense"
-#define BLE_MANUFACTURER_NAME "Hello Inc."
+#define BLE_MANUFACTURER_NAME "Hello"
 #define BLE_MODEL_NUM         FW_VERSION_STRING
 #define BLE_MANUFACTURER_ID   0x43110
 #define BLE_ORG_UNIQUE_ID     0x1337
