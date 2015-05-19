@@ -770,7 +770,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
     MSG_Base_ReleaseDataAtomic(data_page);
 
     uint32_t pool_free = MSG_Base_FreeCount();
-    PRINTS("pool free: ");
+    PRINTS("top heap: ");
     PRINT_HEX(&pool_free, sizeof(pool_free));
     PRINTS("\r\n");
 
