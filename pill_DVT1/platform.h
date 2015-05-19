@@ -14,7 +14,6 @@
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
 
-#define MSG_BASE_USE_HEAP
 
 #define configTOTAL_HEAP_SIZE 1024
 /*

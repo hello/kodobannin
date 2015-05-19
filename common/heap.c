@@ -77,7 +77,6 @@
 #include "app.h"
 #include "platform.h"
 
-#ifdef MSG_BASE_USE_HEAP
 
 #include "util.h"
 #include "ble_bondmngr_cfg.h"
@@ -584,4 +583,3 @@ uint8_t *puc;
 		mtCOVERAGE_TEST_MARKER();
 	}
 }
-#endif

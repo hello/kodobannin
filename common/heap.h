@@ -73,7 +73,6 @@
  */
 typedef unsigned int size_t;
 #include "platform.h"
-#ifdef MSG_BASE_USE_HEAP
 
 void *pvPortRealloc( void *pv, size_t xWantedSize );
 void *pvPortMalloc( size_t xWantedSize );
@@ -81,4 +80,3 @@ void vPortFree( void *pv );
 
 size_t xPortGetFreeHeapSize( void );
 size_t xPortGetMinimumEverFreeHeapSize( void );
-#endif

@@ -38,14 +38,7 @@ typedef struct _MSG_Data_t{
      * data buffer
      */
     uint8_t buf[0];
-    
-#ifdef MSG_BASE_USE_HEAP
 } MSG_Data_t;
-#else
-} __attribute__((packed)) MSG_Data_t;
-#endif
-
-
 
 typedef enum{
     CENTRAL = 0,

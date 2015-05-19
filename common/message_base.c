@@ -4,12 +4,7 @@
 #include <nrf_soc.h>
 #include "message_base.h"
 #include "util.h"
-
-#ifdef MSG_BASE_USE_HEAP
 #include "heap.h"
-#endif
-
-#define POOL_OBJ_SIZE(buf_size) (buf_size + sizeof(MSG_Data_t))
 
 static inline uint8_t decref(MSG_Data_t * obj){
     if(obj->ref){
@@ -21,14 +16,12 @@ static inline uint8_t incref(MSG_Data_t * obj){
 }
 
 uint32_t MSG_Base_FreeCount(void){
-#ifdef MSG_BASE_USE_HEAP
     size_t free;
     
     CRITICAL_REGION_ENTER();
     free = xPortGetFreeHeapSize();
     CRITICAL_REGION_EXIT();
 	return free;
-#endif
 }
 
 bool MSG_Base_HasMemoryLeak(void){}
@@ -38,7 +31,6 @@ MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
     return NULL;
 }
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
-#ifdef MSG_BASE_USE_HEAP
     void * mem;
     MSG_Data_t * msg;
     DEBUGS("+");
@@ -50,7 +42,6 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     incref(msg);
     CRITICAL_REGION_EXIT();
 	return (MSG_Data_t*)mem;
-#endif
 }
 //TODO
 //this method is unsafe, switch to strncpy later
@@ -94,11 +85,9 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
             d->context = 0;
             DEBUGS("~");
             
-#ifdef MSG_BASE_USE_HEAP
             CRITICAL_REGION_ENTER();
             vPortFree(d);
             CRITICAL_REGION_EXIT();
-#endif
         }else{
             DEBUGS("-");
         };
