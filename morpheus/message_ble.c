@@ -769,9 +769,9 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
 
     MSG_Base_ReleaseDataAtomic(data_page);
 
-    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
-    PRINTS("Big pool free: ");
-    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
+    uint32_t pool_free = MSG_Base_FreeCount();
+    PRINTS("pool free: ");
+    PRINT_HEX(&pool_free, sizeof(pool_free));
     PRINTS("\r\n");
 
 }

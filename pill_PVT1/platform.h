@@ -14,6 +14,8 @@
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
 
+#define configTOTAL_HEAP_SIZE 1024
+
 /*
 // This is from EVT1, not used
 // TODO: Maybe just usesomething from PLATFORM_HAS_I2C?

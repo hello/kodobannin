@@ -5,6 +5,7 @@
 #include "ant_driver.h"
 #include "app.h"
 #include "hble.h"
+#include "heap.h"
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -47,6 +48,15 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "pause") ){
         PRINTS("Pause radio = ");
         int32_t ret = hlo_ant_pause_radio();
+        PRINT_HEX(&ret, 4);
+        PRINTS("\r\n");
+    }
+    if( !match_command(argv[0], "free") ){
+        PRINTS("Free Memory = ");
+        int32_t ret = xPortGetFreeHeapSize();
+        PRINT_HEX(&ret, 4);
+        PRINTS("Least Memory = ");
+        ret = xPortGetMinimumEverFreeHeapSize();
         PRINT_HEX(&ret, 4);
         PRINTS("\r\n");
     }

@@ -210,13 +210,10 @@ static void hble_erase_1st_bond()
 
 static void _delay_task_memory_checkpoint()
 {
-	uint8_t small, big;
+	uint8_t small;
 	small = MSG_Base_FreeCount();
-	big = MSG_Base_BigPoolFreeCount();
-	PRINTS("Top Mem Free: ");
+    PRINTS("Top Mem Free: ");
 	PRINT_HEX(&small, 1);
-	PRINTS(", ");
-	PRINT_HEX(&big, 1);
 	PRINTS("\r\n");
 }
 
