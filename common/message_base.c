@@ -36,14 +36,12 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     DEBUGS("+");
     CRITICAL_REGION_ENTER();
     mem = pvPortMalloc(size + sizeof(MSG_Data_t));
-    if(!mem){
-        //we should reboot here, this shouldn't happen
-        APP_OK(NRF_ERROR_NO_MEM);
+    if(mem){
+        msg = (MSG_Data_t*)mem;
+        msg->len = size;
+        msg->ref = 0;
+        incref(msg);
     }
-    msg = (MSG_Data_t*)mem;
-    msg->len = size;
-    msg->ref = 0;
-    incref(msg);
     CRITICAL_REGION_EXIT();
 	return (MSG_Data_t*)mem;
 }
