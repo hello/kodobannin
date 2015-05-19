@@ -13,6 +13,8 @@
 #define PLATFORM_HAS_SERIAL
 #define HW_REVISION 3
 
+#define configTOTAL_HEAP_SIZE 1024
+
 #define DEVICE_ID_SIZE        8
 
 //use hello's ant network key

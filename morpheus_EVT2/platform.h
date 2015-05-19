@@ -14,6 +14,9 @@
 
 #define DEVICE_ID_SIZE        6
 
+#define configTOTAL_HEAP_SIZE 1024
+
+
 enum {
     SERIAL_TX_PIN = 19,
     SERIAL_RX_PIN = 17,
