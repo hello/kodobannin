@@ -11,12 +11,6 @@
 
 #define POOL_OBJ_SIZE(buf_size) (buf_size + sizeof(MSG_Data_t))
 
-#ifndef MSG_BASE_USE_HEAP
-static struct{
-    uint8_t pool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE) * MSG_BASE_SHARED_POOL_SIZE];
-}self;
-#endif
-
 static inline uint8_t decref(MSG_Data_t * obj){
     if(obj->ref){
         obj->ref -= 1;
@@ -34,39 +28,13 @@ uint32_t MSG_Base_FreeCount(void){
     free = xPortGetFreeHeapSize();
     CRITICAL_REGION_EXIT();
 	return free;
-#else
-	uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
-    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
-    uint8_t * p = self.pool;
-    uint32_t ret = 0;
-    for(int i = 0; i < step_limit; i++){
-        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
-        if(tmp->ref == 0){
-            ret++;
-        }
-    }
-    return ret;
 #endif
 }
 
-bool MSG_Base_HasMemoryLeak(void){
-#ifdef MSG_BASE_USE_HEAP
-	return false; //todo stub
-#else
-	return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE;
-#endif
-}
+bool MSG_Base_HasMemoryLeak(void){}
 
 MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
-#ifdef MSG_BASE_USE_HEAP
     APP_OK(0);
-#else
-    MSG_Data_t * dupe = MSG_Base_AllocateDataAtomic(orig->len);
-    if(dupe){
-        memcpy(dupe->buf, orig->buf, orig->len);
-        return dupe;
-    }
-#endif
     return NULL;
 }
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
@@ -82,29 +50,6 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     incref(msg);
     CRITICAL_REGION_EXIT();
 	return (MSG_Data_t*)mem;
-#else
-    MSG_Data_t * ret = NULL;
-    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
-    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
-    uint8_t * p = self.pool;
-    if( size > MSG_BASE_DATA_BUFFER_SIZE ){
-        return NULL;
-    }
-    CRITICAL_REGION_ENTER();
-    for(int i = 0; i < step_limit; i++){
-        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
-        if(tmp->ref == 0){
-            incref(tmp);
-            ret = tmp;
-            break;
-        }
-    }
-    CRITICAL_REGION_EXIT();
-    if(ret){
-        ret->len = size;
-        DEBUGS("+");
-    }
-    return ret;
 #endif
 }
 //TODO
@@ -144,9 +89,6 @@ MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
     if(d){
         CRITICAL_REGION_ENTER();
         decref(d);
-#ifndef MSG_BASE_DATA_BUFFER_SIZE
-        //here we free the buffer if dynamically allocated
-#endif
         CRITICAL_REGION_EXIT();
         if(d->ref == 0){
             d->context = 0;
@@ -175,28 +117,6 @@ _inspect(MSG_Data_t * o){
     PRINT_HEX(&o->ref,sizeof(o->ref));
     PRINTS("\r\n");
 
-}
-MSG_Status
-MSG_Base_BufferTest(void){
-    MSG_Data_t * objbig = NULL;
-    MSG_Data_t * obj = NULL;
-    for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE; i++){
-        MSG_Data_t * o = MSG_Base_AllocateDataAtomic(1); 
-        if(!o)goto fail;
-        //_inspect(o);
-    }
-    PRINTS("B");
-    obj = MSG_Base_AllocateDataAtomic(1); 
-    if(obj || objbig){
-        PRINTS("Failed Test\r\n");
-        return FAIL;
-    }else{
-        PRINTS("All Pass\r\n");
-    }
-    return SUCCESS;
-fail:
-    PRINTS("Failed\r\n");
-    return FAIL;
 }
 
 MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size){

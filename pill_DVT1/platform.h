@@ -15,6 +15,8 @@
 #define USE_HLO_ANT_NETWORK
 
 #define MSG_BASE_USE_HEAP
+
+#define configTOTAL_HEAP_SIZE 1024
 /*
 // This is from EVT1, not used
 // TODO: Maybe just usesomething from PLATFORM_HAS_I2C?

@@ -38,7 +38,13 @@ typedef struct _MSG_Data_t{
      * data buffer
      */
     uint8_t buf[0];
+    
+#ifdef MSG_BASE_USE_HEAP
 } MSG_Data_t;
+#else
+} __attribute__((packed)) MSG_Data_t;
+#endif
+
 
 
 typedef enum{
@@ -98,7 +104,6 @@ MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(size_t size);
 MSG_Data_t * INCREF MSG_Base_AllocateStringAtomic(const char * str);
 MSG_Data_t * INCREF MSG_Base_AllocateObjectAtomic(const void * obj, size_t size);
 MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig);
-MSG_Status MSG_Base_BufferTest(void);
 uint32_t MSG_Base_FreeCount(void);
 bool MSG_Base_HasMemoryLeak(void);
 

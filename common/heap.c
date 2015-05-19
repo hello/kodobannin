@@ -91,7 +91,7 @@
 #define portBYTE_ALIGNMENT      ( 8 )
 #define portBYTE_ALIGNMENT_MASK ( 0x0007 )
 
-#define configASSERT APP_OK
+#define configASSERT(...)
 
 #define portPOINTER_SIZE_TYPE uint32_t
 

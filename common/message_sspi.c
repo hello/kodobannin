@@ -118,9 +118,9 @@ _initialize_transaction(){
             self.transaction.state = WAIT_READ_RX_CTX;
             return READING;
         case REG_READ_FROM_SSPI:
-            /*
-             *PRINTS("WRITE TO MASTER\r\n");
-             */
+            
+            PRINTS("WRITE TO MASTER\r\n");
+             
             //prepare buffer here
             self.transaction.payload = _dequeue_tx();
             if(self.transaction.payload){
