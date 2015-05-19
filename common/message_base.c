@@ -17,7 +17,6 @@ static inline uint8_t incref(MSG_Data_t * obj){
 
 uint32_t MSG_Base_FreeCount(void){
     size_t free;
-    
     CRITICAL_REGION_ENTER();
     free = xPortGetFreeHeapSize();
     CRITICAL_REGION_EXIT();

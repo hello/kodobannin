@@ -3,6 +3,8 @@
 #include "util.h"
 
 
+#define LOW_MEMORY_WATERMARK (sizeof(MSG_Data_t*) + 64)
+
 static struct{
     MSG_Central_t central;
     MSG_Base_t base;
@@ -43,7 +45,7 @@ _dispatch (MSG_Address_t src, MSG_Address_t  dst, MSG_Data_t * data){
         future_event tmp = {src, dst, data};
         err = app_sched_event_put(&tmp, sizeof(tmp), _future_event_handler);
         uint16_t free_count = MSG_Base_FreeCount();
-        if(free_count < 3){
+        if(free_count < LOW_MEMORY_WATERMARK){
             PRINTS("Low Mem ");
             PRINT_HEX(&free_count, 1);
             PRINTS("\r\n");
