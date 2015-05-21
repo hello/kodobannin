@@ -17,7 +17,6 @@ static inline uint8_t incref(MSG_Data_t * obj){
 
 uint32_t MSG_Base_FreeCount(void){
     size_t free;
-    
     CRITICAL_REGION_ENTER();
     free = xPortGetFreeHeapSize();
     CRITICAL_REGION_EXIT();
@@ -36,11 +35,15 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     DEBUGS("+");
     CRITICAL_REGION_ENTER();
     mem = pvPortMalloc(size + sizeof(MSG_Data_t));
-    msg = (MSG_Data_t*)mem;
-    msg->len = size;
-    msg->ref = 0;
-    incref(msg);
     CRITICAL_REGION_EXIT();
+    if(mem){
+        msg = (MSG_Data_t*)mem;
+        msg->len = size;
+        msg->ref = 0;
+        incref(msg);
+    }else{
+        APP_OK(NRF_ERROR_NO_MEM);
+    }
 	return (MSG_Data_t*)mem;
 }
 //TODO

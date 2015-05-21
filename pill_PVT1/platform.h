@@ -14,7 +14,7 @@
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
 
-#define configTOTAL_HEAP_SIZE 1024
+#define configTOTAL_HEAP_SIZE 1280
 
 /*
 // This is from EVT1, not used
