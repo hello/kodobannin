@@ -24,11 +24,6 @@ uint32_t MSG_Base_FreeCount(void){
 }
 
 bool MSG_Base_HasMemoryLeak(void){}
-void vApplicationMallocFailedHook(void){
-    //invoked when malloc fails
-    //we should notify and reboot when this happens
-    APP_OK(NRF_ERROR_NO_MEM);
-}
 
 MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
     APP_OK(0);
@@ -40,13 +35,15 @@ MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     DEBUGS("+");
     CRITICAL_REGION_ENTER();
     mem = pvPortMalloc(size + sizeof(MSG_Data_t));
+    CRITICAL_REGION_EXIT();
     if(mem){
         msg = (MSG_Data_t*)mem;
         msg->len = size;
         msg->ref = 0;
         incref(msg);
+    }else{
+        APP_OK(NRF_ERROR_NO_MEM);
     }
-    CRITICAL_REGION_EXIT();
 	return (MSG_Data_t*)mem;
 }
 //TODO
