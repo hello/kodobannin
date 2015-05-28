@@ -18,7 +18,7 @@ the file.
 #ifdef __STACK_SIZE
     .equ    Stack_Size, __STACK_SIZE
 #else
-    .equ    Stack_Size, 2072
+    .equ    Stack_Size, 2088
 #endif
     .globl    __StackTop
     .globl    __StackLimit

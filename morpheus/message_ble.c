@@ -150,6 +150,11 @@ static void _sync_device_id()
     sync_device_id_command.aes_key.size = AES128_BLOCK_SIZE;
     memcpy(sync_device_id_command.aes_key.bytes, (uint8_t*)NRF_FICR->ER, AES128_BLOCK_SIZE);
 
+    //write version
+    sync_device_id_command.has_top_version = true;
+    memset(sync_device_id_command.top_version, 0, sizeof(sync_device_id_command.top_version));
+    memcpy(sync_device_id_command.top_version, FW_VERSION_STRING, sizeof(FW_VERSION_STRING));
+
     if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command))
     {
         PRINTS("Encode sync deviceId protobuf failed.\r\n");
