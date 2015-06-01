@@ -236,13 +236,6 @@ static bool _dispatch_packet(struct hlo_ble_packet * t){
 	switch(err){
 		case NRF_SUCCESS:
 			PRINTS("BLE Packet sent\r\n");
-			if(t->sequence_number == _notify_context.total - 1)
-			{
-				if(_notify_context.callback_info.on_succeed)
-				{
-					_notify_context.callback_info.on_succeed(_notify_context.orig, _notify_context.callback_info.callback_data);
-				}
-			}
 			return true;
 			break;
 		default:
@@ -303,6 +296,7 @@ static inline uint8_t _last_packet_len(uint16_t length){
 	uint8_t remain = (length - 18) % 19;
 	return length <= 18 ? (length + 2) : (remain == 0 ? 20 : remain + 1);
 }
+
 
 void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, const struct hlo_ble_operation_callbacks* callback_info)
 {
@@ -369,9 +363,15 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         break;
     case BLE_EVT_TX_COMPLETE:
 		{
-			struct hlo_ble_packet * packet = _make_packet();
-			if(packet){
-				_dispatch_packet(packet);
+			if(_notify_context.seq == _notify_context.total - 1){
+				if(_notify_context.callback_info.on_succeed){
+					_notify_context.callback_info.on_succeed(_notify_context.orig, _notify_context.callback_info.callback_data);
+				}
+			}else{
+				struct hlo_ble_packet * packet = _make_packet();
+				if(packet){
+					_dispatch_packet(packet);
+				}
 			}
 		}
         //_dispatch_queue_packet();
