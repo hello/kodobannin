@@ -43,12 +43,10 @@
 //
 //*****************************************************************************
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "circ_buff.h"
-#include "kit_assert.h"
-#include "FreeRTOS.h"
+#include "util.h"
+#include "heap.h"
 //*****************************************************************************
 //
 //! Creating and Initializing the Circular Buffer
@@ -67,9 +65,9 @@ CreateCircularBuffer(unsigned long ulBufferSize)
 {
     tCircularBuffer *pTempBuff;
     pTempBuff = (tCircularBuffer*)pvPortMalloc(sizeof(tCircularBuffer));
-    assert(pTempBuff);
+    APP_ASSERT(pTempBuff);
     pTempBuff->pucBufferStartPtr = (unsigned char*)pvPortMalloc(ulBufferSize);
-    assert(pTempBuff->pucBufferStartPtr);
+    APP_ASSERT(pTempBuff->pucBufferStartPtr);
     pTempBuff->pucReadPtr = pTempBuff->pucBufferStartPtr;
     pTempBuff->pucWritePtr = pTempBuff->pucBufferStartPtr;
     pTempBuff->ulBufferSize = ulBufferSize;
