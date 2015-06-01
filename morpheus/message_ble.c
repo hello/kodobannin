@@ -13,6 +13,7 @@
 #include "morpheus_ble.h"
 #include "ble_bondmngr.h"
 #include "nrf_delay.h"
+#include "circ_buff.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -28,6 +29,7 @@ static struct{
     app_timer_id_t timer_id;
     app_timer_id_t boot_timer;
     boot_status boot_state;
+    tCircularBuffer * tx_queue;
 } self;
 
 
@@ -531,6 +533,8 @@ static void _on_boot_timer(void* context)
 static MSG_Status _init(){
 
     hble_stack_init();
+
+    self.tx_queue = CreateCircularBuffer(10 * sizeof(MSG_Data_t*));
 
 #ifdef BONDING_REQUIRED     
     hble_bond_manager_init();
