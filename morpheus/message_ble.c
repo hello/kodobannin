@@ -508,8 +508,10 @@ static void _kickoff_tx(void){
         PRINTS("sending queued\r\n");
         ReadBuffer(self.tx_queue, (unsigned char*)&next, sizeof(&next));
         PRINT_DEC(&next, 4);
-        hlo_ble_notify(0xB00B, next->buf, next->len,
-                &(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, next});
+        if(next){
+            hlo_ble_notify(0xB00B, next->buf, next->len,
+                    &(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, next});
+        }
     }else{
         PRINTS("no more data\r\n");
     }
