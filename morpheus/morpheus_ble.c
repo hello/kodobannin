@@ -518,24 +518,6 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 }
 
 
-void morpheus_ble_on_notify_completed(const void* data, void* data_page)
-{
-	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
-    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
-    PRINTS("Big pool free: ");
-    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
-    PRINTS("\r\n");
-}
-
-void morpheus_ble_on_notify_failed(void* data_page)
-{
-	MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
-    uint32_t big_pool_free = MSG_Base_BigPoolFreeCount();
-    PRINTS("Big pool free: ");
-    PRINT_HEX(&big_pool_free, sizeof(big_pool_free));
-    PRINTS("\r\n");
-}
-
 bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(morpheus_command, NULL, &protobuf_len))
@@ -558,8 +540,8 @@ bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
     memset(heap_page->buf, 0, heap_page->len);
     if(morpheus_ble_encode_protobuf(morpheus_command, heap_page->buf, &protobuf_len))
     {
-        hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
-            &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, heap_page});
+        central->dispatch(ADDR(CENTRAL, 0), ADDR(BLE, MSG_BLE_DEFAULT_CONNECTION), heap_page);
+        MSG_Base_ReleaseDataAtomic(heap_page);
         return true;
     }
 
@@ -575,22 +557,7 @@ bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
     morpheus_command.has_error = true;
     morpheus_command.error = error_type;
 
-    size_t len = 0;
-    if(!morpheus_ble_encode_protobuf(&morpheus_command, NULL, &len))
-    {
-        return false;
-    }
-
-    char buffer[len];
-    memset(buffer, 0, sizeof(buffer));
-    if(morpheus_ble_encode_protobuf(&morpheus_command, buffer, &len))
-    {
-        hlo_ble_notify(0xB00B, buffer, len, NULL);
-    }else{
-        return false;
-    }
-
-	return true;
+    return morpheus_ble_reply_protobuf(&morpheus_command);
 }
 
 void morpheus_ble_transmission_layer_init()

@@ -162,10 +162,10 @@ clean:
 DEBUG = 0
 
 ifeq ($(DEBUG), 1)
-OPTFLAGS=-O1 -fno-inline -fno-strict-aliasing -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
+OPTFLAGS=-O1 -fno-omit-frame-pointer -fno-inline -fno-strict-aliasing -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
-OPTFLAGS=-O1 -fno-strict-aliasing -fno-inline -DuECC_ASM=2 -Werror
+OPTFLAGS=-O1 -fno-omit-frame-pointer -fno-strict-aliasing -fno-inline -DuECC_ASM=2 -Werror
 SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 endif
 

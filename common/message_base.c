@@ -4,15 +4,7 @@
 #include <nrf_soc.h>
 #include "message_base.h"
 #include "util.h"
-
-#define POOL_OBJ_SIZE(buf_size) (buf_size + sizeof(MSG_Data_t))
-
-static struct{
-    uint8_t pool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE) * MSG_BASE_SHARED_POOL_SIZE];
-#ifdef MSG_BASE_USE_BIG_POOL
-    uint8_t bigpool[POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG) * MSG_BASE_SHARED_POOL_SIZE_BIG];
-#endif
-}self;
+#include "heap.h"
 
 static inline uint8_t decref(MSG_Data_t * obj){
     if(obj->ref){
@@ -24,89 +16,35 @@ static inline uint8_t incref(MSG_Data_t * obj){
 }
 
 uint32_t MSG_Base_FreeCount(void){
-    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
-    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
-    uint8_t * p = self.pool;
-    uint32_t ret = 0;
-    for(int i = 0; i < step_limit; i++){
-        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
-        if(tmp->ref == 0){
-            ret++;
-        }
-    }
-    return ret;
+    size_t free;
+    CRITICAL_REGION_ENTER();
+    free = xPortGetFreeHeapSize();
+    CRITICAL_REGION_EXIT();
+	return free;
 }
 
-uint32_t MSG_Base_BigPoolFreeCount(void){
-
-#ifndef MSG_BASE_USE_BIG_POOL
-    return 0;
-#else
-    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG);
-    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE_BIG;
-    uint8_t * p = self.bigpool;
-    uint32_t ret = 0;
-    for(int i = 0; i < step_limit; i++){
-        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
-        if(tmp->ref == 0){
-            ret++;
-        }
-    }
-    return ret;
-#endif
-}
-
-bool MSG_Base_HasMemoryLeak(void){
-#ifndef MSG_BASE_USE_BIG_POOL
-    return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE;
-#else
-    return MSG_Base_FreeCount() != MSG_BASE_SHARED_POOL_SIZE || MSG_Base_BigPoolFreeCount() != MSG_BASE_SHARED_POOL_SIZE_BIG;
-#endif
-}
-
-
+bool MSG_Base_HasMemoryLeak(void){}
 
 MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
-    MSG_Data_t * dupe = MSG_Base_AllocateDataAtomic(orig->len);
-    if(dupe){
-        memcpy(dupe->buf, orig->buf, orig->len);
-        return dupe;
-    }
+    APP_OK(0);
     return NULL;
 }
 MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
-    MSG_Data_t * ret = NULL;
-    uint32_t step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE);
-    uint32_t step_limit = MSG_BASE_SHARED_POOL_SIZE;
-    uint8_t * p = self.pool;
-    if( size > MSG_BASE_DATA_BUFFER_SIZE ){
-#ifdef MSG_BASE_USE_BIG_POOL
-        if( size <= MSG_BASE_DATA_BUFFER_SIZE_BIG ){
-            step_size = POOL_OBJ_SIZE(MSG_BASE_DATA_BUFFER_SIZE_BIG);
-            step_limit = MSG_BASE_SHARED_POOL_SIZE_BIG;
-            p = self.bigpool;
-        }else{
-            return NULL;
-        }
-#else
-        return NULL;
-#endif
-    }
+    void * mem;
+    MSG_Data_t * msg;
+    DEBUGS("+");
     CRITICAL_REGION_ENTER();
-    for(int i = 0; i < step_limit; i++){
-        MSG_Data_t * tmp = (MSG_Data_t*)(&p[i*step_size]);
-        if(tmp->ref == 0){
-            incref(tmp);
-            ret = tmp;
-            break;
-        }
-    }
+    mem = pvPortMalloc(size + sizeof(MSG_Data_t));
     CRITICAL_REGION_EXIT();
-    if(ret){
-        ret->len = size;
-        DEBUGS("+");
+    if(mem){
+        msg = (MSG_Data_t*)mem;
+        msg->len = size;
+        msg->ref = 0;
+        incref(msg);
+    }else{
+        APP_OK(NRF_ERROR_NO_MEM);
     }
-    return ret;
+	return (MSG_Data_t*)mem;
 }
 //TODO
 //this method is unsafe, switch to strncpy later
@@ -141,16 +79,18 @@ MSG_Status MSG_Base_AcquireDataAtomic(MSG_Data_t * d){
 
 
 MSG_Status MSG_Base_ReleaseDataAtomic(MSG_Data_t * d){
+
     if(d){
         CRITICAL_REGION_ENTER();
         decref(d);
-#ifndef MSG_BASE_DATA_BUFFER_SIZE
-        //here we free the buffer if dynamically allocated
-#endif
         CRITICAL_REGION_EXIT();
         if(d->ref == 0){
             d->context = 0;
             DEBUGS("~");
+            
+            CRITICAL_REGION_ENTER();
+            vPortFree(d);
+            CRITICAL_REGION_EXIT();
         }else{
             DEBUGS("-");
         };
@@ -169,36 +109,6 @@ _inspect(MSG_Data_t * o){
     PRINT_HEX(&o->ref,sizeof(o->ref));
     PRINTS("\r\n");
 
-}
-MSG_Status
-MSG_Base_BufferTest(void){
-    MSG_Data_t * objbig = NULL;
-    MSG_Data_t * obj = NULL;
-    for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE; i++){
-        MSG_Data_t * o = MSG_Base_AllocateDataAtomic(1); 
-        if(!o)goto fail;
-        //_inspect(o);
-    }
-    PRINTS("B");
-#ifdef MSG_BASE_USE_BIG_POOL
-    for(int i = 0; i < MSG_BASE_SHARED_POOL_SIZE_BIG; i++){
-        MSG_Data_t * o = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE_BIG); 
-        if(!o)goto fail;
-        _inspect(o);
-    }
-    objbig = MSG_Base_AllocateDataAtomic(MSG_BASE_DATA_BUFFER_SIZE_BIG); 
-#endif
-    obj = MSG_Base_AllocateDataAtomic(1); 
-    if(obj || objbig){
-        PRINTS("Failed Test\r\n");
-        return FAIL;
-    }else{
-        PRINTS("All Pass\r\n");
-    }
-    return SUCCESS;
-fail:
-    PRINTS("Failed\r\n");
-    return FAIL;
 }
 
 MSG_Queue_t * MSG_Base_InitQueue(void * mem, uint32_t size){

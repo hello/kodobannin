@@ -46,7 +46,7 @@ static struct{
      * Only one queue_tx right now
      */
     uint8_t dummy[4];
-    uint8_t tx_queue_buffer[4 * sizeof(MSG_Data_t *)];
+    uint8_t tx_queue_buffer[5 * sizeof(MSG_Data_t *)];
     MSG_Queue_t * tx_queue;
 }self;
 
@@ -118,9 +118,9 @@ _initialize_transaction(){
             self.transaction.state = WAIT_READ_RX_CTX;
             return READING;
         case REG_READ_FROM_SSPI:
-            /*
-             *PRINTS("WRITE TO MASTER\r\n");
-             */
+            
+            //PRINTS("WRITE TO MASTER\r\n");
+             
             //prepare buffer here
             self.transaction.payload = _dequeue_tx();
             if(self.transaction.payload){
