@@ -13,7 +13,7 @@
 #include "morpheus_ble.h"
 #include "ble_bondmngr.h"
 #include "nrf_delay.h"
-#include "circ_buff.h"
+#include "hlo_queue.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -34,7 +34,7 @@ static struct{
     app_timer_id_t boot_timer;
     boot_status boot_state;
     int ready_to_send;
-    tCircularBuffer * tx_queue;
+    struct hlo_queue_t * tx_queue;
 } self;
 
 
@@ -505,11 +505,11 @@ static void _on_notify_failed(void* data_page){
 }
 static void _dequeue_tx(void){
     MSG_Data_t * next = NULL;
-    if(IsBufferSizeFilled(self.tx_queue, sizeof(&next))){
+    if(hlo_queue_filled_size(self.tx_queue) >= sizeof(&next)){
         PRINTS("tx_ble:");
 
         CRITICAL_REGION_ENTER();
-        ReadBuffer(self.tx_queue, (unsigned char*)&next, sizeof(&next));
+        hlo_queue_read(self.tx_queue, (unsigned char*)&next, sizeof(&next));
         self.ready_to_send = 0;
         CRITICAL_REGION_EXIT();
 
@@ -528,26 +528,27 @@ static void _dequeue_tx(void){
     }
 }
 static bool _queue_tx(MSG_Data_t * msg){
-    if(msg && GetBufferEmptySize(self.tx_queue) >= sizeof(&msg)){
+    if(msg && hlo_queue_empty_size(self.tx_queue) >= sizeof(&msg)){
         MSG_Base_AcquireDataAtomic(msg);
 
         CRITICAL_REGION_ENTER();
-        FillBuffer(self.tx_queue, (unsigned char*)&msg, sizeof(&msg));
+        hlo_queue_write(self.tx_queue, (unsigned char*)&msg, sizeof(&msg));
         if(self.ready_to_send){
             _dequeue_tx();
         }
         CRITICAL_REGION_EXIT();
 
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 static MSG_Status _init(){
 
     hble_stack_init();
 
-    self.tx_queue = CreateCircularBuffer(10 * sizeof(MSG_Data_t*));
+    self.tx_queue = hlo_queue_init(32);
+    APP_ASSERT(self.tx_queue);
     self.ready_to_send = 1;
 
 #ifdef BONDING_REQUIRED     
