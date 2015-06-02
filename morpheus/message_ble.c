@@ -13,6 +13,7 @@
 #include "morpheus_ble.h"
 #include "ble_bondmngr.h"
 #include "nrf_delay.h"
+#include "hlo_queue.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -20,6 +21,10 @@
 #endif
 
 static void _release_pending_resources();
+static void _on_notify_failed(void* data_page);
+static void _on_notify_completed(const void* data, void* data_page);
+static void _dequeue_tx(void);
+static bool _queue_tx(MSG_Data_t * msg);
 
 static struct{
     MSG_Base_t base;
@@ -28,6 +33,8 @@ static struct{
     app_timer_id_t timer_id;
     app_timer_id_t boot_timer;
     boot_status boot_state;
+    int ready_to_send;
+    struct hlo_queue_t * tx_queue;
 } self;
 
 
@@ -277,17 +284,12 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 PRINTS("Factory reset from CC3200..\r\n");
                 hble_refresh_bonds(ERASE_ALL_BOND, true);
-                //notify anyway
-                MSG_Base_AcquireDataAtomic(data);
-                hlo_ble_notify(0xB00B, data->buf, data->len,
-                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+                _queue_tx(data);
                 break;
             default:
                 // protobuf, dump the thing straight back?
-                PRINTS(">>>>>>>>>>>Protobuf to PHONE\r\n");
-                MSG_Base_AcquireDataAtomic(data);
-                hlo_ble_notify(0xB00B, data->buf, data->len,
-                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+                PRINTS(">>>Proto to PHONE\r\n");
+                _queue_tx(data);
                 break;
         }
         morpheus_ble_free_protobuf(&command);
@@ -369,44 +371,6 @@ static void _release_pending_resources(){
     }
 }
 
-MSG_Status message_ble_remove_pill(MSG_Data_t* pill_id_page)
-{
-    if(SUCCESS != MSG_Base_AcquireDataAtomic(pill_id_page)){
-        morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
-        return FAIL;
-    }
-
-    const char* hex_pill_id = pill_id_page->buf;
-    // We should NOT keep any states here as well, so no timeout is needed and no memory leak danger.
-    uint64_t pill_id = 0;
-    if(!hble_hex_to_uint64_device_id(hex_pill_id, &pill_id))
-    {
-        morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
-    }else{
-
-#ifdef ANT_ENABLE
-        //remove bond here
-#else
-        // echo test
-        PRINTS("Pill id to unpair:");
-        PRINT_HEX(&pill_id, sizeof(pill_id));
-        PRINTS("\r\n");
-
-        MorpheusCommand morpheus_command;
-        memset(&morpheus_command, 0, sizeof(morpheus_command));
-        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
-        morpheus_ble_reply_protobuf(&morpheus_command);
-#endif
-    }
-
-    MSG_Base_ReleaseDataAtomic(pill_id_page);
-
-
-    return SUCCESS;
-
-}
-
-
 static void _pill_pairing_time_out(void* context)
 {
     _release_pending_resources();
@@ -462,12 +426,7 @@ MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
 
 #ifndef HAS_CC3200
         // Echo test
-        hlo_ble_notify(0xB00B, data->buf, data->len, 
-                    &(struct hlo_ble_operation_callbacks){
-                        morpheus_ble_on_notify_completed, 
-                        morpheus_ble_on_notify_failed, 
-                        data
-                    });
+        _queue_tx(data);
         // DO NOT release data because callback will do it.
 #else
         MSG_Base_ReleaseDataAtomic(data);
@@ -527,10 +486,70 @@ static void _on_boot_timer(void* context)
     }
 #endif
 }
+static void _on_notify_completed(const void* data, void* data_page){
+    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+    uint32_t pool_free = MSG_Base_FreeCount();
+    PRINTS("heap free: ");
+    PRINT_HEX(&pool_free, sizeof(pool_free));
+    PRINTS("\r\n");
+    _dequeue_tx();
+}
+
+static void _on_notify_failed(void* data_page){
+    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+    uint32_t pool_free = MSG_Base_FreeCount();
+    PRINTS("heap free: ");
+    PRINT_HEX(&pool_free, sizeof(pool_free));
+    PRINTS("\r\n");
+    _dequeue_tx();
+}
+static void _dequeue_tx(void){
+    MSG_Data_t * next = NULL;
+    if(hlo_queue_filled_size(self.tx_queue) >= sizeof(&next)){
+        PRINTS("tx_ble:");
+
+        CRITICAL_REGION_ENTER();
+        hlo_queue_read(self.tx_queue, (unsigned char*)&next, sizeof(&next));
+        self.ready_to_send = 0;
+        CRITICAL_REGION_EXIT();
+
+        PRINT_HEX(&next->len, 2);
+        PRINTS("\r\n");
+        if(next){
+            hlo_ble_notify(0xB00B, next->buf, next->len,
+                    &(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, next});
+        }
+    }else{
+        PRINTS("no more data\r\n");
+
+        CRITICAL_REGION_ENTER();
+        self.ready_to_send = 1;
+        CRITICAL_REGION_EXIT();
+    }
+}
+static bool _queue_tx(MSG_Data_t * msg){
+    if(msg && hlo_queue_empty_size(self.tx_queue) >= sizeof(&msg)){
+        MSG_Base_AcquireDataAtomic(msg);
+
+        CRITICAL_REGION_ENTER();
+        hlo_queue_write(self.tx_queue, (unsigned char*)&msg, sizeof(&msg));
+        if(self.ready_to_send){
+            _dequeue_tx();
+        }
+        CRITICAL_REGION_EXIT();
+
+        return true;
+    }
+    return false;
+}
 
 static MSG_Status _init(){
 
     hble_stack_init();
+
+    self.tx_queue = hlo_queue_init(32);
+    APP_ASSERT(self.tx_queue);
+    self.ready_to_send = 1;
 
 #ifdef BONDING_REQUIRED     
     hble_bond_manager_init();
@@ -712,6 +731,7 @@ static void _pass_to_mid_and_handle_error(MSG_Data_t * data_page){
         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
     }
 }
+//from phone
 void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command)
 {
     MSG_Base_AcquireDataAtomic(data_page);
@@ -745,15 +765,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE:
             _erase_bonded_users();
-            break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
-        {
-            MSG_Data_t* pill_id_page = command->deviceId.arg;
-            if(pill_id_page)
-            {
-                message_ble_remove_pill(pill_id_page);
-            }
-        }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
             _start_morpheus_dfu_process();
