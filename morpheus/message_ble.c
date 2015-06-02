@@ -21,6 +21,10 @@
 #endif
 
 static void _release_pending_resources();
+static void _on_notify_failed(void* data_page);
+static void _on_notify_completed(const void* data, void* data_page);
+static void _kickoff_tx(void);
+static bool _queue_tx(MSG_Data_t * msg);
 
 static struct{
     MSG_Base_t base;
@@ -279,17 +283,12 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 PRINTS("Factory reset from CC3200..\r\n");
                 hble_refresh_bonds(ERASE_ALL_BOND, true);
-                //notify anyway
-                MSG_Base_AcquireDataAtomic(data);
-                hlo_ble_notify(0xB00B, data->buf, data->len,
-                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+                _queue_tx(data);
                 break;
             default:
                 // protobuf, dump the thing straight back?
                 PRINTS(">>>>>>>>>>>Protobuf to PHONE\r\n");
-                MSG_Base_AcquireDataAtomic(data);
-                hlo_ble_notify(0xB00B, data->buf, data->len,
-                        &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, data});
+                _queue_tx(data);
                 break;
         }
         morpheus_ble_free_protobuf(&command);
@@ -426,12 +425,7 @@ MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
 
 #ifndef HAS_CC3200
         // Echo test
-        hlo_ble_notify(0xB00B, data->buf, data->len, 
-                    &(struct hlo_ble_operation_callbacks){
-                        morpheus_ble_on_notify_completed, 
-                        morpheus_ble_on_notify_failed, 
-                        data
-                    });
+        _queue_tx(data);
         // DO NOT release data because callback will do it.
 #else
         MSG_Base_ReleaseDataAtomic(data);
@@ -490,6 +484,44 @@ static void _on_boot_timer(void* context)
         app_timer_start(self.boot_timer, BLE_BOOT_RETRY_INTERVAL, NULL);
     }
 #endif
+}
+static void _on_notify_completed(const void* data, void* data_page){
+    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+    uint32_t pool_free = MSG_Base_FreeCount();
+    PRINTS("heap free: ");
+    PRINT_HEX(&pool_free, sizeof(pool_free));
+    PRINTS("\r\n");
+    _kickoff_tx();
+}
+
+static void _on_notify_failed(void* data_page){
+    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
+    uint32_t pool_free = MSG_Base_FreeCount();
+    PRINTS("heap free: ");
+    PRINT_HEX(&pool_free, sizeof(pool_free));
+    PRINTS("\r\n");
+    _kickoff_tx();
+}
+static void _kickoff_tx(void){
+    MSG_Data_t * next = NULL;
+    if(IsBufferSizeFilled(self.tx_queue, sizeof(&next))){
+        PRINTS("sending queued\r\n");
+        ReadBuffer(self.tx_queue, (unsigned char*)&next, sizeof(&next));
+        PRINT_DEC(&next, 4);
+        hlo_ble_notify(0xB00B, next->buf, next->len,
+                &(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, next});
+    }else{
+        PRINTS("no more data\r\n");
+    }
+}
+static bool _queue_tx(MSG_Data_t * msg){
+    if(msg && GetBufferEmptySize(self.tx_queue) >= sizeof(&msg)){
+        MSG_Base_AcquireDataAtomic(msg);
+        FillBuffer(self.tx_queue, (unsigned char*)&msg, sizeof(&msg));
+        _kickoff_tx();
+        return TRUE;
+    }
+    return FALSE;
 }
 
 static MSG_Status _init(){
@@ -678,6 +710,7 @@ static void _pass_to_mid_and_handle_error(MSG_Data_t * data_page){
         morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
     }
 }
+//from phone
 void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command)
 {
     MSG_Base_AcquireDataAtomic(data_page);

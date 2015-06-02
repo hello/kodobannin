@@ -518,24 +518,6 @@ void morpheus_ble_write_handler(ble_gatts_evt_write_t* event)
 }
 
 
-void morpheus_ble_on_notify_completed(const void* data, void* data_page)
-{
-    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
-    uint32_t pool_free = MSG_Base_FreeCount();
-    PRINTS("heap free: ");
-    PRINT_HEX(&pool_free, sizeof(pool_free));
-    PRINTS("\r\n");
-}
-
-void morpheus_ble_on_notify_failed(void* data_page)
-{
-    MSG_Base_ReleaseDataAtomic((MSG_Data_t*)data_page);
-    uint32_t pool_free = MSG_Base_FreeCount();
-    PRINTS("heap free: ");
-    PRINT_HEX(&pool_free, sizeof(pool_free));
-    PRINTS("\r\n");
-}
-
 bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
     size_t protobuf_len = 0;
     if(!morpheus_ble_encode_protobuf(morpheus_command, NULL, &protobuf_len))
@@ -558,8 +540,7 @@ bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
     memset(heap_page->buf, 0, heap_page->len);
     if(morpheus_ble_encode_protobuf(morpheus_command, heap_page->buf, &protobuf_len))
     {
-        hlo_ble_notify(0xB00B, heap_page->buf, protobuf_len, 
-            &(struct hlo_ble_operation_callbacks){morpheus_ble_on_notify_completed, morpheus_ble_on_notify_failed, heap_page});
+        central->dispatch(ADDR(CENTRAL, 0), ADDR(BLE, MSG_BLE_DEFAULT_CONNECTION), heap_page);
         return true;
     }
 
