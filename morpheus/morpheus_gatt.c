@@ -363,7 +363,7 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         break;
     case BLE_EVT_TX_COMPLETE:
 		{
-			if(_notify_context.seq == _notify_context.total - 1){
+			if(_notify_context.seq == _notify_context.total){
 				if(_notify_context.callback_info.on_succeed){
 					_notify_context.callback_info.on_succeed(_notify_context.orig, _notify_context.callback_info.callback_data);
 				}
