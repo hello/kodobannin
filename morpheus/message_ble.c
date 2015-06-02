@@ -371,44 +371,6 @@ static void _release_pending_resources(){
     }
 }
 
-MSG_Status message_ble_remove_pill(MSG_Data_t* pill_id_page)
-{
-    if(SUCCESS != MSG_Base_AcquireDataAtomic(pill_id_page)){
-        morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
-        return FAIL;
-    }
-
-    const char* hex_pill_id = pill_id_page->buf;
-    // We should NOT keep any states here as well, so no timeout is needed and no memory leak danger.
-    uint64_t pill_id = 0;
-    if(!hble_hex_to_uint64_device_id(hex_pill_id, &pill_id))
-    {
-        morpheus_ble_reply_protobuf_error(ErrorType_INTERNAL_DATA_ERROR);
-    }else{
-
-#ifdef ANT_ENABLE
-        //remove bond here
-#else
-        // echo test
-        PRINTS("Pill id to unpair:");
-        PRINT_HEX(&pill_id, sizeof(pill_id));
-        PRINTS("\r\n");
-
-        MorpheusCommand morpheus_command;
-        memset(&morpheus_command, 0, sizeof(morpheus_command));
-        morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL;
-        morpheus_ble_reply_protobuf(&morpheus_command);
-#endif
-    }
-
-    MSG_Base_ReleaseDataAtomic(pill_id_page);
-
-
-    return SUCCESS;
-
-}
-
-
 static void _pill_pairing_time_out(void* context)
 {
     _release_pending_resources();
@@ -749,15 +711,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE:
             _erase_bonded_users();
-            break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_UNPAIR_PILL:
-        {
-            MSG_Data_t* pill_id_page = command->deviceId.arg;
-            if(pill_id_page)
-            {
-                message_ble_remove_pill(pill_id_page);
-            }
-        }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
             _start_morpheus_dfu_process();
