@@ -557,7 +557,7 @@ bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
     morpheus_command.has_error = true;
     morpheus_command.error = error_type;
 
-    return morpheus_ble_reply_protobuf(&command);
+    return morpheus_ble_reply_protobuf(&morpheus_command);
 }
 
 void morpheus_ble_transmission_layer_init()
