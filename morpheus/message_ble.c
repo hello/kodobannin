@@ -23,7 +23,7 @@
 static void _release_pending_resources();
 static void _on_notify_failed(void* data_page);
 static void _on_notify_completed(const void* data, void* data_page);
-static void _kickoff_tx(void);
+static void _dequeue_tx(void);
 static bool _queue_tx(MSG_Data_t * msg);
 
 static struct{
@@ -33,6 +33,7 @@ static struct{
     app_timer_id_t timer_id;
     app_timer_id_t boot_timer;
     boot_status boot_state;
+    int ready_to_send;
     tCircularBuffer * tx_queue;
 } self;
 
@@ -287,7 +288,7 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
                 break;
             default:
                 // protobuf, dump the thing straight back?
-                PRINTS(">>>>>>>>>>>Protobuf to PHONE\r\n");
+                PRINTS(">>>Proto to PHONE\r\n");
                 _queue_tx(data);
                 break;
         }
@@ -491,7 +492,7 @@ static void _on_notify_completed(const void* data, void* data_page){
     PRINTS("heap free: ");
     PRINT_HEX(&pool_free, sizeof(pool_free));
     PRINTS("\r\n");
-    _kickoff_tx();
+    _dequeue_tx();
 }
 
 static void _on_notify_failed(void* data_page){
@@ -500,27 +501,43 @@ static void _on_notify_failed(void* data_page){
     PRINTS("heap free: ");
     PRINT_HEX(&pool_free, sizeof(pool_free));
     PRINTS("\r\n");
-    _kickoff_tx();
+    _dequeue_tx();
 }
-static void _kickoff_tx(void){
+static void _dequeue_tx(void){
     MSG_Data_t * next = NULL;
     if(IsBufferSizeFilled(self.tx_queue, sizeof(&next))){
-        PRINTS("sending queued\r\n");
+        PRINTS("tx_ble:");
+
+        CRITICAL_REGION_ENTER();
         ReadBuffer(self.tx_queue, (unsigned char*)&next, sizeof(&next));
-        PRINT_DEC(&next, 4);
+        self.ready_to_send = 0;
+        CRITICAL_REGION_EXIT();
+
+        PRINT_HEX(&next->len, 2);
+        PRINTS("\r\n");
         if(next){
             hlo_ble_notify(0xB00B, next->buf, next->len,
                     &(struct hlo_ble_operation_callbacks){_on_notify_completed, _on_notify_failed, next});
         }
     }else{
         PRINTS("no more data\r\n");
+
+        CRITICAL_REGION_ENTER();
+        self.ready_to_send = 1;
+        CRITICAL_REGION_EXIT();
     }
 }
 static bool _queue_tx(MSG_Data_t * msg){
     if(msg && GetBufferEmptySize(self.tx_queue) >= sizeof(&msg)){
         MSG_Base_AcquireDataAtomic(msg);
+
+        CRITICAL_REGION_ENTER();
         FillBuffer(self.tx_queue, (unsigned char*)&msg, sizeof(&msg));
-        _kickoff_tx();
+        if(self.ready_to_send){
+            _dequeue_tx();
+        }
+        CRITICAL_REGION_EXIT();
+
         return TRUE;
     }
     return FALSE;
@@ -531,6 +548,7 @@ static MSG_Status _init(){
     hble_stack_init();
 
     self.tx_queue = CreateCircularBuffer(10 * sizeof(MSG_Data_t*));
+    self.ready_to_send = 1;
 
 #ifdef BONDING_REQUIRED     
     hble_bond_manager_init();
