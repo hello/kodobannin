@@ -541,6 +541,7 @@ bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
     if(morpheus_ble_encode_protobuf(morpheus_command, heap_page->buf, &protobuf_len))
     {
         central->dispatch(ADDR(CENTRAL, 0), ADDR(BLE, MSG_BLE_DEFAULT_CONNECTION), heap_page);
+        MSG_Base_ReleaseDataAtomic(heap_page);
         return true;
     }
 
