@@ -556,22 +556,7 @@ bool morpheus_ble_reply_protobuf_error(uint32_t error_type)
     morpheus_command.has_error = true;
     morpheus_command.error = error_type;
 
-    size_t len = 0;
-    if(!morpheus_ble_encode_protobuf(&morpheus_command, NULL, &len))
-    {
-        return false;
-    }
-
-    char buffer[len];
-    memset(buffer, 0, sizeof(buffer));
-    if(morpheus_ble_encode_protobuf(&morpheus_command, buffer, &len))
-    {
-        hlo_ble_notify(0xB00B, buffer, len, NULL);
-    }else{
-        return false;
-    }
-
-	return true;
+    return morpheus_ble_reply_protobuf(&command);
 }
 
 void morpheus_ble_transmission_layer_init()
