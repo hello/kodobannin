@@ -143,7 +143,7 @@ static struct{
 
 static void
 _handle_command(int argc, char * argv[]){
-    uint32_t value, result, reference;
+    uint32_t value, result;
     if(argc > 1 && !match_command(argv[0], "echo")){
         PRINTS(argv[1]);
     }
@@ -198,7 +198,6 @@ _handle_command(int argc, char * argv[]){
     }
     if( !match_command(argv[0], "cal") ){
         uint32_t slope;
-        uint32_t diff;
 
         result = battery_get_initial_cached(0);
 
@@ -209,10 +208,12 @@ _handle_command(int argc, char * argv[]){
         value = (value/2) *2 ;
 
         slope = 7125;
-        if (result > value)
-	  slope = 7125 - (((result - value) * 7125) / value);
-        if (result < value)
-          slope = 7125 + (((value - result) * 7125) / value);
+        if (result > value){
+            slope = 7125 - (((result - value) * 7125) / value);
+        }
+        if (result < value){
+            slope = 7125 + (((value - result) * 7125) / value);
+        }
  
         PRINT_DEC(&value,4);
         PRINTS(":");

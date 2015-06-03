@@ -246,7 +246,7 @@ uint32_t ADC_CalMgr_EraseAll(void){
 //only call on init
 static uint32_t load_all_from_flash(){
     ADC_CalValue_t value;
-    uint32_t err,val;
+    uint32_t err;
     while(1){
          err = values_info_load_from_flash(&value, &self.cal_val_count);
         if(err != NRF_SUCCESS){
