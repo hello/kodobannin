@@ -229,7 +229,7 @@ ADC_CalValue_t * ADC_CalMgr_Query(const uint32_t pu, const uint32_t pd){
     }
     return NULL;
 }
-int ADC_CalMgr_ForEach(void){
+int ADC_CalMgr_Count(void){
  // int i;
  // for(i = 0; i < self.cal_val_count; i++){
  //     cb(&self.devices[i]);

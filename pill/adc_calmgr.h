@@ -30,5 +30,4 @@ ADC_CalValue_t * ADC_CalMgr_Query(const uint32_t pu, const uint32_t pd);
 //erases all from flash
 uint32_t ADC_CalMgr_EraseAll(void);
 
-int ADC_CalMgr_ForEach(void);
-
+int ADC_CalMgr_Count(void);

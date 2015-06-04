@@ -152,6 +152,21 @@ void _start()
     _load_watchdog();
 
     ADC_CalMgr_Init();
+	{
+		int count = 0;
+		if((count = ADC_CalMgr_Count())){
+			ADC_CalValue_t * p_calue = ADC_CalMgr_Query(523,215);
+			PRINTS("\r\n");
+			if(p_calue){
+				PRINTS("Setting Slope\r\n");
+				PRINT_DEC(&p_calue->slope, 4);
+				PRINTS("\r\n");
+				battery_set_slope_cached(p_calue->slope);
+			}
+		}else{
+			PRINTS("\r\nUsing default calibration\r\n");
+		}
+	}
     battery_update_level();
 
     for(;;) {

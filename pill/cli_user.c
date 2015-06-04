@@ -170,7 +170,7 @@ _handle_command(int argc, char * argv[]){
         ADC_CalMgr_Commit();
     }
     if( !match_command(argv[0], "num") ){
-        value = ADC_CalMgr_ForEach();
+        value = ADC_CalMgr_Count();
         PRINT_DEC(&value,2);
         PRINTS(" \r\n");
     }
@@ -191,7 +191,6 @@ _handle_command(int argc, char * argv[]){
         } else{
             PRINTS("oops");
         }
-        battery_set_slope_cached(p_calue->slope);
     }
     if( !match_command(argv[0], "remove") ){
         ADC_CalMgr_Remove(p_calue);
@@ -236,6 +235,11 @@ _handle_command(int argc, char * argv[]){
         PRINT_DEC(&slope,4);
     **/
         PRINTS(" \r\n");
+        p_calue = &calue;
+        p_calue->slope = slope;
+        ADC_CalMgr_Add(p_calue);
+        ADC_CalMgr_Commit();
+        PRINTS("OK");
 
         battery_set_slope_cached(slope);
     }
