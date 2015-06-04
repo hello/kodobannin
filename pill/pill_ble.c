@@ -255,19 +255,17 @@ static void _test_send_available_data_ant(void *ctx){
     _test_count++;
 }
 */
-extern int needs_calibration;
 int is_debug_enabled(){
 #ifdef DEBUG_SERIAL
 	return 1;
 #endif
 #ifdef PLATFORM_HAS_SERIAL
 	uint32_t val = nrf_gpio_pin_read(SERIAL_RX_PIN);
+	/*
+	 *gpio_input_disconnect(SERIAL_RX_PIN);
+	 */
 	gpio_cfg_d0s1_output_disconnect(SERIAL_RX_PIN);
-	if(needs_calibration){
-		return 1;
-	}else{
-		return !val;
-	}
+	return !val;
 #endif
 	return 0;
 }

@@ -48,7 +48,6 @@
 #include <twi_master.h>
 #include "gpio_nor.h"
 
-int needs_calibration = 0;
 static void _init_rf_modules()
 {
 #ifdef PLATFORM_HAS_SERIAL
@@ -112,6 +111,7 @@ static void _load_watchdog()
     watchdog_init(10,0);
     watchdog_task_start(5);
 }
+
 void _start()
 {
     
@@ -165,7 +165,6 @@ void _start()
 			}
 		}else{
 			PRINTS("\r\nUsing default calibration\r\n");
-			needs_calibration = 1;
 		}
 	}
     battery_update_level();
