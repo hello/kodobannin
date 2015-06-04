@@ -177,18 +177,21 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "get") ){
         p_calue = ADC_CalMgr_Query(523,215);
         if (p_calue) {
-        value = p_calue->pu;
-        PRINT_DEC(&value,4);
-        PRINTS(":");
-        value = p_calue->pd;
-        PRINT_DEC(&value,4);
-        PRINTS(" ");
-        value = p_calue->slope;
-        PRINT_HEX(&value,4);
-        value = p_calue->offset;
-        PRINT_HEX(&value,4);
-        PRINTS(" \r\n");
-        } else PRINTS("oops");
+            value = p_calue->pu;
+            PRINT_DEC(&value,4);
+            PRINTS(":");
+            value = p_calue->pd;
+            PRINT_DEC(&value,4);
+            PRINTS(" ");
+            value = p_calue->slope;
+            PRINT_HEX(&value,4);
+            value = p_calue->offset;
+            PRINT_HEX(&value,4);
+            PRINTS(" \r\n");
+        } else{
+            PRINTS("oops");
+        }
+        battery_set_slope_cached(p_calue->slope);
     }
     if( !match_command(argv[0], "remove") ){
         ADC_CalMgr_Remove(p_calue);
