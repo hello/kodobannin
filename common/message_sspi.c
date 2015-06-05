@@ -2,6 +2,7 @@
 #include <nrf_gpio.h>
 #include "util.h"
 #include <string.h>
+#include "hlo_queue.h"
 
 #define REG_READ_FROM_SSPI  0
 #define REG_WRITE_TO_SSPI 1
@@ -11,6 +12,11 @@ typedef enum{
     WRITING,
     ERROR
 }SSPIState;
+
+typedef struct{
+    MSG_Data_t * msg;
+    MSG_Address_t address;
+}queue_message_t;
 
 static struct{
     MSG_Base_t base;
@@ -46,8 +52,7 @@ static struct{
      * Only one queue_tx right now
      */
     uint8_t dummy[4];
-    uint8_t tx_queue_buffer[5 * sizeof(MSG_Data_t *)];
-    MSG_Queue_t * tx_queue;
+    hlo_queue_t * tx_queue;
 }self;
 
 static char * name = "SSPI";
@@ -62,39 +67,31 @@ _reset(void){
     spi_slave_buffers_set(&self.control_reg, &self.control_reg, 1, 1);
     return IDLE;
 }
-static MSG_Data_t *
-_dequeue_tx(void){
-    MSG_Data_t * ret = MSG_Base_DequeueAtomic(self.tx_queue);
+static uint32_t
+_dequeue_tx(queue_message_t * out_msg){
+    uint32_t ret = hlo_queue_read(self.tx_queue, (unsigned char *)out_msg, sizeof(*out_msg));
 #ifdef PLATFORM_HAS_SSPI
-    if(!self.tx_queue->elements && SSPI_INT != 0){
-        /*
-         *PRINTS("LOW\r\n");
-         */
+    if(ret != NRF_SUCCESS && SSPI_INT != 0){
+        DEBUGS("spi_low\r\n");
         nrf_gpio_pin_clear(SSPI_INT);
     }
 #endif
     return ret;
-    //this function pops the tx queue for spi, for now, simply returns a new buffer with test code
-    //return MSG_Base_AllocateStringAtomic(TEST_STR);
 }
 static uint32_t
-_queue_tx(MSG_Data_t * o){
-    if(SUCCESS == MSG_Base_QueueAtomic(self.tx_queue, o)){
-        /*
-         *PRINTS("Queued SPI Out\r\n");
-         */
+_queue_tx(MSG_Data_t * o, MSG_Address_t address){
+    queue_message_t msg = {
+        .msg = o,
+        .address = address,
+    };
+    if( hlo_queue_empty_size(self.tx_queue) >= sizeof(msg) ){
+        hlo_queue_write(self.tx_queue, (unsigned char*)&msg, sizeof(msg));
     }else{
-        //we are forced to drop since something shouldn't be here
-        /*
-         *PRINTS("Dropped Old Data\r\n");
-         */
         return 1;
     }
 #ifdef PLATFORM_HAS_SSPI
     if(SSPI_INT != 0){
-        /*
-         *PRINTS("HIGH\r\n");
-         */
+        DEBUGS("spi_high\r\n");
         nrf_gpio_pin_set(SSPI_INT);
     }
 #endif
@@ -118,15 +115,18 @@ _initialize_transaction(){
             self.transaction.state = WAIT_READ_RX_CTX;
             return READING;
         case REG_READ_FROM_SSPI:
-            
             //PRINTS("WRITE TO MASTER\r\n");
-             
             //prepare buffer here
-            self.transaction.payload = _dequeue_tx();
+            {
+                queue_message_t msg = {0};
+                if(NRF_SUCCESS == _dequeue_tx(&msg)){
+                    self.transaction.payload = msg.msg;
+                    self.transaction.context_reg.address = msg.address;
+                }
+            }
             if(self.transaction.payload){
                 //change to payload address
                 self.transaction.context_reg.length = self.transaction.payload->len; //get from tx queue;
-                self.transaction.context_reg.address = (MSG_Address_t){0,0}; 
             }else{
                 /*
                  *PRINTS("DQFr\n");
@@ -235,19 +235,23 @@ _flush(void){
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(data){
-        if(dst.submodule == 0){
-            //command for this module
-
-        }else if(dst.submodule == 1){
-            //send to sspi slave
-            if(0 == _queue_tx(data)){
-                /*
-                 *PRINTS("***QUEUE***\r\n");
-                 */
-                MSG_Base_AcquireDataAtomic(data);
-            }
-        }else{
-            return FAIL;
+        switch(dst.submodule){
+            case 0:
+                //fallthrough for backward compatibility
+            case 1:
+                if(0 == _queue_tx(data, ADDR(0, 0))){
+                    MSG_Base_AcquireDataAtomic(data);
+                }else{
+                    return FAIL;
+                }
+                break;
+            default:
+                if(0 == _queue_tx(data, ADDR(0, dst.submodule))){
+                    MSG_Base_AcquireDataAtomic(data);
+                }else{
+                    return FAIL;
+                }
+                break;
         }
     }
     return SUCCESS;
@@ -299,7 +303,8 @@ _init(){
     }
 #endif
     self.current_state = _reset();
-    self.tx_queue = MSG_Base_InitQueue(self.tx_queue_buffer, sizeof(self.tx_queue_buffer));
+    self.tx_queue = hlo_queue_init(64);
+    APP_ASSERT(self.tx_queue);
     return SUCCESS;
 
 }
