@@ -103,19 +103,15 @@ static SSPIState
 _initialize_transaction(){
     switch(self.control_reg){
         default:
-            /*
-             *PRINTS("IN UNKNOWN MODE\r\n");
-             */
+            DEBUGS("IN UNKNOWN MODE\r\n");
             return _reset();
             break;
         case REG_WRITE_TO_SSPI:
-            /*
-             *PRINTS("READ FROM MASTER\r\n");
-             */
+            DEBUGS("READ FROM MASTER\r\n");
             self.transaction.state = WAIT_READ_RX_CTX;
             return READING;
         case REG_READ_FROM_SSPI:
-            //PRINTS("WRITE TO MASTER\r\n");
+            DEBUGS("WRITE TO MASTER\r\n");
             //prepare buffer here
             {
                 queue_message_t msg = {0};
@@ -129,9 +125,7 @@ _initialize_transaction(){
                 //change to payload address
                 self.transaction.context_reg.length = self.transaction.payload->len; //get from tx queue;
             }else{
-                /*
-                 *PRINTS("DQFr\n");
-                 */
+                DEBUGS("DQFr\n");
                 self.transaction.context_reg.length = 0; //get from tx queue;
                 self.transaction.context_reg.address = (MSG_Address_t){0,0};
             }
@@ -143,23 +137,17 @@ static SSPIState
 _handle_transaction(){
     switch(self.transaction.state){
         case WAIT_READ_RX_CTX:
-            /*
-             *PRINTS("@WAIT RX LEN\r\n");
-             */
+            DEBUGS("@WAIT RX LEN\r\n");
             spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, (uint8_t*)&self.transaction.context_reg, sizeof(self.transaction.context_reg), sizeof(self.transaction.context_reg));
             self.transaction.state = WAIT_READ_RX_BUF;
             break;
         case WRITE_TX_CTX:
-            /*
-             *PRINTS("@WRITE TX LEN\r\n");
-             */
+            DEBUGS("@WRITE TX LEN\r\n");
             spi_slave_buffers_set((uint8_t*)&self.transaction.context_reg, self.dummy, sizeof(self.transaction.context_reg), sizeof(self.dummy));
             self.transaction.state = WRITE_TX_BUF;
             break;
         case WAIT_READ_RX_BUF:
-            /*
-             *PRINTS("@WAIT RX BUF\r\n");
-             */
+            DEBUGS("@WAIT RX BUF\r\n");
             self.transaction.payload = MSG_Base_AllocateDataAtomic(self.transaction.context_reg.length);
             if(self.transaction.payload){
                 spi_slave_buffers_set(self.transaction.payload->buf, self.transaction.payload->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);
@@ -171,9 +159,7 @@ _handle_transaction(){
             }
             break;
         case WRITE_TX_BUF:
-            /*
-             *PRINTS("@WRITE TX BUF\r\n");
-             */
+            DEBUGS("@WRITE TX BUF\r\n");
             if(self.transaction.payload){
                 spi_slave_buffers_set(self.transaction.payload->buf, self.dummy, self.transaction.context_reg.length, sizeof(self.dummy));
                 self.transaction.state = FIN_WRITE;
