@@ -22,7 +22,7 @@ _handle_command(int argc, char * argv[]){
         MSG_Data_t * data = NULL;
         uint8_t addr = 0;
         if(argc > 2){
-            addr = 2;
+            addr = nrf_atoi(argv[1]);
             data = MSG_Base_AllocateStringAtomic(argv[2]);
         }else{
             data = MSG_Base_AllocateStringAtomic(argv[1]);
