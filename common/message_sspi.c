@@ -121,7 +121,8 @@ _initialize_transaction(){
                 queue_message_t msg = {0};
                 if(NRF_SUCCESS == _dequeue_tx(&msg)){
                     self.transaction.payload = msg.msg;
-                    self.transaction.context_reg.address = msg.address;
+                    //swapping byte order for transmission
+                    self.transaction.context_reg.address = ADDR(msg.address.submodule, msg.address.module);
                 }
             }
             if(self.transaction.payload){
