@@ -164,13 +164,23 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
     }
     morpheus_ble_free_protobuf(&morpheus_command);
 }
-
+static void _disp_ant_id(const hlo_ant_device_t * id){
+    int32_t rssi = id->rssi * -1;
+    PRINTS("ANT: ");
+    PRINT_HEX(&id->device_number,2);
+    PRINTS(" T: ");
+    PRINT_HEX(&id->device_type,1);
+    PRINTS(" RSSI: -");
+    PRINT_DEC(&rssi,4);
+    PRINTS("\r\n");
+}
 static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
     if(!msg)
     {
-        PRINTS("Data error.\r\n");
+        PRINTS("ANT Data error.\r\n");
         return;
     }
+    _disp_ant_id(id);
     switch(id->device_type){
         case HLO_ANT_DEVICE_TYPE_PILL:
             _handle_pill(id, src, msg);
