@@ -168,8 +168,10 @@ static void _disp_ant_id(const hlo_ant_device_t * id){
     int32_t rssi = id->rssi * -1;
     PRINTS("ANT: ");
     PRINT_HEX(&id->device_number,2);
-    PRINTS(" T: ");
+    PRINTS(" D: ");
     PRINT_HEX(&id->device_type,1);
+    PRINTS(" T: ");
+    PRINT_HEX(&id->transmit_type,1);
     PRINTS(" RSSI: -");
     PRINT_DEC(&rssi,4);
     PRINTS("\r\n");
