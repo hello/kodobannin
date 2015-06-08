@@ -15,7 +15,6 @@ typedef struct{
     uint8_t transmit_type;
     uint8_t measurement_type;
     int8_t rssi;
-    uint16_t rx_time;
 }hlo_ant_device_t;
 
 typedef struct{

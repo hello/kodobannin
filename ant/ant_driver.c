@@ -186,7 +186,6 @@ _handle_rx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
                 .transmit_type = extbytes[3],
                 .measurement_type = extbytes[4],
                 .rssi = extbytes[5],
-                .rx_time = *((uint16_t*)&extbytes[6]),
             };
         }else{
             //error
