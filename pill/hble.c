@@ -102,9 +102,7 @@ static void _on_sys_evt(uint32_t sys_evt)
     PRINT_HEX(&sys_evt, sizeof(sys_evt));
     PRINTS("\r\n");
 
-#ifdef BONDING_REQUIRED
     pstorage_sys_event_handler(sys_evt);
-#endif
 
 }
 
