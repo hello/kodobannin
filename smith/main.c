@@ -49,40 +49,6 @@ static void _init_rf_modules()
     APP_OK(softdevice_ant_evt_handler_set(ant_handler));
 #endif
 
-#ifdef BLE_ENABLE
-
-    hble_stack_init();
-
-#ifdef BONDING_REQUIRED   
-    hble_bond_manager_init();
-#endif
-    // append something to device name
-    char device_name[strlen(BLE_DEVICE_NAME)+4];
-
-    memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-
-    uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-
-    device_name[strlen(BLE_DEVICE_NAME)] = '-';
-    device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-    device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-    device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
-
-    hble_params_init(device_name);
-    hlo_ble_init();
-    pill_ble_services_init();
-    PRINTS("pill_ble_init() done\r\n");
-
-    ble_uuid_t service_uuid = {
-        .type = hello_type,
-        .uuid = BLE_UUID_PILL_SVC
-    };
-
-    hble_advertising_init(service_uuid);
-    PRINTS("ble_init() done.\r\n");
-    hble_advertising_start();
-#endif
-    PRINTS("INIT DONE.\r\n");
 }
 
 
