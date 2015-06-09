@@ -1,74 +1,19 @@
 // vi:noet:sw=4 ts=4
 
-#include <ant_interface.h>
 #include <app_error.h>
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
 #include <nrf_soc.h>
 #include <app_gpiote.h>
 #include <app_timer.h>
-#include <ble_err.h>
-#include <ble_flash.h>
 #include <ble_stack_handler_types.h>
-#include <string.h>
 #include <util.h>
-
-/*
- *#ifdef PLATFORM_HAS_IMU
- *#include "message_imu.h"
- *#endif
- */
-
-#include <watchdog.h>
-#include <nrf_sdm.h>
 #include <softdevice_handler.h>
 
-/*
- *#include "app.h"
- *#include "platform.h"
- */
-
-#include "util.h"
-#include "watchdog.h"
-
-#include <twi_master.h>
-#include "gpio_nor.h"
-
-static void _init_rf_modules()
-{
-#ifdef PLATFORM_HAS_SERIAL
-	//configure input
-	nrf_gpio_cfg_input(SERIAL_RX_PIN, GPIO_PIN_CNF_PULL_Pullup);
-#endif
-	volatile int debounce = 2000000;//about 2 seconds debounce
-	while(debounce > 0){
-		debounce--;
-	}
-
-#ifdef ANT_ENABLE
-    APP_OK(softdevice_ant_evt_handler_set(ant_handler));
-#endif
-
-}
-
-
-static void _load_watchdog()
-{
-    watchdog_init(10,0);
-    watchdog_task_start(5);
-}
 
 void _start()
 {
     
-/*
- *#ifdef PLATFORM_HAS_VLED
- *    gpio_cfg_d0s1_output_disconnect_pull(LED3_ENABLE,NRF_GPIO_PIN_PULLDOWN);
- *    gpio_cfg_d0s1_output_disconnect_pull(LED2_ENABLE,NRF_GPIO_PIN_PULLDOWN);
- *    gpio_cfg_d0s1_output_disconnect_pull(LED1_ENABLE,NRF_GPIO_PIN_PULLDOWN);
- *    gpio_cfg_d0s1_output_disconnect_pull(VRGB_ENABLE,NRF_GPIO_PIN_PULLDOWN);
- *#endif
- */
     {
         enum {
             SCHED_QUEUE_SIZE = 32,
@@ -92,13 +37,6 @@ void _start()
     }
     
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, true);
-
-	/*
-     *_init_rf_modules();
-	 */
-	/*
-     *_load_watchdog();
-	 */
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
