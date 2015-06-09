@@ -11,6 +11,7 @@
 
 #include "hble.h"
 #include "battery.h"
+#include "ant_devices.h"
 
 static struct{
     MSG_Central_t * parent;
@@ -25,17 +26,9 @@ static void _commit_pairing(void * ctx){
     ANT_BondMgrCommit();
 }
 
-
-static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
-    if(!msg)
-    {
-        PRINTS("Data error.\r\n");
-        return;
-    }
-
+static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
     // TODO, this shit needs to be tested on CC3200 side.
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
-
 
     MorpheusCommand morpheus_command;
     memset(&morpheus_command, 0, sizeof(MorpheusCommand));
@@ -170,6 +163,36 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 
     }
     morpheus_ble_free_protobuf(&morpheus_command);
+}
+static void _disp_ant_id(const hlo_ant_device_t * id){
+    int32_t rssi = id->rssi * -1;
+    PRINTS("ANT: ");
+    PRINT_HEX(&id->device_number,2);
+    PRINTS(" D: ");
+    PRINT_HEX(&id->device_type,1);
+    PRINTS(" T: ");
+    PRINT_HEX(&id->transmit_type,1);
+    PRINTS(" RSSI: -");
+    PRINT_DEC(&rssi,4);
+    PRINTS("\r\n");
+}
+static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
+    if(!msg)
+    {
+        PRINTS("ANT Data error.\r\n");
+        return;
+    }
+    _disp_ant_id(id);
+    switch(id->device_type){
+        case HLO_ANT_DEVICE_TYPE_PILL:
+            _handle_pill(id, src, msg);
+            break;
+        default:
+            PRINTS("Unknown ANT Device");
+            PRINT_HEX(&id->device_type, 1);
+            PRINTS("\r\n");
+            break;
+    }
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
