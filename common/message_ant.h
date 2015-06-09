@@ -61,7 +61,7 @@ typedef enum {
     ANT_PILL_HEARTBEAT,
     ANT_PILL_SHAKING,
     ANT_PILL_DATA_ENCRYPTED
-}MSG_ANT_PillDataType_t;
+}MSG_ANT_IMUDataType_t;
 
 typedef struct{
     uint8_t type; //payload type using MSG_ANT_PillDataType;
@@ -69,7 +69,7 @@ typedef struct{
     uint16_t payload_len;
     uint64_t UUID;
     uint8_t payload[0];
-}__attribute__((packed)) MSG_ANT_PillData_t;
+}__attribute__((packed)) MSG_ANT_IMUData_t;
 
 /**
  * ANT user defined actions
@@ -89,5 +89,3 @@ typedef struct{
 }MSG_ANTHandler_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);
-/* Helper API an Object based on type */
-MSG_Data_t * INCREF MSG_ANT_AllocateObject(MSG_ANT_PillDataType_t type, void * payload);

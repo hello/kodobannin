@@ -63,13 +63,13 @@ _flush(void){
 static void _send_available_data_ant(){
 
     //allocate memory
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_IMUData_t) +  // ANT packet headers
         sizeof(MSG_ANT_EncryptedMotionData_t));
 
     //if allocation worked
     if(data_page) {
         //ant data comes from the data page (allocated above, and freed at the end of this function)
-        MSG_ANT_PillData_t* ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
+        MSG_ANT_IMUData_t* ant_data =(MSG_ANT_IMUData_t*) &data_page->buf;
 
         //motion_data is a pointer to the blob of data that antdata->payload points to
         //the goal is to fill out the motion_data pointer
@@ -114,7 +114,7 @@ static void _send_available_data_ant(){
 
                  *MSG_Data_t * dupe = MSG_Base_Dupe(data_page);
                  *if(dupe){
-                 *    ant_data = (MSG_ANT_PillData_t *)&dupe->buf;
+                 *    ant_data = (MSG_ANT_IMUData_t *)&dupe->buf;
                  *    motion_data = (MSG_ANT_EncryptedMotionData_t*)ant_data->payload;
                  *    uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
                  *    aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
@@ -135,7 +135,7 @@ static void _send_available_data_ant(){
 static void _send_heartbeat_data_ant(){
     // TODO: Jackson please do review & test this.
     // I packed all the struct and I am not sure it will work as expected.
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_heartbeat_t));
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_IMUData_t) + sizeof(pill_heartbeat_t));
     if(data_page){
         pill_heartbeat_t heartbeat = {0};
 
@@ -144,7 +144,7 @@ static void _send_heartbeat_data_ant(){
         heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
         
         memset(&data_page->buf, 0, data_page->len);
-        MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
+        MSG_ANT_IMUData_t* ant_data = (MSG_ANT_IMUData_t*)&data_page->buf;
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_HEARTBEAT;
         ant_data->UUID = GET_UUID_64();
