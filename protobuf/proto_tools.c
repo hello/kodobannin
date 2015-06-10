@@ -8,8 +8,7 @@
 #define DECODE_STRING_FIELD(f)  f.funcs.decode = _decode_string_fields
 #define FREE_ARG(f) if(f.arg){vPortFree(f.arg); f.arg = NULL;}
 //********************************************************************************
-//static 
-
+//static common
 static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg){
     bool ret = false;
     if(!arg){
@@ -24,7 +23,8 @@ static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field,
 
     return ret;
 }
-
+//********************************************************************************
+//static MorpheusCommand
 static void _assign_encode_functions_MorpheusCommand(MorpheusCommand* command){
     ENCODE_STRING_FIELD(command->accountId);
     ENCODE_STRING_FIELD(command->deviceId);
