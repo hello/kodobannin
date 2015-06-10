@@ -14,6 +14,7 @@
 #include "ble_bondmngr.h"
 #include "nrf_delay.h"
 #include "hlo_queue.h"
+#include "proto_tools.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
@@ -697,32 +698,14 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Base_ReleaseDataAtomic(command->accountId.arg);
 }
 
-bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
-{
-    size_t proto_len = 0;
-    if(!morpheus_ble_encode_protobuf(command, NULL, &proto_len))
-    {
-        PRINTS("encode failed\r\n");
-        return false;
+bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command){
+    MSG_Data_t * msg = message_from_MorpheusCommand(command);
+    if(msg){
+        self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, msg);
+        MSG_Base_ReleaseDataAtomic(msg);
+        return true;
     }
-
-    PRINTS("Proto len: ");
-    PRINT_HEX(&proto_len, sizeof(proto_len));
-    PRINTS("\r\n");
-
-
-    MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
-    if(!proto_page){
-        PRINTS(MSG_NO_MEMORY);
-        return false;
-    }
-
-
-    morpheus_ble_encode_protobuf(command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
-    self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, proto_page);
-    MSG_Base_ReleaseDataAtomic(proto_page);
-
-    return true;
+    return false;
 }
 
 static void _pass_to_mid_and_handle_error(MSG_Data_t * data_page){
