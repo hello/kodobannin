@@ -8,7 +8,7 @@
 MSG_Data_t * INCREF message_from_MorpheusCommand(MorpheusCommand * command);
 
 
-uint32_t MorpheusCommand_from_message(MorpheusCommand * command, MSG_Data_t * message);
+bool MorpheusCommand_from_message(MorpheusCommand * command, MSG_Data_t * message);
 
 /* only frees internal malloc'd memory, command pointer must be freed by caller if necessary */
 void free_MorpheusCommand(MorpheusCommand * command);

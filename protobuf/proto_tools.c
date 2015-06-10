@@ -5,10 +5,39 @@
 #include "heap.h"
 
 #define ENCODE_STRING_FIELD(f)  f.funcs.encode = (f.arg ? _encode_string_fields : NULL)
-#define DECODE_STRING_FIELD(f)  f.funcs.decode = _decode_string_fields
+#define DECODE_STRING_FIELD(f)  f.funcs.decode = _decode_string_field
 #define FREE_ARG(f) if(f.arg){vPortFree(f.arg); f.arg = NULL;}
 //********************************************************************************
 //static common
+static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, void **arg){
+    PRINTS("string length: ");
+    PRINT_HEX(&stream->bytes_left, sizeof(stream->bytes_left));
+    PRINTS("\r\n");
+
+    if(stream->bytes_left == 0){
+        PRINTS("No data for field tag");
+        PRINT_HEX(&field->tag, sizeof(field->tag));
+        PRINTS("\r\n");
+        return true;
+    }
+
+    char * string_page = pvPortMalloc(stream->bytes_left + 1);
+    if(!string_page){
+        PRINTS("no memory");
+        return false;
+    }
+
+    memset(string_page, 0, stream->bytes_left + 1);
+
+    if (!pb_read(stream, string_page, stream->bytes_left)){
+        PRINTS("_decode_string_field read content failed\r\n");// nrf_delay_ms(1);
+        vPortFree(string_page);
+        return false;
+    }
+	
+	*arg = string_page;
+    return true;
+}
 static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg){
     bool ret = false;
     if(!arg){
@@ -95,8 +124,28 @@ MSG_Data_t * INCREF message_from_MorpheusCommand(MorpheusCommand * command){
 }
 
 
-uint32_t MorpheusCommand_from_message(MorpheusCommand * command, MSG_Data_t * message){
-    return NRF_SUCCESS;
+bool MorpheusCommand_from_message(MorpheusCommand * command, MSG_Data_t * message){
+    if(!command){
+        PRINTS("Invalid buffer\r\n");
+        return false;
+    }
+
+    memset(command, 0, sizeof(MorpheusCommand));
+    _assign_decode_functions_MorpheusCommand(command);
+
+    pb_istream_t stream = pb_istream_from_buffer((uint8_t*)message->buf, message->len);
+    bool status = pb_decode(&stream, MorpheusCommand_fields, command);
+
+    /*
+     *morpheus_ble_remove_decode_funcs(command);
+     */
+    if (!status){
+        PRINTS("Decoding protobuf failed, error: ");
+        PRINTS(PB_GET_ERROR(&stream));
+        PRINTS("\r\n");
+    }
+
+    return status;
 }
 
 void free_MorpheusCommand(MorpheusCommand * command){
