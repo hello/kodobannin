@@ -32,6 +32,13 @@ static void _assign_encode_functions_MorpheusCommand(MorpheusCommand* command){
     ENCODE_STRING_FIELD(command->wifiSSID);
     ENCODE_STRING_FIELD(command->wifiPassword);
 }
+static void _assign_decode_functions_MorpheusCommand(MorpheusCommand* command){
+    DECODE_STRING_FIELD(command->accountId);
+    DECODE_STRING_FIELD(command->deviceId);
+    DECODE_STRING_FIELD(command->wifiName);
+    DECODE_STRING_FIELD(command->wifiSSID);
+    DECODE_STRING_FIELD(command->wifiPassword);
+}
 
 static bool _encode_MorpheusCommand(MorpheusCommand * command, char * raw, size_t * len){
     pb_ostream_t out_stream = {0};
