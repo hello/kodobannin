@@ -145,7 +145,6 @@ static void _sync_device_id()
 
     //write version
     sync_device_id_command.has_top_version = true;
-    memset(sync_device_id_command.top_version, 0, sizeof(sync_device_id_command.top_version));
     memcpy(sync_device_id_command.top_version, FW_VERSION_STRING, sizeof(FW_VERSION_STRING));
 
     if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command)){
