@@ -6,6 +6,7 @@
 
 #define ENCODE_STRING_FIELD(f)  f.funcs.encode = (f.arg ? _encode_string_fields : NULL)
 #define DECODE_STRING_FIELD(f)  f.funcs.decode = _decode_string_fields
+#define FREE_ARG(f) if(f.arg){vPortFree(f.arg); f.arg = NULL;}
 //********************************************************************************
 //static 
 
@@ -92,5 +93,9 @@ uint32_t MorpheusCommand_from_message(MorpheusCommand * command, MSG_Data_t * me
 }
 
 void free_MorpheusCommand(MorpheusCommand * command){
-
+    FREE_ARG(command->accountId);
+    FREE_ARG(command->deviceId);
+    FREE_ARG(command->wifiName);
+    FREE_ARG(command->wifiSSID);
+    FREE_ARG(command->wifiPassword);
 }
