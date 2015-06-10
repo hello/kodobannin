@@ -715,9 +715,13 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
             {
-                char * account_id_page = pvPortMalloc(strlen(command->accountId.arg));
+                PRINTS("Pair Pill id:");
+                PRINTS(command->accountId.arg);
+                size_t len = strlen(command->accountId.arg);
+                char * account_id_page = pvPortMalloc(len + 1);
                 if(account_id_page){
-                    strcpy(account_id_page, command->accountId.arg);
+                    memset(account_id_page, 0, len+1);
+                    memcpy(account_id_page, command->accountId.arg, len);
                     message_ble_pill_pairing_begin(account_id_page);
                 }
             }
