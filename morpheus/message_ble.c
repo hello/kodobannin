@@ -15,17 +15,25 @@
 #include "nrf_delay.h"
 #include "hlo_queue.h"
 #include "proto_tools.h"
+#include "heap.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
 #include "ant_user.h"
 #endif
 
+struct pill_pairing_request {
+	char * account_id;
+	char * device_id;
+};
+
+
 static void _release_pending_resources();
 static void _on_notify_failed(void* data_page);
 static void _on_notify_completed(const void* data, void* data_page);
 static void _dequeue_tx(void);
 static bool _queue_tx(MSG_Data_t * msg);
+static MSG_Status message_ble_pill_pairing_begin(char * account_id_page);
 
 static struct{
     MSG_Base_t base;
@@ -294,28 +302,23 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         case MSG_BLE_ACK_DEVICE_ADDED:
             if(data){
                 uint64_t pill_uid = *((uint64_t*)data->buf);
-                size_t hex_string_len = 0;
-                char hex_string[17];
+                size_t hex_string_len = 17;
+                char * hex_string = pvPortMalloc(hex_string_len);
+                APP_ASSERT(hex_string);
+                memset(hex_string, 0, hex_string_len);
 
                 app_timer_stop(self.timer_id);
                 ANT_UserSetPairing(0);
-                hble_uint64_to_hex_device_id(pill_uid, NULL, &hex_string_len);
-
-                if(sizeof(hex_string) >= hex_string_len){
-                    hble_uint64_to_hex_device_id(pill_uid, hex_string, &hex_string_len);
+                if(hble_uint64_to_hex_device_id(pill_uid, hex_string, &hex_string_len)){
                     if(self.pill_pairing_request.device_id){
-                        MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.device_id);
-                        self.pill_pairing_request.device_id = NULL;
+                        vPortFree(self.pill_pairing_request.device_id);
                     }
-                    MSG_Data_t* pill_id_page = MSG_Base_AllocateStringAtomic(hex_string);
-                    if(pill_id_page){
-                        self.pill_pairing_request.device_id = pill_id_page;
-                        _register_pill();
-                    }else{
-                        morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
-                    }
+                    self.pill_pairing_request.device_id = hex_string;
+                    _register_pill();
+                }else{
+                    vPortFree(hex_string);
+                    morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
                 }
-
             }
             break;
         case MSG_BLE_BOOT_RADIO:
@@ -342,13 +345,13 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
 
 
 static void _release_pending_resources(){
-    if(NULL != self.pill_pairing_request.account_id){
-        MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.account_id);
+    if(self.pill_pairing_request.account_id){
+        vPortFree(self.pill_pairing_request.account_id);
         self.pill_pairing_request.account_id = NULL;
     }
 
-    if(NULL != self.pill_pairing_request.device_id){
-        MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.device_id);
+    if(self.pill_pairing_request.device_id){
+        vPortFree(self.pill_pairing_request.device_id);
         self.pill_pairing_request.device_id = NULL;
     }
 }
@@ -363,11 +366,9 @@ static void _pill_pairing_time_out(void* context)
 
 
 
-MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
-{
+static MSG_Status message_ble_pill_pairing_begin(char * account_id_page){
     _release_pending_resources();
 
-    MSG_Base_AcquireDataAtomic(account_id_page);
     self.pill_pairing_request.account_id = account_id_page;
 
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
@@ -392,8 +393,11 @@ MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
 #else
     // For echo test
     PRINTS("echo test\r\n");
-    self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
-    _register_pill();
+    /*
+     * todo fixme
+     *self.pill_pairing_request.device_id = pvPortMalloc(17);
+     *_register_pill();
+     */
 
 #endif
 
