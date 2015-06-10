@@ -2,6 +2,7 @@
 #include "pb_decode.h"
 #include "pb_encode.h"
 #include "nrf_error.h" 
+#include "heap.h"
 
 #define ENCODE_STRING_FIELD(f)  f.funcs.encode = (f.arg ? _encode_string_fields : NULL)
 #define DECODE_STRING_FIELD(f)  f.funcs.decode = _decode_string_fields
