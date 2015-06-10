@@ -94,12 +94,12 @@ static void _on_packet_arrival(void* event_data, uint16_t event_size)
     */
 
 	MorpheusCommand command = {0};
-    if(morpheus_ble_decode_protobuf(&command, data_page->buf, data_page->len)){
+    if(MorpheusCommand_from_message(&command, data_page)){
         // Becareful, we should either redefine another data_page here
         // or use *(MSG_Data_t**)event_data straight to make sure
         // the data_page pointer will not get optimized out.
         message_ble_on_protobuf_command(data_page, &command);
-        morpheus_ble_free_protobuf(&command);
+        free_MorpheusCommand(&command);
     }
 
 	// Don't forget to release the data_page.

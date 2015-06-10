@@ -124,34 +124,19 @@ static void _register_pill(){
 
 static void _sync_device_id()
 {
-    size_t hex_device_id_len = 0;
-    if(!hble_uint64_to_hex_device_id(GET_UUID_64(), NULL, &hex_device_id_len))
-    {
+    char device_id[17] = {0};
+    size_t hex_device_id_len = sizeof(device_id);
+    if(!hble_uint64_to_hex_device_id(GET_UUID_64(), device_id, &hex_device_id_len)){
         PRINTS("Get device id len failed.\r\n");
         nrf_delay_ms(100);
         APP_ASSERT(0);
     }
 
-    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(hex_device_id_len + 1);
-    if(!device_id_page){
-        PRINTS("Get device id page failed.\r\n");
-        nrf_delay_ms(100);
-        APP_ASSERT(0);
-    }
+    MorpheusCommand sync_device_id_command = {0};
 
-    memset(device_id_page->buf, 0, hex_device_id_len + 1);
-    if(!hble_uint64_to_hex_device_id(GET_UUID_64(), device_id_page->buf, &hex_device_id_len))
-    {
-        PRINTS("Get device id failed.\r\n");
-        MSG_Base_ReleaseDataAtomic(device_id_page);
-        nrf_delay_ms(100);
-        APP_ASSERT(0);
-    }
-
-    MorpheusCommand sync_device_id_command;
-    memset(&sync_device_id_command, 0, sizeof(sync_device_id_command));
     sync_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID;
-    sync_device_id_command.deviceId.arg = device_id_page;
+
+    sync_device_id_command.deviceId.arg = device_id;
 
     //write key
     sync_device_id_command.has_aes_key = true;
@@ -163,14 +148,11 @@ static void _sync_device_id()
     memset(sync_device_id_command.top_version, 0, sizeof(sync_device_id_command.top_version));
     memcpy(sync_device_id_command.top_version, FW_VERSION_STRING, sizeof(FW_VERSION_STRING));
 
-    if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command))
-    {
+    if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command)){
         PRINTS("Encode sync deviceId protobuf failed.\r\n");
         nrf_delay_ms(100);
         APP_ASSERT(0);
     }
-
-    morpheus_ble_free_protobuf(&sync_device_id_command);
 }
 
 
@@ -251,8 +233,8 @@ static void _hold_to_enter_normal_mode()
 }
 
 static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
-    MorpheusCommand command;
-    if(morpheus_ble_decode_protobuf(&command, data->buf, data->len)){
+    MorpheusCommand command = {0};
+    if(MorpheusCommand_from_message(&command, data)){
         switch(command.type){
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
                 if(self.boot_state == BOOT_COMPLETED && NULL == command.deviceId.arg){
@@ -293,10 +275,10 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
                 _queue_tx(data);
                 break;
         }
-        morpheus_ble_free_protobuf(&command);
+        free_MorpheusCommand(&command);
     }else{
         PRINTS("Protobuf decode failed\r\n");
-        morpheus_ble_free_protobuf(&command);
+        free_MorpheusCommand(&command);
         return FAIL;
     }
     return SUCCESS;
@@ -708,9 +690,7 @@ static void _pass_to_mid_and_handle_error(MSG_Data_t * data_page){
     }
 }
 //from phone
-void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command)
-{
-    MSG_Base_AcquireDataAtomic(data_page);
+void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command){
     // A protobuf actually occupy multiple pages..
     PRINTS("data_page addr: ");
     PRINT_HEX(&data_page, sizeof(data_page));
@@ -732,8 +712,14 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
             {
-                MSG_Data_t* account_id_page = command->accountId.arg;
-                message_ble_pill_pairing_begin(account_id_page);
+                /*
+                 * TODO fix me
+                 *MSG_Data_t * account_id_page = MSG_Base_AllocateStringAtomic(command->accountId.arg);
+                 *if(account_id_page){
+                 *    message_ble_pill_pairing_begin(account_id_page);
+                 *    MSG_Base_ReleaseDataAtomic(account_id_page);
+                 *}
+                 */
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
@@ -751,8 +737,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             }
             break;
     }
-
-    MSG_Base_ReleaseDataAtomic(data_page);
 
     uint32_t pool_free = MSG_Base_FreeCount();
     PRINTS("top heap: ");
