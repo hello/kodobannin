@@ -407,21 +407,15 @@ static MSG_Status message_ble_pill_pairing_begin(char * account_id_page){
 
 MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
     
-    if(SUCCESS == MSG_Base_AcquireDataAtomic(data)){
+    if(data){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
-
 #ifndef HAS_CC3200
-        // Echo test
         _queue_tx(data);
-        // DO NOT release data because callback will do it.
-#else
-        MSG_Base_ReleaseDataAtomic(data);
 #endif
-        return SUCCESS;
     }else{
-        PRINTS("Acquire data failed, cannot route data to cc3200\r\n");
         return FAIL;
     }
+    return SUCCESS;
 }
 
 static void _cc3200_boot_check(){
