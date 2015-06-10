@@ -4,7 +4,7 @@
 #include "nrf_error.h" 
 
 #define ENCODE_STRING_FIELD(f)  f.funcs.encode = (f.arg ? _encode_string_fields : NULL)
-#define ENCODE_BYTE_FIELD(f) f.funcs.encode = (f.arg ? _encode_byte_fields : NULL)
+#define DECODE_STRING_FIELD(f)  f.funcs.decode = _decode_string_fields
 //********************************************************************************
 //static 
 
