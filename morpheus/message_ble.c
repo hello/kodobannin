@@ -715,14 +715,11 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
             {
-                /*
-                 * TODO fix me
-                 *MSG_Data_t * account_id_page = MSG_Base_AllocateStringAtomic(command->accountId.arg);
-                 *if(account_id_page){
-                 *    message_ble_pill_pairing_begin(account_id_page);
-                 *    MSG_Base_ReleaseDataAtomic(account_id_page);
-                 *}
-                 */
+                char * account_id_page = pvPortMalloc(strlen(command->accountId.arg));
+                if(account_id_page){
+                    strcpy(account_id_page, command->accountId.arg);
+                    message_ble_pill_pairing_begin(account_id_page);
+                }
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
