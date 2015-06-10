@@ -735,11 +735,6 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
             _start_morpheus_dfu_process();
             break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DFU_BEGIN:
-            {
-                PRINTS("Deprecated Command Pill_DFU_BEGIN\r\n");
-            }
-            break;
     }
 
     uint32_t pool_free = MSG_Base_FreeCount();
