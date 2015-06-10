@@ -638,13 +638,6 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
 
 }
 
-
-static void _start_pill_dfu_process(uint64_t pill_id)
-{
-    // TODO: Begin Pill DFU here.
-    ant_pill_dfu_begin(pill_id);
-}
-
 static void _pair_morpheus(MorpheusCommand* command)
 {
     if(!command->accountId.arg)
@@ -754,14 +747,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DFU_BEGIN:
             {
-                MSG_Data_t* device_id_page = command->deviceId.arg;
-                if(!device_id_page){
-                    PRINTS("No device id found for DFU.\r\n");
-                }else{
-                    uint64_t pill_id = 0;
-                    hble_hex_to_uint64_device_id(device_id_page->buf, &pill_id);
-                    _start_pill_dfu_process(pill_id);
-                }
+                PRINTS("Deprecated Command Pill_DFU_BEGIN\r\n");
             }
             break;
     }

@@ -17,7 +17,6 @@
 static struct{
     MSG_Central_t * parent;
     volatile uint8_t pair_enable;
-    volatile uint64_t dfu_pill_id;
     app_timer_id_t commit_timer;
     ANT_BondedDevice_t staging_bond;
 }self;
@@ -214,7 +213,6 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
         .on_status_update = _on_status_update,
     };
     self.parent = central;
-    self.dfu_pill_id = 0;
 
     app_timer_create(&self.commit_timer, APP_TIMER_MODE_SINGLE_SHOT, _commit_pairing);
     return &handler;
@@ -224,6 +222,3 @@ inline void ANT_UserSetPairing(uint8_t enable){
     self.pair_enable = enable;
 }
 
-inline void ant_pill_dfu_begin(uint64_t pill_id){
-    self.dfu_pill_id = pill_id;
-}
