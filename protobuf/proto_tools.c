@@ -1,3 +1,4 @@
+#include "proto_tools.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
 #include "nrf_error.h" 
