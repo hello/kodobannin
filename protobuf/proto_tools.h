@@ -4,7 +4,7 @@
 #include "message_base.h"
 #include "morpheus_ble.pb.h"
 
-MSG_Data_t * message_from_MorpheusCommand(const MorpheusCommand * command);
+MSG_Data_t * INCREF message_from_MorpheusCommand(const MorpheusCommand * command);
 
 
 uint32_t MorpheusCommand_from_message(MorpheusCommand * command, MSG_Data_t * message);
