@@ -4,8 +4,10 @@
 #include "nrf_error.h" 
 
 #define ENCODE_STRING_FIELD(f)  f.funcs.encode = (f.arg ? _encode_string_fields : NULL)
+#define ENCODE_BYTE_FIELD(f) f.funcs.encode = (f.arg ? _encode_byte_fields : NULL)
 //********************************************************************************
 //static 
+
 static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg){
     bool ret = false;
     if(!arg){
@@ -29,9 +31,9 @@ static void _assign_encode_functions_MorpheusCommand(MorpheusCommand* command){
     ENCODE_STRING_FIELD(command->wifiPassword);
 }
 
-static bool _encode_MorpheusCommand(const MorpheusCommand * command, char * raw, size_t * len){
+static bool _encode_MorpheusCommand(MorpheusCommand * command, char * raw, size_t * len){
     pb_ostream_t out_stream = {0};
-    command->version = PROTOBUF_VERSION;
+    command->version = 0;//todo verify if this is required
 
     _assign_encode_functions_MorpheusCommand(command);
 
@@ -55,7 +57,7 @@ static bool _encode_MorpheusCommand(const MorpheusCommand * command, char * raw,
 }
 //********************************************************************************
 //public 
-MSG_Data_t * INCREF message_from_MorpheusCommand(const MorpheusCommand * command){
+MSG_Data_t * INCREF message_from_MorpheusCommand(MorpheusCommand * command){
     size_t proto_len = 0;
     if(!command || !_encode_MorpheusCommand(command, NULL, &proto_len))
     {
@@ -69,7 +71,7 @@ MSG_Data_t * INCREF message_from_MorpheusCommand(const MorpheusCommand * command
 
     MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
     if(!proto_page){
-        PRINTS(MSG_NO_MEMORY);
+        PRINTS("no memory");
         return NULL;
     }
 

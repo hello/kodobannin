@@ -94,29 +94,6 @@ static bool _encode_string_fields(pb_ostream_t *stream, const pb_field_t *field,
     return ret;
 }
 
-static bool _encode_bytes_fields(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
-{
-    if(*arg == NULL)
-    {
-        return false;
-    }
-
-    MSG_Data_t* buffer_page = (MSG_Data_t*)*arg;
-    MSG_Base_AcquireDataAtomic(buffer_page);
-    //PRINTS("Lock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
-    char* str = buffer_page->buf;
-    
-    bool ret = false;
-    if (pb_encode_tag(stream, PB_WT_STRING, field->tag))
-    {
-        ret = pb_encode_string(stream, (uint8_t*)str, buffer_page->len);
-    }
-
-    MSG_Base_ReleaseDataAtomic(buffer_page);
-    //PRINTS("Unlock memory in _encode_bytes_fields\r\n");// nrf_delay_ms(1);
-    return ret;
-}
-
 
 static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
