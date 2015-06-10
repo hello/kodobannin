@@ -76,8 +76,7 @@ MSG_Data_t * INCREF message_from_MorpheusCommand(MorpheusCommand * command){
         return NULL;
     }
 
-    if(_encode_MorpheusCommand(command, proto_page->buf, &proto_len)
-            && proto_len == proto_page->len){
+    if(_encode_MorpheusCommand(command, proto_page->buf, &proto_len)){
         return proto_page;
     }else{
         MSG_Base_ReleaseDataAtomic(proto_page);
