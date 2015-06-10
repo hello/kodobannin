@@ -254,10 +254,8 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
     if(morpheus_ble_decode_protobuf(&command, data->buf, data->len)){
         switch(command.type){
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
-                if(self.boot_state == BOOT_COMPLETED && NULL == command.deviceId.arg){
-                    // DVT CC3200 reboot, resync device id without initializing the BLE stack
-                    // This allows the CC always request device id from top after rebooting
-                    // saving device id in a file is no longer needed.
+                if(self.boot_state == BOOT_COMPLETED){
+                    //allows resyncing of topboard information
                     _sync_device_id();
                 }
                 // else, fallback to normal boot sequence, the same code in SYNC_DEVICE_ID
