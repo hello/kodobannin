@@ -185,7 +185,7 @@ uint32_t ADC_CalMgr_Add(const ADC_CalValue_t * p_value){
     // Check if in cache
     {
         int i;
-        for(i = 0; i < self.cal_val_count; i ++){
+        for(i = 0; i < ADC_CAL_MANAGER_DATA_COUNT; i ++){
             if(self.values[i].pu == p_value->pu &&
                self.values[i].pd == p_value->pd){
                 PRINTS("Already in flash");
