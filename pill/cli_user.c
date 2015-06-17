@@ -209,32 +209,19 @@ _handle_command(int argc, char * argv[]){
         value = (battery_get_reading_cached() / 12) * 100; // (result - offset)/12
         value = (value/2) *2 ;
 
-        slope = 7125;
+        slope = battery_get_slope_cached();
         if (result > value){
-            slope = 7125 - (((result - value) * 7125) / value);
+            slope = slope - (((result - value) * slope) / value);
         }
         if (result < value){
-            slope = 7125 + (((value - result) * 7125) / value);
+            slope = slope + (((value - result) * slope) / value);
         }
  
         PRINT_DEC(&value,4);
         PRINTS(":");
         PRINT_DEC(&slope,4);
-    /**
-        PRINTS("/");
-
-        value = 3000; // += 120;
-        slope = 7125;
-        if (result > value)
-	  slope = 7125 - (((result - value) * 7125) / value);
-        if (result < value)
-          slope = 7125 + (((value - result) * 7125) / value);
-
-        PRINT_DEC(&value,4);
-        PRINTS(":");
-        PRINT_DEC(&slope,4);
-    **/
         PRINTS(" \r\n");
+
         p_calue = &calue;
         p_calue->slope = slope;
         ADC_CalMgr_Add(p_calue);
