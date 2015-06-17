@@ -206,8 +206,11 @@ _handle_command(int argc, char * argv[]){
         PRINTS(" +");
 
         //  236 (2.000) 356 (3.000) 380 (3.200) 476(4.000)
-        value = (battery_get_reading_cached() / 12) * 100; // (result - offset)/12
-        value = (value/2) *2 ;
+        value = (argc > 1)?nrf_atoi(argv[1]):3000;
+
+        PRINTS("calibrated for: ");
+        PRINT_DEC(&value, 4);
+        PRINTS("\r\n");
 
         slope = battery_get_slope_cached();
         if (result > value){
