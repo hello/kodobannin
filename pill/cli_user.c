@@ -224,13 +224,17 @@ _handle_command(int argc, char * argv[]){
         PRINT_DEC(&slope,4);
         PRINTS(" \r\n");
 
-        p_calue = &calue;
-        p_calue->slope = slope;
-        ADC_CalMgr_Add(p_calue);
-        ADC_CalMgr_Commit();
-        PRINTS("OK");
+        if( slope >=  6800 && slope =< 7500){
+            p_calue = &calue;
+            p_calue->slope = slope;
+            ADC_CalMgr_Add(p_calue);
+            ADC_CalMgr_Commit();
+            battery_set_slope_cached(slope);
+            PRINTS("Pass");
+        }else{
+            PRINTS("Fail");
+        }
 
-        battery_set_slope_cached(slope);
     }
     if( !match_command(argv[0], "upd") ){
         cli_update_battery_level(1); // measure battery / issue ant packet
