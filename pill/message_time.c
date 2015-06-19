@@ -195,8 +195,10 @@ static void _timer_handler(void * ctx){
     current_reed_state = (uint8_t)led_check_reed_switch();
 #endif
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
-    PRINT_HEX(&self.reed_states, 1);
-    PRINTS("\r");
+    /*
+     *PRINT_HEX(&self.reed_states, 1);
+     *PRINTS("\r");
+     */
 
     if(self.reed_states == POWER_STATE_MASK && self.in_ship_state == 0){
         PRINTS("Going into Ship Mode");
