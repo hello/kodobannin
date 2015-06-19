@@ -209,7 +209,11 @@ uint32_t ADC_CalMgr_Remove(const ADC_CalValue_t * p_value){
                 PRINT_HEX(&self.values[i].pu, 2);
                 PRINT_HEX(&self.values[i].pd, 2);
                 PRINTS("\r\n");
-                self.values[i] = *tmp;
+                if(self.cal_val_count > 1){
+                    self.values[i] = *tmp;
+                }else{
+                    self.values[i] = (ADC_CalValue_t){0};
+                }
                 self.cal_val_count--;
                 dirty = 1;
                 return 0;
@@ -221,6 +225,7 @@ uint32_t ADC_CalMgr_Remove(const ADC_CalValue_t * p_value){
 }
 ADC_CalValue_t * ADC_CalMgr_Query(const uint32_t pu, const uint32_t pd){
     int i;
+    load_all_from_flash();
     for(i = 0; i < self.cal_val_count; i++){
         if(self.values[i].pu == pu &&
            self.values[i].pd == pd){
