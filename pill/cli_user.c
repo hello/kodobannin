@@ -224,7 +224,7 @@ _handle_command(int argc, char * argv[]){
         PRINT_DEC(&slope,4);
         PRINTS(" \r\n");
 
-        if( slope >=  6800 && slope =< 7500){
+        if( slope >=  6800 && slope <= 7500){
             p_calue = &calue;
             p_calue->slope = slope;
             ADC_CalMgr_Add(p_calue);
