@@ -192,10 +192,9 @@ _handle_command(int argc, char * argv[]){
             PRINTS("oops");
         }
     }
-    if( !match_command(argv[0], "remove") ){
-        ADC_CalMgr_Remove(p_calue);
-    }
     if( !match_command(argv[0], "erase") ){
+        battery_init();
+        ADC_CalMgr_Remove(p_calue);
         ADC_CalMgr_EraseAll();
     }
     if( !match_command(argv[0], "cal") ){
