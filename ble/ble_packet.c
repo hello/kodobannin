@@ -14,11 +14,11 @@ typedef struct{
 }msg_session_t;
 
 static struct{
-    msg_session_t sessions[NUM_SESSIONS];
-    message_handler handler;
+    msg_session_t rx_sessions[NUM_SESSIONS];
+    ble_packet_message_handler handler;
 }self;
 
-void ble_packet_set_handler(message_handler handler){
+void ble_packet_set_handler(ble_packet_message_handler handler){
     self.handler = handler;
 }
 /*
@@ -89,15 +89,15 @@ void ble_packet_write_handler(ble_gatts_evt_write_t* event){
     PRINT_HEX(&uuid, 2);
     PRINTS("\r\n");
     for(i = 0; i < NUM_SESSIONS; i++){
-        if(self.sessions[i].key == uuid){
-            _handle_message(&self.sessions[i], event);
+        if(self.rx_sessions[i].key == uuid){
+            _handle_message(&self.rx_sessions[i], event);
             return;
         }
     }
     for(i = 0; i < NUM_SESSIONS; i++){
-        if(!self.sessions[i].key){
-            self.sessions[i].key = uuid;
-            _handle_message(&self.sessions[i], event);
+        if(!self.rx_sessions[i].key){
+            self.rx_sessions[i].key = uuid;
+            _handle_message(&self.rx_sessions[i], event);
             return;
         }
     }
