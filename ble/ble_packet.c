@@ -1,9 +1,10 @@
 #include "ble_packet.h"
-#include "morpheus_gatt.h"
+#include "hlo_gatts.h"
 #include "util.h"
 #include <string.h>
 
 #define NUM_SESSIONS 2
+
 
 typedef struct{
     uint8_t endsq, nesq;

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "hlo_ble_time.h"
-#include "morpheus_gatt.h"
+#include "hlo_gatts.h"
 
 #include "pb_decode.h"
 #include "pb_encode.h"

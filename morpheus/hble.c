@@ -29,7 +29,7 @@
 #include "hble.h"
 
 #include "ant_driver.h"
-#include "morpheus_gatt.h"
+#include "hlo_gatts.h"
 #include "morpheus_ble.h"
 
 extern uint8_t hello_type;

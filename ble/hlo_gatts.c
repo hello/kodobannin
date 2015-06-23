@@ -3,8 +3,7 @@
 #include <app_error.h>
 #include <string.h>
 
-#include "morpheus_gatt.h"
-#include "sha1.h"
+#include "hlo_gatts.h"
 #include "util.h"
 
 struct hlo_ble_notify_context {
