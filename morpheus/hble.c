@@ -17,6 +17,7 @@
 #include "app.h"
 #include "platform.h"
 #include "nrf_delay.h"
+#include "ble_packet.h"
 
 #ifdef BONDING_REQUIRED
 #include "ble_bondmngr_cfg.h"
@@ -854,7 +855,10 @@ void hble_services_init(void)
     morpheus_ble_transmission_layer_init();
 
     // 4. Add characteristics, attach them to transmission layer
-    hlo_ble_char_write_request_add(0xBEEB, &morpheus_ble_write_handler, sizeof(struct hlo_ble_packet));
+	/*
+     *hlo_ble_char_write_request_add(0xBEEB, &morpheus_ble_write_handler, sizeof(struct hlo_ble_packet));
+	 */
+    hlo_ble_char_write_request_add(0xBEEB, ble_packet_write_handler, sizeof(struct hlo_ble_packet));
     hlo_ble_char_notify_add(0xB00B);
 
     hlo_ble_char_notify_add(0xFEE1);

@@ -1,6 +1,6 @@
 #ifndef BLE_PACKET_H
 /**
- * Converts packet to MSG_Data
+ * Converts packet to MSG_Data and vice versa
  */
 
 #include "message_base.h"

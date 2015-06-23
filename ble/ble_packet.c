@@ -5,7 +5,6 @@
 
 #define NUM_SESSIONS 2
 
-
 typedef struct{
     uint8_t endsq, nesq;
     uint16_t key;
@@ -85,15 +84,19 @@ static void _handle_message(msg_session_t * session, ble_gatts_evt_write_t * eve
 }
 void ble_packet_write_handler(ble_gatts_evt_write_t* event){
     int i;
+    uint16_t uuid = event->context.char_uuid.uuid;
+    PRINTS("BLE Session: ");
+    PRINT_HEX(&uuid, 2);
+    PRINTS("\r\n");
     for(i = 0; i < NUM_SESSIONS; i++){
-        if(self.sessions[i].key == event->handle){
+        if(self.sessions[i].key == uuid){
             _handle_message(&self.sessions[i], event);
             return;
         }
     }
     for(i = 0; i < NUM_SESSIONS; i++){
         if(!self.sessions[i].key){
-            self.sessions[i].key = event->handle;
+            self.sessions[i].key = uuid;
             _handle_message(&self.sessions[i], event);
             return;
         }
