@@ -21,7 +21,7 @@
 #include "platform.h"
 #include "hble.h"
 #include "util.h"
-#include "pill_gatt.h"
+#include "hlo_gatts.h"
 
 #include "battery.h"
 #include "app_info.h"

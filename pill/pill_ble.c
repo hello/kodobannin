@@ -20,7 +20,7 @@
 
 #endif
 
-#include "pill_gatt.h"
+#include "hlo_gatts.h"
 
 #include "util.h"
 #include "message_app.h"
@@ -58,13 +58,6 @@ static void
 _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
-}
-
-
-static void
-_data_send_finished()
-{
-	PRINTS("DONE!");
 }
 
 static void _reply_time(void * p_event_data, uint16_t event_size)
@@ -117,7 +110,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
     case PILL_COMMAND_SEND_DATA:
-		hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
+		hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, NULL);
         break;
     case PILL_COMMAND_GET_TIME:
 			app_sched_event_put(NULL, 0, _reply_time);
