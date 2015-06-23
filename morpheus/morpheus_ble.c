@@ -45,10 +45,6 @@ static void _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 }
 
-void create_bond(const ANT_BondedDevice_t * id){
-}
-
-
 bool morpheus_ble_reply_protobuf(MorpheusCommand* morpheus_command){
     MSG_Data_t * heap_page = message_from_MorpheusCommand(morpheus_command);
     if(heap_page){
@@ -134,10 +130,6 @@ void morpheus_load_modules(void){
 				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_SET_ROLE), prole);
 				MSG_Base_ReleaseDataAtomic(prole);
 			}
-        }
-        {
-            ANT_BondMgrInit();
-            ANT_BondMgrForEach(create_bond);
         }
 #endif
 		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
