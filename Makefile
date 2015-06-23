@@ -46,6 +46,7 @@ HELLO_SRCS = \
 	$(wildcard ant/*.c) \
 	$(wildcard dtm/*.c) \
 	$(wildcard crypto/*.c) \
+	$(wildcard ble/*.c) \
 
 
 NRF_SRCS = \
@@ -102,6 +103,7 @@ INCS =  ./ \
 	./ant \
 	./dtm \
 	./crypto \
+	./ble \
 	
 
 
