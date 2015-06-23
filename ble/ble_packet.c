@@ -103,3 +103,9 @@ void ble_packet_write_handler(ble_gatts_evt_write_t* event){
     }
     PRINTS("No more sessions available\r\n");
 }
+void ble_packet_reset(void){
+    int i;
+    for(i = 0; i < NUM_SESSIONS; i++){
+        _reset_session(&self.rx_sessions[i]);
+    }
+}

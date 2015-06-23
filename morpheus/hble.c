@@ -239,12 +239,11 @@ static void _on_bond(void * p_event_data, uint16_t event_size)
     }
 }
 
-static void _on_disconnect(void * p_event_data, uint16_t event_size)
-{
-    // Reset transmission layer, clean out error states.
-	morpheus_ble_transmission_layer_reset();
-    PRINTS("delay task started\r\n");
+static void _on_disconnect(void * p_event_data, uint16_t event_size){
 
+    // Reset transmission layer, clean out error states.
+	ble_packet_reset();
+    PRINTS("delay task started\r\n");
 }
 
 static void _on_connected(void * p_event_data, uint16_t event_size)
@@ -296,7 +295,8 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     case BLE_GAP_EVT_CONNECTED:
     {
         // Reset transmission layer, clean out error states.
-        morpheus_ble_transmission_layer_reset();
+		ble_packet_reset();
+
         // When new connection comes in, always set it back to non-pairing mode.
 		_pairing_mode = false;
 
@@ -852,7 +852,7 @@ void hble_services_init(void)
     APP_OK(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &pill_service_uuid, &_morpheus_service_handle));
 
     // 3. Initialize Morpheus' BLE transmission layer
-    morpheus_ble_transmission_layer_init();
+	ble_packet_reset();
 
     // 4. Add characteristics, attach them to transmission layer
 	/*
