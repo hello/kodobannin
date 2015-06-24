@@ -645,51 +645,6 @@ static char _upper_case_hex_digit(char hex_ascii){
     return hex_ascii;
 }
 
-bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id)
-{
-    if(!hex_device_id || !device_id)
-    {
-        return false;
-    }
-
-    uint16_t hex_len = strlen(hex_device_id);
-    if(hex_len % 2 != 0)
-    {
-        return false;
-    }
-
-    const char* hex_table = "0123456789ABCDEF";
-    const uint8_t hex_table_len = strlen(hex_table);
-    *device_id = 0;
-
-    for(uint8_t i = 0; i < hex_len / 2; i++)
-    {
-        uint8_t multiplier = 0;
-        uint8_t remain = 0;
-        
-
-        for(uint8_t j = 0; j < hex_table_len; j++)
-        {
-            if(hex_table[j] == _upper_case_hex_digit(hex_device_id[i * 2]))
-            {
-                multiplier = j;
-            }
-
-            if(hex_table[j] == _upper_case_hex_digit(hex_device_id[i * 2 + 1]))
-            {
-                remain = j;
-            }
-        }
-
-        uint64_t num = (multiplier << 4) + remain;
-        *device_id += num << (i * 8);
-    }
-
-    return true;
-
-}
-
-
 void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3200_verion)
 {
     _device_id = device_id;
