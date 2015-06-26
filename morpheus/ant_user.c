@@ -79,6 +79,9 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                         morpheus_command.pill_data.has_firmware_version = true;
                         morpheus_command.pill_data.firmware_version = pill_data->version;
 
+                        morpheus_command.pill_data.has_rssi = true;
+                        morpheus_command.pill_data.rssi = id->rssi;
+
                         morpheus_command.pill_data.timestamp = 0;
                         PRINTS("ANT Encrypted Pill Data Received:");
                         PRINTS(morpheus_command.pill_data.device_id);
@@ -109,6 +112,9 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
 
                         morpheus_command.pill_data.has_firmware_version = true;
                         morpheus_command.pill_data.firmware_version = pill_data->version;
+
+                        morpheus_command.pill_data.has_rssi = true;
+                        morpheus_command.pill_data.rssi = id->rssi;
 
                         memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
 
