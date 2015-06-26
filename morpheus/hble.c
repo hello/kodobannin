@@ -213,7 +213,7 @@ static void _delay_task_memory_checkpoint()
 	uint8_t small;
 	small = MSG_Base_FreeCount();
     PRINTS("Top Mem Free: ");
-	PRINT_HEX(&small, 1);
+	PRINT_HEX(&small, 2);
 	PRINTS("\r\n");
 }
 
