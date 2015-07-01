@@ -27,7 +27,6 @@
 #include "message_ble.h"
 
 #include "ant_devices.h"
-#include "ant_bondmgr.h"
 #include "ant_user.h"
 #include "cli_user.h"
 #include "proto_tools.h"
