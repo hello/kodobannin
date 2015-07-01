@@ -3,7 +3,6 @@
 #include "message_ble.h"
 #include "morpheus_ble.h"
 #include "util.h"
-#include "ant_bondmgr.h"
 #include "app_timer.h"
 
 #include "platform.h"
@@ -17,14 +16,7 @@ static struct{
     MSG_Central_t * parent;
     volatile uint8_t pair_enable;
     volatile uint64_t dfu_pill_id;
-    app_timer_id_t commit_timer;
-    ANT_BondedDevice_t staging_bond;
 }self;
-
-static void _commit_pairing(void * ctx){
-    PRINTS("\r\n======\r\nCOMMIT PAIRING\r\n======\r\n");
-    ANT_BondMgrCommit();
-}
 
 static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
     // TODO, this shit needs to be tested on CC3200 side.
@@ -202,37 +194,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 }
 
 static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
-    switch(status){
-        default:
-            break;
-        case ANT_STATUS_DISCONNECTED:
-            {
-                ANT_BondedDevice_t * device = ANT_BondMgrQuery(id);
-                if(device){
-                    PRINTS("DEVICE REMOVED\r\n");
-                    ANT_BondMgrRemove(device);
-                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
-                }
-            }
-            break;
-        case ANT_STATUS_CONNECTED:
-            if(id->device_number == self.staging_bond.id.device_number){
-                PRINTS("DEVICE CONNECTED\r\n");
-                PRINTS("Staging match");
-                MSG_Data_t * obj = MSG_Base_AllocateObjectAtomic(&self.staging_bond.full_uid, sizeof(self.staging_bond.full_uid));
-                if(obj){
-                    self.parent->dispatch( ADDR(ANT,0), ADDR(BLE, MSG_BLE_ACK_DEVICE_ADDED), obj);
-                    MSG_Base_ReleaseDataAtomic(obj);
-                }
-                {
-                    ANT_BondMgrAdd(&self.staging_bond);
-                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
-                }
-            }else{
-                PRINTS("Staging Mismatch");
-            }
-            break;
-    }
+
 }
 
 MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
@@ -243,7 +205,6 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     self.parent = central;
     self.dfu_pill_id = 0;
 
-    app_timer_create(&self.commit_timer, APP_TIMER_MODE_SINGLE_SHOT, _commit_pairing);
     return &handler;
 }
 
