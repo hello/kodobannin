@@ -606,7 +606,7 @@ static void _erase_bonded_users(){
     PRINTS("Trying to erase paired centrals....\r\n");
 
     //TODO what's the behavior for this?
-    hble_refresh_bonds(ERASE_OTHER_BOND, true);
+    hble_refresh_bonds(ERASE_ALL_BOND, true);
 
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
