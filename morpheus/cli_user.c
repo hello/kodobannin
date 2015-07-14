@@ -19,11 +19,18 @@ _handle_command(int argc, char * argv[]){
         PRINTS(argv[1]);
     }
     if(argc > 1 && !match_command(argv[0], "spi") ){
-        MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
+        MSG_Data_t * data = NULL;
+        uint8_t addr = 0;
+        if(argc > 2){
+            addr = nrf_atoi(argv[1]);
+            data = MSG_Base_AllocateStringAtomic(argv[2]);
+        }else{
+            data = MSG_Base_AllocateStringAtomic(argv[1]);
+        }
         if(data){
             self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
-                                    (MSG_Address_t){SSPI,1},//destination address, ANT
-                                    data);
+                    (MSG_Address_t){SSPI,addr},//destination address, ANT
+                    data);
             //release message object after dispatch to prevent memory leak
             MSG_Base_ReleaseDataAtomic(data);
         }

@@ -3,7 +3,6 @@
 #include "message_ble.h"
 #include "morpheus_ble.h"
 #include "util.h"
-#include "ant_bondmgr.h"
 #include "app_timer.h"
 
 #include "platform.h"
@@ -11,31 +10,17 @@
 
 #include "hble.h"
 #include "battery.h"
+#include "ant_devices.h"
 
 static struct{
     MSG_Central_t * parent;
     volatile uint8_t pair_enable;
     volatile uint64_t dfu_pill_id;
-    app_timer_id_t commit_timer;
-    ANT_BondedDevice_t staging_bond;
 }self;
 
-static void _commit_pairing(void * ctx){
-    PRINTS("\r\n======\r\nCOMMIT PAIRING\r\n======\r\n");
-    ANT_BondMgrCommit();
-}
-
-
-static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
-    if(!msg)
-    {
-        PRINTS("Data error.\r\n");
-        return;
-    }
-
+static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
     // TODO, this shit needs to be tested on CC3200 side.
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
-
 
     MorpheusCommand morpheus_command;
     memset(&morpheus_command, 0, sizeof(MorpheusCommand));
@@ -86,6 +71,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
                         morpheus_command.pill_data.has_firmware_version = true;
                         morpheus_command.pill_data.firmware_version = pill_data->version;
 
+                        morpheus_command.pill_data.has_rssi = true;
+                        morpheus_command.pill_data.rssi = id->rssi;
+
                         morpheus_command.pill_data.timestamp = 0;
                         PRINTS("ANT Encrypted Pill Data Received:");
                         PRINTS(morpheus_command.pill_data.device_id);
@@ -116,6 +104,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
 
                         morpheus_command.pill_data.has_firmware_version = true;
                         morpheus_command.pill_data.firmware_version = pill_data->version;
+
+                        morpheus_command.pill_data.has_rssi = true;
+                        morpheus_command.pill_data.rssi = id->rssi;
 
                         memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
 
@@ -171,39 +162,39 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
     }
     morpheus_ble_free_protobuf(&morpheus_command);
 }
-
-static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
-    switch(status){
+static void _disp_ant_id(const hlo_ant_device_t * id){
+    int32_t rssi = id->rssi * -1;
+    PRINTS("ANT: ");
+    PRINT_HEX(&id->device_number,2);
+    PRINTS(" D: ");
+    PRINT_HEX(&id->device_type,1);
+    PRINTS(" T: ");
+    PRINT_HEX(&id->transmit_type,1);
+    PRINTS(" RSSI: -");
+    PRINT_DEC(&rssi,4);
+    PRINTS("\r\n");
+}
+static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
+    if(!msg)
+    {
+        PRINTS("ANT Data error.\r\n");
+        return;
+    }
+    _disp_ant_id(id);
+    switch(id->device_type){
+        case HLO_ANT_DEVICE_TYPE_PILL:
+            _handle_pill(id, src, msg);
+            break;
         default:
-            break;
-        case ANT_STATUS_DISCONNECTED:
-            {
-                ANT_BondedDevice_t * device = ANT_BondMgrQuery(id);
-                if(device){
-                    PRINTS("DEVICE REMOVED\r\n");
-                    ANT_BondMgrRemove(device);
-                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
-                }
-            }
-            break;
-        case ANT_STATUS_CONNECTED:
-            if(id->device_number == self.staging_bond.id.device_number){
-                PRINTS("DEVICE CONNECTED\r\n");
-                PRINTS("Staging match");
-                MSG_Data_t * obj = MSG_Base_AllocateObjectAtomic(&self.staging_bond.full_uid, sizeof(self.staging_bond.full_uid));
-                if(obj){
-                    self.parent->dispatch( ADDR(ANT,0), ADDR(BLE, MSG_BLE_ACK_DEVICE_ADDED), obj);
-                    MSG_Base_ReleaseDataAtomic(obj);
-                }
-                {
-                    ANT_BondMgrAdd(&self.staging_bond);
-                    app_timer_start(self.commit_timer, APP_TIMER_TICKS(10000, APP_TIMER_PRESCALER), NULL);
-                }
-            }else{
-                PRINTS("Staging Mismatch");
-            }
+            PRINTS("Unknown ANT Device");
+            PRINT_HEX(&id->device_type, 1);
+            PRINTS("\r\n");
             break;
     }
+}
+
+static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
+
 }
 
 MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
@@ -214,7 +205,6 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     self.parent = central;
     self.dfu_pill_id = 0;
 
-    app_timer_create(&self.commit_timer, APP_TIMER_MODE_SINGLE_SHOT, _commit_pairing);
     return &handler;
 }
 

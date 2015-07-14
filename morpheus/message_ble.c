@@ -35,6 +35,8 @@ static struct{
     boot_status boot_state;
     int ready_to_send;
     struct hlo_queue_t * tx_queue;
+    uint16_t cached_bond_count;
+    bool cached_is_pairing;
 } self;
 
 
@@ -54,12 +56,7 @@ static void _start_morpheus_dfu_process(void)
     REBOOT_TO_DFU();
 }
 
-static void _on_advertise_started(bool is_pairing_mode, uint16_t bond_count)
-{
-    PRINTS("Advertisement Started: ");
-    PRINT_HEX(&is_pairing_mode, 1);
-    PRINT_HEX(&bond_count, 1);
-    PRINTS("\r\n");
+static void _sync_pairing_info(bool is_pairing_mode, uint16_t bond_count){
     MorpheusCommand advertising_command;
     memset(&advertising_command, 0, sizeof(advertising_command));
     advertising_command.type = is_pairing_mode ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
@@ -71,6 +68,18 @@ static void _on_advertise_started(bool is_pairing_mode, uint16_t bond_count)
     {
         PRINTS("Route protobuf to middle board failed\r\n");
     }
+
+    self.cached_is_pairing = is_pairing_mode;
+    self.cached_bond_count = bond_count;
+}
+
+static void _on_advertise_started(bool is_pairing_mode, uint16_t bond_count)
+{
+    PRINTS("Advertisement Started: ");
+    PRINT_HEX(&is_pairing_mode, 1);
+    PRINT_HEX(&bond_count, 1);
+    PRINTS("\r\n");
+    _sync_pairing_info(is_pairing_mode, bond_count);
 }
 
 static void _on_bond_finished(ble_bondmngr_evt_type_t bond_type)
@@ -254,11 +263,10 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
     if(morpheus_ble_decode_protobuf(&command, data->buf, data->len)){
         switch(command.type){
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
-                if(self.boot_state == BOOT_COMPLETED && NULL == command.deviceId.arg){
-                    // DVT CC3200 reboot, resync device id without initializing the BLE stack
-                    // This allows the CC always request device id from top after rebooting
-                    // saving device id in a file is no longer needed.
+                if(self.boot_state == BOOT_COMPLETED){
+                    //allows resyncing of topboard information
                     _sync_device_id();
+                    _sync_pairing_info(self.cached_is_pairing, self.cached_bond_count);
                 }
                 // else, fallback to normal boot sequence, the same code in SYNC_DEVICE_ID
                 // DONOT put a break here, it is intended to fall to 
