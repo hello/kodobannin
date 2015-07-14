@@ -92,8 +92,9 @@ typedef struct{
     MSG_Status ( *unloadmod )(MSG_Base_t * mod);
 }MSG_Central_t;
 
+#define MSG_Base_AllocateDataAtomic(s) _MSG_Base_AllocateDataAtomic(s, __FILE__, __LINE__)
 
-MSG_Data_t * INCREF MSG_Base_AllocateDataAtomic(size_t size);
+MSG_Data_t * INCREF _MSG_Base_AllocateDataAtomic(size_t size, char * file, unsigned int line);
 MSG_Data_t * INCREF MSG_Base_AllocateStringAtomic(const char * str);
 MSG_Data_t * INCREF MSG_Base_AllocateObjectAtomic(const void * obj, size_t size);
 MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig);
