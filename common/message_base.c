@@ -29,18 +29,10 @@ MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
     APP_OK(0);
     return NULL;
 }
-MSG_Data_t * _MSG_Base_AllocateDataAtomic(size_t size, char * file, unsigned int line){
+MSG_Data_t * MSG_Base_AllocateDataAtomic(size_t size){
     void * mem;
     MSG_Data_t * msg;
-    
-    PRINTS("+: ");
-    PRINTS(file);
-    PRINTS("\n");
-    PRINT_HEX(&line,sizeof(line));
-    PRINTS("\n");
-    PRINT_HEX(&size,sizeof(size));
-    PRINTS("\n");
-    
+    DEBUGS("+");
     CRITICAL_REGION_ENTER();
     mem = pvPortMalloc(size + sizeof(MSG_Data_t));
     CRITICAL_REGION_EXIT();
