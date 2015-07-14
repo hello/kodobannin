@@ -284,15 +284,24 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
                 _start_morpheus_dfu_process();  // It's just that simple.
                 break;
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE:
+                PRINTS("switch to pairing..\r\n");
+                _queue_tx(data);
                 _hold_to_enter_pairing_mode();
                 break;
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE:
+                PRINTS("switch to normal..\r\n");
+                _queue_tx(data);
                 _hold_to_enter_normal_mode();
+                break;
+            case MorpheusCommand_CommandType_MORPHEUS_COMMAND_ERASE_PAIRED_PHONE:
+                PRINTS("erase phone..\r\n");
+                _queue_tx(data);
+                hble_refresh_bonds(ERASE_OTHER_BOND, true);
                 break;
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_FACTORY_RESET:
                 PRINTS("Factory reset from CC3200..\r\n");
-                hble_refresh_bonds(ERASE_ALL_BOND, true);
                 _queue_tx(data);
+                hble_refresh_bonds(ERASE_ALL_BOND, true);
                 break;
             default:
                 // protobuf, dump the thing straight back?
@@ -613,9 +622,6 @@ void message_ble_reset()
 static void _erase_bonded_users(){
     PRINTS("Trying to erase paired centrals....\r\n");
 
-    //TODO what's the behavior for this?
-    hble_refresh_bonds(ERASE_ALL_BOND, true);
-
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
     
@@ -626,23 +632,13 @@ static void _erase_bonded_users(){
 
 static void _morpheus_switch_mode(bool is_pairing_mode)
 {
-    if(is_pairing_mode)
-    {
-        _hold_to_enter_pairing_mode();
-    }else{
-        _hold_to_enter_normal_mode();
-    }
-
     // reply to 0xB00B
     MorpheusCommand command;
     memset(&command, 0, sizeof(command));
-    
-    command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
-        MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
-#ifdef HAS_CC3200  // If don't have CC, the route_data_to_cc function will reply
-    morpheus_ble_reply_protobuf(&command);
-#endif    
 
+    command.type = (is_pairing_mode) ? MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_PAIRING_MODE :
+    MorpheusCommand_CommandType_MORPHEUS_COMMAND_SWITCH_TO_NORMAL_MODE;
+    morpheus_ble_reply_protobuf(&command);
 }
 
 
