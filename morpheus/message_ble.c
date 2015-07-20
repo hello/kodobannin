@@ -14,17 +14,26 @@
 #include "ble_bondmngr.h"
 #include "nrf_delay.h"
 #include "hlo_queue.h"
+#include "proto_tools.h"
+#include "heap.h"
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include "message_ant.h"
 #include "ant_user.h"
 #endif
 
+struct pill_pairing_request {
+	char * account_id;
+	char * device_id;
+};
+
+
 static void _release_pending_resources();
 static void _on_notify_failed(void* data_page);
 static void _on_notify_completed(const void* data, void* data_page);
 static void _dequeue_tx(void);
 static bool _queue_tx(MSG_Data_t * msg);
+static MSG_Status message_ble_pill_pairing_begin(char * account_id_page);
 
 static struct{
     MSG_Base_t base;
@@ -132,34 +141,19 @@ static void _register_pill(){
 
 static void _sync_device_id()
 {
-    size_t hex_device_id_len = 0;
-    if(!hble_uint64_to_hex_device_id(GET_UUID_64(), NULL, &hex_device_id_len))
-    {
+    char device_id[17] = {0};
+    size_t hex_device_id_len = sizeof(device_id);
+    if(!hble_uint64_to_hex_device_id(GET_UUID_64(), device_id, &hex_device_id_len)){
         PRINTS("Get device id len failed.\r\n");
         nrf_delay_ms(100);
         APP_ASSERT(0);
     }
 
-    MSG_Data_t* device_id_page = MSG_Base_AllocateDataAtomic(hex_device_id_len + 1);
-    if(!device_id_page){
-        PRINTS("Get device id page failed.\r\n");
-        nrf_delay_ms(100);
-        APP_ASSERT(0);
-    }
+    MorpheusCommand sync_device_id_command = {0};
 
-    memset(device_id_page->buf, 0, hex_device_id_len + 1);
-    if(!hble_uint64_to_hex_device_id(GET_UUID_64(), device_id_page->buf, &hex_device_id_len))
-    {
-        PRINTS("Get device id failed.\r\n");
-        MSG_Base_ReleaseDataAtomic(device_id_page);
-        nrf_delay_ms(100);
-        APP_ASSERT(0);
-    }
-
-    MorpheusCommand sync_device_id_command;
-    memset(&sync_device_id_command, 0, sizeof(sync_device_id_command));
     sync_device_id_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_SYNC_DEVICE_ID;
-    sync_device_id_command.deviceId.arg = device_id_page;
+
+    sync_device_id_command.deviceId.arg = device_id;
 
     //write key
     sync_device_id_command.has_aes_key = true;
@@ -168,17 +162,13 @@ static void _sync_device_id()
 
     //write version
     sync_device_id_command.has_top_version = true;
-    memset(sync_device_id_command.top_version, 0, sizeof(sync_device_id_command.top_version));
     memcpy(sync_device_id_command.top_version, FW_VERSION_STRING, sizeof(FW_VERSION_STRING));
 
-    if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command))
-    {
+    if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command)){
         PRINTS("Encode sync deviceId protobuf failed.\r\n");
         nrf_delay_ms(100);
         APP_ASSERT(0);
     }
-
-    morpheus_ble_free_protobuf(&sync_device_id_command);
 }
 
 
@@ -259,8 +249,8 @@ static void _hold_to_enter_normal_mode()
 }
 
 static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
-    MorpheusCommand command;
-    if(morpheus_ble_decode_protobuf(&command, data->buf, data->len)){
+    MorpheusCommand command = {0};
+    if(MorpheusCommand_from_message(&command, data)){
         switch(command.type){
             case MorpheusCommand_CommandType_MORPHEUS_COMMAND_GET_DEVICE_ID:
                 if(self.boot_state == BOOT_COMPLETED){
@@ -309,10 +299,10 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
                 _queue_tx(data);
                 break;
         }
-        morpheus_ble_free_protobuf(&command);
+        free_MorpheusCommand(&command);
     }else{
         PRINTS("Protobuf decode failed\r\n");
-        morpheus_ble_free_protobuf(&command);
+        free_MorpheusCommand(&command);
         return FAIL;
     }
     return SUCCESS;
@@ -329,28 +319,23 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
         case MSG_BLE_ACK_DEVICE_ADDED:
             if(data){
                 uint64_t pill_uid = *((uint64_t*)data->buf);
-                size_t hex_string_len = 0;
-                char hex_string[17];
+                size_t hex_string_len = 17;
+                char * hex_string = pvPortMalloc(hex_string_len);
+                APP_ASSERT(hex_string);
+                memset(hex_string, 0, hex_string_len);
 
                 app_timer_stop(self.timer_id);
                 ANT_UserSetPairing(0);
-                hble_uint64_to_hex_device_id(pill_uid, NULL, &hex_string_len);
-
-                if(sizeof(hex_string) >= hex_string_len){
-                    hble_uint64_to_hex_device_id(pill_uid, hex_string, &hex_string_len);
+                if(hble_uint64_to_hex_device_id(pill_uid, hex_string, &hex_string_len)){
                     if(self.pill_pairing_request.device_id){
-                        MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.device_id);
-                        self.pill_pairing_request.device_id = NULL;
+                        vPortFree(self.pill_pairing_request.device_id);
                     }
-                    MSG_Data_t* pill_id_page = MSG_Base_AllocateStringAtomic(hex_string);
-                    if(pill_id_page){
-                        self.pill_pairing_request.device_id = pill_id_page;
-                        _register_pill();
-                    }else{
-                        morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
-                    }
+                    self.pill_pairing_request.device_id = hex_string;
+                    _register_pill();
+                }else{
+                    vPortFree(hex_string);
+                    morpheus_ble_reply_protobuf_error(ErrorType_DEVICE_NO_MEMORY);
                 }
-
             }
             break;
         case MSG_BLE_BOOT_RADIO:
@@ -377,13 +362,13 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
 
 
 static void _release_pending_resources(){
-    if(NULL != self.pill_pairing_request.account_id){
-        MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.account_id);
+    if(self.pill_pairing_request.account_id){
+        vPortFree(self.pill_pairing_request.account_id);
         self.pill_pairing_request.account_id = NULL;
     }
 
-    if(NULL != self.pill_pairing_request.device_id){
-        MSG_Base_ReleaseDataAtomic(self.pill_pairing_request.device_id);
+    if(self.pill_pairing_request.device_id){
+        vPortFree(self.pill_pairing_request.device_id);
         self.pill_pairing_request.device_id = NULL;
     }
 }
@@ -398,11 +383,9 @@ static void _pill_pairing_time_out(void* context)
 
 
 
-MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
-{
+static MSG_Status message_ble_pill_pairing_begin(char * account_id_page){
     _release_pending_resources();
 
-    MSG_Base_AcquireDataAtomic(account_id_page);
     self.pill_pairing_request.account_id = account_id_page;
 
     // Send notification to ANT? Actually at this time ANT can just send back device id without being notified.
@@ -427,8 +410,11 @@ MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
 #else
     // For echo test
     PRINTS("echo test\r\n");
-    self.pill_pairing_request.device_id = MSG_Base_AllocateStringAtomic("test pill id");
-    _register_pill();
+    /*
+     * todo fixme
+     *self.pill_pairing_request.device_id = pvPortMalloc(17);
+     *_register_pill();
+     */
 
 #endif
 
@@ -438,21 +424,15 @@ MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page)
 
 MSG_Status message_ble_route_data_to_cc3200(MSG_Data_t* data){
     
-    if(SUCCESS == MSG_Base_AcquireDataAtomic(data)){
+    if(data){
         self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, data);
-
 #ifndef HAS_CC3200
-        // Echo test
         _queue_tx(data);
-        // DO NOT release data because callback will do it.
-#else
-        MSG_Base_ReleaseDataAtomic(data);
 #endif
-        return SUCCESS;
     }else{
-        PRINTS("Acquire data failed, cannot route data to cc3200\r\n");
         return FAIL;
     }
+    return SUCCESS;
 }
 
 static void _cc3200_boot_check(){
@@ -641,13 +621,6 @@ static void _morpheus_switch_mode(bool is_pairing_mode)
     morpheus_ble_reply_protobuf(&command);
 }
 
-
-static void _start_pill_dfu_process(uint64_t pill_id)
-{
-    // TODO: Begin Pill DFU here.
-    ant_pill_dfu_begin(pill_id);
-}
-
 static void _pair_morpheus(MorpheusCommand* command)
 {
     if(!command->accountId.arg)
@@ -701,32 +674,14 @@ static void _pair_morpheus(MorpheusCommand* command)
     MSG_Base_ReleaseDataAtomic(command->accountId.arg);
 }
 
-bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
-{
-    size_t proto_len = 0;
-    if(!morpheus_ble_encode_protobuf(command, NULL, &proto_len))
-    {
-        PRINTS("encode failed\r\n");
-        return false;
+bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command){
+    MSG_Data_t * msg = message_from_MorpheusCommand(command);
+    if(msg){
+        self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, msg);
+        MSG_Base_ReleaseDataAtomic(msg);
+        return true;
     }
-
-    PRINTS("Proto len: ");
-    PRINT_HEX(&proto_len, sizeof(proto_len));
-    PRINTS("\r\n");
-
-
-    MSG_Data_t* proto_page = MSG_Base_AllocateDataAtomic(proto_len);
-    if(!proto_page){
-        PRINTS(MSG_NO_MEMORY);
-        return false;
-    }
-
-
-    morpheus_ble_encode_protobuf(command, proto_page->buf, &proto_len);  // I assume it will make it if we reach this point
-    self.parent->dispatch((MSG_Address_t){BLE, 1},(MSG_Address_t){SSPI, 1}, proto_page);
-    MSG_Base_ReleaseDataAtomic(proto_page);
-
-    return true;
+    return false;
 }
 
 static void _pass_to_mid_and_handle_error(MSG_Data_t * data_page){
@@ -736,9 +691,7 @@ static void _pass_to_mid_and_handle_error(MSG_Data_t * data_page){
     }
 }
 //from phone
-void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command)
-{
-    MSG_Base_AcquireDataAtomic(data_page);
+void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command){
     // A protobuf actually occupy multiple pages..
     PRINTS("data_page addr: ");
     PRINT_HEX(&data_page, sizeof(data_page));
@@ -760,8 +713,13 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_PILL:
             {
-                MSG_Data_t* account_id_page = command->accountId.arg;
-                message_ble_pill_pairing_begin(account_id_page);
+                size_t len = strlen(command->accountId.arg);
+                char * account_id_page = pvPortMalloc(len + 1);
+                if(account_id_page){
+                    memset(account_id_page, 0, len+1);
+                    memcpy(account_id_page, command->accountId.arg, len);
+                    message_ble_pill_pairing_begin(account_id_page);
+                }
             }
             break;
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PAIR_SENSE:
@@ -773,21 +731,7 @@ void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* com
         case MorpheusCommand_CommandType_MORPHEUS_COMMAND_MORPHEUS_DFU_BEGIN:
             _start_morpheus_dfu_process();
             break;
-        case MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DFU_BEGIN:
-            {
-                MSG_Data_t* device_id_page = command->deviceId.arg;
-                if(!device_id_page){
-                    PRINTS("No device id found for DFU.\r\n");
-                }else{
-                    uint64_t pill_id = 0;
-                    hble_hex_to_uint64_device_id(device_id_page->buf, &pill_id);
-                    _start_pill_dfu_process(pill_id);
-                }
-            }
-            break;
     }
-
-    MSG_Base_ReleaseDataAtomic(data_page);
 
     uint32_t pool_free = MSG_Base_FreeCount();
     PRINTS("top heap: ");

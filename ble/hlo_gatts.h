@@ -11,11 +11,6 @@
 #define BLE_UUID_HELLO_BASE {0x23, 0xD1, 0xBC, 0xEA, 0x5F,              \
       0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00}
 
-typedef void (*hlo_ble_write_handler)(ble_gatts_evt_write_t *);
-typedef void (*hlo_ble_connect_handler)(void);
-
-extern uint8_t hello_type;
-
 /** This a data structure designed to be transmitted over BLE. The
     struct should be exactly 20 bytes, which is the maximum BLE packet
     size. */
@@ -49,6 +44,18 @@ struct hlo_ble_packet {
         uint8_t bytes[20];
     };
 };
+typedef void (*hlo_ble_write_handler)(ble_gatts_evt_write_t *);
+typedef void (*hlo_ble_connect_handler)(void);
+typedef void (*hlo_ble_operation_success_callback)(const void* data, void* callback_data);
+typedef void (*hlo_ble_notify_failed_callback)(void* callback_data);
+
+extern uint8_t hello_type;
+
+struct hlo_ble_operation_callbacks {
+  hlo_ble_operation_success_callback on_succeed;
+  hlo_ble_notify_failed_callback on_failed;
+  void* callback_data;
+};
 
 void hlo_ble_init();
 
@@ -63,6 +70,8 @@ uint16_t hlo_ble_get_connection_handle();
 
 void hlo_ble_dispatch_write(ble_evt_t *event);
 
-typedef void (*hlo_ble_notify_callback)();
-void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback);
+
+void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, const struct hlo_ble_operation_callbacks* callback_info);
 void hlo_ble_on_ble_evt(ble_evt_t* event);
+
+bool hlo_ble_is_connected();

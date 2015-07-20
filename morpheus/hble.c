@@ -17,6 +17,7 @@
 #include "app.h"
 #include "platform.h"
 #include "nrf_delay.h"
+#include "ble_packet.h"
 
 #ifdef BONDING_REQUIRED
 #include "ble_bondmngr_cfg.h"
@@ -28,7 +29,7 @@
 #include "hble.h"
 
 #include "ant_driver.h"
-#include "morpheus_gatt.h"
+#include "hlo_gatts.h"
 #include "morpheus_ble.h"
 
 extern uint8_t hello_type;
@@ -238,12 +239,11 @@ static void _on_bond(void * p_event_data, uint16_t event_size)
     }
 }
 
-static void _on_disconnect(void * p_event_data, uint16_t event_size)
-{
-    // Reset transmission layer, clean out error states.
-	morpheus_ble_transmission_layer_reset();
-    PRINTS("delay task started\r\n");
+static void _on_disconnect(void * p_event_data, uint16_t event_size){
 
+    // Reset transmission layer, clean out error states.
+	ble_packet_reset();
+    PRINTS("delay task started\r\n");
 }
 
 static void _on_connected(void * p_event_data, uint16_t event_size)
@@ -295,7 +295,8 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     case BLE_GAP_EVT_CONNECTED:
     {
         // Reset transmission layer, clean out error states.
-        morpheus_ble_transmission_layer_reset();
+		ble_packet_reset();
+
         // When new connection comes in, always set it back to non-pairing mode.
 		_pairing_mode = false;
 
@@ -644,51 +645,6 @@ static char _upper_case_hex_digit(char hex_ascii){
     return hex_ascii;
 }
 
-bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id)
-{
-    if(!hex_device_id || !device_id)
-    {
-        return false;
-    }
-
-    uint16_t hex_len = strlen(hex_device_id);
-    if(hex_len % 2 != 0)
-    {
-        return false;
-    }
-
-    const char* hex_table = "0123456789ABCDEF";
-    const uint8_t hex_table_len = strlen(hex_table);
-    *device_id = 0;
-
-    for(uint8_t i = 0; i < hex_len / 2; i++)
-    {
-        uint8_t multiplier = 0;
-        uint8_t remain = 0;
-        
-
-        for(uint8_t j = 0; j < hex_table_len; j++)
-        {
-            if(hex_table[j] == _upper_case_hex_digit(hex_device_id[i * 2]))
-            {
-                multiplier = j;
-            }
-
-            if(hex_table[j] == _upper_case_hex_digit(hex_device_id[i * 2 + 1]))
-            {
-                remain = j;
-            }
-        }
-
-        uint64_t num = (multiplier << 4) + remain;
-        *device_id += num << (i * 8);
-    }
-
-    return true;
-
-}
-
-
 void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3200_verion)
 {
     _device_id = device_id;
@@ -851,10 +807,13 @@ void hble_services_init(void)
     APP_OK(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &pill_service_uuid, &_morpheus_service_handle));
 
     // 3. Initialize Morpheus' BLE transmission layer
-    morpheus_ble_transmission_layer_init();
+	ble_packet_reset();
 
     // 4. Add characteristics, attach them to transmission layer
-    hlo_ble_char_write_request_add(0xBEEB, &morpheus_ble_write_handler, sizeof(struct hlo_ble_packet));
+	/*
+     *hlo_ble_char_write_request_add(0xBEEB, &morpheus_ble_write_handler, sizeof(struct hlo_ble_packet));
+	 */
+    hlo_ble_char_write_request_add(0xBEEB, ble_packet_write_handler, sizeof(struct hlo_ble_packet));
     hlo_ble_char_notify_add(0xB00B);
 
     hlo_ble_char_notify_add(0xFEE1);

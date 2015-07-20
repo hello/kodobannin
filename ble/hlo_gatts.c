@@ -3,8 +3,7 @@
 #include <app_error.h>
 #include <string.h>
 
-#include "hlo_ble.h"
-#include "sha1.h"
+#include "hlo_gatts.h"
 #include "util.h"
 
 struct hlo_ble_notify_context {
@@ -29,11 +28,10 @@ struct hlo_ble_notify_context {
 	uint8_t *end;//end of the buffer to be sent
 	uint8_t last_len; // You have it!
 
-    hlo_ble_notify_callback callback;
+    struct hlo_ble_operation_callbacks callback_info;
 };
 
 static struct hlo_ble_notify_context _notify_context;
-
 
 struct uuid_handler {
     uint16_t uuid;
@@ -48,7 +46,7 @@ uint8_t hello_type;
 static struct uuid_handler _uuid_handlers[MAX_CHARACTERISTICS];
 static struct uuid_handler* _p_uuid_handler = _uuid_handlers;
 
-static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
+static volatile uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
 
 static void
 _char_add(const uint16_t uuid,
@@ -64,17 +62,31 @@ _char_add(const uint16_t uuid,
 	BLE_UUID_BLE_ASSIGN(ble_uuid, uuid);
 
 	ble_gatts_char_md_t char_md;
+	ble_gatts_attr_md_t cccd_md;
+
 	memset(&char_md, 0, sizeof(char_md));
+	memset(&cccd_md, 0, sizeof(cccd_md));
+
 	char_md.char_props = *props;
+	char_md.p_cccd_md = &cccd_md;
+
+	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&cccd_md.write_perm);
+    cccd_md.vloc = BLE_GATTS_VLOC_STACK;
 
 	ble_gatts_attr_md_t attr_md;
 	memset(&attr_md, 0, sizeof(attr_md));
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.read_perm);
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.write_perm);
+
+	//BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&attr_md.read_perm);
+	//BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&attr_md.write_perm);
+
 	attr_md.vloc = BLE_GATTS_VLOC_STACK;
 	attr_md.rd_auth = 0;
 	attr_md.wr_auth = 0;
 	attr_md.vlen = 1;
+
 
 	ble_gatts_attr_t attr_char_value;
 	memset(&attr_char_value, 0, sizeof(attr_char_value));
@@ -197,8 +209,16 @@ _dispatch_write(ble_evt_t *event) {
     DEBUG("Couldn't locate write handler for handle: ", handle);
 }
 
-static bool
-_dispatch_packet(struct hlo_ble_packet * t){
+static bool _dispatch_packet(struct hlo_ble_packet * t){
+    if(_connection_handle == BLE_CONN_HANDLE_INVALID)
+    {
+        if(_notify_context.callback_info.on_failed)
+        {
+            _notify_context.callback_info.on_failed(_notify_context.callback_info.callback_data);
+        }
+        return false;
+    }
+
 	uint16_t mlen = (t->sequence_number == _notify_context.total - 1 ? _notify_context.last_len : 20);
 	ble_gatts_hvx_params_t hvx_params = {
 		.handle = _notify_context.characteristic_handle,
@@ -207,17 +227,25 @@ _dispatch_packet(struct hlo_ble_packet * t){
 		.p_len = &mlen,
 		.p_data = (uint8_t*)t,
 	};
-	PRINTS("!");
+	PRINTS("Sending BLE Packet:");
 	PRINT_HEX(t, mlen);
+	PRINTS("\r\n");
+	
 	uint32_t err = sd_ble_gatts_hvx(_connection_handle, &hvx_params);
 	switch(err){
 		case NRF_SUCCESS:
-			PRINTS("@");
+			PRINTS("BLE Packet sent\r\n");
 			return true;
 			break;
 		default:
 		case BLE_ERROR_NO_TX_BUFFERS:
-			PRINTS("ERROR");
+			PRINTS("Send notification failed: ");
+			PRINT_HEX(&err, 4);
+			PRINTS("\r\n");
+			if(_notify_context.callback_info.on_failed)
+			{
+				_notify_context.callback_info.on_failed(_notify_context.callback_info.callback_data);
+			}
 			return false;
 			break;
 	}
@@ -233,8 +261,7 @@ _rem(const uint8_t * src, const uint8_t * dest){
 }
 
 //this function is not reentrant!!111
-static struct hlo_ble_packet *
-_make_packet(void){
+static struct hlo_ble_packet * _make_packet(void){
 	static struct hlo_ble_packet packet;
 	if(_notify_context.current > _notify_context.end){
 		return NULL;
@@ -269,14 +296,27 @@ static inline uint8_t _last_packet_len(uint16_t length){
 	return length <= 18 ? (length + 2) : (remain == 0 ? 20 : remain + 1);
 }
 
-void
-hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo_ble_notify_callback callback)
+
+void hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, const struct hlo_ble_operation_callbacks* callback_info)
 {
-	if(length == 0) return;
+	if(length == 0)
+    {
+        return;
+    }
+
+    if(_connection_handle == BLE_CONN_HANDLE_INVALID)
+    {
+        if(callback_info->on_failed)
+        {
+            callback_info->on_failed(callback_info->callback_data);
+        }
+        return;
+    }
+
     _notify_context = (struct hlo_ble_notify_context) {
         .characteristic_handle = hlo_ble_get_value_handle(characteristic_uuid),
         .seq = 0,
-        .callback = callback,
+        .callback_info = callback_info == NULL ? (struct hlo_ble_operation_callbacks){} : (*callback_info),
 		.orig = data,
 		.current = data,
 		.end = (data + length - 1),
@@ -292,6 +332,11 @@ hlo_ble_notify(uint16_t characteristic_uuid, uint8_t* data, uint16_t length, hlo
 
 }
 
+bool hlo_ble_is_connected()
+{
+    return hlo_ble_get_connection_handle() != BLE_CONN_HANDLE_INVALID;
+}
+
 uint16_t hlo_ble_get_connection_handle()
 {
     return _connection_handle;
@@ -302,11 +347,13 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
     switch(event->header.evt_id) {
     case BLE_GAP_EVT_CONNECTED:
         _connection_handle = event->evt.gap_evt.conn_handle;
-        DEBUG("Connect from MAC: ", event->evt.gap_evt.params.connected.peer_addr.addr);
+        PRINTS("Connect from MAC: ");
+        PRINT_HEX(&event->evt.gap_evt.params.connected.peer_addr.addr, sizeof(event->evt.gap_evt.params.connected.peer_addr.addr));
         PRINTS("\r\n");
         break;
     case BLE_GAP_EVT_DISCONNECTED:
-        DEBUG("Disconnected: ", event->evt.gap_evt.params.disconnected.reason);
+        PRINTS("Disconnected: ");
+        PRINT_HEX(&event->evt.gap_evt.params.disconnected.reason, sizeof(event->evt.gap_evt.params.disconnected.reason));
         PRINTS("\r\n");
         _connection_handle = BLE_CONN_HANDLE_INVALID;
         break;
@@ -315,15 +362,43 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
         break;
     case BLE_EVT_TX_COMPLETE:
 		{
-			struct hlo_ble_packet * packet = _make_packet();
-			if(packet){
-				_dispatch_packet(packet);
+			if(_notify_context.seq == _notify_context.total){
+				if(_notify_context.callback_info.on_succeed){
+					_notify_context.callback_info.on_succeed(_notify_context.orig, _notify_context.callback_info.callback_data);
+				}
+			}else{
+				struct hlo_ble_packet * packet = _make_packet();
+				if(packet){
+					_dispatch_packet(packet);
+				}
 			}
 		}
         //_dispatch_queue_packet();
         break;
+	case BLE_GAP_EVT_CONN_PARAM_UPDATE:
+		{
+			uint32_t sl = event->evt.gap_evt.params.conn_param_update.conn_params.slave_latency * 1.25;
+			uint32_t interval = event->evt.gap_evt.params.conn_param_update.conn_params.max_conn_interval * 1.25;
+			uint32_t sto  = event->evt.gap_evt.params.conn_param_update.conn_params.conn_sup_timeout * 10;
+			PRINTS("Param Update in ms (sl, int, sto)\r\n");
+			PRINT_DEC(&sl, 4);
+			PRINTS(" ");
+			PRINT_DEC(&interval, 4);
+			PRINTS(" ");
+			PRINT_DEC(&sto, 4);
+			PRINTS("\r\n");
+		}
+		break;
+	case BLE_GATTS_EVT_SYS_ATTR_MISSING:
+		{
+			uint32_t ret;
+			ret = sd_ble_gatts_sys_attr_set(_connection_handle,NULL, 0);
+			DEBUG("Attribute missing: ", ret);
+		}
+		break;
     default:
-        DEBUG("Unknown BLE event: ", event->header.evt_id);
+        PRINTS("Unknown BLE event: ");
+        PRINT_HEX(&event->header.evt_id, sizeof(event->header.evt_id));
         PRINTS("\r\n");
         break;
     }

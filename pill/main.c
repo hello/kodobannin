@@ -32,7 +32,7 @@
 
 #include "twi_master_config.h"
 
-#include "pill_gatt.h"
+#include "hlo_gatts.h"
 #include "hble.h"
 
 #include "pill_ble.h"

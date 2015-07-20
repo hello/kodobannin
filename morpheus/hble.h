@@ -20,7 +20,6 @@ void hble_services_init(void);
 void hble_advertising_init(ble_uuid_t service_uuid);
 void hble_advertising_start();
 bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_t* len);
-bool hble_hex_to_uint64_device_id(const char* hex_device_id, uint64_t* device_id);
 uint64_t hble_get_device_id();
 
 void hble_set_advertise_callback(on_advertise_started_callback_t cb);
