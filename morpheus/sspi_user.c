@@ -8,6 +8,8 @@ static void _handle_MorpheusCommand(const MSG_Central_t * central, MSG_Address_t
     MorpheusCommand command = {0};
     if( MorpheusCommand_from_message(&command, data) ){
         free_MorpheusCommand(&command);
+    }else{
+        PRINTS("Unable to decode protobuf\r\n");
     }
     central->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){BLE, 1}, data);
 }
@@ -21,6 +23,7 @@ void spi_handler(const MSG_Central_t * central, MSG_Address_t address, MSG_Data_
         default:
             PRINTS("Unknown SSPI Address:");
             PRINT_HEX(&address, sizeof(address));
+            PRINTS("\r\n");
             break;
     }
 }
