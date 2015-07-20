@@ -365,6 +365,8 @@ static MSG_Status _on_data_arrival(MSG_Address_t src, MSG_Address_t dst,  MSG_Da
             break;
         case MSG_BLE_DEFAULT_CONNECTION:
             if(data){
+                //TODO eventually get to this point
+                //_queue_tx(data);
                 return _route_protobuf_to_ble(data);
             }else{
                 PRINTS("No data received from:");
