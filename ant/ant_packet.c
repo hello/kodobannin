@@ -159,6 +159,7 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
                 //TODO optimize by not swapping objects, but reusing it
                 memcpy(&session->rx_header, buffer, sizeof(hlo_ant_header_packet_t));
                 _reset_session_rx(session);
+                APP_ASSERT(new_size);
                 session->rx_obj = MSG_Base_AllocateDataAtomic(new_size);
             }
         }else if(session->rx_obj){
