@@ -31,41 +31,32 @@ _reset_tf_unit(tf_unit_t * current){
     current->num_wakes = 0;
     current->max_amp = 0;
 }
-void TF_Initialize(const struct hlo_ble_time * init_time){
+void TF_Initialize(){
     memset(&self.data, 0, sizeof(self.data));
     self.data.length = sizeof(self.data);
     self.data.prev_idx = 0xFFFF;
     
     self.current_idx = 0;
     self.tick = 0;
-    self.data.mtime = init_time->monotonic_time;
 
     tf_unit_t* current = TF_GetCurrent();
     _reset_tf_unit(current);
 }
 
-
-
-void TF_TickOneSecond(uint64_t monotonic_time){
-    self.data.mtime = monotonic_time;
-
+void TF_TickOneSecond(){
     tf_unit_t* current_slot = TF_GetCurrent();
-    _increment_duration(current_slot);
-
-    if(++self.tick >= MOTION_DATA_INTERVAL_SEC){
-
-        //increment index
-        self.tick = 0;
-        self.data.prev_idx = self.current_idx;
-        self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
-
-        //reset next tf data
-        current_slot = TF_GetCurrent();
-        _reset_tf_unit(current_slot);
-        PRINTS("^");
-    }else{
-        PRINTS("*");
-    }
+    _increment_duration(current_slot); //once per second  (on IMU interrupt)
+}
+void TF_TickOneMinute() {
+    tf_unit_t* current_slot = TF_GetCurrent();
+    //increment index
+    self.tick = 0;
+    self.data.prev_idx = self.current_idx;
+    self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
+    
+    //reset next tf data
+    _reset_tf_unit(current_slot);
+    PRINTS("^");
 }
 
 inline tf_unit_t* TF_GetCurrent(void){
@@ -96,7 +87,6 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
 
     if(payload && length){
         uint16_t idx = self.current_idx;
-        //buf->time = self.data.mtime;
 
         for(int i = 0; i < length; i++){
             idx = _decrease_index(&idx);

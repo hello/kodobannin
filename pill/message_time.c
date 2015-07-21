@@ -33,10 +33,11 @@ typedef struct{
 static struct{
     MSG_Base_t base;
     bool initialized;
-    struct hlo_ble_time ble_time;  // Keep it here for debug, can see if pill crashed or not.
     const MSG_Central_t * central;
-    app_timer_id_t timer_id;
+    app_timer_id_t timer_id_1sec;
+    app_timer_id_t timer_id_1min;
     uint32_t uptime;
+    uint32_t onesec_runtime;
     uint8_t reed_states;
     uint8_t in_ship_state;
 }self;
@@ -156,35 +157,40 @@ static void _send_heartbeat_data_ant(){
 
 #endif
 
-#define POWER_STATE_MASK 0x7
-
-static void _timer_handler(void * ctx){
-    uint8_t current_reed_state = 0;
-    self.ble_time.monotonic_time += 1000;  // Just keep it for current data collection task.
-    self.uptime += 1;
+static void _1min_timer_handler(void * ctx) {
+    self.uptime += 60;
+    
+    TF_TickOneMinute();
 
     fix_imu_interrupt(); // look for imu int stuck low
-
-    TF_TickOneSecond(self.ble_time.monotonic_time);
+    
 #ifdef ANT_ENABLE
-    if(get_tick() == 0)
-    {
-        _send_available_data_ant();
-    }
- // else { // since no ant queue, will be first come, only served
+    _send_available_data_ant();
     if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) { // update percent battery capacity
         if( !self.in_ship_state ){
             _send_heartbeat_data_ant();
         }
         battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
     }
- // else { // since no ant queue, will be first come, only served
+    // else { // since no ant queue, will be first come, only served
     if(self.uptime % BATT_MEASURE_INTERVAL_SEC == 0) { // update minimum battery measurement
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
+}
+
+#define POWER_STATE_MASK 0x7
+//this one needs to be the max of all the requirements in the 1sec timer...
+#define MAX_1SEC_TIMER_RUNTIME  10
+
+static void _1sec_timer_handler(void * ctx){
+    uint8_t current_reed_state = 0;
+    self.uptime += 1;
+    self.onesec_runtime += 1;
     
-    ShakeDetectDecWindow();
+    TF_TickOneSecond();         //what depends on this? - the bucketing of incoming accel data (can be kicked off by imu)
+    
+    ShakeDetectDecWindow(); //only needs to run for 8 seconds, started by imu interrupt
     
 #ifdef PLATFORM_HAS_VLED
 #include "led_booster_timer.h"
@@ -192,7 +198,7 @@ static void _timer_handler(void * ctx){
         current_reed_state = (uint8_t)led_check_reed_switch();
     }
 #else
-    current_reed_state = (uint8_t)led_check_reed_switch();
+    current_reed_state = (uint8_t)led_check_reed_switch(); //1 hz but only needs to run until debounce mask is full
 #endif
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
     PRINT_HEX(&self.reed_states, 1);
@@ -216,6 +222,12 @@ static void _timer_handler(void * ctx){
     } else if(self.reed_states && self.reed_states != POWER_STATE_MASK){
         battery_update_droop();
     }
+    
+    if( self.onesec_runtime > MAX_1SEC_TIMER_RUNTIME ) {
+        //app_timer_stop(self.timer_id_1sec); //todo uncomment when IMU/reed switch interrupt is hooked up to start this timer again....
+        self.onesec_runtime = 0;
+        PRINTS("Stopping 1sec");
+    }
 }
 
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
@@ -223,25 +235,28 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
         default:
         case MSG_TIME_PING:
             break;
-        case MSG_TIME_SYNC:
-            if(data){
-                struct hlo_ble_time * ble_time = (struct hlo_ble_time *)data->buf;
-                self.ble_time.monotonic_time = ble_time->monotonic_time;
-                PRINT_HEX(ble_time, sizeof(*ble_time));
-            }
-            break;
         case MSG_TIME_STOP_PERIODIC:
-                PRINTS("STOP_HEARTBEAT");
-                app_timer_stop(self.timer_id);
+            PRINTS("STOP_HEARTBEAT");
+            app_timer_stop(self.timer_id_1min);
+            app_timer_stop(self.timer_id_1sec);
             break;
-        case MSG_TIME_SET_1S_RESOLUTION:
+        case MSG_TIME_SET_START_1SEC:
             {
                 uint32_t ticks;
                 PRINTS("PERIODIC 1S");
                 ticks = APP_TIMER_TICKS(1000,APP_TIMER_PRESCALER);
-                app_timer_stop(self.timer_id);
-                app_timer_start(self.timer_id, ticks, NULL);
+                app_timer_stop(self.timer_id_1sec);
+                app_timer_start(self.timer_id_1sec, ticks, NULL);
             }
+            break;
+        case MSG_TIME_SET_START_1MIN:
+        {
+            uint32_t ticks;
+            PRINTS("PERIODIC 1 MIN");
+            ticks = APP_TIMER_TICKS(60000,APP_TIMER_PRESCALER);
+            app_timer_stop(self.timer_id_1min);
+            app_timer_start(self.timer_id_1min, ticks, NULL);
+        }
             break;
     }
     return SUCCESS;
@@ -257,34 +272,14 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
         self.base.typestr = name;
         self.central = central;
         self.uptime = 0;
-
-        memset(&self.ble_time, 0, sizeof(self.ble_time));
-        
-        if(app_timer_create(&self.timer_id,APP_TIMER_MODE_REPEATED,_timer_handler) == NRF_SUCCESS){
+        self.onesec_runtime = 0;
+      
+        if(app_timer_create(&self.timer_id_1sec,APP_TIMER_MODE_REPEATED,_1sec_timer_handler) == NRF_SUCCESS &&
+           app_timer_create(&self.timer_id_1min,APP_TIMER_MODE_REPEATED,_1min_timer_handler) == NRF_SUCCESS){
             self.initialized = 1;
-            TF_Initialize(&self.ble_time);
+            TF_Initialize();
         }
     }
     return &self.base;
 }
-MSG_Status MSG_Time_GetTime(struct hlo_ble_time * out_time){
-    if(out_time){
-        *out_time = self.ble_time;
-        return SUCCESS;
-    }else{
-        return FAIL;
-    }
-}
-MSG_Status MSG_Time_GetMonotonicTime(uint64_t * out_time){
-    if(out_time){
-        *out_time = self.ble_time.monotonic_time;
-        return SUCCESS;
-    }else{
-        return FAIL;
-    }
-}
 
-uint64_t* get_time()
-{
-    return &self.ble_time.monotonic_time;
-}
