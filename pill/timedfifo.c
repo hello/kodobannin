@@ -45,7 +45,7 @@ void TF_Initialize(){
 
 void TF_TickOneSecond(){
     tf_unit_t* current_slot = TF_GetCurrent();
-    _increment_duration(current_slot); //once per second  (on IMU interrupt)
+    _increment_duration(current_slot);
 }
 void TF_TickOneMinute() {
     tf_unit_t* current_slot = TF_GetCurrent();

@@ -24,6 +24,12 @@
 #include "message_ant.h"
 #endif
 
+#ifdef PLATFORM_HAS_REED
+#include "nrf_gpiote.h"
+#include "nrf_gpio.h"
+#include <app_gpiote.h>
+#endif
+
 typedef struct{
     uint64_t nonce;
     MotionPayload_t payload[TF_CONDENSED_BUFFER_SIZE];
@@ -43,6 +49,10 @@ static struct{
 }self;
 
 static char * name = "TIME";
+
+
+static app_gpiote_user_id_t _gpiote_user;
+
 
 static MSG_Status
 _init(void){
@@ -185,7 +195,6 @@ static void _1min_timer_handler(void * ctx) {
 
 static void _1sec_timer_handler(void * ctx){
     uint8_t current_reed_state = 0;
-    self.uptime += 1;
     self.onesec_runtime += 1;
     
     TF_TickOneSecond();         //what depends on this? - the bucketing of incoming accel data (can be kicked off by imu)
@@ -212,6 +221,7 @@ static void _1sec_timer_handler(void * ctx){
         self.central->unloadmod(MSG_IMU_GetBase());
         sd_ble_gap_adv_stop();
         self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE},NULL);
+        self.central->dispatch( ADDR(TIME, 0), ADDR(TIME, MSG_TIME_STOP_PERIODIC), NULL);
     }else if(self.reed_states == 0x00 && self.in_ship_state == 1){
         PRINTS("Going into User Mode");
         _send_heartbeat_data_ant(); // form ant packet
@@ -219,14 +229,15 @@ static void _1sec_timer_handler(void * ctx){
         self.in_ship_state = 0;
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();
+        self.central->dispatch( ADDR(TIME, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
     } else if(self.reed_states && self.reed_states != POWER_STATE_MASK){
         battery_update_droop();
     }
     
     if( self.onesec_runtime > MAX_1SEC_TIMER_RUNTIME ) {
-        //app_timer_stop(self.timer_id_1sec); //todo uncomment when IMU/reed switch interrupt is hooked up to start this timer again....
+        app_timer_stop(self.timer_id_1sec);
         self.onesec_runtime = 0;
-        PRINTS("Stopping 1sec");
+        PRINTS("\nStopping 1sec\r\n");
     }
 }
 
@@ -247,6 +258,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
                 ticks = APP_TIMER_TICKS(1000,APP_TIMER_PRESCALER);
                 app_timer_stop(self.timer_id_1sec);
                 app_timer_start(self.timer_id_1sec, ticks, NULL);
+                self.onesec_runtime = 0;
             }
             break;
         case MSG_TIME_SET_START_1MIN:
@@ -261,6 +273,13 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
     }
     return SUCCESS;
 }
+
+static void _reed_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
+{
+    self.central->dispatch( ADDR(TIME, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
+}
+
+
 
 MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
     if(!self.initialized){
@@ -278,6 +297,15 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
            app_timer_create(&self.timer_id_1min,APP_TIMER_MODE_REPEATED,_1min_timer_handler) == NRF_SUCCESS){
             self.initialized = 1;
             TF_Initialize();
+
+#if defined(PLATFORM_HAS_REED) && !defined(PLATFORM_HAS_VLED)
+            nrf_gpiote_event_config(0, LED_REED_ENABLE, NRF_GPIOTE_POLARITY_TOGGLE);
+            
+            APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << LED_REED_ENABLE, _reed_gpiote_process));
+#elif defined(PLATFORM_HAS_REED)
+            APP_OK(1);
+#endif
+
         }
     }
     return &self.base;

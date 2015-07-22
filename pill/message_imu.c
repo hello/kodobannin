@@ -28,6 +28,8 @@
 #include "shake_detect.h"
 #include "gpio_nor.h"
 
+#include "message_time.h"
+
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -174,6 +176,7 @@ static void _imu_switch_mode(bool is_active)
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
 	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+    parent->dispatch( ADDR(IMU, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
 }
 
 
