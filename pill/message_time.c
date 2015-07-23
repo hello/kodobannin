@@ -197,8 +197,6 @@ static void _1min_timer_handler(void * ctx) {
 #define MAX_1SEC_TIMER_RUNTIME  10
 
 static void _1sec_timer_handler(void * ctx){
-    uint32_t gpio_pin_state;
-    
     PRINTS("ONE SEC\r\n");
 
     uint8_t current_reed_state = 0;
@@ -214,6 +212,7 @@ static void _1sec_timer_handler(void * ctx){
         current_reed_state = (uint8_t)led_check_reed_switch();
     }
 #else
+    uint32_t gpio_pin_state;
     if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
         //PRINTS("RAW ");
         //PRINT_HEX(&gpio_pin_state, sizeof(gpio_pin_state));
