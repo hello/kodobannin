@@ -56,11 +56,13 @@ static app_gpiote_user_id_t _gpiote_user;
 
 static MSG_Status
 _init(void){
+    APP_OK(app_gpiote_user_enable(_gpiote_user));
     return SUCCESS;
 }
 
 static MSG_Status
 _destroy(void){
+    APP_OK(app_gpiote_user_disable(_gpiote_user));
     return SUCCESS;
 }
 
@@ -168,6 +170,7 @@ static void _send_heartbeat_data_ant(){
 #endif
 
 static void _1min_timer_handler(void * ctx) {
+    PRINTS("ONE MIN\r\n");
     self.uptime += 60;
     
     TF_TickOneMinute();
@@ -194,6 +197,10 @@ static void _1min_timer_handler(void * ctx) {
 #define MAX_1SEC_TIMER_RUNTIME  10
 
 static void _1sec_timer_handler(void * ctx){
+    uint32_t gpio_pin_state;
+    
+    PRINTS("ONE SEC\r\n");
+
     uint8_t current_reed_state = 0;
     self.onesec_runtime += 1;
     
@@ -207,11 +214,18 @@ static void _1sec_timer_handler(void * ctx){
         current_reed_state = (uint8_t)led_check_reed_switch();
     }
 #else
-    current_reed_state = (uint8_t)led_check_reed_switch(); //1 hz but only needs to run until debounce mask is full
+    if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
+        //PRINTS("RAW ");
+        //PRINT_HEX(&gpio_pin_state, sizeof(gpio_pin_state));
+        current_reed_state = (gpio_pin_state & (1<<LED_REED_ENABLE))!=0;
+    }
+    //PRINTS("REED ");
+    PRINT_HEX(&current_reed_state, 1);
+    //PRINTS("\r\n");
 #endif
     self.reed_states = ((self.reed_states << 1) + (current_reed_state & 0x1)) & POWER_STATE_MASK;
     PRINT_HEX(&self.reed_states, 1);
-    PRINTS("\r");
+    PRINTS("\r\n");
 
     if(self.reed_states == POWER_STATE_MASK && self.in_ship_state == 0){
         PRINTS("Going into Ship Mode");
@@ -222,6 +236,7 @@ static void _1sec_timer_handler(void * ctx){
         sd_ble_gap_adv_stop();
         self.central->dispatch((MSG_Address_t){TIME,0}, (MSG_Address_t){LED,LED_PLAY_ENTER_FACTORY_MODE},NULL);
         self.central->dispatch( ADDR(TIME, 0), ADDR(TIME, MSG_TIME_STOP_PERIODIC), NULL);
+        APP_OK(app_gpiote_user_enable(_gpiote_user));
     }else if(self.reed_states == 0x00 && self.in_ship_state == 1){
         PRINTS("Going into User Mode");
         _send_heartbeat_data_ant(); // form ant packet
@@ -230,6 +245,7 @@ static void _1sec_timer_handler(void * ctx){
         self.central->loadmod(MSG_IMU_GetBase());
         hble_advertising_start();
         self.central->dispatch( ADDR(TIME, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
+        APP_OK(app_gpiote_user_enable(_gpiote_user));
     } else if(self.reed_states && self.reed_states != POWER_STATE_MASK){
         battery_update_droop();
     }
@@ -254,7 +270,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
         case MSG_TIME_SET_START_1SEC:
             {
                 uint32_t ticks;
-                PRINTS("PERIODIC 1S");
                 ticks = APP_TIMER_TICKS(1000,APP_TIMER_PRESCALER);
                 app_timer_stop(self.timer_id_1sec);
                 app_timer_start(self.timer_id_1sec, ticks, NULL);
@@ -276,6 +291,8 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 
 static void _reed_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
+    APP_OK(app_gpiote_user_disable(_gpiote_user));
+    PRINTS("REED INT\r\n");
     self.central->dispatch( ADDR(TIME, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
 }
 
@@ -299,9 +316,10 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
             TF_Initialize();
 
 #if defined(PLATFORM_HAS_REED) && !defined(PLATFORM_HAS_VLED)
-            nrf_gpiote_event_config(0, LED_REED_ENABLE, NRF_GPIOTE_POLARITY_TOGGLE);
-            
+            nrf_gpio_cfg_input(LED_REED_ENABLE, NRF_GPIO_PIN_NOPULL);
             APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << LED_REED_ENABLE, _reed_gpiote_process));
+            APP_OK(app_gpiote_user_disable(_gpiote_user));
+            
 #elif defined(PLATFORM_HAS_REED)
             APP_OK(1);
 #endif
