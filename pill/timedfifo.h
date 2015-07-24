@@ -31,7 +31,7 @@ typedef struct {
     uint16_t num_wakes;
     int16_t max_accel[3];
     int16_t min_accel[3];
-    uint8_t duration;
+    uint8_t duration; //deprecated
     uint8_t has_motion;
 }__attribute__((packed)) auxillary_data_t;
 

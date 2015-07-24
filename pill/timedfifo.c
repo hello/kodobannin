@@ -14,20 +14,12 @@ static struct{
 static uint16_t _decrease_index(uint16_t * idx);
 
 static void
-_increment_duration(tf_unit_t * current){
-    if(current->has_motion){
-        current->duration += 1;
-    }
-    current->has_motion = 0;
-}
-static void
 _reset_tf_unit(tf_unit_t * current){
     for (int i = 0; i < 3; i++) {
         current->min_accel[i] = INT16_MAX;
         current->max_accel[i] = INT16_MIN;
     }
     current->has_motion = 0;
-    current->duration = 0;
     current->num_wakes = 0;
     current->max_amp = 0;
 }
@@ -43,10 +35,6 @@ void TF_Initialize(){
     _reset_tf_unit(current);
 }
 
-void TF_TickOneSecond(){
-    tf_unit_t* current_slot = TF_GetCurrent();
-    _increment_duration(current_slot);
-}
 void TF_TickOneMinute() {
     tf_unit_t* current_slot = TF_GetCurrent();
     //increment index
@@ -107,8 +95,8 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
             } 
 
             payload[payload_index].max_acc_range = maxrange;
-            payload[payload_index].maxaccnormsq = datum.max_amp; 
-            payload[payload_index].duration = datum.duration;
+            payload[payload_index].maxaccnormsq = datum.max_amp;
+            payload[payload_index].duration = 0;
 
             if(datum.num_wakes != 0)
             {

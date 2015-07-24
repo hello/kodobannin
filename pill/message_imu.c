@@ -168,15 +168,20 @@ static void _imu_switch_mode(bool is_active)
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
         PRINTS("IMU Inactive.\r\n");
+        ShakeDetectDecWindow(); //only needs to run for 8 seconds, started by imu interrupt
         _settings.is_active = false;
     }
 }
 
-
+static bool reading = false;
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
-    parent->dispatch( ADDR(IMU, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
+    APP_OK(app_gpiote_user_disable(_gpiote_user));
+    if( !reading ) {
+        parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+        reading = true;
+    }
+    PRINTS("I\r\n");
 }
 
 
@@ -193,7 +198,7 @@ static void _on_wom_timer(void* context)
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
         PRINTS("Active state continues.\r\n");
     }
-
+    PRINTS("A\r\n");
     if(time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         _imu_switch_mode(false);
@@ -303,6 +308,9 @@ static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
 	uint32_t mag;
 	imu_accel_reg_read((uint8_t*)values);
+    PRINTS("FINISHED READING\r\n");
+
+    reading = false;
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
@@ -318,6 +326,8 @@ static MSG_Status _handle_read_xyz(void){
 		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 	}
 #endif
+    APP_OK(app_gpiote_user_enable(_gpiote_user));
+    
 	return SUCCESS;
 }
 

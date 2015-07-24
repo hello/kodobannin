@@ -201,11 +201,7 @@ static void _1sec_timer_handler(void * ctx){
 
     uint8_t current_reed_state = 0;
     self.onesec_runtime += 1;
-    
-    TF_TickOneSecond();         //what depends on this? - the bucketing of incoming accel data (can be kicked off by imu)
-    
-    ShakeDetectDecWindow(); //only needs to run for 8 seconds, started by imu interrupt
-    
+
 #ifdef PLATFORM_HAS_VLED
 #include "led_booster_timer.h"
     if(led_booster_is_free()) {

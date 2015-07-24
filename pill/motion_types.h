@@ -8,7 +8,7 @@ typedef struct {
     uint32_t maxaccnormsq;
     uint16_t max_acc_range; 
     uint8_t num_times_woken_in_minute;
-    uint8_t duration;
+    uint8_t duration; //deprecated
 } __attribute__((packed))  MotionPayload_t; 
 
 #endif
