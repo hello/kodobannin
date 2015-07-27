@@ -183,7 +183,6 @@ static void _imu_switch_mode(bool is_active)
         PRINT_HEX( &time_diff, sizeof(time_diff) );
         PRINTS("\n");
         
-        ShakeDetectDecWindow(); //only needs to run for 8 seconds, started by imu interrupt
         _settings.is_active = false;
     }
 }
@@ -213,6 +212,9 @@ static void _on_wom_timer(void* context)
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
         PRINTS("Active state continues.\r\n");
     }
+    
+    ShakeDetectDecWindow();
+
     PRINTS("A\r\n");
     if(time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
