@@ -160,7 +160,7 @@ static uint32_t _start_active_time = 0;
 static void _imu_switch_mode(bool is_active)
 {
     
-   volatile uint32_t current_time = 0;
+    uint32_t current_time = 0;
     app_timer_cnt_get(&current_time);
     uint32_t time_diff = 0;
     
