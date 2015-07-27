@@ -20,7 +20,7 @@ _reset_tf_unit(tf_unit_t * current){
         current->max_accel[i] = INT16_MIN;
     }
     current->has_motion = 0;
-    current->num_wakes = 0;
+    current->motion_mask = 0;
     current->max_amp = 0;
 }
 void TF_Initialize(){
@@ -84,7 +84,6 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
             tf_unit_t datum = self.data.data[idx];
 
             uint8_t payload_index = length - i - 1;
-            payload->num_times_woken_in_minute = (uint8_t)datum.num_wakes;
 
             //compute max range
             for (int k = 0; k < 3; k++) {
@@ -96,9 +95,9 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
 
             payload[payload_index].max_acc_range = maxrange;
             payload[payload_index].maxaccnormsq = datum.max_amp;
-            payload[payload_index].duration = datum.duration;
+            payload[payload_index].motion_mask = datum.motion_mask;
 
-            if(datum.num_wakes != 0)
+            if(datum.motion_mask != 0)
             {
                 has_data = true;
             }

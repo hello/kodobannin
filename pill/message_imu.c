@@ -155,34 +155,19 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     return aggregate;
       
 }
-static uint32_t _start_active_time = 0;
 
 static void _imu_switch_mode(bool is_active)
 {
-    
-   volatile uint32_t current_time = 0;
-    app_timer_cnt_get(&current_time);
-    uint32_t time_diff = 0;
-    
     if(is_active)
     {
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
         PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
-        _start_active_time = current_time;
-        TF_GetCurrent()->num_wakes++;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
         PRINTS("IMU Inactive.\r\n");
-        
-        app_timer_cnt_diff_compute(current_time, _start_active_time, &time_diff);
-        time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
-        TF_GetCurrent()->duration += time_diff;
-        PRINT_HEX( &time_diff, sizeof(time_diff) );
-        PRINTS("\n");
-        
         _settings.is_active = false;
     }
 }
@@ -212,7 +197,12 @@ static void _on_wom_timer(void* context)
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
         PRINTS("Active state continues.\r\n");
     }
-    
+    {
+        uint32_t current_time = 0;
+        app_timer_cnt_get(&current_time);
+        current_time /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
+        TF_GetCurrent()->motion_mask |= 1<<(current_time%60);
+    }
     ShakeDetectDecWindow();
 
     PRINTS("A\r\n");

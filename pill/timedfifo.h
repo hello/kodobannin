@@ -28,10 +28,9 @@
 
 typedef struct {
     uint32_t max_amp;
-    uint16_t num_wakes;
     int16_t max_accel[3];
     int16_t min_accel[3];
-    uint8_t duration;
+    uint64_t motion_mask;
     uint8_t has_motion;
 }__attribute__((packed)) auxillary_data_t;
 
