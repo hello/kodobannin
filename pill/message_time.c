@@ -190,6 +190,7 @@ static void _1min_timer_handler(void * ctx) {
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
+    top_of_meas_minute();
 }
 
 #define POWER_STATE_MASK 0x7

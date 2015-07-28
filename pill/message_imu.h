@@ -43,4 +43,7 @@ void imu_set_data_ready_callback(imu_data_ready_callback_t callback);
 void imu_set_wom_callback(imu_wom_callback_t callback);
 uint8_t clear_stuck_count(void);
 uint8_t fix_imu_interrupt(void);
+
+void top_of_meas_minute(void);
+
 MSG_Base_t * MSG_IMU_GetBase(void);

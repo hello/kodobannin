@@ -45,6 +45,7 @@ static bool initialized = false;
 static const MSG_Central_t * parent;
 static MSG_Base_t base;
 static uint8_t stuck_counter;
+static uint32_t top_of_minute = 0;
 
 
 static struct imu_settings _settings = {
@@ -190,19 +191,16 @@ static void _on_wom_timer(void* context)
     uint32_t current_time = 0;
     app_timer_cnt_get(&current_time);
     uint32_t time_diff = 0;
-    app_timer_cnt_diff_compute(current_time, _last_active_time, &time_diff);
+    app_timer_cnt_diff_compute(current_time, top_of_minute, &time_diff);
 
     if(time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
         PRINTS("Active state continues.\r\n");
     }
-    {
-        uint32_t current_time = 0;
-        app_timer_cnt_get(&current_time);
-        current_time /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
-        TF_GetCurrent()->motion_mask |= 1<<(current_time%60);
-    }
+
+    time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
+    TF_GetCurrent()->motion_mask |= 1<<(time_diff%60);
     ShakeDetectDecWindow();
 
     PRINTS("A\r\n");
@@ -221,6 +219,10 @@ clear_stuck_count(void)
 	uint8_t value = stuck_counter;
 	stuck_counter = 0;
 	return value;
+}
+
+void top_of_meas_minute(void) {
+    app_timer_cnt_get(&top_of_minute);
 }
 
 uint8_t
