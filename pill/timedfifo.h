@@ -46,7 +46,6 @@ typedef struct{
 
 
 void TF_Initialize();
-void TF_TickOneSecond(void);
 void TF_TickOneMinute(void);
 tf_unit_t* TF_GetCurrent(void);
 void TF_SetCurrent(tf_unit_t* val);
