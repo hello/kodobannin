@@ -33,7 +33,6 @@
 typedef struct{
     uint64_t nonce;
     MotionPayload_t payload[TF_CONDENSED_BUFFER_SIZE];
-    uint16_t magic_bytes; //this must be here at the end of the struct,  or Jackson will kill you
 }__attribute__((packed)) MSG_ANT_EncryptedMotionData_t;
 
 static struct{
@@ -72,7 +71,7 @@ _flush(void){
 }
 
 #ifdef ANT_STACK_SUPPORT_REQD
-#define MOTION_DATA_MAGIC 0x5A5A
+
 static void _send_available_data_ant(){
 
     //allocate memory
@@ -101,9 +100,6 @@ static void _send_available_data_ant(){
         {
             uint8_t pool_size = 0;
 
-            //magic is pre-defined, assign it.
-            motion_data->magic_bytes = MOTION_DATA_MAGIC;
-
             //do the nonce stuff (encrypting it all)  
             if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
                 uint8_t nonce[8] = {0};
@@ -113,7 +109,7 @@ static void _send_available_data_ant(){
 
                 sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
 
-                aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
+                aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t), get_aes128_key(), nonce);
                 
                 memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
 
@@ -130,7 +126,7 @@ static void _send_available_data_ant(){
                  *    ant_data = (MSG_ANT_PillData_t *)&dupe->buf;
                  *    motion_data = (MSG_ANT_EncryptedMotionData_t*)ant_data->payload;
                  *    uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
-                 *    aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
+                 *    aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t), get_aes128_key(), nonce);
                  *    self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, dupe);
                  *    MSG_Base_ReleaseDataAtomic(dupe);
                  *}
