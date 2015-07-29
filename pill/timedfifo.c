@@ -6,18 +6,14 @@
 #include "util.h"
 
 static struct{
-    tf_data_t data;
-    uint8_t tick;
-    uint16_t current_idx;
+    tf_unit_t data;
 }self;
-
-static uint16_t _decrease_index(uint16_t * idx);
 
 static void
 _reset_tf_unit(tf_unit_t * current){
     for (int i = 0; i < 3; i++) {
-        current->min_accel[i] = INT16_MAX;
-        current->max_accel[i] = INT16_MIN;
+        current->prev_avg_accel[i] = current->avg_accel[i];
+        current->avg_accel[i] = 0;
     }
     current->has_motion = 0;
     current->motion_mask = 0;
@@ -25,89 +21,90 @@ _reset_tf_unit(tf_unit_t * current){
 }
 void TF_Initialize(){
     memset(&self.data, 0, sizeof(self.data));
-    self.data.length = sizeof(self.data);
-    self.data.prev_idx = 0xFFFF;
-    
-    self.current_idx = 0;
-    self.tick = 0;
-
-    tf_unit_t* current = TF_GetCurrent();
-    _reset_tf_unit(current);
+    _reset_tf_unit(&self.data);
 }
 
 void TF_TickOneMinute() {
-    tf_unit_t* current_slot = TF_GetCurrent();
-    //increment index
-    self.tick = 0;
-    self.data.prev_idx = self.current_idx;
-    self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
-    
-    //reset next tf data
-    _reset_tf_unit(current_slot);
+    if( self.data.motion_mask ) {
+        _reset_tf_unit(&self.data);
+    }
     PRINTS("^");
 }
 
-inline tf_unit_t* TF_GetCurrent(void){
-    return &self.data.data[self.current_idx];
-}
-
-inline void TF_SetCurrent(tf_unit_t* val){
-    tf_unit_t* current = TF_GetCurrent();
-    memcpy(current, val, sizeof(tf_unit_t));
-}
-
-inline tf_data_t * TF_GetAll(void){
+tf_unit_t * TF_GetCurrent(void){
     return &self.data;
 }
+#define PRINT_HEX_X(x) PRINT_HEX(&x, sizeof(x)); PRINTS("\r\n");
 
-static uint16_t _decrease_index(uint16_t * idx){
-    if( *idx == 0){
-        return TF_BUFFER_SIZE - 1;
-    }else{
-        return (*idx - 1);
+//assumes result is near 1 in 16.16
+static uint32_t _fastinvsqrt( uint32_t x ) {
+    uint32_t half = 1<<15;
+    uint32_t one = 1<<16;
+    
+    x = (uint32_t)(((uint64_t) 200 * ( (one|half) - (((uint64_t)x * x)>>17)))>>16);
+    x = (uint32_t)(((uint64_t)x * ( (one|half) - (((uint64_t)x * x)>>17)))>>16); //thanks quake - http://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
+    return x;
+}
+static uint32_t _mag( uint16_t * x ) {
+    uint32_t m=0;
+    for (int k = 0; k < 3; k++) {
+        m += ((uint32_t)x[k]*x[k])>>16;
     }
+    return m;
+}
+
+static uint8_t _bitlog(uint32_t n) {
+    int16_t b;
+    
+    // shorten computation for small numbers
+    if(n <= 8)
+        return (int16_t)(2 * n);
+    
+    // find the highest non-zero bit
+    b=31;
+    while((b > 2) && ((int32_t)n > 0))
+    {
+        --b;
+        n <<= 1;
+    }
+    n &= 0x70000000;
+    n >>= 28; // keep top 4 bits, of course we're only using 3 of those
+    
+    b = (int16_t)n + 8 * (b - 1);
+    return (uint8_t) b;
 }
 
 
 // for posterity -- this used to be used instead of dump payload
-bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
+bool TF_GetCondensed(MotionPayload_t* payload){
     bool has_data = false;
+    tf_unit_t datum = self.data;
+    
+    if(payload && datum.motion_mask ){
+        int32_t dot = 0;
 
-    if(payload && length){
-        uint16_t idx = self.current_idx;
-
-        for(int i = 0; i < length; i++){
-            idx = _decrease_index(&idx);
-
-            uint16_t maxrange = 0;
-            uint16_t range = 0;
-            tf_unit_t datum = self.data.data[idx];
-
-            uint8_t payload_index = length - i - 1;
-
-            //compute max range
-            for (int k = 0; k < 3; k++) {
-                range = (uint16_t) (datum.max_accel[k] - datum.min_accel[k]);
-                if (range > maxrange) {
-                    maxrange = range;
-                }
-            } 
-
-            payload[payload_index].max_acc_range = maxrange;
-            payload[payload_index].maxaccnormsq = datum.max_amp;
-            payload[payload_index].motion_mask = datum.motion_mask;
-
-            if(datum.motion_mask != 0)
-            {
-                has_data = true;
-            }
+        //compute max range
+        for (int k = 0; k < 3; k++) {
+            dot +=(datum.avg_accel[k]*datum.prev_avg_accel[k]);
         }
+        dot = abs(dot);
+        dot = ((uint64_t)dot*_fastinvsqrt(_mag(datum.avg_accel)))>>16;
+        dot = ((uint64_t)dot*_fastinvsqrt(_mag(datum.prev_avg_accel)))>>16;
+        
+        payload->cos_theta = _bitlog(dot);
+        payload->max = datum.max_amp >> 24;
+        payload->motion_mask = datum.motion_mask;
+#if 1
+        PRINTS("condensed data\r\n");
+        PRINT_HEX_X( payload->cos_theta );
+        PRINT_HEX_X( payload->max );
+        PRINT_HEX_X( payload->motion_mask );
+        PRINTS("\r\n");
+#endif
+        
+        has_data = true;
     }
 
     return has_data;
-}
-
-inline uint8_t get_tick(){
-    return self.tick;
 }
 

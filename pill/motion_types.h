@@ -5,8 +5,8 @@
 
 
 typedef struct {
-    uint32_t maxaccnormsq;
-    uint16_t max_acc_range; 
+    uint8_t max;
+    uint8_t cos_theta;
     uint64_t motion_mask;
 } __attribute__((packed))  MotionPayload_t;
 

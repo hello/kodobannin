@@ -46,6 +46,7 @@ static const MSG_Central_t * parent;
 static MSG_Base_t base;
 static uint8_t stuck_counter;
 static uint32_t top_of_minute = 0;
+static uint32_t active_time = 0;
 
 
 static struct imu_settings _settings = {
@@ -121,40 +122,16 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 
 	//TF_SetCurrent((uint16_t)values[0]);
 	tf_unit_t* current = TF_GetCurrent();
+    ++current->num_meas;
     if(current->max_amp < aggregate){
         current->max_amp = aggregate;
         PRINTS("NEW MAX: ");
         PRINT_HEX(&aggregate, sizeof(aggregate));
     }
-    
-    //track max/min values of accelerometer      
-    for (int i = 0; i < 3; i++) {
-        if (values[i] > current->max_accel[i]) {
-            current->max_accel[i] = values[i];
-        }
-  
-        if (values[i] < current->min_accel[i]) {
-            current->min_accel[i] = values[i];
-        }
+    for(int i=0;i<3;++i){
+        current->avg_accel[i] += (values[i] - current->avg_accel[i])/current->num_meas;
     }
-
-	//this second has motion
-	current->has_motion = 1;
-
-/* 
-    maxrange = 0;
-    for (i = 0; i < 3; i++) {
-        range = (uint16_t) (paux->max_accel[i] - paux->min_accel[i]);
-   
-        if (range > maxrange) {
-            maxrange = range;
-        }
-    }
-
-    paux->max_
-*/
     return aggregate;
-      
 }
 
 static void _imu_switch_mode(bool is_active)
@@ -165,10 +142,13 @@ static void _imu_switch_mode(bool is_active)
         imu_wom_set_threshold(_settings.active_wom_threshold);
         PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
+        app_timer_cnt_get(&active_time);
+        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
         PRINTS("IMU Inactive.\r\n");
+        app_timer_stop(_wom_timer);
         _settings.is_active = false;
     }
 }
@@ -181,10 +161,10 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
         parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
         reading = true;
     }
-    PRINTS("I\r\n");
+    PRINTS("I\r");
 }
 
-
+#define PRINT_HEX_X(x) PRINT_HEX(&x, sizeof(x)); PRINTS("\r\n");
 
 static void _on_wom_timer(void* context)
 {
@@ -192,19 +172,18 @@ static void _on_wom_timer(void* context)
     app_timer_cnt_get(&current_time);
     uint32_t time_diff = 0;
     app_timer_cnt_diff_compute(current_time, top_of_minute, &time_diff);
-
-    if(time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
-    {
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-        PRINTS("Active state continues.\r\n");
-    }
+    uint32_t active_time_diff = 0;
+    app_timer_cnt_diff_compute(current_time, active_time, &active_time_diff);
 
     time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
-    TF_GetCurrent()->motion_mask |= 1<<(time_diff%60);
+    TF_GetCurrent()->motion_mask |= 1ull<<(time_diff%60);
+    PRINTS("mask\r\n");
+    
+    PRINT_HEX_X( TF_GetCurrent()->motion_mask  );
+    
     ShakeDetectDecWindow();
 
-    PRINTS("A\r\n");
-    if(time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
+    if(active_time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         _imu_switch_mode(false);
         PRINTS("Time diff ");
@@ -285,7 +264,8 @@ static MSG_Status _init(void){
 			APP_OK(app_gpiote_user_enable(_gpiote_user));
 			PRINTS("IMU: initialization done.\r\n");
 			initialized = true;
-		}
+        }
+        app_timer_cnt_get(&top_of_minute);
 	}
     return SUCCESS;
 }
@@ -317,7 +297,7 @@ static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
 	uint32_t mag;
 	imu_accel_reg_read((uint8_t*)values);
-    PRINTS("FINISHED READING\r\n");
+    PRINTS("R\r\n");
 
     reading = false;
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
@@ -331,8 +311,9 @@ static MSG_Status _handle_read_xyz(void){
 	if(!_settings.is_active)
 	{
 		_imu_switch_mode(true);
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 	}
+
+    app_timer_cnt_get(&active_time);
 #endif
     APP_OK(app_gpiote_user_enable(_gpiote_user));
     
@@ -371,7 +352,7 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 	base.type = IMU;
 	base.typestr = name;
 #ifdef IMU_DYNAMIC_SAMPLING
-	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_wom_timer));
+	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_REPEATED, _on_wom_timer));
 #endif
 	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
 	APP_OK(app_gpiote_user_disable(_gpiote_user));

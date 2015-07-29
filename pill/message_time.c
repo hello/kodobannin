@@ -97,7 +97,7 @@ static void _send_available_data_ant(){
         ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t);
 
         //fill out the motion data payload
-        if(TF_GetCondensed(motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
+        if(TF_GetCondensed(motion_data->payload))
         {
             uint8_t pool_size = 0;
 
@@ -172,8 +172,6 @@ static void _send_heartbeat_data_ant(){
 static void _1min_timer_handler(void * ctx) {
     PRINTS("ONE MIN\r\n");
     self.uptime += 60;
-    
-    TF_TickOneMinute();
 
     fix_imu_interrupt(); // look for imu int stuck low
     
@@ -190,6 +188,8 @@ static void _1min_timer_handler(void * ctx) {
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
+
+    TF_TickOneMinute();
     top_of_meas_minute();
 }
 
