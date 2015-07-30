@@ -92,14 +92,11 @@ bool TF_GetCondensed(MotionPayload_t* payload){
         dot = ((uint64_t)dot*_fastinvsqrt(_mag(datum.prev_avg_accel)))>>16;
         
         payload->cos_theta = _bitlog(dot);
-        payload->max = datum.max_amp >> 24;
+        payload->max = datum.max_amp >>24;
+        
         payload->motion_mask = datum.motion_mask;
 #if 1
-        PRINTS("condensed data\r\n");
-        PRINT_HEX_X( payload->cos_theta );
-        PRINT_HEX_X( payload->max );
-        PRINT_HEX_X( payload->motion_mask );
-        PRINTS("\r\n");
+        PRINTF("data\n cos_theta: %d max: %d mask: %l\r\n", payload->cos_theta, payload->max, payload->motion_mask );
 #endif
         
         has_data = true;

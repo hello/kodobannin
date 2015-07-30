@@ -24,7 +24,7 @@ extern const uint8_t hex[16];
 #define PRINT_BYTE(a,b) MSG_Uart_PrintByte((const uint8_t*)a,b)
 #define PRINT_HEX(a,b) MSG_Uart_PrintHex((const uint8_t*)a,b)
 #define PRINT_DEC(a,b) MSG_Uart_PrintDec((const int*)a,b)
-#define PRINTF(a,b) MSG_Uart_Printf(a,b)
+#define PRINTF(...) MSG_Uart_Printf(__VA_ARGS__)
 #define PRINTS(a) MSG_Uart_Prints(a)
 #define PRINTC(a) MSG_Uart_Printc(a)
 #define SIMPRINT_HEX(a,b) serial_print_hex((uint8_t *)a,b)
