@@ -167,7 +167,7 @@ static void _send_heartbeat_data_ant(){
 
 static void _1min_timer_handler(void * ctx) {
     PRINTS("ONE MIN\r\n");
-    self.uptime += 60;
+    self.uptime += 1;
 
     fix_imu_interrupt(); // look for imu int stuck low
     

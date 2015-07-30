@@ -125,8 +125,7 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     ++current->num_meas;
     if(current->max_amp < aggregate){
         current->max_amp = aggregate;
-        PRINTS("NEW MAX: ");
-        PRINT_HEX(&aggregate, sizeof(aggregate));
+        PRINTF( "NEW MAX: %d\r\n", aggregate);
     }
     for(int i=0;i<3;++i){
         current->avg_accel[i] += (values[i] - current->avg_accel[i])/current->num_meas;
@@ -186,9 +185,8 @@ static void _on_wom_timer(void* context)
     if(active_time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         _imu_switch_mode(false);
-        PRINTS("Time diff ");
-        PRINT_HEX(&time_diff, sizeof(time_diff));
-        PRINTS("\r\n");
+        
+        PRINTF( "time diff %d\r\n", time_diff);
     }
 }
 
