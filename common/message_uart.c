@@ -179,25 +179,27 @@ void MSG_Uart_Prints(const char * str){
 }
 
 void MSG_Uart_PrintHex(const uint8_t * ptr, uint32_t len){
+    ptr+=len-1;
     if(self.initialized){
         while(len-- >0) {
             app_uart_put(hex[0xF&(*ptr>>4)]);
-            app_uart_put(hex[0xF&*ptr++]);
+            app_uart_put(hex[0xF&*ptr--]);
             app_uart_put(' ');
         }
     }
 }
 
 void MSG_Uart_PrintByte(const uint8_t * ptr, uint32_t len){
+    ptr+=len-1;
     if(self.initialized){
         while(len-- >0) {
             app_uart_put(hex[0xF&(*ptr>>4)]);
-            app_uart_put(hex[0xF&*ptr++]);
+            app_uart_put(hex[0xF&*ptr--]);
         }
     }
 }
 
-void MSG_Uart_PrintDec(const uint32_t * ptr, uint32_t len){
+void MSG_Uart_PrintDec(const int * ptr, uint32_t len){
      uint8_t index,digit[8],count;
      uint32_t number;
 
@@ -205,6 +207,11 @@ void MSG_Uart_PrintDec(const uint32_t * ptr, uint32_t len){
          index = 0;
          count = len;
          number = *ptr;
+         if( number < 0 ) {
+             app_uart_put('-');
+             number = -number;
+         }
+
          while(count-- >0) {
              digit[index++] = number % 10;
              number /= 10;
@@ -214,4 +221,43 @@ void MSG_Uart_PrintDec(const uint32_t * ptr, uint32_t len){
          }
     }
 }
+#include "stdarg.h"
+void MSG_Uart_Printf(char * fmt, ... ) { //look, no buffer...
+    va_list va_args;
+    char * p = fmt;
+    int x;
+    char *c;
+    
+    if(!self.initialized){ return; }
+    va_start(va_args, fmt);
+    
+    while(*p) {
+        switch (*p) {
+            case '%': //control char
+                switch(++*p) { //skip control char
+                    case 'x':
+                        x = va_arg(va_args, int);
+                        MSG_Uart_PrintHex((const uint8_t *)&x, sizeof(x));
+                        break;
+                    case 'd':
+                        x = va_arg(va_args, int);
+                        MSG_Uart_PrintDec(&x, sizeof(x));
+                        break;
+                    case 's':
+                        c = va_arg(va_args, char*);
+                        while( *c++ ) {
+                            app_uart_put(*c);
+                        }
+                        break;
+                }
+                ++p; //skip control char
+                break;
+            default:
+                app_uart_put(*p++); //print some of the format string and advance
+        }
+    }
+    
+    va_end(va_args);
+}
+
 

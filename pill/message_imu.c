@@ -122,8 +122,7 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 	tf_unit_t* current = TF_GetCurrent();
     if(current->max_amp < aggregate){
         current->max_amp = aggregate;
-        PRINTS("NEW MAX: ");
-        PRINT_HEX(&aggregate, sizeof(aggregate));
+        PRINTF( "NEW MAX: %d\r\n", aggregate);
     }
     
     //track max/min values of accelerometer      
@@ -175,14 +174,12 @@ static void _imu_switch_mode(bool is_active)
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
-        PRINTS("IMU Inactive.\r\n");
-        
+
         app_timer_cnt_diff_compute(current_time, _start_active_time, &time_diff);
         time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
         TF_GetCurrent()->duration += time_diff;
-        PRINT_HEX( &time_diff, sizeof(time_diff) );
-        PRINTS("\n");
         
+        PRINTF( "IMU Inactive %d\r\n", time_diff);
         _settings.is_active = false;
     }
 }
@@ -219,9 +216,8 @@ static void _on_wom_timer(void* context)
     if(time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         _imu_switch_mode(false);
-        PRINTS("Time diff ");
-        PRINT_HEX(&time_diff, sizeof(time_diff));
-        PRINTS("\r\n");
+        
+        PRINTF( "time diff %x\r\n", time_diff);
     }
 }
 
