@@ -171,7 +171,7 @@ static void _send_heartbeat_data_ant(){
 
 static void _1min_timer_handler(void * ctx) {
     PRINTS("ONE MIN\r\n");
-    self.uptime += 60;
+    self.uptime += 1;
     
     TF_TickOneMinute();
 
