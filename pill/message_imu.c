@@ -217,7 +217,7 @@ static void _on_wom_timer(void* context)
     {
         _imu_switch_mode(false);
         
-        PRINTF( "time diff %x\r\n", time_diff);
+        PRINTF( "time diff %d\r\n", time_diff);
     }
 }
 
