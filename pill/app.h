@@ -49,6 +49,7 @@ enum {
 
 #define IMU_CONSTANT_FREQ    (IMU_HZ_15_63)
 
+#define IMU_ONE_G            (16384u)
 /*
  * BLE Connection Parameters
  */

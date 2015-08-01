@@ -42,6 +42,7 @@ static uint32_t _fastinvsqrt( uint32_t x ) {
     uint32_t one = 1<<16;
     
     x = (uint32_t)(((uint64_t) 200 * ( (one|half) - (((uint64_t)x * x)>>17)))>>16);
+    x = (uint32_t)(((uint64_t)x * ( (one|half) - (((uint64_t)x * x)>>17)))>>16);
     x = (uint32_t)(((uint64_t)x * ( (one|half) - (((uint64_t)x * x)>>17)))>>16); //thanks quake - http://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
     return x;
 }
@@ -51,6 +52,16 @@ static uint32_t _mag( uint16_t * x ) {
         m += ((uint32_t)x[k]*x[k])>>16;
     }
     return m;
+}
+
+static uint32_t _fastsqrt( uint32_t x ) {
+    int64_t s = x;
+    x = 20000u;
+    x = ( x + s / x )/2;
+    x = ( x + s / x )/2;
+    x = ( x + s / x )/2;
+    x = ( x + s / x )/2;
+    return x;
 }
 
 static uint8_t _bitlog(uint32_t n) {
@@ -92,11 +103,20 @@ bool TF_GetCondensed(MotionPayload_t* payload){
         dot = ((uint64_t)dot*_fastinvsqrt(_mag(datum.prev_avg_accel)))>>16;
         
         payload->cos_theta = _bitlog(dot);
-        payload->max = datum.max_amp >>24;
-        
+        uint32_t s = _fastsqrt(datum.max_amp);
+        if ( s < IMU_ONE_G ) {
+            payload->max = 0;
+        } else {
+            s = (s-IMU_ONE_G)>>8; //remove 1g, scale into 8 bits
+            if( s < UINT8_MAX ) {
+                payload->max = s;
+            }else{
+                payload->max = UINT8_MAX;
+            }
+        }
         payload->motion_mask = datum.motion_mask;
 #if 1
-        PRINTF("data\n cos_theta: %d max: %d mask: %l\r\n", payload->cos_theta, payload->max, payload->motion_mask );
+        PRINTF("data\n cos_theta: %d max: %d (%d) mask: %l\r\n", payload->cos_theta, payload->max, s, payload->motion_mask );
 #endif
         
         has_data = true;
