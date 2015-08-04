@@ -173,8 +173,6 @@ static void _1min_timer_handler(void * ctx) {
     PRINTS("ONE MIN\r\n");
     self.uptime += 1;
     
-    TF_TickOneMinute();
-
     fix_imu_interrupt(); // look for imu int stuck low
     
 #ifdef ANT_ENABLE
@@ -190,6 +188,7 @@ static void _1min_timer_handler(void * ctx) {
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
+    TF_TickOneMinute();
 }
 
 #define POWER_STATE_MASK 0x7
