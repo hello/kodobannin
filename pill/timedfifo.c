@@ -77,8 +77,6 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
         uint16_t idx = self.current_idx;
 
         for(int i = 0; i < length; i++){
-            idx = _decrease_index(&idx);
-
             uint16_t maxrange = 0;
             uint16_t range = 0;
             tf_unit_t datum = self.data.data[idx];
@@ -102,6 +100,7 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
             {
                 has_data = true;
             }
+            idx = _decrease_index(&idx);
         }
     }
 
