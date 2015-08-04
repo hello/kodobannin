@@ -107,7 +107,7 @@ bool TF_GetCondensed(MotionPayload_t* payload){
         if ( s < IMU_ONE_G ) {
             payload->max = 0;
         } else {
-            s = (s-IMU_ONE_G)>>8; //remove 1g, scale into 8 bits
+            s = (s-IMU_ONE_G)>>7; //remove 1g, scale into 8 bits
             if( s < UINT8_MAX ) {
                 payload->max = s;
             }else{
