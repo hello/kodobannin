@@ -17,7 +17,7 @@ enum pill_command_type {
     PILL_COMMAND_DISCONNECT,
     PILL_COMMAND_SEND_DATA,
     PILL_COMMAND_GET_BATTERY_LEVEL,
-    PILL_COMMAND_WIPE_FIRMWARE,
+    PILL_COMMAND_WIPE_FIRMWARE=8,
 } __attribute__((packed));
 
 struct pill_command
