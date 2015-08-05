@@ -42,6 +42,8 @@ static struct{
     app_timer_id_t timer_id_1sec;
     app_timer_id_t timer_id_1min;
     uint32_t uptime;
+    uint32_t minutes;
+    uint32_t last_wakeup;
     uint32_t onesec_runtime;
     uint8_t reed_states;
     uint8_t in_ship_state;
@@ -152,6 +154,8 @@ static void _send_heartbeat_data_ant(){
         heartbeat.uptime_sec = self.uptime;
         heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
         
+        PRINTF("HB battery %d uptime %d fw %d\r\n", heartbeat.battery_level, heartbeat.uptime_sec, heartbeat.firmware_version);
+        
         memset(&data_page->buf, 0, data_page->len);
         MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
         ant_data->version = ANT_PROTOCOL_VER;
@@ -164,27 +168,37 @@ static void _send_heartbeat_data_ant(){
 }
 
 #endif
+static void _update_uptime() {
+    uint32_t current_time = 0;
+    uint32_t time_diff = 0;
+    app_timer_cnt_get(&current_time);
+    
+    app_timer_cnt_diff_compute(current_time, self.last_wakeup, &time_diff);
+    time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
+    self.uptime += time_diff;
+    PRINTF("uptime now %d\r\n", self.uptime );
+    self.last_wakeup = current_time;
+}
 
 static void _1min_timer_handler(void * ctx) {
-    PRINTS("ONE MIN\r\n");
-    self.uptime += 1;
-
+    _update_uptime();
+    self.minutes += 1;
+    
     fix_imu_interrupt(); // look for imu int stuck low
     
 #ifdef ANT_ENABLE
     _send_available_data_ant();
-    if(self.uptime % HEARTBEAT_INTERVAL_SEC == 0) { // update percent battery capacity
+    if(self.minutes % HEARTBEAT_INTERVAL_MIN == 0) { // update percent battery capacity
         if( !self.in_ship_state ){
             _send_heartbeat_data_ant();
         }
         battery_update_level(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(rel)
     }
     // else { // since no ant queue, will be first come, only served
-    if(self.uptime % BATT_MEASURE_INTERVAL_SEC == 0) { // update minimum battery measurement
+    if(self.minutes % BATT_MEASURE_INTERVAL_MIN == 0) { // update minimum battery measurement
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
-
     TF_TickOneMinute();
     top_of_meas_minute();
 }
@@ -195,6 +209,7 @@ static void _1min_timer_handler(void * ctx) {
 
 static void _1sec_timer_handler(void * ctx){
     PRINTS("ONE SEC\r\n");
+    _update_uptime();
 
     uint8_t current_reed_state = 0;
     self.onesec_runtime += 1;
@@ -300,6 +315,8 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
         self.base.typestr = name;
         self.central = central;
         self.uptime = 0;
+        self.minutes = 0;
+        self.last_wakeup = 0;
         self.onesec_runtime = 0;
       
         if(app_timer_create(&self.timer_id_1sec,APP_TIMER_MODE_REPEATED,_1sec_timer_handler) == NRF_SUCCESS &&
