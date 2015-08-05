@@ -185,6 +185,7 @@ static void _update_uptime() {
 }
 
 static void _1min_timer_handler(void * ctx) {
+    _update_uptime();
     self.minutes += 1;
     
     fix_imu_interrupt(); // look for imu int stuck low
