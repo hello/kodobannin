@@ -82,12 +82,14 @@ static adc_t _adc_config_droop; // Vbat adc reading (battery minimum)
 //#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE)  (((((ADC_VALUE - 0x010A) * 7125 ) / 1023 ) * 12 ) / 10 )
 
 #define ADC_OFFSET 0x010A /* range 0x0108 thru 0x010E have been observed */
-#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE, ADC_OFF)  (((((ADC_VALUE - _adc_config_offset) * 7125 ) / 1023 ) * 12 ) / 10 )
+#define ADC_BATTERY_IN_MILLI_VOLTS(ADC_VALUE, ADC_OFF)  (((((ADC_VALUE - ADC_OFF) * 7125 ) / 1023 ) * 12 ) / 10 )
 
 // for use with low source resistance (511) versus above for high source resistance (523K||215K)
 #define ADC_RESULT_IN_MILLI_VOLTS(ADC_VALUE)  (((ADC_VALUE) * 1200 ) / 1023 )
 
 static uint8_t _adc_config_psel;
+
+uint8_t clear_stuck_count(void);
 
 inline void battery_module_power_off()
 {
@@ -200,7 +202,7 @@ void battery_set_percent_cached(int8_t value)
     _battery_level_percent = value; // used to hijack percent to indicate exception
 }
 
-adc_measure_callback_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
+uint8_t battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
 #ifdef PLATFORM_HAS_BATTERY
     switch (adc_count) { // for each adc reading
@@ -246,7 +248,7 @@ static uint8_t _adc_config_count;
 
 void ADC_IRQHandler(void)
 {
-    uint16_t value, adc_count;
+    uint16_t adc_count;
     uint8_t next_measure_input = 0; // indicate adc sequence complete
 
     if (NRF_ADC->EVENTS_END)
