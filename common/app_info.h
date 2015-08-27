@@ -6,5 +6,5 @@
 #define FW_VERSION_STRING "0.8.5"
 
 //pill only
-#define FIRMWARE_VERSION_8BIT (17)
+#define FIRMWARE_VERSION_8BIT (18)
 
