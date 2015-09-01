@@ -109,6 +109,11 @@ static void _delay_task_store_bonds()
 	APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
 }
+static void _delay_task_disconnect_ble() {
+    PRINTS("BLE disconnect");
+    APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
+    
+}
 static void _delay_tasks_erase_bonds()
 {
     PRINTS("BLE Bond Delete All");
@@ -874,7 +879,7 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 	if(hlo_ble_is_connected()){
 		_bonding_mode = m;
 		//disconnect, delay task called from disconnect
-        APP_OK(sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
+        APP_OK(_task_queue(_delay_task_disconnect_ble));
 	}else{
 		uint32_t adv_err = sd_ble_gap_adv_stop();
 		APP_OK(_task_queue(_delay_task_pause_ant));
