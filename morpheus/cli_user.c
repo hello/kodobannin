@@ -7,6 +7,8 @@
 #include "hble.h"
 #include "heap.h"
 
+#include <nrf_gpio.h>
+
 static struct{
     //parent is the reference to the dispatcher 
     MSG_Central_t * parent;
@@ -57,6 +59,16 @@ _handle_command(int argc, char * argv[]){
         int32_t ret = hlo_ant_pause_radio();
         PRINT_HEX(&ret, 4);
         PRINTS("\r\n");
+    }
+    if( !match_command(argv[0], "bounce") ){
+        PRINTS("Bouncing 3.3v rail...\r\n");
+        nrf_delay_ms(500);
+        
+        nrf_gpio_cfg_output(0);
+        nrf_gpio_pin_clear(0);
+        nrf_delay_ms(100);
+        nrf_gpio_pin_set(0);
+
     }
     if( !match_command(argv[0], "free") ){
         PRINTS("Free Memory = ");
