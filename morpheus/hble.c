@@ -85,6 +85,9 @@ static delay_task_t _task_dequeue(){
 	return ret;
 }
 
+static void _delay_task_bond_reboot() {
+    REBOOT_WITH_ERROR(GPREGRET_APP_RECOVER_BONDS);
+}
 
 static void _delay_task_pause_ant()
 {
@@ -115,6 +118,7 @@ static void _delay_task_disconnect_ble() {
     //disconnect, delay task called from disconnect
     r = sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
     //check we either disconnected or were already disconnected
+    PRINTF("return %d\r\n", r);
     APP_OK( !(r == NRF_SUCCESS || r == NRF_ERROR_INVALID_STATE ) );
 }
 static void _delay_tasks_erase_bonds()
@@ -876,6 +880,10 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 
 	_pairing_mode = pairing_mode;
 
+    if( m == ERASE_ALL_BOND) {
+        APP_OK(_task_queue(_delay_task_bond_reboot));
+        return;
+    }
 	if(hlo_ble_is_connected()){
 		_bonding_mode = m;
         APP_OK(_task_queue(_delay_task_disconnect_ble));
