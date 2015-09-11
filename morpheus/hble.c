@@ -879,7 +879,6 @@ void hble_services_init(void)
 void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 
 	_pairing_mode = pairing_mode;
-
     if( m == ERASE_ALL_BOND) {
         APP_OK(_task_queue(_delay_task_bond_reboot));
         return;
