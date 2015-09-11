@@ -188,8 +188,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         default:
             PRINTS("Unknown ANT Device");
             PRINT_HEX(&id->device_type, 1);
-            PRINTS("\r\n");
-            break;
+            PRINTS("\r\n");            break;
     }
 }
 

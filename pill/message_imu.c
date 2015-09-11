@@ -339,7 +339,6 @@ static MSG_Status _handle_read_xyz(void){
 	}
 #endif
     APP_OK(app_gpiote_user_enable(_gpiote_user));
-    
 	return SUCCESS;
 }
 

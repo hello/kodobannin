@@ -13,7 +13,6 @@
 #define HW_REVISION 2
 
 #define DEVICE_ID_SIZE        6
-
 #define configTOTAL_HEAP_SIZE 1024
 
 

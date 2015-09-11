@@ -7,10 +7,18 @@
 #include "message_time.h"
 #include "app.h"
 #include "battery.h"
+#include "adc_calmgr.h"
 #include <ble.h>
 
-static adc_t Vref, Vrel, Voff;
-static uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
+adc_t Vref, Vrel, Voff;
+uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
+
+ADC_CalValue_t calue = {
+     .pu = 523, // pullup
+     .pd = 215, // pulldown
+     .slope = 0x1BD5, // 7125
+     .offset = 0x010A //  226
+}, *p_calue;
 
 static uint8_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
 {
@@ -49,12 +57,14 @@ static uint8_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
                     PRINT_DEC(&result,3);
                     PRINTS(" V, ");
                     result = battery_get_percent_cached();
-                    value = (result%3);
-                    switch (value) {
-                        case 0: PRINTS("+");break; // better than expected
-                        case 2: PRINTS("=");break; // nominal 2/3/4 for each 30%
-                        case 1: PRINTS("-");break; // worse than expected
-                    }
+                    if (100 > result && result > 9) {
+                        value = (result%3);
+                        switch (value) {
+                            case 0: PRINTS("+");break; // better than expected
+                            case 2: PRINTS("=");break; // nominal 2/3/4 for each 30%
+                            case 1: PRINTS("-");break; // worse than expected
+                        }
+                    } else PRINTS(" ");
                     PRINT_DEC(&result,3);
                     if ( Vrel > Vref) {
                         result = Vrel - Vref; 
@@ -63,6 +73,16 @@ static uint8_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
                         PRINTS("% -");
                         result = Vref - Vrel; 
                     } // estimate of battery internal resistance
+                    PRINT_HEX(&result, 1);
+                    return LDO_VMCU_ADC_INPUT; break; // spread print overhead
+            case 5: result = battery_get_slope_cached();
+                    PRINTS("/ 0x");
+                    value = adc_result/256;
+                    PRINT_BYTE(&value, 1);
+                    PRINT_HEX(&adc_result, 1);
+                    PRINTS(" 0x");
+                    value = result/256;
+                    PRINT_BYTE(&value, 1);
                     PRINT_HEX(&result, 1);
                     PRINTS("\r\n");
                     break; // fall thru to end adc reading sequence
@@ -121,6 +141,7 @@ static struct{
 
 static void
 _handle_command(int argc, char * argv[]){
+    uint32_t value, result;
     if(argc > 1 && !match_command(argv[0], "echo")){
         PRINTS(argv[1]);
     }
@@ -137,6 +158,58 @@ _handle_command(int argc, char * argv[]){
     }
     if( !match_command(argv[0], "mon") ){
         cli_update_battery_level(0); // monitor droop
+    }
+    if( !match_command(argv[0], "add") ){
+        p_calue = &calue;
+        ADC_CalMgr_Add(p_calue);
+    }
+    if( !match_command(argv[0], "put") ){
+        ADC_CalMgr_Commit();
+    }
+    if( !match_command(argv[0], "num") ){
+        value = ADC_CalMgr_ForEach();
+        PRINT_DEC(&value,2);
+        PRINTS(" \r\n");
+    }
+    if( !match_command(argv[0], "get") ){
+        ADC_CalValue_t  * ret;
+        ret = ADC_CalMgr_Query(523,215);
+        PRINT_DEC(&ret->pu,4);
+        PRINTS(":");
+        PRINT_DEC(&ret->pd,4);
+        PRINTS(" ");
+        PRINT_HEX(&ret->slope,3);
+        PRINT_HEX(&ret->offset,3);
+        PRINTS(" \r\n");
+    }
+    if( !match_command(argv[0], "cal") ){
+        uint32_t slope;
+        result = battery_get_initial_cached(0);
+        PRINTS(" +");
+
+        //  236 (2.000) 356 (3.000) 380 (3.200) 476(4.000)
+        value = (battery_get_reading_cached() / 12) * 100; // (result - offset)/12
+
+        slope = 7125;
+        if (result > value)
+	  slope = 7125 - (((result - value) * 7125) / value);
+        if (result < value)
+          slope = 7125 + (((value - result) * 7125) / value);
+
+        PRINT_DEC(&slope,4);
+
+        value = 3000; // += 120;
+        slope = 7125;
+        if (result > value)
+	  slope = 7125 - (((result - value) * 7125) / value);
+        if (result < value)
+          slope = 7125 + (((value - result) * 7125) / value);
+
+        PRINT_DEC(&slope,4);
+
+        PRINTS(" \r\n");
+
+        battery_set_slope_cached(slope);
     }
     if( !match_command(argv[0], "upd") ){
         cli_update_battery_level(1); // measure battery / issue ant packet
