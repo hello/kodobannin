@@ -199,25 +199,22 @@ void MSG_Uart_PrintByte(const uint8_t * ptr, uint32_t len){
     }
 }
 
-void MSG_Uart_PrintDec(const int * ptr, uint32_t len){
+void MSG_Uart_PrintDec(const int * ptr, uint32_t sz){
      uint8_t index,digit[8],count;
      uint32_t number;
 
      if(self.initialized){
-         index = 0;
-         count = len;
+         count = 0;
          number = *ptr;
-         if( number < 0 ) {
-             app_uart_put('-');
-             number = -number;
+         while(number) {
+             count++;
+             number/=10;
          }
+         number = *ptr;
 
          while(count-- >0) {
-             digit[index++] = number % 10;
+             app_uart_put(hex[number % 10]);
              number /= 10;
-         }
-         while(len-- >0) {
-             app_uart_put(hex[0xF&(digit[len])]);
          }
     }
 }
