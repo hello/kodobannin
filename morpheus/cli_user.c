@@ -70,13 +70,13 @@ _handle_command(int argc, char * argv[]){
         
         if( argc > 1 ) {
             time = nrf_atoi(argv[1]);
-            PRINTF("Setting time %u\n", time);
+            PRINTF("Setting time %d\n", time);
             rtc = current_time;
         } else if(time) {
             uint32_t time_diff;
             app_timer_cnt_diff_compute(current_time, rtc, &time_diff);
             time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
-            PRINTF("_ set-time %d\n", time + time_diff);
+            PRINTF("\n_ set-time %d\n", time + time_diff);
         }
     }
     if( !match_command(argv[0], "bounce") ){
