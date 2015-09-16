@@ -92,7 +92,7 @@ static void _delay_task_bond_reboot() {
 static void _delay_task_pause_ant()
 {
 #ifdef ANT_ENABLE
-    APP_OK(hlo_ant_pause_radio());
+    hlo_ant_pause_radio();
     PRINTS("ANT Radio stop\r\n");
 #endif
 }
@@ -113,13 +113,9 @@ static void _delay_task_store_bonds()
 #endif
 }
 static void _delay_task_disconnect_ble() {
-    int r;
     PRINTS("BLE disconnect");
     //disconnect, delay task called from disconnect
-    r = sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-    //check we either disconnected or were already disconnected
-    PRINTF("return %d\r\n", r);
-    APP_OK( !(r == NRF_SUCCESS || r == NRF_ERROR_INVALID_STATE ) );
+    sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
 }
 static void _delay_tasks_erase_bonds()
 {
