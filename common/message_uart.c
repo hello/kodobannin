@@ -200,7 +200,8 @@ void MSG_Uart_PrintByte(const uint8_t * ptr, uint32_t len){
 }
 
 void MSG_Uart_PrintDec(const int * ptr, uint32_t sz){
-     uint8_t index,digit[8],count;
+    uint8_t count, digit[11] = {0};
+     uint8_t * p_digit = digit;
      uint32_t number;
 
      if(self.initialized){
@@ -213,9 +214,13 @@ void MSG_Uart_PrintDec(const int * ptr, uint32_t sz){
          number = *ptr;
 
          while(count-- >0) {
-             app_uart_put(hex[number % 10]);
+             digit[count] = hex[number % 10];
              number /= 10;
          }
+         while(*p_digit) {
+             app_uart_put(*p_digit++);
+         }
+
     }
 }
 #include "stdarg.h"
