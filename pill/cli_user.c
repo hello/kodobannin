@@ -38,7 +38,7 @@ static uint8_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
                     value = result/1000;
                     PRINT_DEC(&value);
                     PRINTS(".");
-                    PRINT_DEC(&result,3);
+                    PRINT_DEC(&result);
                     PRINTS(" V, ");
                     return LDO_VBAT_ADC_INPUT; break; // spread print overhead
             case 4: result = battery_get_initial_cached(cli_ant_packet_enable);
