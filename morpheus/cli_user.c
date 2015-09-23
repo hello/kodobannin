@@ -72,13 +72,7 @@ _handle_command(int argc, char * argv[]){
 
     }
     if( !match_command(argv[0], "free") ){
-        PRINTS("Free Memory = ");
-        int32_t ret = xPortGetFreeHeapSize();
-        PRINT_HEX(&ret, 4);
-        PRINTS("Least Memory = ");
-        ret = xPortGetMinimumEverFreeHeapSize();
-        PRINT_HEX(&ret, 4);
-        PRINTS("\r\n");
+        PRINTF("Free Memory = %d Least Memory = %d\r\n", xPortGetFreeHeapSize(), xPortGetMinimumEverFreeHeapSize() );
     }
     if( !match_command(argv[0], "boot") ){
         //force boot without midboard
