@@ -171,7 +171,7 @@ static void _disp_ant_id(const hlo_ant_device_t * id){
     PRINTS(" T: ");
     PRINT_HEX(&id->transmit_type,1);
     PRINTS(" RSSI: -");
-    PRINT_DEC(&rssi,4);
+    PRINT_DEC(&rssi);
     PRINTS("\r\n");
 }
 static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
