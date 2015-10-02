@@ -16,6 +16,7 @@
 
 
 #define configTOTAL_HEAP_SIZE 1024
+#define configLOW_MEM 128
 
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK

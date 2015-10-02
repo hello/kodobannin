@@ -34,11 +34,12 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
     {
         PRINTS("Get pill id failed.\r\n");
     }else{
-        MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(buffer);
-        if(!device_id_page)
+        if( MSG_Base_FreeCount() < configLOW_MEM )
         {
-            PRINTS("No memory.\r\n");
+            PRINTS("Low memory, pill data dropped.\r\n");
         }else{
+            MSG_Data_t* device_id_page = MSG_Base_AllocateStringAtomic(buffer);
+            
             morpheus_command.deviceId.arg = device_id_page;
 
             //TODO it may be a good idea to check len from the msg
