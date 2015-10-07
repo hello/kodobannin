@@ -164,7 +164,7 @@ int32_t hlo_ant_cw_test(uint8_t freq, uint8_t tx_power){
     sd_ant_stack_reset();
     sd_ant_cw_test_mode_init();
     if(tx_power <= RADIO_TX_POWER_LVL_4){
-        sd_ant_cw_test_mode(freq, tx_power, 0);
+        sd_ant_cw_test_mode(freq, tx_power, 0, 0);
     }else{
         return -1;
     }

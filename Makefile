@@ -12,8 +12,7 @@ PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 UNAME := $(shell uname)
 
 
-# tool paths
-
+# tool paths
 
 DEFAULT_GCC_ROOT = $(CURDIR)/tools/gcc-arm-none-eabi-4_7-2013q3
 KODOBANNIN_GCC_ROOT ?= $(DEFAULT_GCC_ROOT)
@@ -49,29 +48,29 @@ HELLO_SRCS = \
 
 
 NRF_SRCS = \
-	nRF51_SDK/nrf51422/Source/templates/system_nrf51.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_timer.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_fifo.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_uart_fifo.c \
-	nRF51_SDK/nrf51422/Source/app_common/crc16.c \
-	nRF51_SDK/nrf51422/Source/app_common/hci_mem_pool.c \
-    nRF51_SDK/nrf51422/Source/ble/ble_advdata.c \
-    nRF51_SDK/nrf51422/Source/ble/ble_dtm.c \
-	nRF51_SDK/nrf51422/Source/ble/ble_conn_params.c \
-	nRF51_SDK/nrf51422/Source/ble/ble_flash.c \
-	nRF51_SDK/nrf51422/Source/ble/ble_radio_notification.c \
-	nRF51_SDK/nrf51422/Source/ble/ble_services/ble_srv_common.c \
-	nRF51_SDK/nrf51422/Source/ble/ble_services/ble_dis.c \
-	nRF51_SDK/nrf51422/Source/ble/ble_services/ble_bas.c \
-	nRF51_SDK/nrf51422/Source/nrf_delay/nrf_delay.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_scheduler.c \
-	nRF51_SDK/nrf51422/Source/app_common/app_gpiote.c \
-	nRF51_SDK/nrf51422/Source/app_common/pstorage.c \
-	nRF51_SDK/nrf51422/Source/nrf_nvmc/nrf_nvmc.c \
-	nRF51_SDK/nrf51422/Source/sd_common/softdevice_handler.c \
-	nRF51_SDK/nrf51422/Source/spi_slave/spi_slave.c \
-	nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c \
-	nRF51_SDK/nrf51422/Source/nrf_ecb/nrf_ecb.c \
+	nRF51_SDK/components/toolchain/system_nrf51.c \
+	nRF51_SDK/components/libraries/timer/app_timer.c \
+	nRF51_SDK/components/libraries/fifo/app_fifo.c \
+	nRF51_SDK/components/libraries/crc16/crc16.c \
+	nRF51_SDK/components/libraries/hci/hci_mem_pool.c \
+    nRF51_SDK/components/ble/common/ble_advdata.c \
+	nRF51_SDK/components/ble/common/ble_conn_params.c \
+    nRF51_SDK/components/ble/common/ble_srv_common.c \
+    nRF51_SDK/components/ble/ble_dtm/ble_dtm.c \
+	nRF51_SDK/components/ble/ble_radio_notification/ble_radio_notification.c \
+	nRF51_SDK/components/ble/ble_services/ble_dis/ble_dis.c \
+	nRF51_SDK/components/ble/ble_services/ble_bas/ble_bas.c \
+	nRF51_SDK/components/libraries/scheduler/app_scheduler.c \
+	nRF51_SDK/components/libraries/gpiote/app_gpiote.c \
+    nRF51_SDK/components/drivers_nrf/ble_flash/ble_flash.c \
+	nRF51_SDK/components/drivers_nrf/pstorage/pstorage.c \
+	nRF51_SDK/components/drivers_nrf/hal/nrf_nvmc.c \
+    nRF51_SDK/components/drivers_nrf/hal/nrf_delay.c \
+    nRF51_SDK/components/drivers_nrf/spi_slave/spi_slave.c \
+    nRF51_SDK/components/drivers_nrf/uart/app_uart_fifo.c \
+    nRF51_SDK/components/softdevice/common/softdevice_handler/softdevice_handler.c \
+	nRF51_SDK/components/ble/device_manager/device_manager_peripheral.c \
+	nRF51_SDK/components/drivers_nrf/hal/nrf_ecb.c \
 
 DRIVER_SRCS = \
 	$(wildcard drivers/imu.c) \
@@ -89,13 +88,33 @@ DRIVER_SRCS = \
 SRCS = $(HELLO_SRCS) $(NRF_SRCS) $(DRIVER_SRCS)
 
 INCS =  ./ \
-	./nRF51_SDK/nrf51422/Include \
-	./nRF51_SDK/nrf51422/Include/sd_common/ \
-	./nRF51_SDK/nrf51422/Include/s310/ \
-	./nRF51_SDK/nrf51422/Include/ble \
-	./nRF51_SDK/nrf51422/Include/ble/ble_services/ \
-	./nRF51_SDK/nrf51422/Include/app_common \
-	./nRF51_SDK/nrf51422/Include/gcc \
+	./nRF51_SDK/components/device/ \
+	./nRF51_SDK/components/drivers_nrf/common/ \
+	./nRF51_SDK/components/softdevice/s310/headers/ \
+    ./nRF51_SDK/components/ble/common/ \
+    ./nRF51_SDK/components/ble/ble_services/ \
+    ./nRF51_SDK/components/ble/ble_dtm/ \
+    ./nRF51_SDK/components/libraries/ \
+    ./nRF51_SDK/components/libraries/fifo/ \
+    ./nRF51_SDK/components/libraries/trace/ \
+    ./nRF51_SDK/components/libraries/util/ \
+    ./nRF51_SDK/components/libraries/hci/config/ \
+    ./nRF51_SDK/components/libraries/timer/ \
+    ./nRF51_SDK/components/libraries/gpiote/ \
+    ./nRF51_SDK/components/libraries/scheduler/ \
+    ./nRF51_SDK/components/toolchain/gcc/ \
+    ./nRF51_SDK/components/toolchain/ \
+    ./nRF51_SDK/components/libraries/crc16/ \
+    ./nRF51_SDK/components/drivers_nrf/uart/ \
+    ./nRF51_SDK/components/drivers_nrf/hal/ \
+./nRF51_SDK/components/drivers_nrf/gpiote/ \
+./nRF51_SDK/components/drivers_nrf/spi_slave/ \
+./nRF51_SDK/components/drivers_nrf/ble_flash/ \
+    ./nRF51_SDK/components/drivers_nrf/pstorage/ \
+    ./nRF51_SDK/components/softdevice/common/softdevice_handler/ \
+    ./nRF51_SDK/components/ble/device_manager/ \
+    ./nRF51_SDK/components/ble/ble_services/ble_dis/ \
+    ./nRF51_SDK/components/ble/ble_services/ble_bas/ \
 	./protobuf \
 	./common \
 	./drivers \
@@ -107,7 +126,7 @@ INCS =  ./ \
 
 # SoftDevice
 
-SOFTDEVICE_SRC = SoftDevice/s310_nrf51422_1.0.0_softdevice.hex
+SOFTDEVICE_SRC = SoftDevice/s310_nrf51422_3.0.0_softdevice.hex
 SOFTDEVICE_MAIN = $(BUILD_DIR)/$(basename $(notdir $(SOFTDEVICE_SRC)))_main.bin
 SOFTDEVICE_UICR = $(BUILD_DIR)/$(basename $(notdir $(SOFTDEVICE_SRC)))_uicr.bin
 SOFTDEVICE_BINARIES = $(SOFTDEVICE_MAIN) $(SOFTDEVICE_UICR)
@@ -163,10 +182,8 @@ DEBUG = 0
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O1 -fno-omit-frame-pointer -fno-inline -fno-strict-aliasing -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
-SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 else
 OPTFLAGS=-O1 -fno-omit-frame-pointer -fno-strict-aliasing -fno-inline -DuECC_ASM=2 -Werror
-SRCS += nRF51_SDK/nrf51422/Source/simple_uart/simple_uart.c
 endif
 
 NRFREV=NRF51422_QFAA_ED

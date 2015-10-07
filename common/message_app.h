@@ -5,6 +5,7 @@
 #define MESSAGE_APP
 #include "message_base.h"
 #include <app_timer.h>
+#include <app_scheduler.h>
 
 typedef enum{
     MSG_APP_PING = 0,

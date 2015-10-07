@@ -32,7 +32,7 @@
 #define PSTORAGE_FLASH_PAGE_END	(APP_DATA_END_ADDRESS/PSTORAGE_FLASH_PAGE_SIZE)	
 
 
-#define PSTORAGE_MAX_APPLICATIONS   3                                                           /**< Maximum number of applications that can be registered with the module, configurable based on system requirements. */
+#define PSTORAGE_NUM_OF_PAGES       2 /**< Number of flash pages allocated for the pstorage module excluding the swap page, configurable based on system requirements. */
 #define PSTORAGE_MIN_BLOCK_SIZE     0x0010                                                      /**< Minimum size of block that can be registered with the module. Should be configured based on system requirements, recommendation is not have this value to be at least size of word. */
 
 #define PSTORAGE_DATA_START_ADDR    APP_DATA_START_ADDRESS

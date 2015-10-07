@@ -1,9 +1,9 @@
 #include "ant_user.h"
+#include "util.h"
+#include "app_timer.h"
 #include "message_uart.h"
 #include "message_ble.h"
 #include "morpheus_ble.h"
-#include "util.h"
-#include "app_timer.h"
 
 #include "platform.h"
 #include "app.h"

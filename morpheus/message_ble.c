@@ -11,7 +11,7 @@
 #include "message_ble.h"
 #include "hble.h"
 #include "morpheus_ble.h"
-#include "ble_bondmngr.h"
+#include "device_manager.h"
 #include "nrf_delay.h"
 #include "hlo_queue.h"
 
@@ -82,7 +82,7 @@ static void _on_advertise_started(bool is_pairing_mode, uint16_t bond_count)
     _sync_pairing_info(is_pairing_mode, bond_count);
 }
 
-static void _on_bond_finished(ble_bondmngr_evt_type_t bond_type)
+static void _on_bond_finished()
 {
     MorpheusCommand ble_command;
     memset(&ble_command, 0, sizeof(ble_command));

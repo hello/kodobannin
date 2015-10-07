@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <nrf_soc.h>
 #include <string.h>
-#include <simple_uart.h>
 #include "nrf51.h"
 #include "nrf_ecb.h"
 #include <nrf_sdm.h>
@@ -35,7 +34,7 @@ get_aes128_key(void){
 }
 uint32_t
 aes128_ctr_decrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce){
-	aes128_ctr_encrypt_inplace(message, message_size, key, nonce);
+	return aes128_ctr_encrypt_inplace(message, message_size, key, nonce);
 	
 }
 uint32_t
@@ -165,11 +164,6 @@ strlen(const char *a)
 	return count;
 }
 
-inline int puts(const char *str) {
-    simple_uart_putstring((const uint8_t *)str);
-    return 0;
-}
-
 const uint8_t hex[] = "0123456789ABCDEF";
 
 int nrf_atoi(char *p){
@@ -196,17 +190,17 @@ int nrf_atoi(char *p){
 void
 serial_print_hex(uint8_t *ptr, uint32_t len) {
 	while(len-- >0) {
-		simple_uart_put(hex[0xF&(*ptr>>4)]);
-		simple_uart_put(hex[0xF&*ptr++]);
-		simple_uart_put(' ');
+		app_uart_put(hex[0xF&(*ptr>>4)]);
+		app_uart_put(hex[0xF&*ptr++]);
+		app_uart_put(' ');
 	}
 }
 
 void
 serial_print_byte(uint8_t *ptr, uint32_t len) {
 	while(len-- >0) {
-		simple_uart_put(hex[0xF&(*ptr>>4)]);
-		simple_uart_put(hex[0xF&*ptr++]);
+		app_uart_put(hex[0xF&(*ptr>>4)]);
+		app_uart_put(hex[0xF&*ptr++]);
 	}
 }
 

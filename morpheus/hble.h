@@ -1,14 +1,14 @@
 #pragma once
 #include <nrf_sdm.h>
 #include <nrf_soc.h>
-#include <ble_bondmngr.h>
+#include <device_manager.h>
 #include <ble.h>
 
 #define MAX_DELAY_TASKS         10
 
 typedef void(*hble_evt_handler_t)(ble_evt_t* ble_evt);
 typedef void(*delay_task_t)(void);
-typedef void(*bond_status_callback_t)(ble_bondmngr_evt_type_t t);
+typedef void(*bond_status_callback_t)();
 typedef void(*connected_callback_t)(void);
 typedef void(*on_advertise_started_callback_t)(bool is_pairing, uint16_t bond_count);
 

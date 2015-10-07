@@ -6,12 +6,12 @@
 #include "util.h"
 #include "heap.h"
 
-static inline uint8_t decref(MSG_Data_t * obj){
+static inline void decref(MSG_Data_t * obj){
     if(obj->ref){
         obj->ref -= 1;
     }
 }
-static inline uint8_t incref(MSG_Data_t * obj){
+static inline void incref(MSG_Data_t * obj){
     obj->ref += 1;
 }
 
@@ -23,7 +23,7 @@ uint32_t MSG_Base_FreeCount(void){
 	return free;
 }
 
-bool MSG_Base_HasMemoryLeak(void){}
+bool MSG_Base_HasMemoryLeak(void){ return false; }
 
 MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig){
     APP_OK(0);

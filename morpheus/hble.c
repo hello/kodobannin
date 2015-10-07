@@ -13,14 +13,15 @@
 #include <nrf_sdm.h>
 #include <nrf_soc.h>
 #include <pstorage.h>
+#include <app_scheduler.h>
 #include <softdevice_handler.h>
 #include "app.h"
 #include "platform.h"
 #include "nrf_delay.h"
 
 #ifdef BONDING_REQUIRED
-#include "ble_bondmngr_cfg.h"
-#include "ble_bondmngr.h"
+#include "device_manager_cnfg.h"
+#include "device_manager.h"
 #endif
 
 #include "util.h"
@@ -41,8 +42,9 @@ static bond_save_mode _bonding_mode = BOND_SAVE;
 
 static ble_uuid_t _service_uuid;
 static uint64_t _device_id;
-
+#if 0 //TODO
 static int16_t  _last_bond_central_id;
+#endif
 static app_timer_id_t _delay_timer;
 
 // BLE event callbacks for message_ble.c
@@ -60,6 +62,10 @@ static uint8_t _task_write_index;
 static uint8_t _task_read_index;
 static uint8_t _task_count;
 
+#ifdef BONDING_REQUIRED
+static dm_application_instance_t        m_app_handle;                                /**< Application identifier allocated by device manager */
+static bool                             m_app_initialized   = false;                 /**< Application initialized flag. */
+#endif // BONDING_REQUIRED
 
 static int32_t _task_queue(delay_task_t t){
 	int32_t ret = -1;
@@ -105,13 +111,6 @@ static void _delay_task_resume_ant()
 #endif
 }
 
-static void _delay_task_store_bonds()
-{
-#ifdef BONDING_REQUIRED
-	PRINTS("BLE Bond Save \r\n");
-	APP_OK(ble_bondmngr_bonded_centrals_store());
-#endif
-}
 static void _delay_task_disconnect_ble() {
     PRINTS("BLE disconnect");
     //disconnect, delay task called from disconnect
@@ -120,7 +119,7 @@ static void _delay_task_disconnect_ble() {
 static void _delay_tasks_erase_bonds()
 {
     PRINTS("BLE Bond Delete All");
-    APP_OK(ble_bondmngr_bonded_centrals_delete());
+    APP_OK(dm_device_delete_all(&m_app_handle));
 }
 
 void hble_set_advertise_callback(on_advertise_started_callback_t cb)
@@ -151,6 +150,8 @@ static void _delay_task_advertise_resume()
 
 static void _delay_tasks_erase_other_bonds()
 {
+    _delay_tasks_erase_bonds();
+#if 0 //TODO
     if(!_last_bond_central_id)
     {
         PRINTS("Current user is not bonded!");
@@ -189,10 +190,14 @@ static void _delay_tasks_erase_other_bonds()
             PRINTS(" deleted.\r\n");
         }
     }
+#endif
 }
 
 static void hble_erase_1st_bond()
 {
+    _delay_tasks_erase_bonds();
+#if 0 //TODO
+
     uint16_t paired_users_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
     APP_OK(ble_bondmngr_central_ids_get(NULL, &paired_users_count));
     if(paired_users_count == 0)
@@ -213,6 +218,8 @@ static void hble_erase_1st_bond()
     PRINTS("Paired central ");
     PRINT_HEX(&bonded_central_list[0], sizeof(bonded_central_list[0]));
     PRINTS(" deleted.\r\n");
+ 
+#endif
 }
 
 
@@ -241,8 +248,7 @@ static void _on_bond(void * p_event_data, uint16_t event_size)
 {
     if(_bond_status_callback)
     {
-        ble_bondmngr_evt_type_t* type = (ble_bondmngr_evt_type_t*)p_event_data;
-        _bond_status_callback(*type);
+        _bond_status_callback();
     }
 }
 
@@ -276,9 +282,6 @@ static uint32_t
 _queue_bond_task(bond_save_mode mode){
 	uint32_t ret = 0;
 	switch(mode){
-		case BOND_SAVE:
-			ret = _task_queue(_delay_task_store_bonds);
-			break;
 		case ERASE_1ST_BOND:
 			ret = _task_queue(hble_erase_1st_bond);
 			break;
@@ -329,10 +332,10 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
     case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
         APP_OK(sd_ble_gap_sec_params_reply(hlo_ble_get_connection_handle(),
                                        BLE_GAP_SEC_STATUS_SUCCESS,
-                                       &_sec_params));
+                                       &_sec_params, NULL));
         break;
     case BLE_GAP_EVT_TIMEOUT:
-        if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT) {
+            if (ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISING) {
 			APP_OK(_task_queue(_delay_task_advertise_resume));
 			APP_OK(_task_queue(_delay_task_memory_checkpoint));
 
@@ -340,6 +343,15 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 			hble_start_delay_tasks();
         }
         break;
+#ifndef BONDING_REQUIRED
+    case BLE_GATTS_EVT_SYS_ATTR_MISSING:
+        APP_ERROR_CHECK( sd_ble_gatts_sys_attr_set(hlo_ble_get_connection_handle(),
+                                             NULL,
+                                             0,
+                                             BLE_GATTS_SYS_ATTR_FLAG_SYS_SRVCS | BLE_GATTS_SYS_ATTR_FLAG_USR_SRVCS) );
+        break;
+#endif // BONDING_REQUIRED
+
     default:
         // No implementation needed.
         break;
@@ -350,10 +362,12 @@ static void _on_ble_evt(ble_evt_t* ble_evt)
 
 static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
 {
-
+    PRINTF("BLE EVENT %x\n", p_ble_evt->header.evt_id );
+    
 #ifdef BONDING_REQUIRED
-    ble_bondmngr_on_ble_evt(p_ble_evt);
-#endif
+    dm_ble_evt_handler(p_ble_evt);
+#endif // BONDING_REQUIRED
+
 
     ble_conn_params_on_ble_evt(p_ble_evt);
     hlo_ble_on_ble_evt(p_ble_evt);
@@ -362,18 +376,38 @@ static void _ble_evt_dispatch(ble_evt_t* p_ble_evt)
     
 }
 
-
+#ifdef BONDING_REQUIRED
 static void _on_sys_evt(uint32_t sys_evt)
 {
+    uint32_t err_code;
+    uint32_t count;
+    
     PRINTS("_on_sys_evt: ");
     PRINT_HEX(&sys_evt, 1);
     PRINTS("\r\n");
 
-#ifdef BONDING_REQUIRED
     pstorage_sys_event_handler(sys_evt);
+    
+    // Verify if BLE bond data storage access is in progress or not.
+    if (m_app_initialized == true)
+    {
+        err_code = pstorage_access_status_get(&count);
+        if ((err_code == NRF_SUCCESS) && (count == 0))
+        {
+            APP_OK(_task_queue(_delay_task_pause_ant));
+            APP_OK(_task_queue(_delay_task_resume_ant));
+            APP_OK(_task_queue(_delay_task_advertise_resume));
+            hble_start_delay_tasks();
+        }
+    }
+    else
+    {
+        m_app_initialized = true;
+    }
+}
+
 #endif
 
-}
 
 static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
 {
@@ -388,90 +422,86 @@ static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
 }
 
 
-
-/**@brief Function for handling a Bond Manager error.
+/**@brief Function for handling the Device Manager events.
  *
- * @param[in]   nrf_error   Error code containing information about what went wrong.
+ * @param[in]   p_evt   Data associated to the device manager event.
  */
-static void _bond_manager_error_handler(uint32_t nrf_error)
+static uint32_t device_manager_evt_handler(dm_handle_t const    * p_handle,
+                                           dm_event_t const     * p_evt,
+                                           ret_code_t             event_result)
 {
-    PRINTS("_bond_manager_error_handler, err: ");
-    PRINT_HEX(&nrf_error, sizeof(nrf_error));
-    PRINTS("\r\n");
-
-    APP_ERROR_HANDLER(nrf_error);
-}
-
-
-/**@brief Function for handling the Bond Manager events.
- *
- * @param[in]   p_evt   Data associated to the bond manager event.
- */
-static void _bond_evt_handler(ble_bondmngr_evt_t * p_evt)
-{
+    APP_ERROR_CHECK(event_result);
+    
     PRINTS("Bond event ");
-    PRINT_HEX(&p_evt->evt_type, sizeof(p_evt->evt_type));
+    PRINT_HEX(&p_evt->event_id, sizeof(p_evt->event_id));
     PRINTS("\r\n");
 
+#if 0 //TODO
     _last_bond_central_id = p_evt->central_id;
     PRINTS("last bonded central: ");
     PRINT_HEX(&_last_bond_central_id, sizeof(_last_bond_central_id));
     PRINTS("\r\n");
-
-    switch(p_evt->evt_type)
+#endif
+    switch(p_evt->event_id)
     {
-        case BLE_BONDMNGR_EVT_ENCRYPTED:
+        case DM_EVT_LINK_SECURED:
         {
             // Notify message ble module, schedule the call
-            app_sched_event_put(&p_evt->evt_type, sizeof(p_evt->evt_type), _on_bond);
+            app_sched_event_put(NULL, 0, _on_bond);
         }
-		break;
-		case BLE_BONDMNGR_EVT_NEW_BOND:
-		case BLE_BONDMNGR_EVT_CONN_TO_BONDED_CENTRAL:
-		case BLE_BONDMNGR_EVT_AUTH_STATUS_UPDATED:
-		case BLE_BONDMNGR_EVT_BOND_FLASH_FULL:
-		default:
-        break;
     }
+    
+    return NRF_SUCCESS;
 }
 /**@brief Function for the Bond Manager initialization.
  */
 void hble_bond_manager_init()
 {
-
-	uint32_t err;
-    ble_bondmngr_init_t bond_init_data;
-    //PRINTS("pstorage_init() done.\r\n");
-
-    memset(&bond_init_data, 0, sizeof(bond_init_data));
+    uint32_t                err_code;
+    dm_init_param_t         init_data;
+    dm_application_param_t  register_param;
     
     // Initialize the Bond Manager.
-    bond_init_data.evt_handler             = _bond_evt_handler;
-    bond_init_data.error_handler           = _bond_manager_error_handler;
 #ifdef IN_MEMORY_BONDING
-    bond_init_data.bonds_delete            = true;
+    init_data.clear_persistent_data   = true;
 #else
 	{
 		uint32_t reboot_err;
 		sd_power_gpregret_get(&reboot_err);
 		if(reboot_err & GPREGRET_APP_RECOVER_BONDS){
 			PRINTS("Attempt bond recovery.\r\n");
-			bond_init_data.bonds_delete            = true;
+			init_data.clear_persistent_data   = true;
 			sd_power_gpregret_clr(GPREGRET_APP_RECOVER_BONDS);
 		}else{
-			bond_init_data.bonds_delete            = false;
+			init_data.clear_persistent_data   = false;
 		}
-	}
+    }
 #endif
-
-	err = ble_bondmngr_init(&bond_init_data);
-	if(err == NRF_ERROR_INVALID_DATA){
+    // Initialize persistent storage module.
+    err_code = pstorage_init();
+    APP_ERROR_CHECK(err_code);
+    
+	err_code = dm_init(&init_data);
+	if(err_code == NRF_ERROR_INVALID_DATA){
 		PRINTS("Bond Corruption\r\n");
 		REBOOT_WITH_ERROR(GPREGRET_APP_RECOVER_BONDS);
 	}else{
-		APP_OK(err);
+		APP_OK(err_code);
 	}
-
+    
+    memset(&register_param.sec_param, 0, sizeof(ble_gap_sec_params_t));
+    
+    register_param.sec_param.bond         = SEC_PARAM_BOND;
+    register_param.sec_param.mitm         = SEC_PARAM_MITM;
+    register_param.sec_param.io_caps      = SEC_PARAM_IO_CAPABILITIES;
+    register_param.sec_param.oob          = SEC_PARAM_OOB;
+    register_param.sec_param.min_key_size = SEC_PARAM_MIN_KEY_SIZE;
+    register_param.sec_param.max_key_size = SEC_PARAM_MAX_KEY_SIZE;
+    register_param.evt_handler            = device_manager_evt_handler;
+    register_param.service_type           = DM_PROTOCOL_CNTXT_GATT_SRVR_ID;
+    
+    err_code = dm_register(&m_app_handle, &register_param);
+    APP_ERROR_CHECK(err_code);
     //PRINTS("bond manager init.\r\n");
 }
 
@@ -489,8 +519,10 @@ static void _advertising_data_init(uint8_t flags){
     //uint8_t data[1] = {0xAA};
     uint8_t device_id_cpy[sizeof(_device_id)];
     memcpy(device_id_cpy, &_device_id, sizeof(_device_id));
-    uint8_array_t data_array = { .p_data = device_id_cpy, .size = DEVICE_ID_SIZE };
-
+    uint8_array_t data_array;
+    
+    data_array.p_data = device_id_cpy;
+    data_array.size = DEVICE_ID_SIZE;
 
     ble_advdata_service_data_t  srv_data = { 
         .service_uuid = _service_uuid.uuid,
@@ -504,8 +536,7 @@ static void _advertising_data_init(uint8_t flags){
     memset(&advdata, 0, sizeof(advdata));
     advdata.name_type = BLE_ADVDATA_FULL_NAME;
     advdata.include_appearance = true;
-    advdata.flags.size = sizeof(flags);
-    advdata.flags.p_data = &flags;
+    advdata.flags = flags;
 
     memset(&scanrsp, 0, sizeof(scanrsp));
     scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
@@ -532,6 +563,8 @@ void hble_advertising_start()
     adv_params.timeout = APP_ADV_TIMEOUT_IN_SECONDS;
     uint8_t flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
+    uint16_t bond_count = 0;
+
 
 #ifdef BONDING_REQUIRED
     // pairing mode means no whitelist.
@@ -540,8 +573,9 @@ void hble_advertising_start()
         uint8_t adv_mode = BLE_GAP_ADV_TYPE_ADV_IND; 
         adv_params.type = adv_mode;
         ble_gap_whitelist_t whitelist;
-        //APP_OK(ble_bondmngr_whitelist_get(&whitelist));
-        uint32_t err_code = ble_bondmngr_whitelist_get(&whitelist);
+        
+        uint32_t err_code = dm_whitelist_create( &m_app_handle, &whitelist);
+        bond_count = whitelist.addr_count;
         
         if(err_code == NRF_SUCCESS)
         {
@@ -575,10 +609,6 @@ void hble_advertising_start()
         PRINTS("Advertising in pairing mode.\r\n");
     }
 #endif
-
-    uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
-    APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
-
     _advertising_data_init(flags);
     APP_OK(sd_ble_gap_adv_start(&adv_params));
 
@@ -599,7 +629,6 @@ void hble_stack_init()
     APP_OK(softdevice_sys_evt_handler_set(_on_sys_evt));
 
     APP_OK(app_timer_create(&_delay_timer, APP_TIMER_MODE_SINGLE_SHOT, _delay_tasks));
-
 }
 
 bool hble_uint64_to_hex_device_id(uint64_t device_id, char* hex_device_id, size_t* len)
@@ -828,7 +857,6 @@ void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3
 
     // Sec params.
     {
-        _sec_params.timeout      = SEC_PARAM_TIMEOUT;
         _sec_params.bond         = SEC_PARAM_BOND;
         _sec_params.mitm         = SEC_PARAM_MITM;
         _sec_params.io_caps      = SEC_PARAM_IO_CAPABILITIES;

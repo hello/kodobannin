@@ -2,7 +2,6 @@
 #include <platform.h>
 
 #include <spi.h>
-#include <simple_uart.h>
 #include <util.h>
 
 #include <app_error.h>

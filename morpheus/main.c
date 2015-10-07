@@ -9,7 +9,6 @@
 #include <ble_err.h>
 #include <ble_flash.h>
 #include <ble_stack_handler_types.h>
-#include <simple_uart.h>
 #include <string.h>
 #include <spi.h>
 #include <spi_nor.h>
@@ -18,7 +17,6 @@
 
 #include "platform.h"
 
-#include <pwm.h>
 #include <hrs.h>
 #include <watchdog.h>
 #include <nrf_sdm.h>

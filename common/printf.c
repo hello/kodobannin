@@ -4,7 +4,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <simple_uart.h>
 #include "util.h"
 
 #ifndef __printflike
@@ -30,7 +29,7 @@ const uint8_t hex[] = "0123456789ABCDEF";
 
 static inline void
 _putc(char out) {
-	simple_uart_put(out);
+	app_uart_put(out);
 }
 
 static inline uint32_t
