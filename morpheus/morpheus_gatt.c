@@ -171,11 +171,18 @@ hlo_ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)
 
 	_char_add(uuid, &read_props, value, value_size, NULL);
 }
+void get_random(int num_rand_bytes, uint8_t *rand_data);
 
 void hlo_ble_init()
 {
-	const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
+    const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
 
+    ble_gap_addr_t gap_addr;
+    gap_addr.addr_type = BLE_GAP_ADDR_TYPE_RANDOM_STATIC;
+    get_random(BLE_GAP_ADDR_LEN, gap_addr.addr);
+    gap_addr.addr[5] |= 0xc0; // 2 MSBit must be '11' for RANDOM_STATIC address, see v4.0, Vol 3, Part C, chapter 10.8
+    APP_OK( sd_ble_gap_address_set(&gap_addr));
+    
 	APP_OK(sd_ble_uuid_vs_add(&hello_uuid, &hello_type));
 }
 
