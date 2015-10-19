@@ -263,6 +263,7 @@ static void _1sec_timer_handler(void * ctx){
         app_timer_stop(self.timer_id_1sec);
         self.onesec_runtime = 0;
         PRINTS("\nStopping 1sec\r\n");
+        APP_OK(app_gpiote_user_enable(_gpiote_user));
     }
 }
 
