@@ -193,16 +193,9 @@ void
 ble_init(services_init_t services_init)
 {
 	// append something to device name
-    char device_name[strlen(BLE_DEVICE_NAME)+4];
-
+    char device_name[strlen(BLE_DEVICE_NAME)+1];
     memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-
-	uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-	//DEBUG("ID is ", id);
-	device_name[strlen(BLE_DEVICE_NAME)] = '-';
-	device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-	device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-	device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+    device_name[strlen(BLE_DEVICE_NAME)+1] = 0;
 
     SOFTDEVICE_HANDLER_INIT(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION /* NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM */, true);
 
