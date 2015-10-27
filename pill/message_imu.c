@@ -160,11 +160,13 @@ static void _imu_switch_mode(bool is_active)
     {
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
+        imu_enter_normal_mode();
         PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
+        imu_enter_low_power_mode();
         PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }
@@ -214,7 +216,7 @@ fix_imu_interrupt(void){
 	uint8_t value = 0;
 	if(initialized){
 		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
-			if(!(gpio_pin_state & (1<<IMU_INT))){
+			if((gpio_pin_state & (1<<IMU_INT))){
 				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 				if (stuck_counter < 15)
 				{
@@ -255,10 +257,10 @@ static MSG_Status _init(void){
 	if(!initialized){
         imu_power_on();
 #ifdef IMU_DYNAMIC_SAMPLING
-		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
+		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode3, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
 			_settings.inactive_sampling_rate, _settings.accel_range, _settings.inactive_wom_threshold))
 #else
-        if(!imu_init_low_power(SPI_Channel_1, SPI_Mode0, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
+        if(!imu_init_low_power(SPI_Channel_1, SPI_Mode3, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
             _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
 #endif
 		{
@@ -352,7 +354,7 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 #ifdef IMU_DYNAMIC_SAMPLING
 	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_wom_timer));
 #endif
-	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
+	APP_OK(app_gpiote_user_register(&_gpiote_user, 1 << IMU_INT, 0, _imu_gpiote_process));
 	APP_OK(app_gpiote_user_disable(_gpiote_user));
     ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);

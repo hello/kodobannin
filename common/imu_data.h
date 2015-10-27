@@ -13,18 +13,10 @@ enum imu_sensor_set {
 };
 
 enum imu_hz {
-	IMU_HZ_0_25 = 0,
-	IMU_HZ_0_49 = 1,
-	IMU_HZ_0_98 = 2,
-	IMU_HZ_1_95 = 3,
-	IMU_HZ_3_91 = 4,
-	IMU_HZ_7_81 = 5,
-	IMU_HZ_15_63 = 6,
-	IMU_HZ_31_25 = 7,
-	IMU_HZ_62_50 = 8,
-	IMU_HZ_125 = 9,
-	IMU_HZ_250 = 10,
-	IMU_HZ_500 = 11,
+    IMU_HZ_0 = 0,
+	IMU_HZ_1 = 1,
+	IMU_HZ_10 = 2,
+	IMU_HZ_25 = 3,
 };
 
 enum imu_accel_range {
