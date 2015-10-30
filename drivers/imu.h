@@ -28,6 +28,8 @@ uint16_t imu_accel_reg_read(uint16_t *values);
 
 void imu_set_accel_range(enum imu_accel_range range);
 
+void imu_enable_all_axis();
+
 /// Given the enum imu_hz passed to it, returns the sampling interval (a.k.a. sampling period or sampling time, in milliseconds).
 unsigned imu_get_sampling_interval(enum imu_hz);
 void imu_set_accel_freq(enum imu_hz sampling_rate);
