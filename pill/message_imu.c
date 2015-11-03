@@ -175,6 +175,7 @@ static void _imu_switch_mode(bool is_active)
 
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
+	PRINTS("IMU INT \r\n");
 	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 }
 
@@ -216,8 +217,22 @@ fix_imu_interrupt(void){
 	uint8_t value = 0;
 	if(initialized){
 		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
+
+
+
+			// read interrupt src register
+			//uint8_t reg = imu_clear_interrupt_status();
+
+			//DEBUG("From fix imu interrut 1 0x \r\n",reg);
+
+			//reg = imu_clear_interrupt2_status();
+
+			//DEBUG("From fix imu interrut 2 0x \r\n",reg);
+
+
 			if((gpio_pin_state & (1<<IMU_INT))){
-				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+
+				//parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 				if (stuck_counter < 15)
 				{
 					++stuck_counter;
@@ -255,7 +270,9 @@ static void _on_pill_pairing_guesture_detected(void){
 
 static MSG_Status _init(void){
 	if(!initialized){
-        imu_power_on();
+        //imu_power_on();
+		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLDOWN);
+
 #ifdef IMU_DYNAMIC_SAMPLING
 		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode3, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
 			_settings.inactive_sampling_rate, _settings.accel_range, _settings.inactive_wom_threshold))
@@ -264,9 +281,10 @@ static MSG_Status _init(void){
             _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
 #endif
 		{
-			nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
+
 
 		    imu_clear_interrupt_status();
+		    imu_clear_interrupt2_status();
 			APP_OK(app_gpiote_user_enable(_gpiote_user));
 			PRINTS("IMU: initialization done.\r\n");
 			initialized = true;
@@ -280,6 +298,7 @@ static MSG_Status _destroy(void){
 		initialized = false;
 		APP_OK(app_gpiote_user_disable(_gpiote_user));
 		imu_clear_interrupt_status();
+		imu_clear_interrupt2_status();
 		gpio_input_disconnect(IMU_INT);
 		imu_power_off();
 	}
@@ -302,6 +321,8 @@ static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
 	uint32_t mag;
 	imu_accel_reg_read(values);
+	PRINTS("FINISHED READING\r\n");
+
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
@@ -317,6 +338,7 @@ static MSG_Status _handle_read_xyz(void){
 		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 	}
 #endif
+	APP_OK(app_gpiote_user_enable(_gpiote_user));
 	return SUCCESS;
 }
 
@@ -331,6 +353,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
+			imu_clear_interrupt2_status();
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();

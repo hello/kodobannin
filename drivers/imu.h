@@ -40,6 +40,7 @@ void imu_enter_normal_mode();
 /// Deactivate the IMU by putting it into sleep mode. This also clears the the IMU interrupt.
 void imu_enter_low_power_mode();
 uint8_t imu_clear_interrupt_status();
+uint8_t imu_clear_interrupt2_status();
 
 void imu_wom_set_threshold(uint16_t microgravities);
 

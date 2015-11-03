@@ -81,6 +81,7 @@ uint16_t imu_accel_reg_read(uint16_t *values) {
 	_register_read(REG_ACC_Z_LO, buf++);
 	_register_read(REG_ACC_Z_HI, buf++);
     
+
     uint8_t reg;
     _register_read(REG_CTRL_4, &reg);
     if( reg & HIGHRES ) { //convert to match the 6500...
@@ -92,7 +93,12 @@ uint16_t imu_accel_reg_read(uint16_t *values) {
         values[1] *= 262;
         values[2] *= 262;
     }
-    
+
+	DEBUG("The value[0] is 0x",values[0]);
+	DEBUG("The value[1] is 0x",values[1]);
+	DEBUG("The value[2] is 0x",values[2]);
+
+
 	return 6;
 }
 
@@ -117,6 +123,17 @@ inline uint8_t imu_clear_interrupt_status()
     // clear the interrupt by reading INT_SRC register
     uint8_t int_source;
     _register_read(REG_INT1_SRC, &int_source);
+
+
+    return int_source;
+}
+
+inline uint8_t imu_clear_interrupt2_status()
+{
+    // clear the interrupt by reading INT_SRC register
+    uint8_t int_source;
+
+    _register_read(REG_INT2_SRC, &int_source);
 
     return int_source;
 }
@@ -146,7 +163,7 @@ void imu_enter_low_power_mode()
 
 void imu_wom_set_threshold(uint16_t microgravities)
 {
-    _register_write(REG_INT1_THR, microgravities / 16);
+    _register_write(REG_INT2_THR, microgravities / 16);
 }
 
 
@@ -197,13 +214,6 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		return err;
 	}
 
-	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
-	imu_reset();
-
-	// Enable 4 wire SPI mode
-	_register_write(REG_CTRL_4, 0x00);
-
-
 	// Check for valid Chip ID
 	uint8_t whoami_value = 0xA5;
 	_register_read(REG_WHO_AM_I, &whoami_value);
@@ -214,17 +224,29 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		APP_ASSERT(0);
 	}
 
+/*
+	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
+	imu_reset();
+
+	// Enable 4 wire SPI mode
+	_register_write(REG_CTRL_4, 0x00);
+
+
+
+
     // Set inactive sampling rate (Ctrl Reg 1)
     imu_set_accel_freq(sampling_rate);
 
-    // Enable X, Y and Z
+    // Enable X, Y and Z (ctrl 1)
     imu_enable_all_axis();
 
 
     // Enable high pass filter for AOI function on Interrupt 1
-    _register_write(REG_CTRL_2, 0x09);
+    //_register_write(REG_CTRL_2, 0x09);
 
     // Enable AOI1 interrupt on INT1 pin
+    _register_write(REG_CTRL_3, (INT1_AOI2));
+
     _register_write(REG_CTRL_3, (INT1_AOI1));
 
 	// Enable Block data update (output registers not updated until MSB and LSB have been read)
@@ -232,33 +254,55 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 	// Set full scale range (Ctrl 4)
     imu_set_accel_range(acc_range);
+*/
+
+	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
+	imu_reset();
+
+	_register_write(REG_CTRL_1,AXIS_ENABLE | LOW_POWER_MODE | 0x20); //2f
+	_register_write(REG_CTRL_2, 0x00);
+	_register_write(REG_CTRL_3, 0x00);
+	_register_write(REG_CTRL_4, BLOCKDATA_UPDATE);//80
+	_register_write(REG_CTRL_5, 0x00);
 
     // Interrupt 1 request latched
-    //_register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
+    _register_write(REG_CTRL_5, (LATCH_INTERRUPT1 | LATCH_INTERRUPT2));
 
-    _register_write(REG_CTRL_6, 0x00);
+    _register_write(REG_CTRL_6, 0x20);
 
 
     // Set the INT1 threshold (INT1 THS)
-    imu_wom_set_threshold(250);
+    //imu_wom_set_threshold(0);
 
-    _register_write(REG_INT1_DUR,0x00);
+
 
     uint8_t reg;
 
     _register_read(REG_REFERENCE,&reg);
 
     // Enable OR combination interrupt generation for all axis
-    _register_write(REG_INT1_CFG, 0x3F); //all axis
+    _register_write(REG_INT1_CFG, 0x00); //all axis
 
-    imu_enter_low_power_mode();
+    _register_write(REG_INT1_THR, 0x00);
+
+    _register_write(REG_INT2_CFG, 0x3F); //all axis
+
+    _register_write(REG_INT2_THR, 0x08);
+
+    //_register_write(REG_INT1_DUR,0x10);
+    //_register_write(REG_INT2_DUR,0x00);
+
+    //imu_enter_low_power_mode();
 
 
     //_register_write(REG_ACT_THR,wom_threshold);
 
-    imu_clear_interrupt_status();
+    //imu_clear_interrupt_status();
+    int16_t values[3];
+    imu_accel_reg_read(values);
+    (void) values;
 
-#if 0
+#if 1
     // Display all ctrl registers
     _register_read(REG_CTRL_1,&whoami_value);
     DEBUG("ctrl reg 1: 0x",whoami_value);
@@ -277,6 +321,15 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
     _register_read(REG_CTRL_6,&whoami_value);
     DEBUG("ctrl reg 6: 0x",whoami_value);
+
+    _register_read(REG_INT1_CFG,&whoami_value);
+    DEBUG("REG_INT1_CFG: 0x",whoami_value);
+
+    _register_read(REG_INT2_CFG,&whoami_value);
+    DEBUG("REG_INT2_CFG: 0x",whoami_value);
+
+    _register_read(REG_STATUS_2,&whoami_value);
+    DEBUG("REG_INT1_THR: 0x",whoami_value);
 #endif
 	return err;
 }
