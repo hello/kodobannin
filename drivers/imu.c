@@ -49,7 +49,7 @@ inline void imu_set_accel_freq(enum imu_hz sampling_rate)
     _register_read(REG_CTRL_1, &reg);
 
     // Clear the ODR
-    reg &= 0x0f;
+    reg &= ~OUTPUT_DATA_RATE;
     
     reg |= ( sampling_rate << 4);
     _register_write(REG_CTRL_1, reg);
@@ -94,10 +94,11 @@ uint16_t imu_accel_reg_read(uint16_t *values) {
         values[2] *= 262;
     }
 
+    /*
 	DEBUG("The value[0] is 0x",values[0]);
 	DEBUG("The value[1] is 0x",values[1]);
 	DEBUG("The value[2] is 0x",values[2]);
-
+     */
 
 	return 6;
 }
@@ -123,6 +124,7 @@ inline uint8_t imu_clear_interrupt_status()
     // clear the interrupt by reading INT_SRC register
     uint8_t int_source;
     _register_read(REG_INT1_SRC, &int_source);
+    DEBUG("The INT1_SRC is 0x",int_source);
 
 
     return int_source;
@@ -163,7 +165,7 @@ void imu_enter_low_power_mode()
 
 void imu_wom_set_threshold(uint16_t microgravities)
 {
-    _register_write(REG_INT2_THR, microgravities / 16);
+    _register_write(REG_INT1_THR, microgravities / 16);
 }
 
 
@@ -259,50 +261,53 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
 	imu_reset();
 
-	_register_write(REG_CTRL_1,AXIS_ENABLE | LOW_POWER_MODE | 0x20); //2f
+	_register_write(REG_CTRL_1, AXIS_ENABLE); //2f
+
+    // Set inactive sampling rate (Ctrl Reg 1)
+    imu_set_accel_freq(sampling_rate);
+
 	_register_write(REG_CTRL_2, 0x00);
+
+	// interrupts are not enabled in INT 1 pin
 	_register_write(REG_CTRL_3, 0x00);
+
+
 	_register_write(REG_CTRL_4, BLOCKDATA_UPDATE);//80
+
 	_register_write(REG_CTRL_5, 0x00);
 
-    // Interrupt 1 request latched
-    _register_write(REG_CTRL_5, (LATCH_INTERRUPT1 | LATCH_INTERRUPT2));
+    // Interrupt 1/2 request latched
+    _register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
 
-    _register_write(REG_CTRL_6, 0x20);
-
-
-    // Set the INT1 threshold (INT1 THS)
-    //imu_wom_set_threshold(0);
 
 
 
     uint8_t reg;
 
+    // reset HP filter
     _register_read(REG_REFERENCE,&reg);
 
     // Enable OR combination interrupt generation for all axis
-    _register_write(REG_INT1_CFG, 0x00); //all axis
+    reg = INT1_Z_HIGH | INT1_Z_LOW | INT1_Y_HIGH | INT1_Y_LOW | INT1_X_HIGH | INT1_X_LOW;
+    _register_write(REG_INT1_CFG, reg | INT1_6D); //all axis
 
-    _register_write(REG_INT1_THR, 0x00);
-
-    _register_write(REG_INT2_CFG, 0x3F); //all axis
-
-    _register_write(REG_INT2_THR, 0x08);
-
-    //_register_write(REG_INT1_DUR,0x10);
-    //_register_write(REG_INT2_DUR,0x00);
-
-    //imu_enter_low_power_mode();
-
+    imu_wom_set_threshold(wom_threshold);
 
     //_register_write(REG_ACT_THR,wom_threshold);
 
-    //imu_clear_interrupt_status();
     int16_t values[3];
     imu_accel_reg_read(values);
     (void) values;
 
-#if 1
+    imu_clear_interrupt_status();
+
+    imu_enter_low_power_mode();
+    // Enable INT 2 function on INT 2 pin
+    _register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+
+
+
+#if 0
     // Display all ctrl registers
     _register_read(REG_CTRL_1,&whoami_value);
     DEBUG("ctrl reg 1: 0x",whoami_value);

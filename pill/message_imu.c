@@ -217,19 +217,6 @@ fix_imu_interrupt(void){
 	uint8_t value = 0;
 	if(initialized){
 		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
-
-
-
-			// read interrupt src register
-			//uint8_t reg = imu_clear_interrupt_status();
-
-			//DEBUG("From fix imu interrut 1 0x \r\n",reg);
-
-			//reg = imu_clear_interrupt2_status();
-
-			//DEBUG("From fix imu interrut 2 0x \r\n",reg);
-
-
 			if((gpio_pin_state & (1<<IMU_INT))){
 
 				//parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
@@ -353,7 +340,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
-			imu_clear_interrupt2_status();
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
