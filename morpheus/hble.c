@@ -878,11 +878,13 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 
     if( m == ERASE_ALL_BOND) {
         APP_OK(_task_queue(_delay_task_bond_reboot));
+		hble_start_delay_tasks();
         return;
     }
 	if(hlo_ble_is_connected()){
 		_bonding_mode = m;
         APP_OK(_task_queue(_delay_task_disconnect_ble));
+		hble_start_delay_tasks();
 	}else{
 		uint32_t adv_err = sd_ble_gap_adv_stop();
 		APP_OK(_task_queue(_delay_task_pause_ant));
