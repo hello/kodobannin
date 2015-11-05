@@ -24,7 +24,7 @@ enum {
 
 //#define BONDING_REQUIRED
 //#define DATA_SCIENCE_TASK
-//#define IMU_DYNAMIC_SAMPLING
+#define IMU_DYNAMIC_SAMPLING
 
 #define IMU_INACTIVE_FREQ    (IMU_HZ_10)
 #define IMU_INACTIVE_WOM     (55)

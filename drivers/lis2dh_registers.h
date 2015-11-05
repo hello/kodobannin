@@ -81,9 +81,10 @@ enum IMU_Reg_Bits {
     //REG_CTRL_4
     BLOCKDATA_UPDATE = 0x80, //force atomic lsb and msb reads
     ENDIANNESS_SELECTION = 0x40,
-    HIGHRES = 0x8,
-    SELFTEST_ENABLE = 0x6,
-    SPI_SERIAL_MODE = 0x1, //0 == 4 wire, 1 == 3 wire
+	FS_MASK = 0x30,
+    HIGHRES = 0x08,
+    SELFTEST_ENABLE = 0x06,
+    SPI_SERIAL_MODE = 0x01, //0 == 4 wire, 1 == 3 wire
     
     //REG_CTRL_5
     BOOT = 0x80,
