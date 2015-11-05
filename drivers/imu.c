@@ -266,7 +266,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
     // Set inactive sampling rate (Ctrl Reg 1)
     imu_set_accel_freq(sampling_rate);
 
-	_register_write(REG_CTRL_2, 0x00);
+	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1);
 
 	// interrupts are not enabled in INT 1 pin
 	_register_write(REG_CTRL_3, 0x00);
