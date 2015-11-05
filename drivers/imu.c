@@ -151,20 +151,26 @@ void imu_enter_normal_mode()
     reg &= ~LOW_POWER_MODE;
     _register_write(REG_CTRL_1, reg);
     
-    //_register_write(REG_INT1_DUR, 0x08 * 3);
+#ifdef IMU_ENABLE_HRES
 
-    //_register_read(REG_CTRL_4, &reg);
-    //_register_write(REG_CTRL_4, reg | HIGHRES );
+    _register_read(REG_CTRL_4, &reg);
+    _register_write(REG_CTRL_4, reg | HIGHRES );
+
+#endif
 }
 
 void imu_enter_low_power_mode()
 {
     uint8_t reg;
-    //_register_read(REG_CTRL_4, &reg);
-    //reg &= ~HIGHRES;
-    //_register_write(REG_CTRL_4, reg);
-    
-    //_register_write(REG_INT1_DUR, 0x00);
+
+#ifdef IMU_ENABLE_HRES
+
+    _register_read(REG_CTRL_4, &reg);
+    reg &= ~HIGHRES;
+    _register_write(REG_CTRL_4, reg);
+
+#endif
+
 
     _register_read(REG_CTRL_1, &reg);
     _register_write(REG_CTRL_1, reg | LOW_POWER_MODE);
@@ -234,35 +240,11 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		APP_ASSERT(0);
 	}
 
-/*
-	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
-	imu_reset();
-
-	// Enable 4 wire SPI mode
-	_register_write(REG_CTRL_4, 0x00);
-
-
-
-
-    // Set inactive sampling rate (Ctrl Reg 1)
-    imu_set_accel_freq(sampling_rate);
-
-    // Enable X, Y and Z (ctrl 1)
-    imu_enable_all_axis();
-
-
-
-
-	// Enable Block data update (output registers not updated until MSB and LSB have been read)
-    _register_write(REG_CTRL_4, (BLOCKDATA_UPDATE));
-
-
-*/
 
 	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
 	imu_reset();
 
-	_register_write(REG_CTRL_1, AXIS_ENABLE); //2f
+	_register_write(REG_CTRL_1, AXIS_ENABLE);
 
     // Set inactive sampling rate (Ctrl Reg 1)
     imu_set_accel_freq(sampling_rate);
@@ -272,15 +254,13 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// interrupts are not enabled in INT 1 pin
 	_register_write(REG_CTRL_3, 0x00);
 
-
+	// Enable 4-wire SPI mode, Enable Block data update (output registers not updated until MSB and LSB have been read)
 	_register_write(REG_CTRL_4, BLOCKDATA_UPDATE);//80
 
 	// Set full scale range (Ctrl 4)
     imu_set_accel_range(acc_range);
 
-	_register_write(REG_CTRL_5, 0x00);
-
-    // Interrupt 1/2 request latched
+    // Interrupt request latched
     _register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
 
 
@@ -295,6 +275,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
     imu_wom_set_threshold(wom_threshold);
 
+    // TODO
     //_register_write(REG_ACT_THR,wom_threshold);
 
     int16_t values[3];
@@ -305,7 +286,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
     imu_enter_low_power_mode();
 
-    // Enable INT 2 function on INT 2 pin
+    // Enable INT 1 function on INT 2 pin
     _register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
 
 	return err;
