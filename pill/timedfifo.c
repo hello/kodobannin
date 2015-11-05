@@ -22,6 +22,7 @@ _reset_tf_unit(tf_unit_t * current){
     current->has_motion = 0;
     current->num_wakes = 0;
     current->max_amp = 0;
+    current->duration = 0;
 }
 void TF_Initialize(){
     memset(&self.data, 0, sizeof(self.data));
