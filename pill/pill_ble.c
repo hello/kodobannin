@@ -67,16 +67,6 @@ _data_send_finished()
 	PRINTS("DONE!");
 }
 
-static void _reply_time(void * p_event_data, uint16_t event_size)
-{
-	uint64_t* current_time = get_time();
-	if(current_time)
-	{
-		hlo_ble_notify(BLE_UUID_DAY_DATE_TIME_CHAR, (uint8_t *)current_time, sizeof(uint64_t), NULL);
-	}
-}
-
-
 static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
 {
 	if(_should_stream)
@@ -119,18 +109,6 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     case PILL_COMMAND_SEND_DATA:
 		hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
-    case PILL_COMMAND_GET_TIME:
-			app_sched_event_put(NULL, 0, _reply_time);
-            break;
-    case PILL_COMMAND_SET_TIME:
-        {
-			MSG_Data_t * ptime = MSG_Base_AllocateObjectAtomic(&command->set_time.bytes, sizeof(struct hlo_ble_time));
-			if(ptime){
-				central->dispatch( ADDR(BLE,0), ADDR(TIME, MSG_TIME_SYNC), ptime);
-				MSG_Base_ReleaseDataAtomic(ptime);
-			}
-            break;
-        }
     case PILL_COMMAND_START_ACCELEROMETER:
     	PRINTS("Streamming started\r\n");
     	_should_stream = true;
@@ -316,7 +294,8 @@ void pill_ble_load_modules(void){
         }
 
 #endif
-		central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_1S_RESOLUTION), NULL);
+        central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
+        central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
 #endif

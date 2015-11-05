@@ -101,8 +101,8 @@ static void _init_rf_modules()
 
 static void _load_watchdog()
 {
-    watchdog_init(10,0);
-    watchdog_task_start(5);
+    watchdog_init(120,0);
+    watchdog_task_start(60);
 }
 
 void _start()

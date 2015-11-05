@@ -9,7 +9,7 @@
 
 enum {
     APP_TIMER_PRESCALER = 0,
-    APP_TIMER_MAX_TIMERS = 8,
+    APP_TIMER_MAX_TIMERS = 9,
     APP_TIMER_OP_QUEUE_SIZE = 8,
 };
 
@@ -112,13 +112,11 @@ enum {
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
 #define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
-#define HEARTBEAT_INTERVAL_SEC              (3600)
-#define BATTERY_INTERVAL_SEC                (600)
-#define MOTION_DATA_INTERVAL_SEC            (60)
-#define BATT_MEASURE_INTERVAL_SEC           (1200)  /* Measure battery level every 20 minutes */
+#define HEARTBEAT_INTERVAL_MIN              (3600/60)
+#define BATT_MEASURE_INTERVAL_MIN           (1200/60)  /* Measure battery level every 20 minutes */
 
 #define SHAKING_MOTION_THRESHOLD        (750000000)
-#define SLIDING_WINDOW_SIZE_SEC         (1)
+#define SLIDING_WINDOW_SIZE_SEC         (2) // shake second timer runs on imu active timer at 2hz now, so this is 1/2 secs
 #define SHAKING_DATA_COUNT_THRESHOLD    (8)
 
 #define TF_CONDENSED_BUFFER_SIZE        (1)

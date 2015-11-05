@@ -14,6 +14,7 @@
 #define HW_REVISION 3
 
 #define configTOTAL_HEAP_SIZE 1024
+#define configLOW_MEM 128
 
 #define DEVICE_ID_SIZE        8
 

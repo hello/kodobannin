@@ -13,6 +13,8 @@ typedef struct{
     uint16_t device_number;
     uint8_t device_type;
     uint8_t transmit_type;
+    uint8_t measurement_type;
+    int8_t rssi;
 }hlo_ant_device_t;
 
 typedef struct{
