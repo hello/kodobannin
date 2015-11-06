@@ -36,17 +36,17 @@ static uint8_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
                     PRINT_HEX(&adc_result, 1);
                     PRINTS(" +");
                     value = result/1000;
-                    PRINT_DEC(&value,1);
+                    PRINT_DEC(&value);
                     PRINTS(".");
-                    PRINT_DEC(&result,3);
+                    PRINT_DEC(&result);
                     PRINTS(" V, ");
                     return LDO_VBAT_ADC_INPUT; break; // spread print overhead
             case 4: result = battery_get_initial_cached(cli_ant_packet_enable);
                     PRINTS(" +");
                     value = result/1000;
-                    PRINT_DEC(&value,1);
+                    PRINT_DEC(&value);
                     PRINTS(".");
-                    PRINT_DEC(&result,3);
+                    PRINT_DEC(&result);
                     PRINTS(" V, ");
                     result = battery_get_percent_cached();
                     value = (result%3);
@@ -55,7 +55,7 @@ static uint8_t cli_battery_level_measured(adc_t adc_result, uint16_t adc_count)
                         case 2: PRINTS("=");break; // nominal 2/3/4 for each 30%
                         case 1: PRINTS("-");break; // worse than expected
                     }
-                    PRINT_DEC(&result,3);
+                    PRINT_DEC(&result);
                     if ( Vrel > Vref) {
                         result = Vrel - Vref; 
                         PRINTS("% +");
@@ -94,12 +94,12 @@ void cli_update_battery_status()
     PRINTS("Battery : ");
     result = battery_get_voltage_cached();
     value = result/1000;
-    PRINT_DEC(&value,1);
+    PRINT_DEC(&value);
     PRINTS(".");
-    PRINT_DEC(&result,3);
+    PRINT_DEC(&result);
     PRINTS(" V, ");
     value = battery_get_percent_cached();
-    PRINT_DEC(&value,2);
+    PRINT_DEC(&value);
     PRINTS(" %\r\n");
 }
 

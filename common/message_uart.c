@@ -179,12 +179,10 @@ void MSG_Uart_Prints(const char * str){
 }
 
 void MSG_Uart_PrintHex(const uint8_t * ptr, uint32_t len){
-    ptr+=len-1;
     if(self.initialized){
         while(len-- >0) {
             app_uart_put(hex[0xF&(*ptr>>4)]);
-            app_uart_put(hex[0xF&*ptr--]);
-            app_uart_put(' ');
+            app_uart_put(hex[0xF&*ptr++]);
         }
     }
 }
@@ -199,8 +197,8 @@ void MSG_Uart_PrintByte(const uint8_t * ptr, uint32_t len){
     }
 }
 
-void MSG_Uart_PrintDec(const int * ptr, uint32_t len){
-     uint8_t index,digit[10];
+void MSG_Uart_PrintDec(const int * ptr){
+     uint8_t index,digit[8];
      uint32_t number;
 
      if(self.initialized){
@@ -211,12 +209,11 @@ void MSG_Uart_PrintDec(const int * ptr, uint32_t len){
              number = -number;
          }
 
-         while(number!=0) {
+         while(number) {
              digit[index++] = number % 10;
              number /= 10;
          }
          while(index-- >0) {
-             
              app_uart_put(hex[0xF&(digit[index])]);
          }
     }
@@ -240,13 +237,13 @@ void MSG_Uart_Printf(char * fmt, ... ) { //look, no buffer...
                         break; }
                     case 'd': { int x;
                         x = va_arg(va_args, int);
-                        MSG_Uart_PrintDec(&x, 10);
+                        MSG_Uart_PrintDec(&x);
                         break; }
                     case 'l': { uint64_t x;
                         x = va_arg(va_args, uint64_t);
                         MSG_Uart_PrintHex((const uint8_t *)&x, sizeof(uint64_t));
                         break; }
-                    case 's': { char * c;
+                    case 's': { char *c;
                         c = va_arg(va_args, char*);
                         while( *c++ ) {
                             app_uart_put(*c);

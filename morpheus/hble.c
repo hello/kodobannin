@@ -85,11 +85,14 @@ static delay_task_t _task_dequeue(){
 	return ret;
 }
 
+static void _delay_task_bond_reboot() {
+    REBOOT_WITH_ERROR(GPREGRET_APP_RECOVER_BONDS);
+}
 
 static void _delay_task_pause_ant()
 {
 #ifdef ANT_ENABLE
-    APP_OK(hlo_ant_pause_radio());
+    hlo_ant_pause_radio();
     PRINTS("ANT Radio stop\r\n");
 #endif
 }
@@ -108,6 +111,11 @@ static void _delay_task_store_bonds()
 	PRINTS("BLE Bond Save \r\n");
 	APP_OK(ble_bondmngr_bonded_centrals_store());
 #endif
+}
+static void _delay_task_disconnect_ble() {
+    PRINTS("BLE disconnect");
+    //disconnect, delay task called from disconnect
+    sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
 }
 static void _delay_tasks_erase_bonds()
 {
@@ -868,13 +876,15 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 
 	_pairing_mode = pairing_mode;
 
+    if( m == ERASE_ALL_BOND) {
+        APP_OK(_task_queue(_delay_task_bond_reboot));
+		hble_start_delay_tasks();
+        return;
+    }
 	if(hlo_ble_is_connected()){
-        int r;
 		_bonding_mode = m;
-		//disconnect, delay task called from disconnect
-        r = sd_ble_gap_disconnect(hlo_ble_get_connection_handle(), BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-        //check we either disconnected or were already disconnected
-        APP_OK( !(r == NRF_SUCCESS || r == NRF_ERROR_INVALID_STATE ) );
+        APP_OK(_task_queue(_delay_task_disconnect_ble));
+		hble_start_delay_tasks();
 	}else{
 		uint32_t adv_err = sd_ble_gap_adv_stop();
 		APP_OK(_task_queue(_delay_task_pause_ant));

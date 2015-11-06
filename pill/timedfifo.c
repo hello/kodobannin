@@ -1,6 +1,7 @@
 #include <string.h>
 #include "platform.h"
 #include "app.h"
+#include "app_timer.h"
 
 #include "timedfifo.h"
 #include "util.h"

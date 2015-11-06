@@ -140,13 +140,12 @@ static void _imu_switch_mode(bool is_active)
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
         PRINTS("IMU Active.\r\n");
-        _settings.is_active = true;
-        app_timer_cnt_get(&active_time);
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
+        _settings.is_active = true;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
-        PRINTS("IMU Inactive.\r\n");
+        PRINTF( "IMU Inactive\r\n");
         app_timer_stop(_wom_timer);
         _settings.is_active = false;
     }
