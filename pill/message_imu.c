@@ -167,6 +167,7 @@ void imu_update_timers() {
         time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
         TF_GetCurrent()->duration += time_diff;
         _start_active_time = current_time;
+        TF_GetCurrent()->num_wakes++;
     }
 }
 
@@ -184,7 +185,6 @@ static void _imu_switch_mode(bool is_active)
         PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
         _start_active_time = current_time;
-        TF_GetCurrent()->num_wakes++;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
@@ -192,6 +192,7 @@ static void _imu_switch_mode(bool is_active)
         app_timer_cnt_diff_compute(current_time, _start_active_time, &time_diff);
         time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
         TF_GetCurrent()->duration += time_diff;
+        TF_GetCurrent()->num_wakes++;
         
         PRINTF( "IMU Inactive %d\r\n", time_diff);
         _settings.is_active = false;
