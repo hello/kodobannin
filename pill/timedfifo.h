@@ -31,9 +31,9 @@ typedef struct {
     uint16_t num_wakes;
     int16_t max_accel[3];
     int16_t min_accel[3];
-    uint8_t duration;
+    uint32_t duration;
     uint8_t has_motion;
-}__attribute__((packed)) auxillary_data_t;
+} auxillary_data_t;
 
 typedef auxillary_data_t tf_unit_t;
 
@@ -43,7 +43,7 @@ typedef struct{
     uint16_t length;
     uint16_t prev_idx;
     tf_unit_t data[TF_BUFFER_SIZE];
-}__attribute__((packed)) tf_data_t;
+} tf_data_t;
 
 
 void TF_Initialize();

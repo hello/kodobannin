@@ -1,6 +1,7 @@
 #include <string.h>
 #include "platform.h"
 #include "app.h"
+#include "app_timer.h"
 
 #include "timedfifo.h"
 #include "util.h"
@@ -95,7 +96,9 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
 
             payload[payload_index].max_acc_range = maxrange;
             payload[payload_index].maxaccnormsq = datum.max_amp;
-            payload[payload_index].duration = datum.duration;
+
+            //convert to seconds rounding up
+            payload[payload_index].duration =  ( ( datum.duration / APP_TIMER_TICKS( 500, APP_TIMER_PRESCALER ) ) + 1 ) / 2;
 
             if(datum.num_wakes != 0)
             {

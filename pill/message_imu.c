@@ -164,7 +164,6 @@ void imu_update_timers() {
     if(_settings.is_active)
     {
         app_timer_cnt_diff_compute(current_time, _start_active_time, &time_diff);
-        time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
         TF_GetCurrent()->duration += time_diff;
         _start_active_time = current_time;
         TF_GetCurrent()->num_wakes++;
@@ -190,7 +189,6 @@ static void _imu_switch_mode(bool is_active)
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
 
         app_timer_cnt_diff_compute(current_time, _start_active_time, &time_diff);
-        time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
         TF_GetCurrent()->duration += time_diff;
         TF_GetCurrent()->num_wakes++;
         
