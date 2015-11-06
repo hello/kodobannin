@@ -21,7 +21,7 @@ MSG_Base_t * MSG_Uart_Base(const app_uart_comm_params_t * params, const MSG_Cent
 //function for async print
 void MSG_Uart_Prints(const char * str);
 void MSG_Uart_Printc(char c);
-void MSG_Uart_PrintDec(const int * ptr, uint32_t len);
+void MSG_Uart_PrintDec(const int * ptr);
 void MSG_Uart_PrintHex(const uint8_t * ptr, uint32_t len);
 void MSG_Uart_PrintByte(const uint8_t * ptr, uint32_t len);
 

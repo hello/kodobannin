@@ -148,6 +148,7 @@ _handle_transaction(){
             break;
         case WAIT_READ_RX_BUF:
             DEBUGS("@WAIT RX BUF\r\n");
+            APP_ASSERT(self.transaction.context_reg.length);
             self.transaction.payload = MSG_Base_AllocateDataAtomic(self.transaction.context_reg.length);
             if(self.transaction.payload){
                 spi_slave_buffers_set(self.transaction.payload->buf, self.transaction.payload->buf, self.transaction.context_reg.length, self.transaction.context_reg.length);

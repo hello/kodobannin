@@ -2,10 +2,14 @@
 #include "util.h"
 #include <nrf_soc.h>
 #include <string.h>
+#include "app_timer.h"
 #include "ant_driver.h"
 #include "app.h"
 #include "hble.h"
 #include "heap.h"
+
+#include <nrf_gpio.h>
+#include <nrf_delay.h>
 
 static struct{
     //parent is the reference to the dispatcher 
@@ -58,14 +62,35 @@ _handle_command(int argc, char * argv[]){
         PRINT_HEX(&ret, 4);
         PRINTS("\r\n");
     }
+    if( !match_command(argv[0], "time") ){
+        static uint32_t time = 0;
+        static uint32_t rtc = 0;
+        uint32_t current_time = 0;
+        app_timer_cnt_get(&current_time);
+        
+        if( argc > 1 ) {
+            time = nrf_atoi(argv[1]);
+            PRINTF("Setting time %d\n", time);
+            rtc = current_time;
+        } else if(time) {
+            uint32_t time_diff;
+            app_timer_cnt_diff_compute(current_time, rtc, &time_diff);
+            time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
+            PRINTF("\n_ set-time %d\n", time + time_diff);
+        }
+    }
+    if( !match_command(argv[0], "bounce") ){
+        PRINTS("Bouncing 3.3v rail...\r\n");
+        nrf_delay_ms(500);
+        
+        nrf_gpio_cfg_output(0);
+        nrf_gpio_pin_clear(0);
+        nrf_delay_ms(100);
+        nrf_gpio_pin_set(0);
+
+    }
     if( !match_command(argv[0], "free") ){
-        PRINTS("Free Memory = ");
-        int32_t ret = xPortGetFreeHeapSize();
-        PRINT_HEX(&ret, 4);
-        PRINTS("Least Memory = ");
-        ret = xPortGetMinimumEverFreeHeapSize();
-        PRINT_HEX(&ret, 4);
-        PRINTS("\r\n");
+        PRINTF("Free Memory = %d Least Memory = %d\r\n", xPortGetFreeHeapSize(), xPortGetMinimumEverFreeHeapSize() );
     }
     if( !match_command(argv[0], "boot") ){
         //force boot without midboard
