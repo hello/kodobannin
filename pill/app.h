@@ -27,7 +27,7 @@ enum {
 #define IMU_DYNAMIC_SAMPLING
 
 // Enable high resolution
-//#define IMU_ENABLE_HRES
+#define IMU_ENABLE_HRES
 
 #define IMU_INACTIVE_FREQ    (IMU_HZ_10)
 #define IMU_INACTIVE_WOM     (55)

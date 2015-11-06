@@ -62,6 +62,8 @@ unsigned imu_get_sampling_interval(enum imu_hz hz)
 	case IMU_HZ_0:
 		return 0;
 		break;
+	case IMU_HZ_1:
+		return 1;
 	case IMU_HZ_10:
 		return 10;
 	case IMU_HZ_25:
@@ -94,11 +96,11 @@ uint16_t imu_accel_reg_read(uint16_t *values) {
 		values[2] *= 262;
 	}
 
-	/*
+
 	DEBUG("The value[0] is 0x",values[0]);
 	DEBUG("The value[1] is 0x",values[1]);
 	DEBUG("The value[2] is 0x",values[2]);
-	 */
+
 
 	return 6;
 }
@@ -179,7 +181,10 @@ void imu_enter_low_power_mode()
 
 void imu_wom_set_threshold(uint16_t microgravities)
 {
+
+	// 16 is FSR is 2g
 	_register_write(REG_INT1_THR, microgravities / 16);
+
 }
 
 
@@ -244,12 +249,12 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
 	imu_reset();
 
-	_register_write(REG_CTRL_1, AXIS_ENABLE);
+	imu_enable_all_axis();
 
 	// Set inactive sampling rate (Ctrl Reg 1)
 	imu_set_accel_freq(sampling_rate);
 
-	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1);
+	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1 | HIGHPASS_FILTER_MODE);
 
 	// interrupts are not enabled in INT 1 pin
 	_register_write(REG_CTRL_3, 0x00);
@@ -285,6 +290,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	imu_clear_interrupt_status();
 
 	imu_enter_low_power_mode();
+
 
 	// Enable INT 1 function on INT 2 pin
 	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
