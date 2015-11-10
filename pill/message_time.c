@@ -189,6 +189,7 @@ static void _1min_timer_handler(void * ctx) {
     self.minutes += 1;
     
     fix_imu_interrupt(); // look for imu int stuck low
+    imu_update_timers();
     
 #ifdef ANT_ENABLE
     _send_available_data_ant();
@@ -203,7 +204,8 @@ static void _1min_timer_handler(void * ctx) {
         battery_update_droop(); // Vmcu(), Vbat(ref), Vrgb(offset), Vbat(min)
     }
 #endif
-    TF_TickOneMinute();}
+    TF_TickOneMinute();
+}
 
 #define POWER_STATE_MASK 0x7
 //this one needs to be the max of all the requirements in the 1sec timer...
