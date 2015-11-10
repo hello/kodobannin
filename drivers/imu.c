@@ -18,6 +18,13 @@
 
 #include <watchdog.h>
 
+#define LIS2DH_LOW_POWER_MG_PER_CNT (16)
+#define LIS2DH_HRES_MG_PER_CNT 		(1)
+#define MPU6500_MG_PER_LSB 			(16384UL)
+
+#define LIS2DH_CONVERT_TO_MG(x)		((x) == 0)?(LIS2DH_LOW_POWER_MG_PER_CNT):(LIS2DH_HRES_MG_PER_CNT)
+#define LIS2DH_SHIFT_POS(x)			((x) == 0)?(8):(4)
+//#define IMU_USE_INT1
 
 enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -86,21 +93,29 @@ uint16_t imu_accel_reg_read(uint16_t *values) {
 
 	uint8_t reg;
 	_register_read(REG_CTRL_4, &reg);
-	if( reg & HIGHRES ) { //convert to match the 6500...
-		values[0] *= 16;
-		values[1] *= 16;
-		values[2] *= 16;
-	} else {
-		values[0] *= 262;
-		values[1] *= 262;
-		values[2] *= 262;
+
+	uint8_t multiplier = LIS2DH_CONVERT_TO_MG(reg & HIGHRES);
+
+	uint8_t i;
+
+	for(i=0;i<3;i++)
+	{
+		//shift right by 8/6/4 depending on mode and HRES
+		values[i] = values[i] >> LIS2DH_SHIFT_POS(multiplier);
+
+		// Convert to mg
+		values[i] *= multiplier;
+
+		//convert to match the 6500...
+		values[i] = (values [i] * MPU6500_MG_PER_LSB)/1000;
+
 	}
 
-
+/*
 	DEBUG("The value[0] is 0x",values[0]);
 	DEBUG("The value[1] is 0x",values[1]);
 	DEBUG("The value[2] is 0x",values[2]);
-
+*/
 
 	return 6;
 }
@@ -130,7 +145,7 @@ inline uint8_t imu_clear_interrupt_status()
 	// clear the interrupt by reading INT_SRC register
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
-	DEBUG("The INT1_SRC is 0x",int_source);
+	//DEBUG("The INT1_SRC is 0x",int_source);
 
 
 	return int_source;
@@ -149,30 +164,26 @@ inline uint8_t imu_clear_interrupt2_status()
 void imu_enter_normal_mode()
 {
 	uint8_t reg;
+
 	_register_read(REG_CTRL_1, &reg);
 	reg &= ~LOW_POWER_MODE;
 	_register_write(REG_CTRL_1, reg);
 
-#ifdef IMU_ENABLE_HRES
 
 	_register_read(REG_CTRL_4, &reg);
 	_register_write(REG_CTRL_4, reg | HIGHRES );
 
-#endif
+
 }
 
 void imu_enter_low_power_mode()
 {
 	uint8_t reg;
 
-#ifdef IMU_ENABLE_HRES
 
 	_register_read(REG_CTRL_4, &reg);
 	reg &= ~HIGHRES;
 	_register_write(REG_CTRL_4, reg);
-
-#endif
-
 
 	_register_read(REG_CTRL_1, &reg);
 	_register_write(REG_CTRL_1, reg | LOW_POWER_MODE);
@@ -254,10 +265,13 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Set inactive sampling rate (Ctrl Reg 1)
 	imu_set_accel_freq(sampling_rate);
 
+	// Enable high pass filter for interrupts, select auto reset HP filter mode
 	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1 | HIGHPASS_FILTER_MODE);
+
 
 	// interrupts are not enabled in INT 1 pin
 	_register_write(REG_CTRL_3, 0x00);
+
 
 	// Enable 4-wire SPI mode, Enable Block data update (output registers not updated until MSB and LSB have been read)
 	_register_write(REG_CTRL_4, BLOCKDATA_UPDATE);//80
