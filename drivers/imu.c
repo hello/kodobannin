@@ -93,13 +93,10 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	_register_read(REG_ACC_Z_HI, buf++);
 
 
-
-
-
 	return 6;
 }
 
-void imu_accel_convert_to_6500_count(uint16_t* values, uint8_t mode, uint8_t hres)
+void imu_accel_convert_count(uint16_t* values, uint8_t mode, uint8_t hres)
 {
 	uint8_t reg;
 	_register_read(REG_CTRL_4, &reg);
@@ -279,8 +276,9 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Set inactive sampling rate (Ctrl Reg 1)
 	imu_set_accel_freq(sampling_rate);
 
-	// Enable high pass filter for interrupts, select auto reset HP filter mode
-	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1);// | HIGHPASS_FILTER_MODE);
+	// Enable high pass filter for interrupts, normal HP filter mode selected by default
+	// HP filter needs to be reset while switching modes
+	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1 );
 
 
 	// interrupts are not enabled in INT 1 pin
@@ -300,6 +298,9 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	uint8_t reg;
 
 	// reset HP filter
+	// A reading at this address forces the high-pass filter to recover instantaneously the dc level of the
+	// acceleration signal provided to its inputs
+	// this sets the current/reference acceleration/tilt state against which the device performs the threshold comparison.
 	_register_read(REG_REFERENCE,&reg);
 
 	// Enable OR combination interrupt generation for all axis
