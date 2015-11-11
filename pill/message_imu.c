@@ -218,7 +218,6 @@ fix_imu_interrupt(void){
 	if(initialized){
 		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
 			if((gpio_pin_state & (1<<IMU_INT))){
-
 				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 				if (stuck_counter < 15)
 				{
@@ -310,10 +309,13 @@ static MSG_Status _handle_read_xyz(void){
 	imu_accel_reg_read(values);
 	PRINTS("FINISHED READING\r\n");
 
+	// Adjust values to match 6500
+
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
 	}
+	// TODO does this function accept data in MPU6500 form or LIS2DH
 	mag = _aggregate_motion_data(values, sizeof(values));
 	ShakeDetect(mag);
 #ifdef IMU_DYNAMIC_SAMPLING        

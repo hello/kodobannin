@@ -26,6 +26,9 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 uint16_t imu_accel_reg_read(uint16_t *values);
 
+// Convert the LIS2DH values to match the MPU6500
+void imu_accel_convert_to_6500_count(uint16_t* values, uint8_t mode, uint8_t hres);
+
 void imu_set_accel_range(enum imu_accel_range range);
 
 void imu_enable_all_axis();

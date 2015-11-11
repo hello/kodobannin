@@ -81,7 +81,9 @@ unsigned imu_get_sampling_interval(enum imu_hz hz)
 	}
 }
 
-uint16_t imu_accel_reg_read(uint16_t *values) {
+// Read all accelerometer values
+uint16_t imu_accel_reg_read(uint16_t *values)
+{
 	uint8_t * buf = (uint8_t*)values;
 	_register_read(REG_ACC_X_LO, buf++);
 	_register_read(REG_ACC_X_HI, buf++);
@@ -91,6 +93,14 @@ uint16_t imu_accel_reg_read(uint16_t *values) {
 	_register_read(REG_ACC_Z_HI, buf++);
 
 
+
+
+
+	return 6;
+}
+
+void imu_accel_convert_to_6500_count(uint16_t* values, uint8_t mode, uint8_t hres)
+{
 	uint8_t reg;
 	_register_read(REG_CTRL_4, &reg);
 
@@ -101,7 +111,7 @@ uint16_t imu_accel_reg_read(uint16_t *values) {
 	for(i=0;i<3;i++)
 	{
 		//shift right by 8/6/4 depending on mode and HRES
-		values[i] = values[i] >> LIS2DH_SHIFT_POS(multiplier);
+		values[i] = values[i] >> 4;//LIS2DH_SHIFT_POS(multiplier);
 
 		// Convert to mg
 		values[i] *= multiplier;
@@ -111,13 +121,10 @@ uint16_t imu_accel_reg_read(uint16_t *values) {
 
 	}
 
-/*
+
 	DEBUG("The value[0] is 0x",values[0]);
 	DEBUG("The value[1] is 0x",values[1]);
 	DEBUG("The value[2] is 0x",values[2]);
-*/
-
-	return 6;
 }
 
 inline void imu_set_accel_range(enum imu_accel_range range)
@@ -173,6 +180,9 @@ void imu_enter_normal_mode()
 	_register_read(REG_CTRL_4, &reg);
 	_register_write(REG_CTRL_4, reg | HIGHRES );
 
+	// reset HP filter
+	_register_read(REG_REFERENCE,&reg);
+
 
 }
 
@@ -187,6 +197,10 @@ void imu_enter_low_power_mode()
 
 	_register_read(REG_CTRL_1, &reg);
 	_register_write(REG_CTRL_1, reg | LOW_POWER_MODE);
+
+
+	// reset HP filter
+	_register_read(REG_REFERENCE,&reg);
 }
 
 
@@ -266,7 +280,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	imu_set_accel_freq(sampling_rate);
 
 	// Enable high pass filter for interrupts, select auto reset HP filter mode
-	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1 | HIGHPASS_FILTER_MODE);
+	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1);// | HIGHPASS_FILTER_MODE);
 
 
 	// interrupts are not enabled in INT 1 pin
