@@ -160,13 +160,17 @@ static void _imu_switch_mode(bool is_active)
     {
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
+#ifdef IMU_ENABLE_LOW_POWER
         imu_enter_normal_mode();
+#endif
         PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
+#ifdef IMU_ENABLE_LOW_POWER
         imu_enter_low_power_mode();
+#endif
         PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }
@@ -309,7 +313,6 @@ static MSG_Status _handle_read_xyz(void){
 	imu_accel_reg_read(values);
 	PRINTS("FINISHED READING\r\n");
 
-	// Adjust values to match 6500
 
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(_settings.wom_callback){
@@ -319,7 +322,9 @@ static MSG_Status _handle_read_xyz(void){
 	mag = _aggregate_motion_data(values, sizeof(values));
 	ShakeDetect(mag);
 #ifdef IMU_DYNAMIC_SAMPLING        
+
 	app_timer_cnt_get(&_last_active_time);
+
 	if(!_settings.is_active)
 	{
 		_imu_switch_mode(true);

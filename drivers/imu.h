@@ -27,7 +27,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 uint16_t imu_accel_reg_read(uint16_t *values);
 
 // Convert the LIS2DH values to match the MPU6500
-void imu_accel_convert_count(uint16_t* values, uint8_t mode, uint8_t hres);
+void imu_accel_convert_count(uint16_t* values); //, uint8_t mode, uint8_t hres);
 
 void imu_set_accel_range(enum imu_accel_range range);
 
@@ -37,6 +37,20 @@ void imu_enable_all_axis();
 unsigned imu_get_sampling_interval(enum imu_hz);
 void imu_set_accel_freq(enum imu_hz sampling_rate);
 
+// Enable high resolution
+void imu_enable_hres();
+
+// Disable high resolution
+void imu_disable_hres();
+
+// Enable low power mode
+void imu_lp_enable();
+
+// Reset high pass filter
+void imu_reset_hp_filter();
+
+// Disable Low power mode
+void imu_lp_disable();
 
 /// Activate the IMU by waking it up from sleep mode.
 void imu_enter_normal_mode();

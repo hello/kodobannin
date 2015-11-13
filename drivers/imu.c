@@ -92,16 +92,24 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	_register_read(REG_ACC_Z_LO, buf++);
 	_register_read(REG_ACC_Z_HI, buf++);
 
+	// adjust values to match 6500
+	imu_accel_convert_count(values);
 
 	return 6;
 }
 
-void imu_accel_convert_count(uint16_t* values, uint8_t mode, uint8_t hres)
+void imu_accel_convert_count(uint16_t* values)
 {
+
+
+
+#ifdef IMU_ENABLE_LOW_POWER
 	uint8_t reg;
 	_register_read(REG_CTRL_4, &reg);
 
+	// TODO: this can be removed if using HRES only, multiplier is constant
 	uint8_t multiplier = LIS2DH_CONVERT_TO_MG(reg & HIGHRES);
+#endif
 
 	uint8_t i;
 
@@ -110,8 +118,10 @@ void imu_accel_convert_count(uint16_t* values, uint8_t mode, uint8_t hres)
 		//shift right by 8/6/4 depending on mode and HRES
 		values[i] = values[i] >> 4;//LIS2DH_SHIFT_POS(multiplier);
 
+#ifdef IMU_ENABLE_LOW_POWER
 		// Convert to mg
 		values[i] *= multiplier;
+#endif
 
 		//convert to match the 6500...
 		values[i] = (values [i] * MPU6500_MG_PER_LSB)/1000;
@@ -119,9 +129,11 @@ void imu_accel_convert_count(uint16_t* values, uint8_t mode, uint8_t hres)
 	}
 
 
+
 	DEBUG("The value[0] is 0x",values[0]);
 	DEBUG("The value[1] is 0x",values[1]);
 	DEBUG("The value[2] is 0x",values[2]);
+
 }
 
 inline void imu_set_accel_range(enum imu_accel_range range)
@@ -151,7 +163,6 @@ inline uint8_t imu_clear_interrupt_status()
 	_register_read(REG_INT1_SRC, &int_source);
 	//DEBUG("The INT1_SRC is 0x",int_source);
 
-
 	return int_source;
 }
 
@@ -165,7 +176,45 @@ inline uint8_t imu_clear_interrupt2_status()
 	return int_source;
 }
 
-void imu_enter_normal_mode()
+inline void imu_enable_hres()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_4, &reg);
+	_register_write(REG_CTRL_4, reg | HIGHRES );
+
+}
+
+inline void imu_reset_hp_filter()
+{
+	uint8_t reg;
+
+	//reset HP filter
+	// A reading at this address forces the high-pass filter to recover instantaneously the dc level of the
+	// acceleration signal provided to its inputs
+	// this sets the current/reference acceleration/tilt state against which the device performs the threshold comparison.
+	_register_read(REG_REFERENCE,&reg);
+}
+
+inline void imu_disable_hres()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_4, &reg);
+	reg &= ~HIGHRES;
+	_register_write(REG_CTRL_4, reg);
+}
+
+inline void imu_lp_enable()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_1, &reg);
+	_register_write(REG_CTRL_1, reg | LOW_POWER_MODE);
+
+}
+
+inline void imu_lp_disable()
 {
 	uint8_t reg;
 
@@ -173,31 +222,30 @@ void imu_enter_normal_mode()
 	reg &= ~LOW_POWER_MODE;
 	_register_write(REG_CTRL_1, reg);
 
+}
 
-	_register_read(REG_CTRL_4, &reg);
-	_register_write(REG_CTRL_4, reg | HIGHRES );
+void imu_enter_normal_mode()
+{
+	// IMU reset enables low power mode, LP has to be disabled before HRES is enabled
+	imu_lp_disable();
 
-	// reset HP filter
-	_register_read(REG_REFERENCE,&reg);
+	imu_enable_hres();
 
+	imu_reset_hp_filter();
 
 }
 
+
+
 void imu_enter_low_power_mode()
 {
-	uint8_t reg;
 
+	imu_disable_hres();
 
-	_register_read(REG_CTRL_4, &reg);
-	reg &= ~HIGHRES;
-	_register_write(REG_CTRL_4, reg);
+	imu_lp_enable();
 
-	_register_read(REG_CTRL_1, &reg);
-	_register_write(REG_CTRL_1, reg | LOW_POWER_MODE);
+	imu_reset_hp_filter();
 
-
-	// reset HP filter
-	_register_read(REG_REFERENCE,&reg);
 }
 
 
@@ -271,6 +319,9 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
 	imu_reset();
 
+	uint8_t reg;
+
+
 	imu_enable_all_axis();
 
 	// Set inactive sampling rate (Ctrl Reg 1)
@@ -278,7 +329,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 	// Enable high pass filter for interrupts, normal HP filter mode selected by default
 	// HP filter needs to be reset while switching modes
-	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1 );
+	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1);
 
 
 	// interrupts are not enabled in INT 1 pin
@@ -295,13 +346,8 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	_register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
 
 
-	uint8_t reg;
-
 	// reset HP filter
-	// A reading at this address forces the high-pass filter to recover instantaneously the dc level of the
-	// acceleration signal provided to its inputs
-	// this sets the current/reference acceleration/tilt state against which the device performs the threshold comparison.
-	_register_read(REG_REFERENCE,&reg);
+	//imu_reset_hp_filter();
 
 	// Enable OR combination interrupt generation for all axis
 	reg = INT1_Z_HIGH | INT1_Z_LOW | INT1_Y_HIGH | INT1_Y_LOW | INT1_X_HIGH | INT1_X_LOW;
@@ -318,11 +364,17 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 	imu_clear_interrupt_status();
 
+#ifdef IMU_ENABLE_LOW_POWER
 	imu_enter_low_power_mode();
+#else
 
+	imu_enter_normal_mode();
+
+#endif
 
 	// Enable INT 1 function on INT 2 pin
 	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+
 
 	return err;
 }
