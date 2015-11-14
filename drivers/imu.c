@@ -24,7 +24,8 @@
 
 #define LIS2DH_CONVERT_TO_MG(x)		((x) == 0)?(LIS2DH_LOW_POWER_MG_PER_CNT):(LIS2DH_HRES_MG_PER_CNT)
 #define LIS2DH_SHIFT_POS(x)			((x) == 0)?(8):(4)
-//#define IMU_USE_INT1
+
+//#define IMU_USE_PIN_INT1
 
 enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -128,11 +129,21 @@ void imu_accel_convert_count(uint16_t* values)
 
 	}
 
+	PRINTS("IMU: ");
+	for(uint8_t i=0;i<3;i++){
+		uint8_t temp = ((values[0] & 0xFF00) >> 8);
+		PRINT_BYTE(&temp,sizeof(uint8_t));
+		PRINT_BYTE((uint8_t*)&values[i],sizeof(uint8_t));
+		PRINTS(" ");
 
 
-	DEBUG("The value[0] is 0x",values[0]);
+	}
+	PRINTS("\r\n");
+	/*
+	DEBUG("IMU Values is 0x",values[0]);
 	DEBUG("The value[1] is 0x",values[1]);
 	DEBUG("The value[2] is 0x",values[2]);
+	*/
 
 }
 
@@ -298,6 +309,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		enum imu_accel_range acc_range, uint16_t wom_threshold)
 {
 	int32_t err;
+	uint8_t reg;
 
 	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
 	if (err != 0) {
@@ -319,9 +331,6 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
 	imu_reset();
 
-	uint8_t reg;
-
-
 	imu_enable_all_axis();
 
 	// Set inactive sampling rate (Ctrl Reg 1)
@@ -332,8 +341,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1);
 
 
-	// interrupts are not enabled in INT 1 pin
-	_register_write(REG_CTRL_3, 0x00);
+
 
 
 	// Enable 4-wire SPI mode, Enable Block data update (output registers not updated until MSB and LSB have been read)
@@ -372,9 +380,17 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 #endif
 
+#ifdef IMU_USE_PIN_INT1
+	// interrupts are not enabled in INT 1 pin
+	_register_write(REG_CTRL_3, INT1_AOI1);
+	// Enable INT 1 function on INT 2 pin
+	_register_write(REG_CTRL_6, 0x00);
+#else
+	// interrupts are not enabled in INT 1 pin
+	_register_write(REG_CTRL_3, 0x00);
 	// Enable INT 1 function on INT 2 pin
 	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
-
+#endif
 
 	return err;
 }

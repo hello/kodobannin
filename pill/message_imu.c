@@ -122,6 +122,7 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
         current->max_amp = aggregate;
         PRINTS("NEW MAX: ");
         PRINT_HEX(&aggregate, sizeof(aggregate));
+        PRINTS("\r\n");
     }
     
     //track max/min values of accelerometer      
@@ -163,7 +164,7 @@ static void _imu_switch_mode(bool is_active)
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_normal_mode();
 #endif
-        PRINTS("IMU Active.\r\n");
+        //PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
@@ -171,7 +172,7 @@ static void _imu_switch_mode(bool is_active)
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_low_power_mode();
 #endif
-        PRINTS("IMU Inactive.\r\n");
+        //PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }
 }
@@ -179,7 +180,7 @@ static void _imu_switch_mode(bool is_active)
 
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-	PRINTS("IMU INT \r\n");
+	//PRINTS("IMU INT \r\n");
 	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 }
 
@@ -195,15 +196,15 @@ static void _on_wom_timer(void* context)
     if(time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-        PRINTS("Active state continues.\r\n");
+        //PRINTS("Active state continues.\r\n");
     }
 
     if(time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         _imu_switch_mode(false);
-        PRINTS("Time diff ");
-        PRINT_HEX(&time_diff, sizeof(time_diff));
-        PRINTS("\r\n");
+        //PRINTS("Time diff ");
+        //PRINT_HEX(&time_diff, sizeof(time_diff));
+        //ßPRINTS("\r\n");
     }
 }
 
@@ -274,7 +275,6 @@ static MSG_Status _init(void){
 
 
 		    imu_clear_interrupt_status();
-		    imu_clear_interrupt2_status();
 			APP_OK(app_gpiote_user_enable(_gpiote_user));
 			PRINTS("IMU: initialization done.\r\n");
 			initialized = true;
@@ -288,7 +288,6 @@ static MSG_Status _destroy(void){
 		initialized = false;
 		APP_OK(app_gpiote_user_disable(_gpiote_user));
 		imu_clear_interrupt_status();
-		imu_clear_interrupt2_status();
 		gpio_input_disconnect(IMU_INT);
 		imu_power_off();
 	}
@@ -307,14 +306,13 @@ static MSG_Status _handle_self_test(void){
 	parent->loadmod(&base);
 	return ret;
 }
+
 static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
 	uint32_t mag;
 	imu_accel_reg_read(values);
-	PRINTS("FINISHED READING\r\n");
+	//PRINTS("FINISHED READING\r\n");
 
-
-	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
 	}
