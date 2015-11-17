@@ -308,9 +308,16 @@ static MSG_Status _handle_self_test(void){
 }
 
 static MSG_Status _handle_read_xyz(void){
+
+
+#ifdef IMU_FIFO_ENABLE
+	//int16_t values[IMU_FIFO_CAPACITY_BYTES];
+	//imu_read_fifo(values);
+#else
 	int16_t values[3];
 	uint32_t mag;
 	imu_accel_reg_read(values);
+
 	//PRINTS("FINISHED READING\r\n");
 
 	if(_settings.wom_callback){
@@ -319,6 +326,8 @@ static MSG_Status _handle_read_xyz(void){
 	// TODO does this function accept data in MPU6500 form or LIS2DH
 	mag = _aggregate_motion_data(values, sizeof(values));
 	ShakeDetect(mag);
+#endif
+
 #ifdef IMU_DYNAMIC_SAMPLING        
 
 	app_timer_cnt_get(&_last_active_time);
@@ -345,6 +354,10 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
+
+#ifdef IMU_FIFO_ENABLE
+			imu_reset_fifo();
+#endif
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();

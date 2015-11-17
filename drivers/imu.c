@@ -25,13 +25,15 @@
 #define LIS2DH_CONVERT_TO_MG(x)		((x) == 0)?(LIS2DH_LOW_POWER_MG_PER_CNT):(LIS2DH_HRES_MG_PER_CNT)
 #define LIS2DH_SHIFT_POS(x)			((x) == 0)?(8):(4)
 
-//#define IMU_USE_PIN_INT1
+#define IMU_USE_PIN_INT1
 
 enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };
 
 static SPI_Context _spi_context;
+
+static bool imu_intr_ovrn = false;
 
 static inline void _register_read(Register_t register_address, uint8_t* const out_value)
 {
@@ -169,12 +171,47 @@ inline void imu_enable_all_axis()
 
 inline uint8_t imu_clear_interrupt_status()
 {
+
 	// clear the interrupt by reading INT_SRC register
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
-	//DEBUG("The INT1_SRC is 0x",int_source);
 
 	return int_source;
+}
+
+inline void imu_reset_fifo()
+{
+
+
+
+	if(imu_intr_ovrn == false)
+	{
+		PRINTS("AOI intr\r\n");
+
+		uint8_t reg;
+		_register_read(REG_FIFO_SRC,&reg);
+		DEBUG("FIFO SRC Reg ",reg);
+
+		_register_write(REG_CTRL_3, INT1_FIFO_OVERRUN);
+		imu_intr_ovrn = true;
+	}
+	else
+	{
+		PRINTS("OVRN intr\r\n");
+
+		uint8_t reg;
+		_register_read(REG_FIFO_SRC,&reg);
+		DEBUG("FIFO SRC Reg ",reg);
+
+		// Reset FIFO - change mode to bypass
+		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE);
+
+		// Enable stream to FIFO mode
+		imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE);
+
+		_register_write(REG_CTRL_3, INT1_AOI1);
+		imu_intr_ovrn = false;
+	}
 }
 
 inline uint8_t imu_clear_interrupt2_status()
@@ -302,6 +339,67 @@ inline void imu_power_off()
 #endif
 }
 
+inline void imu_fifo_enable()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_5, &reg);
+	reg |= FIFO_EN;
+	_register_write(REG_CTRL_5, reg);
+
+}
+
+inline void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode)
+{
+	uint8_t reg;
+
+	_register_read(REG_FIFO_CTRL, &reg);
+
+
+	// Clear the FIFO mode
+	reg &= ~FIFO_MODE_SELECTION;
+	reg |= (fifo_mode << ACCEL_FIFO_MODE_OFFSET);
+
+	_register_write(REG_FIFO_CTRL, reg );
+
+}
+
+inline void imu_fifo_disable()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_5, &reg);
+	reg &= ~FIFO_EN;
+	_register_write(REG_CTRL_5, reg);
+
+}
+
+typedef struct __attribute__((packed)){
+
+	uint16_t x;
+	uint16_t y;
+	uint16_t z;
+}imu_data_t;
+typedef union fifo_buffer {
+
+	uint8_t bytes[IMU_FIFO_CAPACITY_BYTES];
+	int16_t values[IMU_FIFO_CAPACITY_VALUES];
+	imu_data_t imu_data[IMU_FIFO_CAPACITY_SAMPLES];
+
+}fifo_buffer_t;
+
+// The argument values must have enough memory to hold IMU_FIFO_CAPACITY_BYTES bytes
+void imu_read_fifo(uint8_t* values)
+{
+	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO) };
+	int32_t ret;
+
+	ret = spi_xfer(&_spi_context, 1, buf, IMU_FIFO_CAPACITY_BYTES, values);
+
+	DEBUG("FIFO read ",ret);
+	//BOOL_OK(ret == 2);
+}
+
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 		uint8_t miso, uint8_t mosi, uint8_t sclk,
 		uint8_t nCS,
@@ -340,10 +438,6 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// HP filter needs to be reset while switching modes
 	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1);
 
-
-
-
-
 	// Enable 4-wire SPI mode, Enable Block data update (output registers not updated until MSB and LSB have been read)
 	_register_write(REG_CTRL_4, BLOCKDATA_UPDATE);//80
 
@@ -363,6 +457,23 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 	imu_wom_set_threshold(wom_threshold);
 
+	// Clear FIFO control register to select Bypass mode, set trigger to be INT1 and FIFO threshold as 0
+	_register_write(REG_FIFO_CTRL,0x00);
+
+#ifdef IMU_FIFO_ENABLE
+
+	// FIFO enable
+	imu_fifo_enable();
+
+	// Update FIFO mode
+	imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE);
+
+	imu_intr_ovrn = false;
+#else
+	imu_fifo_disable();
+
+#endif
+
 	// TODO
 	//_register_write(REG_ACT_THR,wom_threshold);
 
@@ -380,17 +491,36 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 #endif
 
+
+
 #ifdef IMU_USE_PIN_INT1
-	// interrupts are not enabled in INT 1 pin
-	_register_write(REG_CTRL_3, INT1_AOI1);
+
+	#ifdef IMU_FIFO_ENABLE
+		// interrupts are not enabled in INT 1 pin
+		_register_write(REG_CTRL_3, INT1_AOI1) ;//INT1_FIFO_OVERRUN);
+	#else
+		// interrupts are not enabled in INT 1 pin
+		_register_write(REG_CTRL_3, INT1_AOI1);
+	#endif
+
 	// Enable INT 1 function on INT 2 pin
 	_register_write(REG_CTRL_6, 0x00);
+
 #else
+
 	// interrupts are not enabled in INT 1 pin
 	_register_write(REG_CTRL_3, 0x00);
-	// Enable INT 1 function on INT 2 pin
-	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+
+	#ifdef IMU_FIFO_ENABLE
+		// Enable INT 1 function on INT 2 pin
+		_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+	#else
+		// Enable INT 1 function on INT 2 pin
+		_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+	#endif
+
 #endif
+
 
 	return err;
 }

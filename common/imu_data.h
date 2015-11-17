@@ -41,6 +41,12 @@ enum imu_resolution {
 	IMU_RESOLUTION_16_BITS = 3,
 };
 
+enum imu_fifo_mode {
+	IMU_FIFO_BYPASS_MODE = 0,
+	IMU_FIFO_FIFO_MODE = 1,
+	IMU_FIFO_STREAM_MODE = 2,
+	IMU_FIFO_STREAM_TO_FIFO_MODE = 3
+};
 struct imu_profile {
 	enum imu_sensor_set sensors:1;
 	enum imu_accel_range accel_range:2;

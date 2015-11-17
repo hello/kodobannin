@@ -21,12 +21,12 @@ typedef enum IMU_Registers {
 	REG_CTRL_6 = 0x25,
 	REG_REFERENCE = 0x26,
 	REG_STATUS_2 = 0x27,
-	REG_ACC_X_HI = 0x28,
-	REG_ACC_X_LO = 0x29,
-	REG_ACC_Y_HI = 0x2a,
-	REG_ACC_Y_LO = 0x2b,
-	REG_ACC_Z_HI = 0x2c,
-	REG_ACC_Z_LO = 0x2d,
+	REG_ACC_X_LO = 0x28,
+	REG_ACC_X_HI = 0x29,
+	REG_ACC_Y_LO = 0x2a,
+	REG_ACC_Y_HI = 0x2b,
+	REG_ACC_Z_LO = 0x2c,
+	REG_ACC_Z_HI = 0x2d,
 	REG_FIFO_CTRL = 0x2e,
 	REG_FIFO_SRC = 0x2f,
 	REG_INT1_CFG = 0x30,
@@ -49,6 +49,7 @@ typedef enum IMU_Registers {
 } Register_t;
 
 #define ACCEL_CFG_SCALE_OFFSET 4
+#define ACCEL_FIFO_MODE_OFFSET	0x06
 
 enum IMU_Reg_Bits {
 	//REG_TEMP_CFG

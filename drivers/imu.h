@@ -10,7 +10,9 @@
 struct sensor_data_header;
 
 enum {
-    IMU_FIFO_CAPACITY = 4096, // Must be 512, 1024, 2048 or 4096
+    IMU_FIFO_CAPACITY_BYTES = 192, // 4096, // Must be 512, 1024, 2048 or 4096
+	IMU_FIFO_CAPACITY_VALUES = 192/2,
+	IMU_FIFO_CAPACITY_SAMPLES = 32,
 };
 
 /* See README_IMU.md for an introduction to the IMU, and vocabulary
@@ -51,6 +53,13 @@ void imu_reset_hp_filter();
 
 // Disable Low power mode
 void imu_lp_disable();
+
+void imu_reset_fifo();
+void imu_fifo_enable();
+void imu_fifo_disable();
+void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode);
+// The argument values must have enough memory to hold IMU_FIFO_CAPACITY_BYTES bytes
+void imu_read_fifo(uint8_t* values);
 
 /// Activate the IMU by waking it up from sleep mode.
 void imu_enter_normal_mode();
