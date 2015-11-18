@@ -26,7 +26,7 @@ enum {
 //#define DATA_SCIENCE_TASK
 #define IMU_DYNAMIC_SAMPLING
 
-//#define IMU_FIFO_ENABLE
+#define IMU_FIFO_ENABLE
 
 // This define can be used to switch between 10Hz LP inactive to 1Hz inactive HRES
 #define IMU_ENABLE_LOW_POWER

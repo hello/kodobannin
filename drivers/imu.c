@@ -179,29 +179,32 @@ inline uint8_t imu_clear_interrupt_status()
 	return int_source;
 }
 
-inline void imu_reset_fifo()
+bool imu_handle_fifo_read(uint16_t* values)
 {
 
-
+	bool ret = imu_intr_ovrn;
 
 	if(imu_intr_ovrn == false)
 	{
-		PRINTS("AOI intr\r\n");
+
 
 		uint8_t reg;
 		_register_read(REG_FIFO_SRC,&reg);
-		DEBUG("FIFO SRC Reg ",reg);
+		//DEBUG("FIFO SRC Reg ",reg);
 
 		_register_write(REG_CTRL_3, INT1_FIFO_OVERRUN);
 		imu_intr_ovrn = true;
 	}
 	else
 	{
-		PRINTS("OVRN intr\r\n");
+
+
+
+		imu_read_fifo(values);
 
 		uint8_t reg;
 		_register_read(REG_FIFO_SRC,&reg);
-		DEBUG("FIFO SRC Reg ",reg);
+		//DEBUG("FIFO SRC Reg ",reg);
 
 		// Reset FIFO - change mode to bypass
 		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE);
@@ -212,6 +215,19 @@ inline void imu_reset_fifo()
 		_register_write(REG_CTRL_3, INT1_AOI1);
 		imu_intr_ovrn = false;
 	}
+
+	return ret;
+
+}
+
+void imu_handle_fifo_values(uint16_t* values)
+{
+
+	// Convert values to mg
+
+	// Compare with threshold - 55mg or 80mg? //TODO
+
+	// Discard values below threshold
 }
 
 inline uint8_t imu_clear_interrupt2_status()

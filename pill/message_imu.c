@@ -311,8 +311,23 @@ static MSG_Status _handle_read_xyz(void){
 
 
 #ifdef IMU_FIFO_ENABLE
-	//int16_t values[IMU_FIFO_CAPACITY_BYTES];
-	//imu_read_fifo(values);
+	int16_t values[IMU_FIFO_CAPACITY_BYTES];
+	bool ret;
+
+	ret = imu_handle_fifo_read(values);
+
+	if(ret)
+	{
+		// FIFO read, handle values
+
+		PRINTS("FIFO read, handle values\r\n");
+	}
+	else
+	{
+		PRINTS("AOI interrupt\r\n");
+	}
+
+
 #else
 	int16_t values[3];
 	uint32_t mag;
@@ -355,9 +370,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
 
-#ifdef IMU_FIFO_ENABLE
-			imu_reset_fifo();
-#endif
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();

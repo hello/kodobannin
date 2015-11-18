@@ -54,7 +54,7 @@ void imu_reset_hp_filter();
 // Disable Low power mode
 void imu_lp_disable();
 
-void imu_reset_fifo();
+bool imu_handle_fifo_read(uint16_t* values);
 void imu_fifo_enable();
 void imu_fifo_disable();
 void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode);
