@@ -470,7 +470,9 @@ static void _on_boot_timer(void* context)
     switch(self.boot_state)
     {
         case BOOT_COMPLETED:
-        hble_advertising_start();
+        /*
+         *hble_advertising_start();
+         */
         nrf_delay_ms(100);
         PRINTS("Boot completed!\r\n");
         break;
