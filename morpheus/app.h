@@ -9,7 +9,7 @@
 #include "app_info.h"
 
 enum {
-    APP_TIMER_PRESCALER = 0,
+    APP_TIMER_PRESCALER = 255, //overflow every 36 hours
     APP_TIMER_MAX_TIMERS = 5,
     APP_TIMER_OP_QUEUE_SIZE = 2,
 };
