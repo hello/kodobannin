@@ -311,16 +311,36 @@ static MSG_Status _handle_read_xyz(void){
 
 
 #ifdef IMU_FIFO_ENABLE
+
 	int16_t values[IMU_FIFO_CAPACITY_BYTES];
 	bool ret;
 
+
+	// Returns true if values have been read, false otherwise
+	// TODO: if wtrm and ovrn interrupts are both going to be used, it makes sense to add number of
+	// values read
 	ret = imu_handle_fifo_read(values);
+
 
 	if(ret)
 	{
 		// FIFO read, handle values
+		/*
+		loop:
+			discard value less than threshold
 
-		PRINTS("FIFO read, handle values\r\n");
+			// ble notify
+			if(_settings.wom_callback){
+				_settings.wom_callback(values, sizeof(values));
+			}
+
+			aggregate value greater than threshold
+			mag = _aggregate_motion_data(values, sizeof(values));
+			ShakeDetect(mag);
+		*/
+
+
+		//PRINTS("FIFO read, handle values\r\n");
 	}
 	else
 	{

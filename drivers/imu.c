@@ -131,6 +131,7 @@ void imu_accel_convert_count(uint16_t* values)
 
 	}
 
+	/*
 	PRINTS("IMU: ");
 	for(uint8_t i=0;i<3;i++){
 		uint8_t temp = ((values[0] & 0xFF00) >> 8);
@@ -141,6 +142,7 @@ void imu_accel_convert_count(uint16_t* values)
 
 	}
 	PRINTS("\r\n");
+	*/
 	/*
 	DEBUG("IMU Values is 0x",values[0]);
 	DEBUG("The value[1] is 0x",values[1]);
@@ -176,7 +178,31 @@ inline uint8_t imu_clear_interrupt_status()
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
 
+
+
 	return int_source;
+}
+
+inline void imu_fifo_read(uint16_t* values)
+{
+	uint16_t* data_ptr = values;
+
+	uint8_t reg;
+	_register_read(REG_FIFO_SRC,&reg);
+
+	DEBUG("FIFO SRC Reg ",reg);
+
+	reg &= FIFO_FSS_MASK;
+
+	for(uint8_t i=0;i<reg+1;i++)
+	{
+		imu_accel_reg_read((uint8_t*) data_ptr);
+		data_ptr += 3;
+	}
+
+
+	_register_read(REG_FIFO_SRC,&reg);
+	DEBUG("FIFO SRC Reg ",reg);
 }
 
 bool imu_handle_fifo_read(uint16_t* values)
@@ -184,27 +210,17 @@ bool imu_handle_fifo_read(uint16_t* values)
 
 	bool ret = imu_intr_ovrn;
 
+
 	if(imu_intr_ovrn == false)
 	{
-
-
-		uint8_t reg;
-		_register_read(REG_FIFO_SRC,&reg);
-		//DEBUG("FIFO SRC Reg ",reg);
-
-		_register_write(REG_CTRL_3, INT1_FIFO_OVERRUN);
+		_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
 		imu_intr_ovrn = true;
 	}
 	else
 	{
 
+		imu_fifo_read(values);
 
-
-		imu_read_fifo(values);
-
-		uint8_t reg;
-		_register_read(REG_FIFO_SRC,&reg);
-		//DEBUG("FIFO SRC Reg ",reg);
 
 		// Reset FIFO - change mode to bypass
 		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE);
@@ -376,7 +392,8 @@ inline void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode)
 	reg &= ~FIFO_MODE_SELECTION;
 	reg |= (fifo_mode << ACCEL_FIFO_MODE_OFFSET);
 
-	_register_write(REG_FIFO_CTRL, reg );
+
+	_register_write(REG_FIFO_CTRL, reg | 0x19 );// TODO: Is watermark threshold needed
 
 }
 
@@ -404,17 +421,6 @@ typedef union fifo_buffer {
 
 }fifo_buffer_t;
 
-// The argument values must have enough memory to hold IMU_FIFO_CAPACITY_BYTES bytes
-void imu_read_fifo(uint8_t* values)
-{
-	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO) };
-	int32_t ret;
-
-	ret = spi_xfer(&_spi_context, 1, buf, IMU_FIFO_CAPACITY_BYTES, values);
-
-	DEBUG("FIFO read ",ret);
-	//BOOL_OK(ret == 2);
-}
 
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 		uint8_t miso, uint8_t mosi, uint8_t sclk,
