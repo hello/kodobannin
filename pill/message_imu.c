@@ -344,7 +344,7 @@ static MSG_Status _handle_read_xyz(void){
 	}
 	else
 	{
-		PRINTS("AOI interrupt\r\n");
+		//PRINTS("AOI interrupt\r\n");
 	}
 
 

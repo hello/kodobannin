@@ -35,6 +35,8 @@ static SPI_Context _spi_context;
 
 static bool imu_intr_ovrn = false;
 
+static bool imu_is_above_thr(uint16_t* values);
+
 static inline void _register_read(Register_t register_address, uint8_t* const out_value)
 {
 	uint8_t buf[2] = { SPI_Read(register_address), 0};
@@ -95,16 +97,17 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	_register_read(REG_ACC_Z_LO, buf++);
 	_register_read(REG_ACC_Z_HI, buf++);
 
+
+#ifndef IMU_FIFO_ENABLE
 	// adjust values to match 6500
 	imu_accel_convert_count(values);
+#endif
 
 	return 6;
 }
 
 void imu_accel_convert_count(uint16_t* values)
 {
-
-
 
 #ifdef IMU_ENABLE_LOW_POWER
 	uint8_t reg;
@@ -134,7 +137,7 @@ void imu_accel_convert_count(uint16_t* values)
 	/*
 	PRINTS("IMU: ");
 	for(uint8_t i=0;i<3;i++){
-		uint8_t temp = ((values[0] & 0xFF00) >> 8);
+		uint8_t temp = ((values[i] & 0xFF00) >> 8);
 		PRINT_BYTE(&temp,sizeof(uint8_t));
 		PRINT_BYTE((uint8_t*)&values[i],sizeof(uint8_t));
 		PRINTS(" ");
@@ -187,22 +190,40 @@ inline void imu_fifo_read(uint16_t* values)
 {
 	uint16_t* data_ptr = values;
 
+	uint8_t cnt = 0;
+
 	uint8_t reg;
 	_register_read(REG_FIFO_SRC,&reg);
 
-	DEBUG("FIFO SRC Reg ",reg);
+	//DEBUG("FIFO SRC Reg ",reg);
 
 	reg &= FIFO_FSS_MASK;
 
 	for(uint8_t i=0;i<reg+1;i++)
 	{
 		imu_accel_reg_read((uint8_t*) data_ptr);
-		data_ptr += 3;
+
+		// Discard or save value?
+		if(imu_is_above_thr(data_ptr))
+		{
+
+			// adjust values to match 6500
+			imu_accel_convert_count(data_ptr);
+			data_ptr += 3;
+
+			cnt++;
+		}
+		else
+		{
+
+		}
 	}
 
+	//DEBUG("Above threshold count ",cnt);
 
-	_register_read(REG_FIFO_SRC,&reg);
-	DEBUG("FIFO SRC Reg ",reg);
+
+	//_register_read(REG_FIFO_SRC,&reg);
+	//DEBUG("FIFO SRC Reg ",reg);
 }
 
 bool imu_handle_fifo_read(uint16_t* values)
@@ -229,6 +250,9 @@ bool imu_handle_fifo_read(uint16_t* values)
 		imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE);
 
 		_register_write(REG_CTRL_3, INT1_AOI1);
+
+
+
 		imu_intr_ovrn = false;
 	}
 
@@ -236,14 +260,39 @@ bool imu_handle_fifo_read(uint16_t* values)
 
 }
 
-void imu_handle_fifo_values(uint16_t* values)
+// Check if any of the IMU values are above threshold
+static bool imu_is_above_thr(uint16_t* values)
 {
+	uint8_t index;
+	bool return_value = false;
 
-	// Convert values to mg
+	for(index=0;index<3;index++)
+	{
+		// Convert values to mg and Compare with threshold - 55mg or 80mg? //TODO
+		if(abs(values[index]>>4) <= 80)
+		{
+			PRINTS("IMU: ");
+			for(uint8_t i=0;i<3;i++){
+				uint8_t temp = ((values[i] & 0xFF00) >> 8);
+				PRINT_BYTE(&temp,sizeof(uint8_t));
+				PRINT_BYTE((uint8_t*)&values[i],sizeof(uint8_t));
+				PRINTS(" ");
 
-	// Compare with threshold - 55mg or 80mg? //TODO
 
-	// Discard values below threshold
+			}
+			PRINTS("\r\n");
+
+
+			return_value =  true;
+
+			goto exit;
+		}
+
+	}
+
+	exit:
+	return return_value;
+
 }
 
 inline uint8_t imu_clear_interrupt2_status()
