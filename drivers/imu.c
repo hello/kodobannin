@@ -121,8 +121,6 @@ void imu_accel_convert_count(uint16_t* values)
 
 	for(i=0;i<3;i++)
 	{
-		//shift right by 8/6/4 depending on mode and HRES
-		values[i] = values[i] >> 4;//LIS2DH_SHIFT_POS(multiplier);
 
 #ifdef IMU_ENABLE_LOW_POWER
 		// Convert to mg
