@@ -22,8 +22,6 @@
 #define LIS2DH_HRES_MG_PER_CNT 		(1)
 #define MPU6500_MG_PER_LSB 			(16384UL)
 
-#define LIS2DH_CONVERT_TO_MG(x)		((x) == 0)?(LIS2DH_LOW_POWER_MG_PER_CNT):(LIS2DH_HRES_MG_PER_CNT)
-#define LIS2DH_SHIFT_POS(x)			((x) == 0)?(8):(4)
 
 #define IMU_USE_PIN_INT1
 
@@ -98,10 +96,6 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	_register_read(REG_ACC_Z_HI, buf++);
 
 
-#ifndef IMU_FIFO_ENABLE
-	// adjust values to match 6500
-	imu_accel_convert_count(values);
-#endif
 
 	/*
 	PRINTS("IMU: ");
@@ -135,42 +129,6 @@ uint16_t imu_fifo_read_all(uint16_t* values)
 
 }
 
-void imu_accel_convert_count(uint16_t* values)
-{
-	uint8_t i;
-
-	for(i=0;i<3;i++)
-	{
-		// Convert to mg
-		values[i] = values[i] >> 4;
-
-
-
-		//convert to match the 6500...
-		//values[i] = (values [i] * MPU6500_MG_PER_LSB)/1000;
-
-	}
-
-/*
-	PRINTS("IMU: ");
-	for(uint8_t i=0;i<3;i++){
-		uint8_t temp = ((values[i] & 0xFF00) >> 8);
-		PRINT_BYTE(&temp,sizeof(uint8_t));
-		PRINT_BYTE((uint8_t*)&values[i],sizeof(uint8_t));
-		PRINTS(" ");
-
-
-	}
-	PRINTS("\r\n");
-	*/
-
-	/*
-	DEBUG("IMU Values is 0x",values[0]);
-	DEBUG("The value[1] is 0x",values[1]);
-	DEBUG("The value[2] is 0x",values[2]);
-	*/
-
-}
 
 inline void imu_set_accel_range(enum imu_accel_range range)
 {
@@ -229,8 +187,6 @@ inline void imu_fifo_read(uint16_t* values)
 		if(imu_is_above_thr(data_ptr))
 		{
 
-			// adjust values to match 6500
-			imu_accel_convert_count(data_ptr);
 			data_ptr += 3;
 
 			cnt++;
@@ -294,7 +250,7 @@ static bool imu_is_above_thr(uint16_t* values)
 
 	for(index=0;index<3;index++)
 	{
-		// Convert values to mg and Compare with threshold - 55mg or 80mg? //TODO
+		// Compare with threshold - 55mg or 80mg? //TODO
 		if( (abs( (int16_t)values[index] ) >> 4) >= 80)
 		{
 			/*
