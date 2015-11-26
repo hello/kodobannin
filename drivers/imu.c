@@ -103,35 +103,6 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	imu_accel_convert_count(values);
 #endif
 
-	return 6;
-}
-
-void imu_accel_convert_count(uint16_t* values)
-{
-
-#ifdef IMU_ENABLE_LOW_POWER
-	uint8_t reg;
-	_register_read(REG_CTRL_4, &reg);
-
-	// TODO: this can be removed if using HRES only, multiplier is constant
-	uint8_t multiplier = LIS2DH_CONVERT_TO_MG(reg & HIGHRES);
-#endif
-
-	uint8_t i;
-
-	for(i=0;i<3;i++)
-	{
-
-#ifdef IMU_ENABLE_LOW_POWER
-		// Convert to mg
-		values[i] *= multiplier;
-#endif
-
-		//convert to match the 6500...
-		values[i] = (values [i] * MPU6500_MG_PER_LSB)/1000;
-
-	}
-
 	/*
 	PRINTS("IMU: ");
 	for(uint8_t i=0;i<3;i++){
@@ -143,7 +114,56 @@ void imu_accel_convert_count(uint16_t* values)
 
 	}
 	PRINTS("\r\n");
+*/
+	return 6;
+}
+
+uint16_t imu_fifo_read_all(uint16_t* values)
+{
+	uint16_t bytes_read = 0;
+
+	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO)};
+
+
+	// Enable multiple byte read
+	buf[0] |= 0x40;
+
+	bytes_read = spi_xfer(&_spi_context, 1, buf, IMU_FIFO_CAPACITY_BYTES, (uint8_t*) values);
+	//BOOL_OK(ret == 1);
+
+	return bytes_read;
+
+}
+
+void imu_accel_convert_count(uint16_t* values)
+{
+	uint8_t i;
+
+	for(i=0;i<3;i++)
+	{
+		// Convert to mg
+		values[i] = values[i] >> 4;
+
+
+
+		//convert to match the 6500...
+		//values[i] = (values [i] * MPU6500_MG_PER_LSB)/1000;
+
+	}
+
+/*
+	PRINTS("IMU: ");
+	for(uint8_t i=0;i<3;i++){
+		uint8_t temp = ((values[i] & 0xFF00) >> 8);
+		PRINT_BYTE(&temp,sizeof(uint8_t));
+		PRINT_BYTE((uint8_t*)&values[i],sizeof(uint8_t));
+		PRINTS(" ");
+
+
+	}
+	PRINTS("\r\n");
 	*/
+
 	/*
 	DEBUG("IMU Values is 0x",values[0]);
 	DEBUG("The value[1] is 0x",values[1]);
@@ -178,7 +198,7 @@ inline uint8_t imu_clear_interrupt_status()
 	// clear the interrupt by reading INT_SRC register
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
-
+	DEBUG("INT1SRC Reg ",int_source);
 
 
 	return int_source;
@@ -186,20 +206,24 @@ inline uint8_t imu_clear_interrupt_status()
 
 inline void imu_fifo_read(uint16_t* values)
 {
+
+
+
+
+	//uint8_t reg;
+	//_register_read(REG_FIFO_SRC,&reg);
+
+	//DEBUG("FIFO SRC Reg Before ",reg);
+
+/*
 	uint16_t* data_ptr = values;
-
 	uint8_t cnt = 0;
-
-	uint8_t reg;
-	_register_read(REG_FIFO_SRC,&reg);
-
-	//DEBUG("FIFO SRC Reg ",reg);
-
 	reg &= FIFO_FSS_MASK;
 
 	for(uint8_t i=0;i<reg+1;i++)
 	{
-		imu_accel_reg_read((uint8_t*) data_ptr);
+		imu_accel_reg_read(data_ptr);
+
 
 		// Discard or save value?
 		if(imu_is_above_thr(data_ptr))
@@ -215,13 +239,17 @@ inline void imu_fifo_read(uint16_t* values)
 		{
 
 		}
+
 	}
+*/
+
+	imu_fifo_read_all(values);
 
 	//DEBUG("Above threshold count ",cnt);
 
 
 	//_register_read(REG_FIFO_SRC,&reg);
-	//DEBUG("FIFO SRC Reg ",reg);
+	//DEBUG("FIFO SRC Reg After ",reg);
 }
 
 bool imu_handle_fifo_read(uint16_t* values)
@@ -267,8 +295,9 @@ static bool imu_is_above_thr(uint16_t* values)
 	for(index=0;index<3;index++)
 	{
 		// Convert values to mg and Compare with threshold - 55mg or 80mg? //TODO
-		if(abs(values[index]>>4) <= 80)
+		if( (abs( (int16_t)values[index] ) >> 4) >= 80)
 		{
+			/*
 			PRINTS("IMU: ");
 			for(uint8_t i=0;i<3;i++){
 				uint8_t temp = ((values[i] & 0xFF00) >> 8);
@@ -279,6 +308,7 @@ static bool imu_is_above_thr(uint16_t* values)
 
 			}
 			PRINTS("\r\n");
+			*/
 
 
 			return_value =  true;
