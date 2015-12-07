@@ -223,7 +223,6 @@ fix_imu_interrupt(void){
 	if(initialized){
 		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
 			if((gpio_pin_state & (1<<IMU_INT))){
-				PRINTS("Fix IMU\r\n");
 				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 				if (stuck_counter < 15)
 				{
@@ -395,6 +394,8 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
 			break;
+
+
 	}
 	return ret;
 }

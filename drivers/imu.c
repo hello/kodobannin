@@ -150,14 +150,25 @@ inline void imu_enable_all_axis()
 	_register_write(REG_CTRL_1, reg | (AXIS_ENABLE));
 }
 
+
+
+inline uint8_t imu_read_fifo_src_reg()
+{
+	uint8_t int_src = 0;
+
+	_register_read(REG_FIFO_SRC, &int_src);
+	DEBUG(" fifo: ",int_src);
+
+	return int_src;
+}
+
 inline uint8_t imu_clear_interrupt_status()
 {
 
 	// clear the interrupt by reading INT_SRC register
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
-	DEBUG("INT1SRC Reg ",int_source);
-
+	DEBUG("INT: ",int_source);
 
 	return int_source;
 }
@@ -212,16 +223,43 @@ bool imu_handle_fifo_read(uint16_t* values)
 {
 
 	bool ret = imu_intr_ovrn;
+	uint8_t fifo_src_reg;
 
 
 	if(imu_intr_ovrn == false)
 	{
-		_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
-		imu_intr_ovrn = true;
+		PRINTS("AOI ");
+
+		fifo_src_reg = imu_read_fifo_src_reg();
+
+		if(fifo_src_reg & 0x80)
+		{
+			// Read FIFO
+			imu_fifo_read_all(values);
+			// Reset FIFO - change mode to bypass
+			imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE);
+
+			// Enable stream to FIFO mode
+			imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE);
+
+			_register_write(REG_CTRL_3, INT1_AOI1);
+
+
+
+			imu_intr_ovrn = false;
+		}
+		else
+		{
+			// Wait for WTM interrupt
+			//_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
+			imu_intr_ovrn = true;
+		}
+
 	}
 	else
 	{
-
+		PRINTS("WTR ");
+		imu_read_fifo_src_reg();
 		imu_fifo_read(values);
 
 
