@@ -95,8 +95,6 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	_register_read(REG_ACC_Z_LO, buf++);
 	_register_read(REG_ACC_Z_HI, buf++);
 
-
-
 	/*
 	PRINTS("IMU: ");
 	for(uint8_t i=0;i<3;i++){
@@ -112,18 +110,18 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	return 6;
 }
 
-uint16_t imu_fifo_read_all(uint16_t* values)
+// Read all bytes from FIFO
+uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read)
 {
 	uint16_t bytes_read = 0;
 
 	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO)};
 
-
 	// Enable multiple byte read
 	buf[0] |= 0x40;
 
-	bytes_read = spi_xfer(&_spi_context, 1, buf, IMU_FIFO_CAPACITY_BYTES, (uint8_t*) values);
-	//BOOL_OK(ret == 1);
+	bytes_read = spi_xfer(&_spi_context, 1, buf, bytes_to_read, (uint8_t*) values);
+	BOOL_OK(bytes_read == bytes_to_read);
 
 	return bytes_read;
 
@@ -157,7 +155,8 @@ inline uint8_t imu_read_fifo_src_reg()
 	uint8_t int_src = 0;
 
 	_register_read(REG_FIFO_SRC, &int_src);
-	DEBUG(" fifo: ",int_src);
+
+	//DEBUG(" fifo: ",int_src);
 
 	return int_src;
 }
@@ -168,100 +167,31 @@ inline uint8_t imu_clear_interrupt_status()
 	// clear the interrupt by reading INT_SRC register
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
-	DEBUG("INT: ",int_source);
+	//DEBUG("INT: ",int_source);
 
 	return int_source;
 }
 
-inline void imu_fifo_read(uint16_t* values)
+
+uint8_t imu_handle_fifo_read(uint16_t* values)
 {
 
-
-
-
-	//uint8_t reg;
-	//_register_read(REG_FIFO_SRC,&reg);
-
-	//DEBUG("FIFO SRC Reg Before ",reg);
-
-/*
-	uint16_t* data_ptr = values;
-	uint8_t cnt = 0;
-	reg &= FIFO_FSS_MASK;
-
-	for(uint8_t i=0;i<reg+1;i++)
-	{
-		imu_accel_reg_read(data_ptr);
-
-
-		// Discard or save value?
-		if(imu_is_above_thr(data_ptr))
-		{
-
-			data_ptr += 3;
-
-			cnt++;
-		}
-		else
-		{
-
-		}
-
-	}
-*/
-
-	imu_fifo_read_all(values);
-
-	//DEBUG("Above threshold count ",cnt);
-
-
-	//_register_read(REG_FIFO_SRC,&reg);
-	//DEBUG("FIFO SRC Reg After ",reg);
-}
-
-bool imu_handle_fifo_read(uint16_t* values)
-{
-
-	bool ret = imu_intr_ovrn;
+	uint8_t ret = 0;
 	uint8_t fifo_src_reg;
+	uint8_t bytes_to_read;
 
 
-	if(imu_intr_ovrn == false)
+	fifo_src_reg = imu_read_fifo_src_reg();
+
+	if((imu_intr_ovrn == true) ||
+			(fifo_src_reg & 0x80))
 	{
-		PRINTS("AOI ");
 
-		fifo_src_reg = imu_read_fifo_src_reg();
+		// FIFO sample size
+		bytes_to_read = fifo_src_reg & FIFO_FSS_MASK;
 
-		if(fifo_src_reg & 0x80)
-		{
-			// Read FIFO
-			imu_fifo_read_all(values);
-			// Reset FIFO - change mode to bypass
-			imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE);
-
-			// Enable stream to FIFO mode
-			imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE);
-
-			_register_write(REG_CTRL_3, INT1_AOI1);
-
-
-
-			imu_intr_ovrn = false;
-		}
-		else
-		{
-			// Wait for WTM interrupt
-			//_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
-			imu_intr_ovrn = true;
-		}
-
-	}
-	else
-	{
-		PRINTS("WTR ");
-		imu_read_fifo_src_reg();
-		imu_fifo_read(values);
-
+		// Read FIFO
+		ret = imu_fifo_read_all(values,bytes_to_read);
 
 		// Reset FIFO - change mode to bypass
 		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE);
@@ -272,9 +202,16 @@ bool imu_handle_fifo_read(uint16_t* values)
 		_register_write(REG_CTRL_3, INT1_AOI1);
 
 
-
 		imu_intr_ovrn = false;
 	}
+	else if(imu_intr_ovrn == false)
+	{
+		// AOI intr occurred but FIFO not full, wait for WTM INT
+		_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
+		imu_intr_ovrn = true;
+	}
+
+
 
 	return ret;
 
@@ -291,19 +228,6 @@ static bool imu_is_above_thr(uint16_t* values)
 		// Compare with threshold - 55mg or 80mg? //TODO
 		if( (abs( (int16_t)values[index] ) >> 4) >= 80)
 		{
-			/*
-			PRINTS("IMU: ");
-			for(uint8_t i=0;i<3;i++){
-				uint8_t temp = ((values[i] & 0xFF00) >> 8);
-				PRINT_BYTE(&temp,sizeof(uint8_t));
-				PRINT_BYTE((uint8_t*)&values[i],sizeof(uint8_t));
-				PRINTS(" ");
-
-
-			}
-			PRINTS("\r\n");
-			*/
-
 
 			return_value =  true;
 
