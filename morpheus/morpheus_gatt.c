@@ -174,8 +174,8 @@ hlo_ble_char_read_add(uint16_t uuid, uint8_t* const value, uint16_t value_size)
 
 void hlo_ble_init()
 {
-	const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
-
+    const ble_uuid128_t hello_uuid = {.uuid128 = BLE_UUID_HELLO_BASE};
+    
 	APP_OK(sd_ble_uuid_vs_add(&hello_uuid, &hello_type));
 }
 
@@ -382,11 +382,11 @@ void hlo_ble_on_ble_evt(ble_evt_t* event)
 			uint32_t interval = event->evt.gap_evt.params.conn_param_update.conn_params.max_conn_interval * 1.25;
 			uint32_t sto  = event->evt.gap_evt.params.conn_param_update.conn_params.conn_sup_timeout * 10;
 			PRINTS("Param Update in ms (sl, int, sto)\r\n");
-			PRINT_DEC(&sl, 4);
+			PRINT_DEC(&sl);
 			PRINTS(" ");
-			PRINT_DEC(&interval, 4);
+			PRINT_DEC(&interval);
 			PRINTS(" ");
-			PRINT_DEC(&sto, 4);
+			PRINT_DEC(&sto);
 			PRINTS("\r\n");
 		}
 		break;

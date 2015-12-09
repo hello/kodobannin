@@ -1,6 +1,7 @@
 #include <string.h>
 #include "platform.h"
 #include "app.h"
+#include "app_timer.h"
 
 #include "timedfifo.h"
 #include "util.h"
@@ -14,58 +15,38 @@ static struct{
 static uint16_t _decrease_index(uint16_t * idx);
 
 static void
-_increment_duration(tf_unit_t * current){
-    if(current->has_motion){
-        current->duration += 1;
-    }
-    current->has_motion = 0;
-}
-static void
 _reset_tf_unit(tf_unit_t * current){
     for (int i = 0; i < 3; i++) {
         current->min_accel[i] = INT16_MAX;
         current->max_accel[i] = INT16_MIN;
     }
     current->has_motion = 0;
-    current->duration = 0;
     current->num_wakes = 0;
     current->max_amp = 0;
+    current->duration = 0;
 }
-void TF_Initialize(const struct hlo_ble_time * init_time){
+void TF_Initialize(){
     memset(&self.data, 0, sizeof(self.data));
     self.data.length = sizeof(self.data);
     self.data.prev_idx = 0xFFFF;
     
     self.current_idx = 0;
     self.tick = 0;
-    self.data.mtime = init_time->monotonic_time;
 
     tf_unit_t* current = TF_GetCurrent();
     _reset_tf_unit(current);
 }
 
-
-
-void TF_TickOneSecond(uint64_t monotonic_time){
-    self.data.mtime = monotonic_time;
-
+void TF_TickOneMinute() {
     tf_unit_t* current_slot = TF_GetCurrent();
-    _increment_duration(current_slot);
-
-    if(++self.tick >= MOTION_DATA_INTERVAL_SEC){
-
-        //increment index
-        self.tick = 0;
-        self.data.prev_idx = self.current_idx;
-        self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
-
-        //reset next tf data
-        current_slot = TF_GetCurrent();
-        _reset_tf_unit(current_slot);
-        PRINTS("^");
-    }else{
-        PRINTS("*");
-    }
+    //increment index
+    self.tick = 0;
+    self.data.prev_idx = self.current_idx;
+    self.current_idx = (self.current_idx + 1) % TF_BUFFER_SIZE;
+    
+    //reset next tf data
+    _reset_tf_unit(current_slot);
+    PRINTS("^");
 }
 
 inline tf_unit_t* TF_GetCurrent(void){
@@ -96,11 +77,8 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
 
     if(payload && length){
         uint16_t idx = self.current_idx;
-        //buf->time = self.data.mtime;
 
         for(int i = 0; i < length; i++){
-            idx = _decrease_index(&idx);
-
             uint16_t maxrange = 0;
             uint16_t range = 0;
             tf_unit_t datum = self.data.data[idx];
@@ -117,13 +95,16 @@ bool TF_GetCondensed(MotionPayload_t* payload, uint8_t length){
             } 
 
             payload[payload_index].max_acc_range = maxrange;
-            payload[payload_index].maxaccnormsq = datum.max_amp; 
-            payload[payload_index].duration = datum.duration;
+            payload[payload_index].maxaccnormsq = datum.max_amp;
+
+            //convert to seconds rounding up
+            payload[payload_index].duration =  ( ( datum.duration / APP_TIMER_TICKS( 500, APP_TIMER_PRESCALER ) ) + 1 ) / 2;
 
             if(datum.num_wakes != 0)
             {
                 has_data = true;
             }
+            idx = _decrease_index(&idx);
         }
     }
 

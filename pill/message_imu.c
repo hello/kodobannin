@@ -28,6 +28,8 @@
 #include "shake_detect.h"
 #include "gpio_nor.h"
 
+#include "message_time.h"
+
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -120,8 +122,7 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 	tf_unit_t* current = TF_GetCurrent();
     if(current->max_amp < aggregate){
         current->max_amp = aggregate;
-        PRINTS("NEW MAX: ");
-        PRINT_HEX(&aggregate, sizeof(aggregate));
+        PRINTF( "NEW MAX: %d\r\n", aggregate);
     }
     
     //track max/min values of accelerometer      
@@ -153,27 +154,58 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     return aggregate;
       
 }
+static uint32_t _start_active_time = 0;
+
+void imu_update_timers() {
+    uint32_t current_time = 0;
+    app_timer_cnt_get(&current_time);
+    uint32_t time_diff = 0;
+
+    if(_settings.is_active)
+    {
+        app_timer_cnt_diff_compute(current_time, _start_active_time, &time_diff);
+        TF_GetCurrent()->duration += time_diff;
+        _start_active_time = current_time;
+        TF_GetCurrent()->num_wakes++;
+    }
+}
 
 static void _imu_switch_mode(bool is_active)
 {
+    
+    uint32_t current_time = 0;
+    app_timer_cnt_get(&current_time);
+    uint32_t time_diff = 0;
+    
     if(is_active)
     {
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
         PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
+        _start_active_time = current_time;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
-        PRINTS("IMU Inactive.\r\n");
+
+        app_timer_cnt_diff_compute(current_time, _start_active_time, &time_diff);
+        TF_GetCurrent()->duration += time_diff;
+        TF_GetCurrent()->num_wakes++;
+        
+        PRINTF( "IMU Inactive %d\r\n", time_diff);
         _settings.is_active = false;
     }
 }
 
-
+static bool reading = false;
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+    APP_OK(app_gpiote_user_disable(_gpiote_user));
+    if( !reading ) {
+        parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
+        reading = true;
+    }
+    PRINTS("I\r\n");
 }
 
 
@@ -190,13 +222,15 @@ static void _on_wom_timer(void* context)
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
         PRINTS("Active state continues.\r\n");
     }
+    
+    ShakeDetectDecWindow();
 
+    PRINTS("A\r\n");
     if(time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         _imu_switch_mode(false);
-        PRINTS("Time diff ");
-        PRINT_HEX(&time_diff, sizeof(time_diff));
-        PRINTS("\r\n");
+        
+        PRINTF( "time diff %d\r\n", time_diff);
     }
 }
 
@@ -300,6 +334,9 @@ static MSG_Status _handle_read_xyz(void){
 	int16_t values[3];
 	uint32_t mag;
 	imu_accel_reg_read((uint8_t*)values);
+    PRINTS("FINISHED READING\r\n");
+
+    reading = false;
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
@@ -311,10 +348,11 @@ static MSG_Status _handle_read_xyz(void){
 	if(!_settings.is_active)
 	{
 		_imu_switch_mode(true);
-		TF_GetCurrent()->num_wakes++;
-		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
+        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 	}
 #endif
+    APP_OK(app_gpiote_user_enable(_gpiote_user));
+    
 	return SUCCESS;
 }
 
