@@ -180,7 +180,7 @@ static void _imu_switch_mode(bool is_active)
 
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-	PRINTS("IMU INT \r\n");
+	//PRINTS("IMU INT \r\n");
 	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 }
 
@@ -308,40 +308,56 @@ static MSG_Status _handle_self_test(void){
 	return ret;
 }
 
+
 static MSG_Status _handle_read_xyz(void){
 
 
 #ifdef IMU_FIFO_ENABLE
 
-	int16_t values[IMU_FIFO_CAPACITY_BYTES];
-	bool ret;
+	int16_t values[IMU_FIFO_CAPACITY_WORDS];
+	uint8_t ret;
+	int16_t* ptr = values;
+	uint32_t mag;
 
 
-	// Returns true if values have been read, false otherwise
-	// TODO: if wtrm and ovrn interrupts are both going to be used, it makes sense to add number of
-	// values read
+	// Returns number of bytes read, 0 if no data read
 	ret = imu_handle_fifo_read(values);
-
 
 	if(ret)
 	{
 		// FIFO read, handle values
-		/*
-		loop:
-			discard value less than threshold
+
+		uint8_t i;
+		//loop:
+		for(i=0;i<ret/6;i++)
+		{
+			//discard value less than threshold
+			/*
+			if(	(IMU_DATA_IS_WITHIN_THR(ptr[0])) &&
+				(IMU_DATA_IS_WITHIN_THR(ptr[1])) &&
+				(IMU_DATA_IS_WITHIN_THR(ptr[2]))	)
+			{
+				PRINTS("Unused data\r\n");
+				continue;
+			}
+			*/
 
 			// ble notify
 			if(_settings.wom_callback){
-				_settings.wom_callback(values, sizeof(values));
+				_settings.wom_callback(ptr, 3*sizeof(int16_t));
 			}
 
-			aggregate value greater than threshold
-			mag = _aggregate_motion_data(values, sizeof(values));
+			//aggregate value greater than threshold
+			mag = _aggregate_motion_data(ptr, 3*sizeof(int16_t));
 			ShakeDetect(mag);
-		*/
+
+			ptr += 3;
+		}
+
 
 
 		//PRINTS("FIFO read, handle values\r\n");
+		//DEBUG(": ",ret);
 	}
 	else
 	{
@@ -359,7 +375,7 @@ static MSG_Status _handle_read_xyz(void){
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
 	}
-	// TODO does this function accept data in MPU6500 form or LIS2DH
+
 	mag = _aggregate_motion_data(values, sizeof(values));
 	ShakeDetect(mag);
 #endif
@@ -395,8 +411,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
 			break;
-
-
 	}
 	return ret;
 }

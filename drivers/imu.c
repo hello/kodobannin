@@ -22,6 +22,7 @@
 #define LIS2DH_HRES_MG_PER_CNT 		(1)
 #define MPU6500_MG_PER_LSB 			(16384UL)
 
+#define IMU_WTM_THRESHOLD (0x19UL)
 
 #define IMU_USE_PIN_INT1
 
@@ -29,11 +30,25 @@ enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };
 
+/*
+typedef struct __attribute__((packed)){
+
+	uint16_t x;
+	uint16_t y;
+	uint16_t z;
+}imu_data_t;
+typedef union fifo_buffer {
+
+	uint8_t bytes[IMU_FIFO_CAPACITY_BYTES];
+	int16_t values[IMU_FIFO_CAPACITY_WORDS];
+	imu_data_t imu_data[IMU_FIFO_CAPACITY_SAMPLES];
+
+}fifo_buffer_t;
+*/
+
 static SPI_Context _spi_context;
 
-static bool imu_intr_ovrn = false;
-
-static bool imu_is_above_thr(uint16_t* values);
+static bool imu_wtm_intr_en = false;
 
 static inline void _register_read(Register_t register_address, uint8_t* const out_value)
 {
@@ -123,6 +138,21 @@ uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read)
 	bytes_read = spi_xfer(&_spi_context, 1, buf, bytes_to_read, (uint8_t*) values);
 	BOOL_OK(bytes_read == bytes_to_read);
 
+/*
+ 	for(uint8_t j=0;j<bytes_read/2;j+=3){
+		//PRINTS("IMU: ");
+		for(uint8_t i=0;i<3;i++){
+			uint8_t temp = ((values[j+i] & 0xFF00) >> 8);
+			PRINT_BYTE(&temp,sizeof(uint8_t));
+			PRINT_BYTE((uint8_t*)&values[j+i],sizeof(uint8_t));
+			PRINTS(" ");
+
+
+		}
+		PRINTS("\r\n");
+	}
+
+*/
 	return bytes_read;
 
 }
@@ -156,8 +186,6 @@ inline uint8_t imu_read_fifo_src_reg()
 
 	_register_read(REG_FIFO_SRC, &int_src);
 
-	//DEBUG(" fifo: ",int_src);
-
 	return int_src;
 }
 
@@ -167,7 +195,6 @@ inline uint8_t imu_clear_interrupt_status()
 	// clear the interrupt by reading INT_SRC register
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
-	//DEBUG("INT: ",int_source);
 
 	return int_source;
 }
@@ -178,20 +205,28 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 
 	uint8_t ret = 0;
 	uint8_t fifo_src_reg;
-	uint8_t bytes_to_read;
+	uint8_t fifo_unread_samples;
+	const uint8_t fifo_channels_per_sample = 3;
+	const uint8_t fifo_bytes_per_channel = 2;
 
 
 	fifo_src_reg = imu_read_fifo_src_reg();
 
-	if((imu_intr_ovrn == true) ||
-			(fifo_src_reg & 0x80))
+	//If wtm interrupt is enabled or if wtm flag is set, read FIFO
+	if((imu_wtm_intr_en == true) ||
+		(fifo_src_reg & FIFO_WATERMARK))
 	{
 
 		// FIFO sample size
-		bytes_to_read = fifo_src_reg & FIFO_FSS_MASK;
+		fifo_unread_samples = fifo_src_reg & FIFO_FSS_MASK;
+
+		// Reading the FIFO source register returns the number of unread samples in the FIFO.
+		// Each sample consists of data from three channels (x,y,z)
+		// Each data is 16 bits
+		// Hence total bytes to be read : (fifo_unread_samples*fifo_channels_per_sample*fifo_bytes_per_channel)
 
 		// Read FIFO
-		ret = imu_fifo_read_all(values,bytes_to_read);
+		ret = imu_fifo_read_all(values, (fifo_unread_samples*fifo_channels_per_sample*fifo_bytes_per_channel));
 
 		// Reset FIFO - change mode to bypass
 		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE);
@@ -201,55 +236,19 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 
 		_register_write(REG_CTRL_3, INT1_AOI1);
 
-
-		imu_intr_ovrn = false;
+		imu_wtm_intr_en = false;
 	}
-	else if(imu_intr_ovrn == false)
+	else if(imu_wtm_intr_en == false)
 	{
 		// AOI intr occurred but FIFO not full, wait for WTM INT
 		_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
-		imu_intr_ovrn = true;
+		imu_wtm_intr_en = true;
 	}
-
-
 
 	return ret;
 
 }
 
-// Check if any of the IMU values are above threshold
-static bool imu_is_above_thr(uint16_t* values)
-{
-	uint8_t index;
-	bool return_value = false;
-
-	for(index=0;index<3;index++)
-	{
-		// Compare with threshold - 55mg or 80mg? //TODO
-		if( (abs( (int16_t)values[index] ) >> 4) >= 80)
-		{
-
-			return_value =  true;
-
-			goto exit;
-		}
-
-	}
-
-	exit:
-	return return_value;
-
-}
-
-inline uint8_t imu_clear_interrupt2_status()
-{
-	// clear the interrupt by reading INT_SRC register
-	uint8_t int_source;
-
-	_register_read(REG_INT2_SRC, &int_source);
-
-	return int_source;
-}
 
 inline void imu_enable_hres()
 {
@@ -258,6 +257,15 @@ inline void imu_enable_hres()
 	_register_read(REG_CTRL_4, &reg);
 	_register_write(REG_CTRL_4, reg | HIGHRES );
 
+}
+
+inline void imu_disable_hres()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_4, &reg);
+	reg &= ~HIGHRES;
+	_register_write(REG_CTRL_4, reg);
 }
 
 inline void imu_reset_hp_filter()
@@ -269,15 +277,6 @@ inline void imu_reset_hp_filter()
 	// acceleration signal provided to its inputs
 	// this sets the current/reference acceleration/tilt state against which the device performs the threshold comparison.
 	_register_read(REG_REFERENCE,&reg);
-}
-
-inline void imu_disable_hres()
-{
-	uint8_t reg;
-
-	_register_read(REG_CTRL_4, &reg);
-	reg &= ~HIGHRES;
-	_register_write(REG_CTRL_4, reg);
 }
 
 inline void imu_lp_enable()
@@ -310,8 +309,6 @@ void imu_enter_normal_mode()
 
 }
 
-
-
 void imu_enter_low_power_mode()
 {
 
@@ -322,7 +319,6 @@ void imu_enter_low_power_mode()
 	imu_reset_hp_filter();
 
 }
-
 
 void imu_wom_set_threshold(uint16_t microgravities)
 {
@@ -382,13 +378,12 @@ inline void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode)
 
 	_register_read(REG_FIFO_CTRL, &reg);
 
-
 	// Clear the FIFO mode
 	reg &= ~FIFO_MODE_SELECTION;
 	reg |= (fifo_mode << ACCEL_FIFO_MODE_OFFSET);
 
-
-	_register_write(REG_FIFO_CTRL, reg | 0x19 );// TODO: Is watermark threshold needed
+	// Set watermark threshold for FIFO
+	_register_write(REG_FIFO_CTRL, reg | IMU_WTM_THRESHOLD );
 
 }
 
@@ -401,20 +396,6 @@ inline void imu_fifo_disable()
 	_register_write(REG_CTRL_5, reg);
 
 }
-
-typedef struct __attribute__((packed)){
-
-	uint16_t x;
-	uint16_t y;
-	uint16_t z;
-}imu_data_t;
-typedef union fifo_buffer {
-
-	uint8_t bytes[IMU_FIFO_CAPACITY_BYTES];
-	int16_t values[IMU_FIFO_CAPACITY_VALUES];
-	imu_data_t imu_data[IMU_FIFO_CAPACITY_SAMPLES];
-
-}fifo_buffer_t;
 
 
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
@@ -442,7 +423,6 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		APP_ASSERT(0);
 	}
 
-
 	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
 	imu_reset();
 
@@ -464,7 +444,6 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Interrupt request latched
 	_register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
 
-
 	// reset HP filter
 	//imu_reset_hp_filter();
 
@@ -485,7 +464,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Update FIFO mode
 	imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE);
 
-	imu_intr_ovrn = false;
+	imu_wtm_intr_en = false;
 #else
 	imu_fifo_disable();
 
@@ -508,19 +487,13 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 #endif
 
-
-
 #ifdef IMU_USE_PIN_INT1
 
-	#ifdef IMU_FIFO_ENABLE
-		// interrupts are not enabled in INT 1 pin
-		_register_write(REG_CTRL_3, INT1_AOI1) ;//INT1_FIFO_OVERRUN);
-	#else
-		// interrupts are not enabled in INT 1 pin
-		_register_write(REG_CTRL_3, INT1_AOI1);
-	#endif
+	// interrupts are enabled on INT 1 pin
+	_register_write(REG_CTRL_3, INT1_AOI1);
 
-	// Enable INT 1 function on INT 2 pin
+
+	// Disable INT 1 function on INT 2 pin
 	_register_write(REG_CTRL_6, 0x00);
 
 #else
@@ -528,13 +501,8 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// interrupts are not enabled in INT 1 pin
 	_register_write(REG_CTRL_3, 0x00);
 
-	#ifdef IMU_FIFO_ENABLE
-		// Enable INT 1 function on INT 2 pin
-		_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
-	#else
-		// Enable INT 1 function on INT 2 pin
-		_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
-	#endif
+	// Enable INT 1 function on INT 2 pin
+	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
 
 #endif
 
