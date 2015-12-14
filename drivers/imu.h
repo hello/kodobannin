@@ -65,7 +65,7 @@ void imu_fifo_disable();
 uint8_t imu_handle_fifo_read(uint16_t* values);
 
 // Set FIFO mode
-void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode);
+void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode, uint8_t fifo_trigger, uint8_t wtm_threshold);
 
 // Read FIFO source register
 uint8_t imu_read_fifo_src_reg();
@@ -91,6 +91,18 @@ void imu_power_on();
 
 void imu_power_off();
 
+// Enable self-test mode
+void imu_self_test_enable();
+
+// Disable self-test mode
+void imu_self_test_disable();
+
+// perform imu self-test
 int imu_self_test(void);
 
+// Enable interrupts
+void imu_enable_intr();
+
+// Disable IMU interrupts
+void imu_disable_intr();
 

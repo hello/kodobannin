@@ -50,6 +50,9 @@ static SPI_Context _spi_context;
 
 static bool imu_wtm_intr_en = false;
 
+static uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read);
+
+
 static inline void _register_read(Register_t register_address, uint8_t* const out_value)
 {
 	uint8_t buf[2] = { SPI_Read(register_address), 0};
@@ -79,6 +82,30 @@ inline void imu_set_accel_freq(enum imu_hz sampling_rate)
 	reg |= ( sampling_rate << 4);
 	_register_write(REG_CTRL_1, reg);
 
+}
+
+inline void imu_self_test_enable()
+{
+	uint8_t reg;
+	_register_read(REG_CTRL_4, &reg);
+
+	// Clear the self-test mode configuration
+	reg &= ~SELFTEST_ENABLE;
+
+	// select self-test 0
+	_register_write(REG_CTRL_1, reg | SELFTEST_MODE0);
+}
+
+inline void imu_self_test_disable()
+{
+	uint8_t reg;
+	_register_read(REG_CTRL_4, &reg);
+
+	// Clear the self-test mode configuration
+	reg &= ~SELFTEST_ENABLE;
+
+	// select normal mode
+	_register_write(REG_CTRL_1, reg);
 }
 
 unsigned imu_get_sampling_interval(enum imu_hz hz)
@@ -125,39 +152,6 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	return 6;
 }
 
-// Read all bytes from FIFO
-uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read)
-{
-	uint16_t bytes_read = 0;
-
-	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO)};
-
-	// Enable multiple byte read
-	buf[0] |= 0x40;
-
-	bytes_read = spi_xfer(&_spi_context, 1, buf, bytes_to_read, (uint8_t*) values);
-	BOOL_OK(bytes_read == bytes_to_read);
-
-/*
- 	for(uint8_t j=0;j<bytes_read/2;j+=3){
-		//PRINTS("IMU: ");
-		for(uint8_t i=0;i<3;i++){
-			uint8_t temp = ((values[j+i] & 0xFF00) >> 8);
-			PRINT_BYTE(&temp,sizeof(uint8_t));
-			PRINT_BYTE((uint8_t*)&values[j+i],sizeof(uint8_t));
-			PRINTS(" ");
-
-
-		}
-		PRINTS("\r\n");
-	}
-
-*/
-	return bytes_read;
-
-}
-
-
 inline void imu_set_accel_range(enum imu_accel_range range)
 {
 	uint8_t reg;
@@ -176,17 +170,6 @@ inline void imu_enable_all_axis()
 
 	_register_read(REG_CTRL_1, &reg);
 	_register_write(REG_CTRL_1, reg | (AXIS_ENABLE));
-}
-
-
-
-inline uint8_t imu_read_fifo_src_reg()
-{
-	uint8_t int_src = 0;
-
-	_register_read(REG_FIFO_SRC, &int_src);
-
-	return int_src;
 }
 
 inline uint8_t imu_clear_interrupt_status()
@@ -229,10 +212,10 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 		ret = imu_fifo_read_all(values, (fifo_unread_samples*fifo_channels_per_sample*fifo_bytes_per_channel));
 
 		// Reset FIFO - change mode to bypass
-		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE);
+		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
 
 		// Enable stream to FIFO mode
-		imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE);
+		imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
 
 		_register_write(REG_CTRL_3, INT1_AOI1);
 
@@ -372,20 +355,19 @@ inline void imu_fifo_enable()
 
 }
 
-inline void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode)
+inline void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode, uint8_t fifo_trigger, uint8_t wtm_threshold)
 {
-	uint8_t reg;
+	uint8_t reg = 0;
 
-	_register_read(REG_FIFO_CTRL, &reg);
-
-	// Clear the FIFO mode
-	reg &= ~FIFO_MODE_SELECTION;
-	reg |= (fifo_mode << ACCEL_FIFO_MODE_OFFSET);
+	reg = (fifo_mode << ACCEL_FIFO_MODE_OFFSET) |
+			(wtm_threshold & FIFO_WATERMARK_THRESHOLD) |
+			( (fifo_trigger << FIFO_TRIGGER_SEL_POS) & FIFO_TRIGGER_SELECTION_MASK);
 
 	// Set watermark threshold for FIFO
-	_register_write(REG_FIFO_CTRL, reg | IMU_WTM_THRESHOLD );
+	_register_write(REG_FIFO_CTRL, reg); //IMU_WTM_THRESHOLD );
 
 }
+
 
 inline void imu_fifo_disable()
 {
@@ -397,6 +379,80 @@ inline void imu_fifo_disable()
 
 }
 
+// Read all bytes from FIFO
+static uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read)
+{
+	uint16_t bytes_read = 0;
+
+	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO)};
+
+	// Enable multiple byte read
+	buf[0] |= 0x40;
+
+	bytes_read = spi_xfer(&_spi_context, 1, buf, bytes_to_read, (uint8_t*) values);
+	BOOL_OK(bytes_read == bytes_to_read);
+
+/*
+ 	for(uint8_t j=0;j<bytes_read/2;j+=3){
+		//PRINTS("IMU: ");
+		for(uint8_t i=0;i<3;i++){
+			uint8_t temp = ((values[j+i] & 0xFF00) >> 8);
+			PRINT_BYTE(&temp,sizeof(uint8_t));
+			PRINT_BYTE((uint8_t*)&values[j+i],sizeof(uint8_t));
+			PRINTS(" ");
+
+
+		}
+		PRINTS("\r\n");
+	}
+
+*/
+	return bytes_read;
+
+}
+
+inline uint8_t imu_read_fifo_src_reg()
+{
+	uint8_t int_src = 0;
+
+	_register_read(REG_FIFO_SRC, &int_src);
+
+	return int_src;
+}
+
+inline void imu_enable_intr()
+{
+#ifdef IMU_USE_PIN_INT1
+
+	// interrupts are enabled on INT 1 pin
+	_register_write(REG_CTRL_3, INT1_AOI1);
+
+
+	// Disable INT 1 function on INT 2 pin
+	_register_write(REG_CTRL_6, 0x00);
+
+#else
+
+	// interrupts are not enabled in INT 1 pin
+	_register_write(REG_CTRL_3, 0x00);
+
+	// Enable INT 1 function on INT 2 pin
+	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+
+#endif
+}
+
+inline void imu_disable_intr()
+{
+
+	// interrupts are disabled on INT 1 pin
+	_register_write(REG_CTRL_3, 0x00);
+
+	// Disable INT 1 function on INT 2 pin
+	_register_write(REG_CTRL_6, 0x00);
+
+
+}
 
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 		uint8_t miso, uint8_t mosi, uint8_t sclk,
@@ -462,7 +518,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	imu_fifo_enable();
 
 	// Update FIFO mode
-	imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE);
+	imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
 
 	imu_wtm_intr_en = false;
 #else
@@ -487,34 +543,91 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 #endif
 
-#ifdef IMU_USE_PIN_INT1
-
-	// interrupts are enabled on INT 1 pin
-	_register_write(REG_CTRL_3, INT1_AOI1);
-
-
-	// Disable INT 1 function on INT 2 pin
-	_register_write(REG_CTRL_6, 0x00);
-
-#else
-
-	// interrupts are not enabled in INT 1 pin
-	_register_write(REG_CTRL_3, 0x00);
-
-	// Enable INT 1 function on INT 2 pin
-	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
-
-#endif
+	imu_enable_intr();
 
 
 	return err;
 }
 
+#define ST_CHANGE_MIN						((uint16_t)17)
+#define ST_CHANGE_MAX						((uint16_t)360)
+#define	SELF_TEST_SAMPLE_SIZE				(32UL)
+#define SELF_TEST_CHANGE_IS_WITHIN_RANGE(x)	(((x) > ST_CHANGE_MIN) && ((x) < ST_CHANGE_MAX) )
+
 // TODO self test not implemented
 int imu_self_test(void){
 
-	if(false){
 
+	uint16_t values[3][SELF_TEST_SAMPLE_SIZE];
+	uint16_t values_st[3][SELF_TEST_SAMPLE_SIZE];
+	uint16_t values_avg[3];
+	uint16_t values_st_avg[3];
+
+	// Disable interrupts
+	imu_disable_intr();
+
+	// Disable low power mode
+	imu_lp_disable();
+
+	// Reset FIFO
+	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+
+	// Enable FIFO mode
+	imu_set_fifo_mode(IMU_FIFO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, SELF_TEST_SAMPLE_SIZE-1);
+
+	// Poll for wtm flag
+	while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
+
+	// Read samples
+	imu_fifo_read_all(&values[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
+
+	// Calculate average for each axis
+	for(uint8_t ch=0;ch<3;ch++)
+	{
+		values_avg[ch] = 0;
+		for(uint8_t i=0;i<SELF_TEST_SAMPLE_SIZE;i++)
+		{
+			values_avg[ch] += values[ch][i];
+		}
+	}
+
+	// Enable self-test mode
+	imu_self_test_enable();
+
+	// Reset FIFO
+	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+
+	// Enable FIFO mode
+	imu_set_fifo_mode(IMU_FIFO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, SELF_TEST_SAMPLE_SIZE-1);
+
+	// Poll for wtm flag
+	while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
+
+	// Read samples with self-test enabled
+	imu_fifo_read_all(&values_st[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
+
+	// calculate average for each axis
+	for(uint8_t ch=0;ch<3;ch++)
+	{
+		values_st_avg[ch] = 0;
+		for(uint8_t i=0;i<SELF_TEST_SAMPLE_SIZE;i++)
+		{
+			values_st_avg[ch] += values_st[ch][i];
+		}
+	}
+
+	// Disable self-test mode
+	imu_self_test_disable();
+
+	// Enter normal mode/ IMU re-init? // TODO
+
+	// Calculate self-test output change Output_st_enabled[LSB] - Ouput_st_disbled[LSB]
+
+	// If ST output change is with 17 and 360 - Self-test pass, else fail
+	if((SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs(values_st_avg[0] - values_avg[0]))) &&
+		(SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs(values_st_avg[1] - values_avg[1]))) &&
+		(SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs(values_st_avg[2] - values_avg[2]))))
+	{
 		PRINTS("Pass\r\n");
 		return 0;
 	}else{
