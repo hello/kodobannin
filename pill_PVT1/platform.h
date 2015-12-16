@@ -171,6 +171,8 @@ enum {
     FSPI_MISO = 25,
 };
 
+#define PLATFORM_HAS_PROX
+
 // FRAM SPI powered from VRGB requires 2.0V min to 3.6V max
 // FRAM_SSEL   P29      // 48 P0.29
 // FRAM_SCLK   P13      // 19 P0.13
