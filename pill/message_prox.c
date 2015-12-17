@@ -1,10 +1,10 @@
 #include "message_prox.h"
 #include "platform.h"
+#include "util.h"
 
 static char * name = "PROX";
 static const MSG_Central_t * parent;
 static MSG_Base_t base;
-static bool initialized = false;
 
 MSG_Status _init_prox(void){
 #ifdef PLATFORM_HAS_PROX
@@ -24,6 +24,7 @@ static MSG_Status _flush(void){
 }
 static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     PRINTS("PROX CMD\r\n");
+    return SUCCESS;
 }
 uint16_t MSG_Prox_Read(void){
     return 0xBEEF;

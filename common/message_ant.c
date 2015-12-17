@@ -1,5 +1,6 @@
 #include "message_ant.h"
 #include "util.h"
+#include "hlo_queue.h"
 
 static struct{
     MSG_Central_t * parent;
@@ -7,8 +8,14 @@ static struct{
     const MSG_ANTHandler_t * user_handler;
     hlo_ant_packet_listener message_listener;
     hlo_ant_device_t paired_devices[DEFAULT_ANT_BOND_COUNT];//TODO macro this in later
+    hlo_queue_t * tx_queue;
 }self;
 static char * name = "ANT";
+
+typedef struct{
+    MSG_Data_t * msg;
+    MSG_Address_t address;
+}queue_message_t;
 
 //returns -1 if not found, otherwise return index
 static int
@@ -43,18 +50,40 @@ static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * messag
     MSG_Address_t default_src = {ANT, 0};
     self.user_handler->on_message(device, default_src, message);
 }
+static uint32_t
+_queue_tx(MSG_Data_t * o, MSG_Address_t address){
+    queue_message_t msg = {
+        .msg = o,
+        .address = address,
+    };
+    if( hlo_queue_empty_size(self.tx_queue) >= sizeof(msg) ){
+        PRINTS("Queue\r\n");
+        return hlo_queue_write(self.tx_queue, (unsigned char*)&msg, sizeof(msg));
+    }else{
+        return 1;
+    }
+    return 0;
+}
+static int32_t _try_send_ant(MSG_Data_t * data, MSG_Address_t dst){
+    int idx = dst.submodule - MSG_ANT_CONNECTION_BASE;
+    if(self.paired_devices[idx].device_number){
+        return hlo_ant_packet_send_message(&self.paired_devices[idx], data);
+    }else{
+        return -1;
+    }
+    return -3;
+}
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     if(dst.submodule >= (uint8_t) MSG_ANT_CONNECTION_BASE &&
             dst.submodule < (uint8_t)(MSG_ANT_CONNECTION_BASE + DEFAULT_ANT_BOND_COUNT)){
-        int idx = dst.submodule - MSG_ANT_CONNECTION_BASE;
-        if(self.paired_devices[idx].device_number){
-            int ret = hlo_ant_packet_send_message(&self.paired_devices[idx], data);
-            if(ret == 0){
-                return SUCCESS;
-            }else{
-                //what do?
-            }
+        int32_t ret = _try_send_ant(data, dst);
+        PRINTS("Sending:");
+        PRINT_HEX(&ret, 2);
+        PRINTS("\r\n");
+        if( ret == -2 ){
+            MSG_Base_AcquireDataAtomic(data);
+            APP_ASSERT( (NRF_SUCCESS == _queue_tx(data, dst)) );
         }
     }else{
         switch(dst.submodule){
@@ -127,12 +156,25 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
     }
 }
 
+static uint32_t
+_dequeue_tx(queue_message_t * out_msg){
+    PRINTS("Dequeue\r\n");
+    uint32_t ret = hlo_queue_read(self.tx_queue, (unsigned char *)out_msg, sizeof(*out_msg));
+    return ret;
+}
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){
     //get next queued tx message
-    int ret = hlo_ant_disconnect(device);
-    PRINTS("Message Sent!\r\n");
-    if(ret < 0){
-        PRINTS("error closing\r\n");
+    queue_message_t out;
+    uint32_t ret = _dequeue_tx(&out);
+    if( ret == NRF_SUCCESS ){
+        MSG_Base_ReleaseDataAtomic(out.msg);
+        self.parent->dispatch((MSG_Address_t){ANT,0}, out.address, out.msg);
+    }else{
+        int ret = hlo_ant_disconnect(device);
+        PRINTS("All Message Sent!\r\n");
+        if(ret < 0){
+            PRINTS("error closing\r\n");
+        }
     }
 }
 
@@ -141,6 +183,8 @@ MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handl
     self.user_handler = handler;
     self.message_listener.on_message = _on_message;
     self.message_listener.on_message_sent = _on_message_sent;
+    self.tx_queue = hlo_queue_init(64);
+    APP_ASSERT(self.tx_queue);
     {
         self.base.init =  _init;
         self.base.flush = _flush;
