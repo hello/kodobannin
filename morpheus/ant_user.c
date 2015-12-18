@@ -47,9 +47,8 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
 
                 //TODO it may be a good idea to check len from the msg
                 switch(pill_data->type){
-                    case ANT_PILL_DATA_ENCRYPTED:
+                    case ANT_PILL_PROX_ENCRYPTED:
                         {
-                            // TODO: Jackson please test this
                             if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
                             {
                                 PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
@@ -62,6 +61,40 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                                 APP_OK(NRF_ERROR_NO_MEM);
                             }
 
+                            morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_PROX_DATA;
+                            morpheus_command.has_pill_data = true;
+
+                            morpheus_command.pill_data.has_motion_data_entrypted = true;
+                            memcpy(morpheus_command.pill_data.motion_data_entrypted.bytes, pill_data->payload, pill_data->payload_len);
+                            morpheus_command.pill_data.motion_data_entrypted.size = pill_data->payload_len;
+
+                            memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
+
+                            morpheus_command.pill_data.has_firmware_version = true;
+                            morpheus_command.pill_data.firmware_version = pill_data->version;
+
+                            morpheus_command.pill_data.has_rssi = true;
+                            morpheus_command.pill_data.rssi = id->rssi;
+
+                            morpheus_command.pill_data.timestamp = 0;
+                            PRINTS("ANT Encrypted Pill Prox Received:");
+                            PRINTS(morpheus_command.pill_data.device_id);
+                            PRINTS("\r\n");
+                        }
+                        break;
+                    case ANT_PILL_DATA_ENCRYPTED:
+                        {
+                            if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
+                            {
+                                PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
+                                APP_OK(NRF_ERROR_NO_MEM);
+                            }
+
+                            if(pill_data->payload_len > sizeof(morpheus_command.pill_data.motion_data_entrypted.bytes))
+                            {
+                                PRINTS("PLEASE REDESIGN PROTOBUF, payload tooo long\r\n");
+                                APP_OK(NRF_ERROR_NO_MEM);
+                            }
 
                             morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
                             morpheus_command.has_pill_data = true;
