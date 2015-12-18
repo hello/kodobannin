@@ -60,7 +60,8 @@ typedef enum {
     ANT_PILL_DATA = 0,
     ANT_PILL_HEARTBEAT,
     ANT_PILL_SHAKING,
-    ANT_PILL_DATA_ENCRYPTED
+    ANT_PILL_DATA_ENCRYPTED,
+    ANT_PILL_PROX_ENCRYPTED,
 }MSG_ANT_PillDataType_t;
 
 typedef struct{
