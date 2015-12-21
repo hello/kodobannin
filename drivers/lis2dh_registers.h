@@ -86,6 +86,7 @@ enum IMU_Reg_Bits {
 	HIGHRES = 0x08,
 	SELFTEST_ENABLE = 0x06,
 	SELFTEST_MODE0 = 0x02,
+	SELFTEST_MODE1 = 0x04,
 	SPI_SERIAL_MODE = 0x01, //0 == 4 wire, 1 == 3 wire
 
 	//REG_CTRL_5

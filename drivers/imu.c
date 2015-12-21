@@ -93,7 +93,7 @@ inline void imu_self_test_enable()
 	reg &= ~SELFTEST_ENABLE;
 
 	// select self-test 0
-	_register_write(REG_CTRL_1, reg | SELFTEST_MODE0);
+	_register_write(REG_CTRL_1, reg | SELFTEST_MODE1);
 }
 
 inline void imu_self_test_disable()
@@ -405,8 +405,8 @@ static uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read)
 		}
 		PRINTS("\r\n");
 	}
-
 */
+
 	return bytes_read;
 
 }
@@ -549,19 +549,21 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	return err;
 }
 
-#define ST_CHANGE_MIN						((uint16_t)17)
-#define ST_CHANGE_MAX						((uint16_t)360)
+#define ST_CHANGE_MIN						((uint8_t)17)
+#define ST_CHANGE_MAX						((uint8_t)360)
 #define	SELF_TEST_SAMPLE_SIZE				(32UL)
-#define SELF_TEST_CHANGE_IS_WITHIN_RANGE(x)	(((x) > ST_CHANGE_MIN) && ((x) < ST_CHANGE_MAX) )
+#define SELF_TEST_CHANGE_IS_WITHIN_RANGE(x)	(((x) >= ST_CHANGE_MIN) && ((x) <= ST_CHANGE_MAX) )
 
 // TODO self test not implemented
 int imu_self_test(void){
 
 
-	uint16_t values[3][SELF_TEST_SAMPLE_SIZE];
-	uint16_t values_st[3][SELF_TEST_SAMPLE_SIZE];
-	uint16_t values_avg[3];
-	uint16_t values_st_avg[3];
+	int16_t values[SELF_TEST_SAMPLE_SIZE][3];
+	int16_t values_st[SELF_TEST_SAMPLE_SIZE][3];
+	int16_t values_avg[3];
+	int16_t values_st_avg[3];
+
+	PRINTS("Self test start\r\n");
 
 	// Disable interrupts
 	imu_disable_intr();
@@ -578,18 +580,29 @@ int imu_self_test(void){
 	// Poll for wtm flag
 	while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
 
+	uint32_t bytes_read = 0;
 	// Read samples
-	imu_fifo_read_all(&values[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
+	bytes_read = imu_fifo_read_all(&values[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
 
 	// Calculate average for each axis
 	for(uint8_t ch=0;ch<3;ch++)
 	{
 		values_avg[ch] = 0;
-		for(uint8_t i=0;i<SELF_TEST_SAMPLE_SIZE;i++)
+		for(uint8_t i=5;i<32;i++)
 		{
-			values_avg[ch] += values[ch][i];
+			values_avg[ch] += values[i][ch];
 		}
 	}
+
+	PRINTS("AVG: ");
+ 	for(uint8_t i=0;i<3;i++){
+ 		int16_t diff = values_avg[i];
+			uint8_t temp = ((diff & 0xFF00) >> 8);
+			PRINT_BYTE(&temp,sizeof(uint8_t));
+			PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
+			PRINTS(" ");
+	}
+ 	PRINTS("\r\n");
 
 	// Enable self-test mode
 	imu_self_test_enable();
@@ -604,29 +617,51 @@ int imu_self_test(void){
 	while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
 
 	// Read samples with self-test enabled
-	imu_fifo_read_all(&values_st[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
+	bytes_read = imu_fifo_read_all(&values_st[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
+
 
 	// calculate average for each axis
 	for(uint8_t ch=0;ch<3;ch++)
 	{
 		values_st_avg[ch] = 0;
-		for(uint8_t i=0;i<SELF_TEST_SAMPLE_SIZE;i++)
+		for(uint8_t i=5;i<32;i++)
 		{
-			values_st_avg[ch] += values_st[ch][i];
+			values_st_avg[ch] += values_st[i][ch];
 		}
 	}
+
+	PRINTS("ST AVG: ");
+ 	for(uint8_t i=0;i<3;i++){
+ 		int16_t diff = values_st_avg[i];
+			uint8_t temp = ((diff & 0xFF00) >> 8);
+			PRINT_BYTE(&temp,sizeof(uint8_t));
+			PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
+			PRINTS(" ");
+	}
+ 	PRINTS("\r\n");
 
 	// Disable self-test mode
 	imu_self_test_disable();
 
-	// Enter normal mode/ IMU re-init? // TODO
+	PRINTS("DIFF: ");
+ 	for(uint8_t i=0;i<3;i++){
+ 		uint8_t diff = abs((uint8_t)values_st_avg[i] - (uint8_t)values_avg[i]);
+			PRINT_BYTE(&diff,sizeof(uint8_t));
+			PRINTS(" ");
+	}
+ 	PRINTS("\r\n");
 
+	// Enter normal mode/ IMU re-init? // TODO
+ 	imu_enter_low_power_mode();
+ 	imu_enable_intr();
+
+	PRINTS("Self test end\r\n");
 	// Calculate self-test output change Output_st_enabled[LSB] - Ouput_st_disbled[LSB]
 
 	// If ST output change is with 17 and 360 - Self-test pass, else fail
-	if((SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs(values_st_avg[0] - values_avg[0]))) &&
-		(SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs(values_st_avg[1] - values_avg[1]))) &&
-		(SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs(values_st_avg[2] - values_avg[2]))))
+	if((SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs((uint8_t)values_st_avg[0] - (uint8_t)values_avg[0]))) &&
+		(SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs((uint8_t)values_st_avg[1] - (uint8_t)values_avg[1]))) &&
+		(SELF_TEST_CHANGE_IS_WITHIN_RANGE(abs((uint8_t)values_st_avg[2] - (uint8_t)values_avg[2]))))
 	{
 		PRINTS("Pass\r\n");
 		return 0;
