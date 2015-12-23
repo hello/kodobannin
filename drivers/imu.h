@@ -15,8 +15,6 @@ enum {
 	IMU_FIFO_CAPACITY_SAMPLES = IMU_FIFO_CAPACITY_WORDS/3,
 };
 
-//#define IMU_DATA_IS_WITHIN_THR(x) (((uint16_t)(x) < 0x0370) || ((uint16_t)(x) > 0xFC90) )
-#define IMU_DATA_IS_WITHIN_THR(x) (((uint16_t)(x) > 0x0370) )
 
 /* See README_IMU.md for an introduction to the IMU, and vocabulary
    that you may need to understand the rest of this. */
@@ -105,4 +103,7 @@ void imu_enable_intr();
 
 // Disable IMU interrupts
 void imu_disable_intr();
+
+// Check if data read from IMU is within threshold
+bool imu_data_within_thr(int16_t value);
 

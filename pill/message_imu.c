@@ -319,6 +319,7 @@ static MSG_Status _handle_read_xyz(void){
 	int16_t* ptr = values;
 	uint32_t mag;
 
+	//uint32_t count = 0;
 
 	// Returns number of bytes read, 0 if no data read
 	ret = imu_handle_fifo_read(values);
@@ -332,15 +333,18 @@ static MSG_Status _handle_read_xyz(void){
 		for(i=0;i<ret/6;i++)
 		{
 			//discard value less than threshold
-			/*
-			if(	(IMU_DATA_IS_WITHIN_THR(ptr[0])) &&
-				(IMU_DATA_IS_WITHIN_THR(ptr[1])) &&
-				(IMU_DATA_IS_WITHIN_THR(ptr[2]))	)
+
+
+
+			if(	(imu_data_within_thr(ptr[0])) &&
+				(imu_data_within_thr(ptr[1])) &&
+				(imu_data_within_thr(ptr[2]))	)
 			{
-				PRINTS("Unused data\r\n");
-				continue;
+				//PRINTS("Unused data\r\n");
+				//continue;
+				//count++;
 			}
-			*/
+
 
 			// ble notify
 			if(_settings.wom_callback){
@@ -353,6 +357,12 @@ static MSG_Status _handle_read_xyz(void){
 
 			ptr += 3;
 		}
+
+		/*
+		PRINTS("Count:");
+		PRINT_BYTE(&count,sizeof(uint8_t));
+		PRINTS("\r\n");
+		*/
 
 
 

@@ -182,6 +182,43 @@ inline uint8_t imu_clear_interrupt_status()
 	return int_source;
 }
 
+bool imu_data_within_thr(int16_t value)
+{
+	uint16_t u_value = value;
+
+	// Shift left by 4
+	u_value = u_value >> 4;
+
+	u_value &= 0x0FFF;
+
+	// If negative, * -1
+	if(u_value > 0x7FFUL)
+	{
+		u_value = ~u_value;
+		u_value++;
+	}
+
+	u_value &= 0x0FFF;
+
+	/*
+	PRINTS("Value:");
+	uint8_t temp = (((uint16_t)u_value & 0xFF00) >> 8);
+	PRINT_BYTE(&temp,sizeof(uint8_t));
+	PRINT_BYTE((uint8_t*)&u_value,sizeof(uint8_t));
+	PRINTS("\r\n");
+	*/
+	// Compare with 55mg
+	if(u_value < 55)
+	{
+		//PRINTS("Less than thr \r\n");
+		return true;
+	}
+	else
+	{
+		//PRINTS("Greater than thr \r\n");
+		return false;
+	}
+}
 
 uint8_t imu_handle_fifo_read(uint16_t* values)
 {
@@ -598,7 +635,7 @@ int imu_self_test(void){
 	{
 		uint8_t count = 0;
 		values_avg[ch] = 0;
-		for(uint8_t i=5;i<32;i++)
+		for(uint8_t i=5;i<bytes_read/3/2;i++)
 		{
 			values_avg[ch] += values[i][ch];
 			count++;
@@ -641,7 +678,7 @@ int imu_self_test(void){
 	{
 		uint8_t count = 0;
 		values_st_avg[ch] = 0;
-		for(uint8_t i=5;i<32;i++)
+		for(uint8_t i=5;i<bytes_read/3/2;i++)
 		{
 			values_st_avg[ch] += values_st[i][ch];
 			count++;
