@@ -93,7 +93,7 @@ inline void imu_self_test_enable()
 	reg &= ~SELFTEST_ENABLE;
 
 	// select self-test 0
-	_register_write(REG_CTRL_1, reg | SELFTEST_MODE1);
+	_register_write(REG_CTRL_1, reg | SELFTEST_MODE0);
 }
 
 inline void imu_self_test_disable()
@@ -608,6 +608,7 @@ int imu_self_test(void){
     nrf_delay_ms(20);
     imu_power_on();
     */
+
     nrf_delay_ms(20);
     imu_reset();
 
@@ -643,6 +644,7 @@ int imu_self_test(void){
 		values_avg[ch] /= count;
 	}
 
+
 	PRINTS("AVG: ");
  	for(uint8_t i=0;i<3;i++){
  		int16_t diff = values_avg[i];
@@ -653,10 +655,13 @@ int imu_self_test(void){
 	}
  	PRINTS("\r\n");
 
+
  	nrf_delay_ms(20);
 
 	// Enable self-test mode
 	imu_self_test_enable();
+
+	//nrf_delay_ms(20);
 
 	// Reset FIFO
 	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
@@ -664,7 +669,7 @@ int imu_self_test(void){
 	// Enable FIFO mode
 	imu_set_fifo_mode(IMU_FIFO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, SELF_TEST_SAMPLE_SIZE-1);
 
-	nrf_delay_ms(20);
+	//nrf_delay_ms(20);
 
 	// Poll for wtm flag
 	while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
@@ -683,8 +688,9 @@ int imu_self_test(void){
 			values_st_avg[ch] += values_st[i][ch];
 			count++;
 		}
-		values_avg[ch] /= count;
+		values_st_avg[ch] /= count;
 	}
+
 
 	PRINTS("ST AVG: ");
  	for(uint8_t i=0;i<3;i++){
@@ -695,6 +701,7 @@ int imu_self_test(void){
 			PRINTS(" ");
 	}
  	PRINTS("\r\n");
+
 
 	// Disable self-test mode
 	imu_self_test_disable();

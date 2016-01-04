@@ -334,8 +334,6 @@ static MSG_Status _handle_read_xyz(void){
 		{
 			//discard value less than threshold
 
-
-
 			if(	(imu_data_within_thr(ptr[0])) &&
 				(imu_data_within_thr(ptr[1])) &&
 				(imu_data_within_thr(ptr[2]))	)
