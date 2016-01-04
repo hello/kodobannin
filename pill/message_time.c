@@ -184,6 +184,10 @@ static void _update_uptime() {
     self.last_wakeup = current_time;
 }
 
+void _send_data_test(void){
+    _send_available_data_ant();
+    _send_heartbeat_data_ant();
+}
 static void _1min_timer_handler(void * ctx) {
     _update_uptime();
     self.minutes += 1;
