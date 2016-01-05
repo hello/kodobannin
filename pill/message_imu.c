@@ -309,6 +309,8 @@ static MSG_Status _handle_self_test(void){
 }
 
 
+//#define IMU_SEND_AVG
+
 static MSG_Status _handle_read_xyz(void){
 
 
@@ -319,7 +321,12 @@ static MSG_Status _handle_read_xyz(void){
 	int16_t* ptr = values;
 	uint32_t mag;
 
-	//uint32_t count = 0;
+#ifdef IMU_SEND_AVG
+	int16_t values_avg[3] = {0};
+	int32_t values_avg_temp[3] = {0};
+#endif
+
+	uint32_t count = 0;
 
 	// Returns number of bytes read, 0 if no data read
 	ret = imu_handle_fifo_read(values);
@@ -334,16 +341,44 @@ static MSG_Status _handle_read_xyz(void){
 		{
 			//discard value less than threshold
 
-			if(	(imu_data_within_thr(ptr[0])) &&
-				(imu_data_within_thr(ptr[1])) &&
-				(imu_data_within_thr(ptr[2]))	)
+			// Send the first value
+			if(i > 0)
 			{
-				//PRINTS("Unused data\r\n");
-				//continue;
-				//count++;
+				if(	(imu_data_within_thr(values[i*3-3+0] - ptr[0])) &&
+					(imu_data_within_thr(values[i*3-3+1] - ptr[1])) &&
+					(imu_data_within_thr(values[i*3-3+2] - ptr[2]))	)
+				{
+					count++;
+					//PRINTS("Unused data\r\n");
+					ptr += 3;
+					continue;
+
+				}
+
 			}
 
+#ifdef IMU_SEND_AVG
+			// Average the values
+			values_avg_temp[0] += ptr[0];values_avg_temp[1] += ptr[1];values_avg_temp[2] += ptr[2];
 
+			ptr += 3;
+		}
+
+		values_avg[0] = (int16_t) (values_avg_temp[0] / (ret-count));
+		values_avg[1] = (int16_t) (values_avg_temp[1] / (ret-count));
+		values_avg[2] = (int16_t) (values_avg_temp[2] / (ret-count));
+
+		// ble notify
+		if(_settings.wom_callback){
+			_settings.wom_callback(values_avg, 3*sizeof(int16_t));
+		}
+
+		//aggregate value greater than threshold
+		mag = _aggregate_motion_data(values_avg, 3*sizeof(int16_t));
+		ShakeDetect(mag);
+
+
+#else
 			// ble notify
 			if(_settings.wom_callback){
 				_settings.wom_callback(ptr, 3*sizeof(int16_t));
@@ -355,22 +390,19 @@ static MSG_Status _handle_read_xyz(void){
 
 			ptr += 3;
 		}
+#endif
 
-		/*
+		PRINTS("FIFO read");
+		ret /= 6;
+		DEBUG(": ",ret);
 		PRINTS("Count:");
 		PRINT_BYTE(&count,sizeof(uint8_t));
 		PRINTS("\r\n");
-		*/
+		ret -= count;
+		DEBUG("Sent: ",ret);
 
-
-
-		//PRINTS("FIFO read, handle values\r\n");
-		//DEBUG(": ",ret);
 	}
-	else
-	{
-		//PRINTS("AOI interrupt\r\n");
-	}
+
 
 
 #else

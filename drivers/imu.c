@@ -182,16 +182,16 @@ inline uint8_t imu_clear_interrupt_status()
 	return int_source;
 }
 
+
+/*
 bool imu_data_within_thr(int16_t value)
 {
 	uint16_t u_value = value;
 
 	// Shift left by 4
-	u_value = u_value >> 4;
+	u_value = (u_value >> 4) & 0x0FFF ;
 
-	u_value &= 0x0FFF;
-
-	// If negative, * -1
+	// If negative, 2'c complement
 	if(u_value > 0x7FFUL)
 	{
 		u_value = ~u_value;
@@ -200,24 +200,33 @@ bool imu_data_within_thr(int16_t value)
 
 	u_value &= 0x0FFF;
 
-	/*
-	PRINTS("Value:");
-	uint8_t temp = (((uint16_t)u_value & 0xFF00) >> 8);
-	PRINT_BYTE(&temp,sizeof(uint8_t));
-	PRINT_BYTE((uint8_t*)&u_value,sizeof(uint8_t));
-	PRINTS("\r\n");
-	*/
+
+//	PRINTS("Value:");
+//	uint8_t temp = (((uint16_t)u_value & 0xFF00) >> 8);
+//	PRINT_BYTE(&temp,sizeof(uint8_t));
+//	PRINT_BYTE((uint8_t*)&u_value,sizeof(uint8_t));
+//	PRINTS("\r\n");
+
 	// Compare with 55mg
 	if(u_value < 55)
 	{
 		//PRINTS("Less than thr \r\n");
 		return true;
 	}
-	else
-	{
-		//PRINTS("Greater than thr \r\n");
-		return false;
-	}
+
+	//PRINTS("Greater than thr \r\n");
+	return false;
+
+}
+*/
+
+
+bool imu_data_within_thr(int16_t value)
+{
+	if(abs(value) < 80)
+		return true;
+
+	return false;
 }
 
 uint8_t imu_handle_fifo_read(uint16_t* values)
@@ -717,35 +726,6 @@ int imu_self_test(void){
 	}
  	PRINTS("\r\n");
 	 */
-	// Enter normal mode/ IMU re-init? // TODO
-
-	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
-	/*
-	// Clear FIFO control register to select Bypass mode, set trigger to be INT1 and FIFO threshold as 0
-	_register_write(REG_FIFO_CTRL,0x00);
-
-
-	// FIFO enable
-	imu_fifo_enable();
-	*/
-
-	// Update FIFO mode
-	imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
-
-	imu_wtm_intr_en = false;
-
-
-	// TODO
-	//_register_write(REG_ACT_THR,wom_threshold);
-
-
-	imu_clear_interrupt_status();
-
-
-	imu_enter_low_power_mode();
-
-
-	imu_enable_intr();
 
 	PRINTS("Self test end\r\n");
 	// Calculate self-test output change Output_st_enabled[LSB] - Ouput_st_disbled[LSB]
