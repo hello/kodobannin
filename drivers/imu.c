@@ -191,44 +191,6 @@ inline uint8_t imu_clear_interrupt_status()
 	return int_source;
 }
 
-// TODO delete this if not needed
-#if 0
-bool imu_data_within_thr(int16_t value)
-{
-	uint16_t u_value = value;
-
-	// Shift left by 4
-	u_value = (u_value >> 4) & 0x0FFF ;
-
-	// If negative, 2'c complement
-	if(u_value > 0x7FFUL)
-	{
-		u_value = ~u_value;
-		u_value++;
-	}
-
-	u_value &= 0x0FFF;
-
-
-//	PRINTS("Value:");
-//	uint8_t temp = (((uint16_t)u_value & 0xFF00) >> 8);
-//	PRINT_BYTE(&temp,sizeof(uint8_t));
-//	PRINT_BYTE((uint8_t*)&u_value,sizeof(uint8_t));
-//	PRINTS("\r\n");
-
-	// Compare with 55mg
-	if(u_value < 55)
-	{
-		//PRINTS("Less than thr \r\n");
-		return true;
-	}
-
-	//PRINTS("Greater than thr \r\n");
-	return false;
-
-}
-#endif
-
 #define IMU_DATA_THR	55U
 
 bool imu_data_within_thr(int16_t value)

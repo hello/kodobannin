@@ -46,6 +46,8 @@ enum {
 
 #define IMU_CONSTANT_FREQ    (IMU_HZ_25)
 
+// To enable/disable filtering IMU FIFO data before
+//#define IMU_FILTER_FIFO_DATA
 
 /*
  * BLE Connection Parameters

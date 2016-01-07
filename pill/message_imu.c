@@ -261,8 +261,8 @@ static void _on_pill_pairing_guesture_detected(void){
 
 static MSG_Status _init(void){
 	if(!initialized){
-//TODO uncomment
-        //imu_power_on();
+		//TODO uncomment
+		//imu_power_on();
 
 		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLDOWN);
 
@@ -274,8 +274,6 @@ static MSG_Status _init(void){
             _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
 #endif
 		{
-
-
 		    imu_clear_interrupt_status();
 			APP_OK(app_gpiote_user_enable(_gpiote_user));
 			PRINTS("IMU: initialization done.\r\n");
@@ -322,14 +320,15 @@ static MSG_Status _handle_read_xyz(void){
 	// Returns number of bytes read, 0 if no data read
 	ret = imu_handle_fifo_read(values);
 
-	if(ret)
-	{
+	if(ret){
+
 		// FIFO read, handle values
 
 		uint8_t i;
 		//loop:
 		for(i=0;i<ret/6;i++)
 		{
+#ifdef IMU_FILTER_FIFO_DATA
 			//discard value less than threshold
 
 			// Send the first value
@@ -341,10 +340,9 @@ static MSG_Status _handle_read_xyz(void){
 				{
 					ptr += 3;
 					continue;
-
 				}
-
 			}
+#endif
 
 			// ble notify
 			if(_settings.wom_callback){
