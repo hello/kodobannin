@@ -95,6 +95,9 @@ _handle_command(int argc, char * argv[]){
         pill_data->UUID = 0;
 
         MSG_Data_t * message = MSG_Base_AllocateObjectAtomic(pill_data, sizeof(buf));
+        if(!message){
+            return;
+        }
         MSG_ANT_Message_t content = (MSG_ANT_Message_t){
             .device = device,
             .message = message,
@@ -104,6 +107,7 @@ _handle_command(int argc, char * argv[]){
         if(parcel){
             self.parent->dispatch( ADDR(ANT,0), ADDR(ANT,MSG_ANT_HANDLE_MESSAGE), parcel);
             MSG_Base_ReleaseDataAtomic(parcel);
+            MSG_Base_ReleaseDataAtomic(message);
         }
     }
     if( !match_command(argv[0], "bounce") ){
