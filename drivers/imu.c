@@ -18,12 +18,33 @@
 
 #include <watchdog.h>
 
+#define LIS2DH_LOW_POWER_MG_PER_CNT (16)
+#define LIS2DH_HRES_MG_PER_CNT 		(1)
+#define MPU6500_MG_PER_LSB 			(16384UL)
+
+#define IMU_WTM_THRESHOLD (0x19UL)
+
+#define IMU_USE_PIN_INT1
+//#define IMU_USE_PIN_INT2
+
+#if defined(IMU_USE_PIN_INT1) && defined(IMU_USE_PIN_INT2)
+	#error Use either pin INT1 or INT2 for IMU. Not both.
+#endif
+
+// Uncomment to display debug print statements
+//#define IMU_MODULE_DEBUG
 
 enum {
-    IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
+	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };
 
 static SPI_Context _spi_context;
+
+// true if imu fifo watermark interrupt is enabled
+static bool imu_wtm_intr_en = false;
+
+static uint16_t imu_fifo_read_all(uint16_t* values, uint32_t bytes_to_read);
+
 
 static inline void _register_read(Register_t register_address, uint8_t* const out_value)
 {
@@ -45,95 +66,251 @@ static inline void _register_write(Register_t register_address, uint8_t value)
 
 inline void imu_set_accel_freq(enum imu_hz sampling_rate)
 {
-    uint8_t reg;
-    _register_read(REG_CTRL_1, &reg);
-    reg &= 0xf0;
-    
-    reg |= ( sampling_rate << 4);
-    _register_write(REG_CTRL_1, reg);
+	uint8_t reg;
+	_register_read(REG_CTRL_1, &reg);
 
+	// Clear the ODR
+	reg &= ~OUTPUT_DATA_RATE;
+
+	reg |= ( sampling_rate << 4);
+	_register_write(REG_CTRL_1, reg);
+
+}
+
+inline void imu_self_test_enable()
+{
+	uint8_t reg;
+	_register_read(REG_CTRL_4, &reg);
+
+	// Clear the self-test mode configuration
+	reg &= ~SELFTEST_ENABLE;
+
+	// select self-test 0
+	_register_write(REG_CTRL_1, reg | SELFTEST_MODE0);
+}
+
+inline void imu_self_test_disable()
+{
+	uint8_t reg;
+	_register_read(REG_CTRL_4, &reg);
+
+	// Clear the self-test mode configuration
+	reg &= ~SELFTEST_ENABLE;
+
+	// select normal mode
+	_register_write(REG_CTRL_1, reg);
 }
 
 unsigned imu_get_sampling_interval(enum imu_hz hz)
 {
-    switch (hz) {
-        case IMU_HZ_0:
-        return 0;
-        break;
-        case IMU_HZ_10:
-        return 10;
-        case IMU_HZ_25:
-        return 25;
-        
-        default:
-        return 0;
-    }
+	switch (hz) {
+	case IMU_HZ_0:
+		return 0;
+		break;
+	case IMU_HZ_1:
+		return 1;
+	case IMU_HZ_10:
+		return 10;
+	case IMU_HZ_25:
+		return 25;
+
+	default:
+		return 0;
+	}
 }
 
-uint16_t imu_accel_reg_read(uint16_t *values) {
-    uint8_t * buf = (uint8_t*)values;
-	_register_read(REG_ACC_X_LO, buf++);
-	_register_read(REG_ACC_X_HI, buf++);
-	_register_read(REG_ACC_Y_LO, buf++);
-	_register_read(REG_ACC_Y_HI, buf++);
-	_register_read(REG_ACC_Z_LO, buf++);
-	_register_read(REG_ACC_Z_HI, buf++);
-    
-    uint8_t reg;
-    _register_read(REG_CTRL_4, &reg);
-    if( reg & HIGHRES ) { //convert to match the 6500...
-        values[0] *= 16;
-        values[1] *= 16;
-        values[2] *= 16;
-    } else {
-        values[0] *= 262;
-        values[1] *= 262;
-        values[2] *= 262;
-    }
-    
+// Read all accelerometer values
+uint16_t imu_accel_reg_read(uint16_t *values)
+{
+	uint16_t bytes_read = 0;
+	uint16_t bytes_to_read = 6;
+
+	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO)};
+
+	// Enable multiple byte read
+	buf[0] |= 0x40;
+
+	bytes_read = spi_xfer(&_spi_context, 1, buf, bytes_to_read, (uint8_t*) values);
+	BOOL_OK(bytes_read == bytes_to_read);
+
+#ifdef IMU_MODULE_DEBUG
+	PRINTS("IMU: ");
+	for(uint8_t i=0;i<3;i++){
+		uint8_t temp = ((values[i] & 0xFF00) >> 8);
+		PRINT_BYTE(&temp,sizeof(uint8_t));
+		PRINT_BYTE((uint8_t*)&values[i],sizeof(uint8_t));
+		PRINTS(" ");
+
+
+	}
+	PRINTS("\r\n");
+#endif
+
 	return 6;
 }
 
 inline void imu_set_accel_range(enum imu_accel_range range)
 {
-    _register_write(REG_CTRL_4, range << ACCEL_CFG_SCALE_OFFSET);
+	uint8_t reg;
+
+	_register_read(REG_CTRL_4, &reg);
+
+	// Clear the FSR
+	reg &= ~FS_MASK;
+
+	_register_write(REG_CTRL_4, reg | (range << ACCEL_CFG_SCALE_OFFSET));
+}
+
+inline void imu_enable_all_axis()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_1, &reg);
+	_register_write(REG_CTRL_1, reg | (AXIS_ENABLE));
 }
 
 inline uint8_t imu_clear_interrupt_status()
 {
-    // clear the interrupt by reading INT_SRC register
-    uint8_t int_source;
-    _register_read(REG_INT1_SRC, &int_source);
 
-    return int_source;
+	// clear the interrupt by reading INT_SRC register
+	uint8_t int_source;
+	_register_read(REG_INT1_SRC, &int_source);
+
+	return int_source;
+}
+
+#define IMU_DATA_THR	55U
+
+bool imu_data_within_thr(int16_t value)
+{
+	if(abs(value) < (uint16_t)IMU_DATA_THR)
+		return true;
+
+	return false;
+}
+
+uint8_t imu_handle_fifo_read(uint16_t* values)
+{
+
+	uint8_t ret = 0;
+	uint8_t fifo_src_reg;
+	uint8_t fifo_unread_samples;
+	const uint8_t fifo_channels_per_sample = 3;
+	const uint8_t fifo_bytes_per_channel = 2;
+
+
+	fifo_src_reg = imu_read_fifo_src_reg();
+
+	//If wtm interrupt is enabled or if wtm flag is set, read FIFO
+	if((imu_wtm_intr_en == true) ||
+		(fifo_src_reg & FIFO_WATERMARK))
+	{
+
+		// FIFO sample size
+		fifo_unread_samples = fifo_src_reg & FIFO_FSS_MASK;
+
+		// Reading the FIFO source register returns the number of unread samples in the FIFO.
+		// Each sample consists of data from three channels (x,y,z)
+		// Each data is 16 bits
+		// Hence total bytes to be read : (fifo_unread_samples*fifo_channels_per_sample*fifo_bytes_per_channel)
+
+		// Read FIFO
+		ret = imu_fifo_read_all(values, (fifo_unread_samples*fifo_channels_per_sample*fifo_bytes_per_channel));
+
+		_register_write(REG_CTRL_3, INT1_AOI1);
+
+		imu_wtm_intr_en = false;
+
+	}
+	else if(imu_wtm_intr_en == false)
+	{
+		// AOI intr occurred but FIFO not full, wait for WTM INT
+		_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
+		imu_wtm_intr_en = true;
+
+	}
+
+	return ret;
+
+}
+
+
+inline void imu_enable_hres()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_4, &reg);
+	_register_write(REG_CTRL_4, reg | HIGHRES );
+
+}
+
+inline void imu_disable_hres()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_4, &reg);
+	reg &= ~HIGHRES;
+	_register_write(REG_CTRL_4, reg);
+}
+
+inline void imu_reset_hp_filter()
+{
+	uint8_t reg;
+
+	//reset HP filter
+	// A reading at this address forces the high-pass filter to recover instantaneously the dc level of the
+	// acceleration signal provided to its inputs
+	// this sets the current/reference acceleration/tilt state against which the device performs the threshold comparison.
+	_register_read(REG_REFERENCE,&reg);
+}
+
+inline void imu_lp_enable()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_1, &reg);
+	_register_write(REG_CTRL_1, reg | LOW_POWER_MODE);
+
+}
+
+inline void imu_lp_disable()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_1, &reg);
+	reg &= ~LOW_POWER_MODE;
+	_register_write(REG_CTRL_1, reg);
+
 }
 
 void imu_enter_normal_mode()
 {
-    uint8_t reg;
-    _register_read(REG_CTRL_1, &reg);
-    reg &= ~LOW_POWER_MODE;
-    _register_write(REG_CTRL_1, reg);
-    
-    _register_read(REG_CTRL_4, &reg);
-    _register_write(REG_CTRL_4, reg | HIGHRES );
+	// IMU reset enables low power mode, LP has to be disabled before HRES is enabled
+	imu_lp_disable();
+
+	imu_enable_hres();
+
+	imu_reset_hp_filter();
+
 }
 
 void imu_enter_low_power_mode()
 {
-    uint8_t reg;
-    _register_read(REG_CTRL_4, &reg);
-    reg &= ~HIGHRES;
-    _register_write(REG_CTRL_4, reg);
-    
-    _register_read(REG_CTRL_1, &reg);
-    _register_write(REG_CTRL_1, reg | LOW_POWER_MODE);
-}
 
+	imu_disable_hres();
+
+	imu_lp_enable();
+
+	imu_reset_hp_filter();
+
+}
 
 void imu_wom_set_threshold(uint16_t microgravities)
 {
-    _register_write(REG_INT1_THR, microgravities / 16);
+
+	// 16 is FSR is 2g
+	_register_write(REG_INT1_THR, microgravities / 16);
+
 }
 
 
@@ -157,26 +334,137 @@ void imu_spi_disable()
 inline void imu_power_on()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-    gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 0);
+	gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 0);
 #endif
 }
 
 inline void imu_power_off()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-    gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 1);
-    gpio_cfg_d0s1_output_disconnect(IMU_VDD_EN);
+	gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 1);
+	gpio_cfg_d0s1_output_disconnect(IMU_VDD_EN);
 
 #endif
 }
 
-int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
-			uint8_t miso, uint8_t mosi, uint8_t sclk, 
-			uint8_t nCS, 
-			enum imu_hz sampling_rate,
-			enum imu_accel_range acc_range, uint16_t wom_threshold)
+inline void imu_fifo_enable()
 {
- 	int32_t err;
+	uint8_t reg;
+
+	_register_read(REG_CTRL_5, &reg);
+	reg |= FIFO_EN;
+	_register_write(REG_CTRL_5, reg);
+
+}
+
+inline void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode, uint8_t fifo_trigger, uint8_t wtm_threshold)
+{
+	uint8_t reg = 0;
+
+	reg = (fifo_mode << ACCEL_FIFO_MODE_OFFSET) |
+			(wtm_threshold & FIFO_WATERMARK_THRESHOLD) |
+			( (fifo_trigger << FIFO_TRIGGER_SEL_POS) & FIFO_TRIGGER_SELECTION_MASK);
+
+	// Set watermark threshold for FIFO
+	_register_write(REG_FIFO_CTRL, reg); //IMU_WTM_THRESHOLD );
+
+}
+
+
+inline void imu_fifo_disable()
+{
+	uint8_t reg;
+
+	_register_read(REG_CTRL_5, &reg);
+	reg &= ~FIFO_EN;
+	_register_write(REG_CTRL_5, reg);
+
+}
+
+// Read all bytes from FIFO
+static uint16_t imu_fifo_read_all(uint16_t* values, uint32_t bytes_to_read)
+{
+	uint16_t bytes_read = 0;
+
+	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO)};
+
+	// Enable multiple byte read
+	buf[0] |= 0x40;
+
+	bytes_read = spi_xfer(&_spi_context, 1, buf, bytes_to_read, (uint8_t*) values);
+	BOOL_OK(bytes_read == bytes_to_read);
+
+#ifdef IMU_MODULE_DEBUG
+ 	for(uint8_t j=0;j<bytes_read/2;j+=3){
+		//PRINTS("IMU: ");
+		for(uint8_t i=0;i<3;i++){
+			uint8_t temp = ((values[j+i] & 0xFF00) >> 8);
+			PRINT_BYTE(&temp,sizeof(uint8_t));
+			PRINT_BYTE((uint8_t*)&values[j+i],sizeof(uint8_t));
+			PRINTS(" ");
+
+
+		}
+		PRINTS("\r\n");
+	}
+#endif
+
+	return bytes_read;
+
+}
+
+inline uint8_t imu_read_fifo_src_reg()
+{
+	uint8_t int_src = 0;
+
+	_register_read(REG_FIFO_SRC, &int_src);
+
+	return int_src;
+}
+
+inline void imu_enable_intr()
+{
+#ifdef IMU_USE_PIN_INT1
+
+	// interrupts are enabled on INT 1 pin
+	_register_write(REG_CTRL_3, INT1_AOI1);
+
+
+	// Disable INT 1 function on INT 2 pin
+	_register_write(REG_CTRL_6, 0x00);
+
+#endif
+#ifdef IMU_USE_PIN_INT2
+
+	// interrupts are not enabled in INT 1 pin
+	_register_write(REG_CTRL_3, 0x00);
+
+	// Enable INT 1 function on INT 2 pin
+	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+
+#endif
+}
+
+inline void imu_disable_intr()
+{
+
+	// interrupts are disabled on INT 1 pin
+	_register_write(REG_CTRL_3, 0x00);
+
+	// Disable INT 1 function on INT 2 pin
+	_register_write(REG_CTRL_6, 0x00);
+
+
+}
+
+int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
+		uint8_t miso, uint8_t mosi, uint8_t sclk,
+		uint8_t nCS,
+		enum imu_hz sampling_rate,
+		enum imu_accel_range acc_range, uint16_t wom_threshold)
+{
+	int32_t err;
+	uint8_t reg;
 
 	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
 	if (err != 0) {
@@ -184,276 +472,236 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		return err;
 	}
 
-	// Reset chip
-	imu_reset();
-
 	// Check for valid Chip ID
-	uint8_t whoami_value;
+	uint8_t whoami_value = 0xA5;
 	_register_read(REG_WHO_AM_I, &whoami_value);
 
-	if (whoami_value != CHIP_ID) {
+
+	if (whoami_value != DEVICE_ID) {
 		DEBUG("Invalid IMU ID found. Expected 0x33, got 0x", whoami_value);
 		APP_ASSERT(0);
 	}
 
-    // Init interrupts
-    imu_set_accel_range(acc_range);
-    imu_wom_set_threshold(wom_threshold);
-    imu_set_accel_freq(sampling_rate);
-    
-    _register_write(REG_CTRL_4, (BLOCKDATA_UPDATE | HIGHPASS_AOI_INT1));
- // _register_write(REG_CTRL_6, (INT_ACTIVE)); // active low
-    _register_write(REG_INT1_CFG, 0x3F); //all axis
-    _register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
-    _register_write(REG_CTRL_3, (INT1_AOI1));
-    
-    imu_enter_low_power_mode();
+	// Reset chip (Reboot memory content)
+	imu_reset();
+
+	imu_enable_all_axis();
+
+	// Set inactive sampling rate (Ctrl Reg 1)
+	imu_set_accel_freq(sampling_rate);
+
+	// Enable high pass filter for interrupts, normal HP filter mode selected by default
+	// HP filter needs to be reset while switching modes
+	_register_write(REG_CTRL_2, HIGHPASS_AOI_INT1);
+
+	// Enable 4-wire SPI mode, Enable Block data update (output registers not updated until MSB and LSB have been read)
+	_register_write(REG_CTRL_4, BLOCKDATA_UPDATE);//80
+
+	// Set full scale range (Ctrl 4)
+	imu_set_accel_range(acc_range);
+
+	// Interrupt request latched
+	_register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
+
+	// reset HP filter
+	//imu_reset_hp_filter();
+
+	// Enable OR combination interrupt generation for all axis
+	reg = INT1_Z_HIGH | INT1_Z_LOW | INT1_Y_HIGH | INT1_Y_LOW | INT1_X_HIGH | INT1_X_LOW;
+	_register_write(REG_INT1_CFG, reg | INT1_6D); //all axis
+
+	imu_wom_set_threshold(wom_threshold);
+
+	// Clear FIFO control register to select Bypass mode, set trigger to be INT1 and FIFO threshold as 0
+	_register_write(REG_FIFO_CTRL,0x00);
+
+#ifdef IMU_FIFO_ENABLE
+
+	// FIFO enable
+	imu_fifo_enable();
+
+	// Update FIFO mode
+	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+
+	imu_wtm_intr_en = false;
+#else
+	imu_fifo_disable();
+
+#endif
+
+	int16_t values[3];
+	imu_accel_reg_read(values);
+	(void) values;
+
+	imu_clear_interrupt_status();
+
+#ifdef IMU_ENABLE_LOW_POWER
+	imu_enter_low_power_mode();
+#else
+
+	imu_enter_normal_mode();
+
+#endif
+
+	imu_enable_intr();
 
 	return err;
 }
 
+#define ST_CHANGE_MIN						((uint16_t)17)
+#define ST_CHANGE_MAX						((uint16_t)360)
+#define	SELF_TEST_SAMPLE_SIZE				(32UL)
+#define SELF_TEST_PASS(x)	(((uint8_t)(x) >= ST_CHANGE_MIN) && ((uint8_t)(x) <= ST_CHANGE_MAX) )
 
-<<<<<<< HEAD
 int imu_self_test(void){
-    
-	if(true){
-=======
-int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode, 
-			uint8_t miso, uint8_t mosi, 
-			uint8_t sclk, uint8_t nCS, 
-			enum imu_hz sampling_rate,
-			enum imu_sensor_set active_sensors,
-			enum imu_accel_range acc_range, enum imu_gyro_range gyro_range)
-{
- 	int32_t err;
 
-	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
-	if (err != 0) {
-		PRINTS("Could not configure SPI bus for IMU\r\n");
-		return err;
-	}
 
-	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
-	// page 43
+	int16_t values[SELF_TEST_SAMPLE_SIZE][3];
+	int16_t values_st[SELF_TEST_SAMPLE_SIZE][3];
+	int16_t values_avg[3];
+	int16_t values_st_avg[3];
 
-	// Reset chip
-	imu_reset();
+	PRINTS("Self test start\r\n");
 
-	_register_write(MPU_REG_PWR_MGMT_1, 0);
+    imu_power_off();
+    nrf_delay_ms(20);
+    imu_power_on();
 
-	// Check for valid Chip ID
-	uint8_t whoami_value;
-	_register_read(MPU_REG_WHO_AM_I, &whoami_value);
+    nrf_delay_ms(20);
+    imu_reset();
 
-	if (whoami_value != CHIP_ID) {
-		DEBUG("Invalid MPU-6500 ID found. Expected 0x70, got 0x", whoami_value);
-		APP_ASSERT(0);
-	}
+	// Disable interrupts
+	imu_disable_intr();
 
-	// Init interrupts
-	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
+	// Disable low power mode
+	imu_lp_disable();
 
-	// Config interrupts
-	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
+	// Reset FIFO
+	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
 
-	switch(active_sensors)
+	// Enable FIFO mode
+	imu_set_fifo_mode(IMU_FIFO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, SELF_TEST_SAMPLE_SIZE-1);
+
+	// Poll for wtm flag
+	while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
+
+	uint32_t bytes_read = 0;
+	// Read samples
+	bytes_read = imu_fifo_read_all(&values[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
+
+	// Calculate average for each axis
+	for(uint8_t ch=0;ch<3;ch++)
 	{
-		case IMU_SENSORS_ACCEL:
-			imu_set_accel_range(acc_range);
-			break;
-		case IMU_SENSORS_ACCEL_GYRO:
-			imu_set_accel_range(acc_range);
-			imu_set_gyro_range(gyro_range);
-			break;
-	}
-
-	// Init FIFO
-	uint8_t fifo_size_bits;
-	switch(IMU_FIFO_CAPACITY) {
-	case 4096:
-		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_4096;
-		break;
-	case 2048:
-		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_2048;
-		break;
-	case 1024:
-		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_1024;
-		break;
-	case 512:
-		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_512;
-		break;
-	default:
-		APP_ASSERT(0);
-		break;
-	}
-	_register_write(MPU_REG_ACC_CFG2, fifo_size_bits);
-
-    // Reset FIFO, disable i2c, and clear regs
-    _register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
-
-    imu_enter_normal_mode(sampling_rate, active_sensors);
-
-	return err;
-}
-int32_t
-_stream_avg(int32_t prev, int16_t x,  int32_t n){
-	if(n == 0){
-		return x;
-	}else{
-		return (((prev * n) + (int32_t)x) / (n + 1));
-	}
-}
-uint32_t _otp(uint8_t code){
-	int i;
-	uint32_t base = 33096;
-	if(code == 1){
-		return 1;
-	}else{
-		for(i = 0; i < code - 2; i++){
-			base = (33096 *  base) >> 15;
+		uint8_t count = 0;
+		values_avg[ch] = 0;
+		for(uint8_t i=5;i<bytes_read/3/2;i++)
+		{
+			values_avg[ch] += values[i][ch];
+			count++;
 		}
-		return ((uint32_t)(2620 * base ) >> 15);
+		values_avg[ch] /= count;
 	}
-}
-static uint8_t
-_pass_test(uint32_t st, uint8_t st_code){
-	if(st_code != 0){
-		uint32_t cmp = _otp(st_code);
-		uint32_t res = st * 10000 / cmp;
-		if(res > 5000 && res < 15000){
-			return 1;
-		}else{
-			PRINTS("res ");
-			PRINT_HEX(&res, 4);
-			PRINTS("\r\n");
-			PRINTS("code ");
-			PRINT_HEX(&st_code, 1);
-			PRINTS("\r\n");
-			PRINTS("st ");
-			PRINT_HEX(&st, 4);
-			PRINTS("\r\n");
-			PRINTS("cmp ");
-			PRINT_HEX(&cmp, 4);
-			PRINTS("\r\n");
-			return 0;
+
+#ifdef IMU_MODULE_DEBUG
+	PRINTS("AVG: ");
+ 	for(uint8_t i=0;i<3;i++){
+ 		int16_t diff = values_avg[i];
+			uint8_t temp = ((diff & 0xFF00) >> 8);
+			PRINT_BYTE(&temp,sizeof(uint8_t));
+			PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
+			PRINTS(" ");
+	}
+ 	PRINTS("\r\n");
+#endif
+
+ 	nrf_delay_ms(20);
+
+	// Enable self-test mode
+	imu_self_test_enable();
+
+	nrf_delay_ms(20);
+
+	int16_t values_st_avg_2[3] = {0};
+
+	// TODO loop added to check if delay helps in self test, remove if not needed
+	for(uint8_t j=0;j<3;j++)
+	{
+		// Reset FIFO
+		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+
+		// Enable FIFO mode
+		imu_set_fifo_mode(IMU_FIFO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, SELF_TEST_SAMPLE_SIZE-1);
+
+		//nrf_delay_ms(20);
+
+		// Poll for wtm flag
+		while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
+
+		// Read samples with self-test enabled
+		bytes_read = imu_fifo_read_all(&values_st[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
+
+
+		// calculate average for each axis
+		for(uint8_t ch=0;ch<3;ch++)
+		{
+			uint8_t count = 0;
+			values_st_avg[ch] = 0;
+			for(uint8_t i=5;i<bytes_read/3/2;i++)
+			{
+				values_st_avg[ch] += values_st[i][ch];
+				count++;
+			}
+			values_st_avg[ch] /= count;
 		}
-	}else{
-		PRINTS("x");
-		return 1;
+
+		values_st_avg_2[0] += values_st_avg[0];
+		values_st_avg_2[1] += values_st_avg[1];
+		values_st_avg_2[2] += values_st_avg[2];
+
 	}
 
-}
-static inline int32_t
-_abs(int32_t a){
-	/*
-	 *return ((a<0)?-a:a);
-	 */
-	return a;
-}
-int imu_self_test(void){
-	int i;
-	int16_t values[3] = {0};
-	int32_t ax_os = 0, ay_os = 0, az_os = 0;
-	int32_t ax_st_os = 0, ay_st_os = 0, az_st_os = 0;
-	int32_t axst = 0, ayst = 0, azst = 0;
-	uint8_t factory[3] = {0};
-	imu_power_off();
-	nrf_delay_ms(20);
-	imu_power_on();
-	nrf_delay_ms(20);
-	imu_reset();
-	/*
-	 *imu_calibrate_zero();
-	 */
+	values_st_avg_2[0] /= 3;
+	values_st_avg_2[1] /= 3;
+	values_st_avg_2[2] /= 3;
 
-	nrf_delay_ms(20);
-	//gyro
-	//_register_write(MPU_REG_CONFIG, CONFIG_LPF_1kHz_92bw);
-	//accel
-    _register_write(MPU_REG_ACC_CFG2, ACCEL_CFG2_LPF_1kHz_92bw);
-	//gyro
-    //_register_write(MPU_REG_GYRO_CFG, GYRO_CFG_SCALE_250_DPS);
-	//accel
-    _register_write(MPU_REG_ACC_CFG, ACCEL_CFG_SCALE_2G);
-	nrf_delay_ms(20);
-	for(i = 0; i < 200; i++){
-		imu_accel_reg_read((uint8_t *)values);
-		/*
-		 *ax_os = _stream_avg(ax_os, (uint8_t)(values[0] & 0xFF), i);
-		 *ay_os = _stream_avg(ay_os, (uint8_t)(values[1] & 0xFF), i);
-		 *az_os = _stream_avg(az_os, (uint8_t)(values[2] & 0xFF), i);
-		 */
-		ax_os = _stream_avg(ax_os, values[0], i);
-		ay_os = _stream_avg(ay_os, values[1], i);
-		az_os = _stream_avg(az_os, values[2], i);
-		nrf_delay_ms(1);
+#ifdef IMU_MODULE_DEBUG
+	PRINTS("ST AVG: ");
+ 	for(uint8_t i=0;i<3;i++){
+		int16_t diff = values_st_avg_2[i];
+		uint8_t temp = ((diff & 0xFF00) >> 8);
+		PRINT_BYTE(&temp,sizeof(uint8_t));
+		PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
+		PRINTS(" ");
 	}
-	/*
-	 *PRINTS("\r\nx: ");
-	 *PRINT_HEX(&ax_os, 4);
-	 *PRINTS("\r\ny: ");
-	 *PRINT_HEX(&ay_os, 4);
-	 *PRINTS("\r\nz: ");
-	 *PRINT_HEX(&az_os, 4);
-	 */
+ 	PRINTS("\r\n");
+#endif
 
-	//enable self test
-    //_register_write(MPU_REG_GYRO_CFG, GYRO_CFG_X_TEST | GYRO_CFG_Y_TEST | GYRO_CFG_Z_TEST);
-    _register_write(MPU_REG_ACC_CFG, ACCEL_CFG_X_TEST | ACCEL_CFG_Y_TEST | ACCEL_CFG_Z_TEST);
+	// Disable self-test mode
+	imu_self_test_disable();
+
 	nrf_delay_ms(20);
-	memset(values, 0, sizeof(values));
-	for(i = 0; i < 200; i++){
-		imu_accel_reg_read((uint8_t *)values);
-		/*
-		 *ax_st_os = _stream_avg(ax_st_os, (uint8_t)(values[0] & 0xFF), i);
-		 *ay_st_os = _stream_avg(ay_st_os, (uint8_t)(values[1] & 0xFF), i);
-		 *az_st_os = _stream_avg(az_st_os, (uint8_t)(values[2] & 0xFF), i);
-		 */
-		ax_st_os = _stream_avg(ax_st_os, values[0], i);
-		ay_st_os = _stream_avg(ay_st_os, values[1], i);
-		az_st_os = _stream_avg(az_st_os, values[2], i);
-		nrf_delay_ms(1);
+
+#ifdef IMU_MODULE_DEBUG
+	PRINTS("DIFF: ");
+ 	for(uint8_t i=0;i<3;i++){
+		uint16_t diff = 0;
+		diff = abs(values_st_avg_2[i] - values_avg[i]);
+		PRINT_BYTE(&diff,sizeof(uint8_t));
+		PRINTS(" ");
 	}
-
-	/*
-	 *PRINTS("\r\nst_x: ");
-	 *PRINT_HEX(&ax_st_os, 4);
-	 *PRINTS("\r\nst_y: ");
-	 *PRINT_HEX(&ay_st_os, 4);
-	 *PRINTS("\r\nst_z: ");
-	 *PRINT_HEX(&az_st_os, 4);
-	 */
-
-	nrf_delay_ms(40);
+ 	PRINTS("\r\n");
 
 
-	//diff
-	axst = _abs(ax_st_os - ax_os);
-	ayst = _abs(ay_st_os - ay_os);
-	azst = _abs(az_st_os - az_os);
+	PRINTS("Self test end\r\n");
+#endif
 
-	/*
-	 *PRINTS("\r\nast_x: ");
-	 *PRINT_HEX(&axst, 4);
-	 *PRINTS("\r\nast_y: ");
-	 *PRINT_HEX(&ayst, 4);
-	 *PRINTS("\r\nast_z: ");
-	 *PRINT_HEX(&azst, 4);
-	 */
+	// Calculate self-test output change Output_st_enabled[LSB] - Ouput_st_disbled[LSB]
 
-	//factory
-	_register_read(MPU_REG_ACC_SELF_TEST_X, &factory[0]);
-	_register_read(MPU_REG_ACC_SELF_TEST_Y, &factory[1]);
-	_register_read(MPU_REG_ACC_SELF_TEST_Z, &factory[2]);
-
-	nrf_delay_ms(20);
-
-	//calcualte OTP
-
-	if(_pass_test(axst, factory[0]) &&
-		_pass_test(ayst, factory[1]) &&
-		_pass_test(azst, factory[2])){
->>>>>>> master
+	// If ST output change is with 17 and 360 - Self-test pass, else fail
+	if((SELF_TEST_PASS(abs(values_st_avg_2[0] - values_avg[0]))) &&
+		(SELF_TEST_PASS(abs(values_st_avg_2[1] - values_avg[1]))) &&
+		(SELF_TEST_PASS(abs(values_st_avg_2[2] - values_avg[2]))))
+	{
 		PRINTS("Pass\r\n");
 		return 0;
 	}else{

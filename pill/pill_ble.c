@@ -98,7 +98,7 @@ static void _calibrate_imu(void * p_event_data, uint16_t event_size)
 {
 #ifdef PLATFORM_HAS_IMU
 #include "imu.h"
-        imu_calibrate_zero();
+        //imu_calibrate_zero();
 #endif
         struct pill_command* command = (struct pill_command*)p_event_data;
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
@@ -143,6 +143,8 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 	case PILL_COMMAND_WIPE_FIRMWARE:
 		REBOOT_TO_DFU();
 		break;
+    default:
+        break;
     };
 }
 

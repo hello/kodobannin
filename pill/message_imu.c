@@ -122,6 +122,7 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
         current->max_amp = aggregate;
         PRINTS("NEW MAX: ");
         PRINT_HEX(&aggregate, sizeof(aggregate));
+        PRINTS("\r\n");
     }
     
     //track max/min values of accelerometer      
@@ -160,14 +161,18 @@ static void _imu_switch_mode(bool is_active)
     {
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
+#ifdef IMU_ENABLE_LOW_POWER
         imu_enter_normal_mode();
-        PRINTS("IMU Active.\r\n");
+#endif
+        //PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
+#ifdef IMU_ENABLE_LOW_POWER
         imu_enter_low_power_mode();
-        PRINTS("IMU Inactive.\r\n");
+#endif
+        //PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }
 }
@@ -175,6 +180,7 @@ static void _imu_switch_mode(bool is_active)
 
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
+	//PRINTS("IMU INT \r\n");
 	parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 }
 
@@ -190,15 +196,15 @@ static void _on_wom_timer(void* context)
     if(time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-        PRINTS("Active state continues.\r\n");
+        //PRINTS("Active state continues.\r\n");
     }
 
     if(time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
     {
         _imu_switch_mode(false);
-        PRINTS("Time diff ");
-        PRINT_HEX(&time_diff, sizeof(time_diff));
-        PRINTS("\r\n");
+        //PRINTS("Time diff ");
+        //PRINT_HEX(&time_diff, sizeof(time_diff));
+        //ßPRINTS("\r\n");
     }
 }
 
@@ -255,7 +261,11 @@ static void _on_pill_pairing_guesture_detected(void){
 
 static MSG_Status _init(void){
 	if(!initialized){
-        imu_power_on();
+		//TODO uncomment
+		//imu_power_on();
+
+		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLDOWN);
+
 #ifdef IMU_DYNAMIC_SAMPLING
 		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode3, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
 			_settings.inactive_sampling_rate, _settings.accel_range, _settings.inactive_wom_threshold))
@@ -264,8 +274,6 @@ static MSG_Status _init(void){
             _settings.active_sampling_rate, _settings.accel_range, _settings.active_wom_threshold))
 #endif
 		{
-			nrf_gpio_cfg_input(IMU_INT, GPIO_PIN_CNF_PULL_Pullup);
-
 		    imu_clear_interrupt_status();
 			APP_OK(app_gpiote_user_enable(_gpiote_user));
 			PRINTS("IMU: initialization done.\r\n");
@@ -298,18 +306,77 @@ static MSG_Status _handle_self_test(void){
 	parent->loadmod(&base);
 	return ret;
 }
+
+
 static MSG_Status _handle_read_xyz(void){
+
+#ifdef IMU_FIFO_ENABLE
+
+	int16_t values[IMU_FIFO_CAPACITY_WORDS];
+	uint8_t ret;
+	int16_t* ptr = values;
+	uint32_t mag;
+
+	// Returns number of bytes read, 0 if no data read
+	ret = imu_handle_fifo_read(values);
+
+	if(ret){
+
+		// FIFO read, handle values
+
+		uint8_t i;
+		//loop:
+		for(i=0;i<ret/6;i++)
+		{
+#ifdef IMU_FILTER_FIFO_DATA
+			//discard value less than threshold
+
+			// Send the first value
+			if(i > 0)
+			{
+				if(	(imu_data_within_thr(values[(i*3)-3+0] - ptr[0])) &&
+					(imu_data_within_thr(values[(i*3)-3+1] - ptr[1])) &&
+					(imu_data_within_thr(values[(i*3)-3+2] - ptr[2]))	)
+				{
+					ptr += 3;
+					continue;
+				}
+			}
+#endif
+
+			// ble notify
+			if(_settings.wom_callback){
+				_settings.wom_callback(ptr, 3*sizeof(int16_t));
+			}
+
+			//aggregate value greater than threshold
+			mag = _aggregate_motion_data(ptr, 3*sizeof(int16_t));
+			ShakeDetect(mag);
+
+			ptr += 3;
+		}
+
+	}
+
+#else
 	int16_t values[3];
 	uint32_t mag;
-	imu_accel_reg_read((uint8_t*)values);
-	//uint8_t interrupt_status = imu_clear_interrupt_status();
+	imu_accel_reg_read(values);
+
+	PRINTS("FINISHED READING\r\n");
+
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));
 	}
+
 	mag = _aggregate_motion_data(values, sizeof(values));
 	ShakeDetect(mag);
+#endif
+
 #ifdef IMU_DYNAMIC_SAMPLING        
+
 	app_timer_cnt_get(&_last_active_time);
+
 	if(!_settings.is_active)
 	{
 		_imu_switch_mode(true);
@@ -317,6 +384,7 @@ static MSG_Status _handle_read_xyz(void){
 		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 	}
 #endif
+	APP_OK(app_gpiote_user_enable(_gpiote_user));
 	return SUCCESS;
 }
 
@@ -331,6 +399,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
+
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();

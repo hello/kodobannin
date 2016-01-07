@@ -26,13 +26,28 @@ enum {
 //#define DATA_SCIENCE_TASK
 #define IMU_DYNAMIC_SAMPLING
 
-#define IMU_INACTIVE_FREQ    (IMU_HZ_10)
-#define IMU_INACTIVE_WOM     (55)
+#define IMU_FIFO_ENABLE
+
+// This define can be used to switch between 10Hz LP inactive to 1Hz inactive HRES
+#define IMU_ENABLE_LOW_POWER
+
+#ifdef IMU_ENABLE_LOW_POWER
+	#define IMU_INACTIVE_FREQ    (IMU_HZ_10)
+	#define IMU_INACTIVE_WOM     (55)
+	#define IMU_ACTIVE_WOM       (80)
+#else
+	#define IMU_INACTIVE_FREQ    (IMU_HZ_1)
+	//TODO arbitrarily set, may need to be changed if using this mode
+	#define IMU_INACTIVE_WOM     (75)
+	#define IMU_ACTIVE_WOM       (100)
+#endif
 
 #define IMU_ACTIVE_FREQ      (IMU_HZ_25)
-#define IMU_ACTIVE_WOM       (80)
 
 #define IMU_CONSTANT_FREQ    (IMU_HZ_25)
+
+// To enable/disable filtering IMU FIFO data before
+//#define IMU_FILTER_FIFO_DATA
 
 /*
  * BLE Connection Parameters
