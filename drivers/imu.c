@@ -137,13 +137,16 @@ unsigned imu_get_sampling_interval(enum imu_hz hz)
 // Read all accelerometer values
 uint16_t imu_accel_reg_read(uint16_t *values)
 {
-	uint8_t * buf = (uint8_t*)values;
-	_register_read(REG_ACC_X_LO, buf++);
-	_register_read(REG_ACC_X_HI, buf++);
-	_register_read(REG_ACC_Y_LO, buf++);
-	_register_read(REG_ACC_Y_HI, buf++);
-	_register_read(REG_ACC_Z_LO, buf++);
-	_register_read(REG_ACC_Z_HI, buf++);
+	uint16_t bytes_read = 0;
+	uint16_t bytes_to_read = 6;
+
+	uint8_t buf[1] = { SPI_Read(REG_ACC_X_LO)};
+
+	// Enable multiple byte read
+	buf[0] |= 0x40;
+
+	bytes_read = spi_xfer(&_spi_context, 1, buf, bytes_to_read, (uint8_t*) values);
+	BOOL_OK(bytes_read == bytes_to_read);
 
 #ifdef IMU_MODULE_DEBUG
 	PRINTS("IMU: ");
