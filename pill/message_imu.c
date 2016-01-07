@@ -310,10 +310,7 @@ static MSG_Status _handle_self_test(void){
 }
 
 
-//#define IMU_SEND_AVG
-
 static MSG_Status _handle_read_xyz(void){
-
 
 #ifdef IMU_FIFO_ENABLE
 
@@ -321,14 +318,6 @@ static MSG_Status _handle_read_xyz(void){
 	uint8_t ret;
 	int16_t* ptr = values;
 	uint32_t mag;
-
-
-	#ifdef IMU_SEND_AVG
-		int16_t values_avg[3] = {0};
-		int32_t values_avg_temp[3] = {0};
-		uint32_t sample_count = 0;
-	#endif
-
 
 	// Returns number of bytes read, 0 if no data read
 	ret = imu_handle_fifo_read(values);
@@ -357,29 +346,6 @@ static MSG_Status _handle_read_xyz(void){
 
 			}
 
-	#ifdef IMU_SEND_AVG
-			// Average the values
-			values_avg_temp[0] += ptr[0];values_avg_temp[1] += ptr[1];values_avg_temp[2] += ptr[2];
-			sample_count++;
-
-			ptr += 3;
-		}
-
-		values_avg[0] = (int16_t) (values_avg_temp[0] / (sample_count));
-		values_avg[1] = (int16_t) (values_avg_temp[1] / (sample_count));
-		values_avg[2] = (int16_t) (values_avg_temp[2] / (sample_count));
-
-		// ble notify
-		if(_settings.wom_callback){
-			_settings.wom_callback(values_avg, 3*sizeof(int16_t));
-		}
-
-		//aggregate value greater than threshold
-		mag = _aggregate_motion_data(values_avg, 3*sizeof(int16_t));
-		ShakeDetect(mag);
-
-
-	#else
 			// ble notify
 			if(_settings.wom_callback){
 				_settings.wom_callback(ptr, 3*sizeof(int16_t));
@@ -391,11 +357,8 @@ static MSG_Status _handle_read_xyz(void){
 
 			ptr += 3;
 		}
-	#endif
-
 
 	}
-
 
 #else
 	int16_t values[3];
