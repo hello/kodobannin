@@ -25,7 +25,13 @@
 #define IMU_WTM_THRESHOLD (0x19UL)
 
 #define IMU_USE_PIN_INT1
-#define IMU_MODULE_DEBUG
+//#define IMU_USE_PIN_INT2
+
+#if defined(IMU_USE_PIN_INT1) && defined(IMU_USE_PIN_INT2)
+	#error Use either pin INT1 or INT2 for IMU. Not both.
+#endif
+
+//#define IMU_MODULE_DEBUG
 
 enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -481,7 +487,8 @@ inline void imu_enable_intr()
 	// Disable INT 1 function on INT 2 pin
 	_register_write(REG_CTRL_6, 0x00);
 
-#else
+#endif
+#ifdef IMU_USE_PIN_INT2
 
 	// interrupts are not enabled in INT 1 pin
 	_register_write(REG_CTRL_3, 0x00);
