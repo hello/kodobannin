@@ -17,6 +17,8 @@ static struct{
     MSG_CliUserListener_t listener;
 }self;
 
+#include "message_ant.h"
+#include "ant_devices.h"
 static void
 _handle_command(int argc, char * argv[]){
     if(argc > 1 && !match_command(argv[0], "echo")){
@@ -77,6 +79,31 @@ _handle_command(int argc, char * argv[]){
             app_timer_cnt_diff_compute(current_time, rtc, &time_diff);
             time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
             PRINTF("\n_ set-time %d\n", time + time_diff);
+        }
+    }
+    if( !match_command(argv[0], "prox") ){
+        hlo_ant_device_t device = (hlo_ant_device_t){
+            .device_type = HLO_ANT_DEVICE_TYPE_PILL,
+            .rssi = -60,
+        };
+
+        unsigned char buf[20] = {0};
+        MSG_ANT_PillData_t * pill_data = (MSG_ANT_PillData_t*)buf;
+        pill_data->type = ANT_PILL_PROX_ENCRYPTED;
+        pill_data->version = 2;
+        pill_data->payload_len = sizeof(buf) - sizeof(*pill_data);
+        pill_data->UUID = 0;
+
+        MSG_Data_t * message = MSG_Base_AllocateObjectAtomic(pill_data, sizeof(buf));
+        MSG_ANT_Message_t content = (MSG_ANT_Message_t){
+            .device = device,
+            .message = message,
+        };
+
+        MSG_Data_t * parcel = MSG_Base_AllocateObjectAtomic(&content, sizeof(content));
+        if(parcel){
+            self.parent->dispatch( ADDR(ANT,0), ADDR(ANT,MSG_ANT_HANDLE_MESSAGE), parcel);
+            MSG_Base_ReleaseDataAtomic(parcel);
         }
     }
     if( !match_command(argv[0], "bounce") ){
