@@ -26,8 +26,7 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
     memset(&morpheus_command, 0, sizeof(MorpheusCommand));
 
     uint64_t device_id = pill_data->UUID;
-    char buffer[17];  // 17 = 8 * 2 + 1
-    memset(buffer, 0, 17);
+    char buffer[17] = {0};
     size_t buffer_len = sizeof(buffer);
 
     if(!hble_uint64_to_hex_device_id(device_id, buffer, &buffer_len))
@@ -49,12 +48,6 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                 switch(pill_data->type){
                     case ANT_PILL_PROX_ENCRYPTED:
                         {
-                            if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
-                            {
-                                PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
-                                APP_OK(NRF_ERROR_NO_MEM);
-                            }
-
                             if(pill_data->payload_len > sizeof(morpheus_command.pill_data.motion_data_entrypted.bytes))
                             {
                                 PRINTS("PLEASE REDESIGN PROTOBUF, payload tooo long\r\n");
@@ -84,12 +77,6 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                         break;
                     case ANT_PILL_DATA_ENCRYPTED:
                         {
-                            if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
-                            {
-                                PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
-                                APP_OK(NRF_ERROR_NO_MEM);
-                            }
-
                             if(pill_data->payload_len > sizeof(morpheus_command.pill_data.motion_data_entrypted.bytes))
                             {
                                 PRINTS("PLEASE REDESIGN PROTOBUF, payload tooo long\r\n");
@@ -119,12 +106,6 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                         break;
                     case ANT_PILL_HEARTBEAT:
                         {
-                            if(sizeof(buffer) > sizeof(morpheus_command.pill_data.device_id))
-                            {
-                                PRINTS("PLEASE REDESIGN PROTOBUF, device id tooo long\r\n");
-                                APP_OK(NRF_ERROR_NO_MEM);
-                            }
-
                             pill_heartbeat_t heartbeat = {0};
                             // http://dbp-consulting.com/StrictAliasing.pdf
                             memcpy(&heartbeat, pill_data->payload, sizeof(pill_heartbeat_t));
