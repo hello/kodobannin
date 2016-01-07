@@ -223,7 +223,6 @@ fix_imu_interrupt(void){
 	if(initialized){
 		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
 			if((gpio_pin_state & (1<<IMU_INT))){
-				PRINTS("FIX\r\n");
 				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 				if (stuck_counter < 15)
 				{
@@ -262,7 +261,9 @@ static void _on_pill_pairing_guesture_detected(void){
 
 static MSG_Status _init(void){
 	if(!initialized){
+//TODO uncomment
         //imu_power_on();
+
 		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLDOWN);
 
 #ifdef IMU_DYNAMIC_SAMPLING
@@ -321,12 +322,13 @@ static MSG_Status _handle_read_xyz(void){
 	int16_t* ptr = values;
 	uint32_t mag;
 
-#ifdef IMU_SEND_AVG
-	int16_t values_avg[3] = {0};
-	int32_t values_avg_temp[3] = {0};
-#endif
 
-	uint32_t count = 0;
+	#ifdef IMU_SEND_AVG
+		int16_t values_avg[3] = {0};
+		int32_t values_avg_temp[3] = {0};
+		uint32_t sample_count = 0;
+	#endif
+
 
 	// Returns number of bytes read, 0 if no data read
 	ret = imu_handle_fifo_read(values);
@@ -344,12 +346,10 @@ static MSG_Status _handle_read_xyz(void){
 			// Send the first value
 			if(i > 0)
 			{
-				if(	(imu_data_within_thr(values[i*3-3+0] - ptr[0])) &&
-					(imu_data_within_thr(values[i*3-3+1] - ptr[1])) &&
-					(imu_data_within_thr(values[i*3-3+2] - ptr[2]))	)
+				if(	(imu_data_within_thr(values[(i*3)-3+0] - ptr[0])) &&
+					(imu_data_within_thr(values[(i*3)-3+1] - ptr[1])) &&
+					(imu_data_within_thr(values[(i*3)-3+2] - ptr[2]))	)
 				{
-					count++;
-					//PRINTS("Unused data\r\n");
 					ptr += 3;
 					continue;
 
@@ -357,16 +357,17 @@ static MSG_Status _handle_read_xyz(void){
 
 			}
 
-#ifdef IMU_SEND_AVG
+	#ifdef IMU_SEND_AVG
 			// Average the values
 			values_avg_temp[0] += ptr[0];values_avg_temp[1] += ptr[1];values_avg_temp[2] += ptr[2];
+			sample_count++;
 
 			ptr += 3;
 		}
 
-		values_avg[0] = (int16_t) (values_avg_temp[0] / (ret-count));
-		values_avg[1] = (int16_t) (values_avg_temp[1] / (ret-count));
-		values_avg[2] = (int16_t) (values_avg_temp[2] / (ret-count));
+		values_avg[0] = (int16_t) (values_avg_temp[0] / (sample_count));
+		values_avg[1] = (int16_t) (values_avg_temp[1] / (sample_count));
+		values_avg[2] = (int16_t) (values_avg_temp[2] / (sample_count));
 
 		// ble notify
 		if(_settings.wom_callback){
@@ -378,7 +379,7 @@ static MSG_Status _handle_read_xyz(void){
 		ShakeDetect(mag);
 
 
-#else
+	#else
 			// ble notify
 			if(_settings.wom_callback){
 				_settings.wom_callback(ptr, 3*sizeof(int16_t));
@@ -390,19 +391,10 @@ static MSG_Status _handle_read_xyz(void){
 
 			ptr += 3;
 		}
-#endif
+	#endif
 
-		PRINTS("FIFO read");
-		ret /= 6;
-		DEBUG(": ",ret);
-		PRINTS("Count:");
-		PRINT_BYTE(&count,sizeof(uint8_t));
-		PRINTS("\r\n");
-		ret -= count;
-		DEBUG("Sent: ",ret);
 
 	}
-
 
 
 #else
@@ -410,7 +402,7 @@ static MSG_Status _handle_read_xyz(void){
 	uint32_t mag;
 	imu_accel_reg_read(values);
 
-	//PRINTS("FINISHED READING\r\n");
+	PRINTS("FINISHED READING\r\n");
 
 	if(_settings.wom_callback){
 		_settings.wom_callback(values, sizeof(values));

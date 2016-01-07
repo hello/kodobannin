@@ -25,11 +25,13 @@
 #define IMU_WTM_THRESHOLD (0x19UL)
 
 #define IMU_USE_PIN_INT1
+#define IMU_MODULE_DEBUG
 
 enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };
 
+// TODO delete this if not needed
 /*
 typedef struct __attribute__((packed)){
 
@@ -50,7 +52,7 @@ static SPI_Context _spi_context;
 
 static bool imu_wtm_intr_en = false;
 
-static uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read);
+static uint16_t imu_fifo_read_all(uint16_t* values, uint32_t bytes_to_read);
 
 
 static inline void _register_read(Register_t register_address, uint8_t* const out_value)
@@ -137,7 +139,7 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 	_register_read(REG_ACC_Z_LO, buf++);
 	_register_read(REG_ACC_Z_HI, buf++);
 
-	/*
+#ifdef IMU_MODULE_DEBUG
 	PRINTS("IMU: ");
 	for(uint8_t i=0;i<3;i++){
 		uint8_t temp = ((values[i] & 0xFF00) >> 8);
@@ -148,7 +150,8 @@ uint16_t imu_accel_reg_read(uint16_t *values)
 
 	}
 	PRINTS("\r\n");
-*/
+#endif
+
 	return 6;
 }
 
@@ -182,8 +185,8 @@ inline uint8_t imu_clear_interrupt_status()
 	return int_source;
 }
 
-
-/*
+// TODO delete this if not needed
+#if 0
 bool imu_data_within_thr(int16_t value)
 {
 	uint16_t u_value = value;
@@ -218,12 +221,13 @@ bool imu_data_within_thr(int16_t value)
 	return false;
 
 }
-*/
+#endif
 
+#define IMU_DATA_THR	55U
 
 bool imu_data_within_thr(int16_t value)
 {
-	if(abs(value) < 80)
+	if(abs(value) < (uint16_t)IMU_DATA_THR)
 		return true;
 
 	return false;
@@ -426,7 +430,7 @@ inline void imu_fifo_disable()
 }
 
 // Read all bytes from FIFO
-static uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read)
+static uint16_t imu_fifo_read_all(uint16_t* values, uint32_t bytes_to_read)
 {
 	uint16_t bytes_read = 0;
 
@@ -438,7 +442,7 @@ static uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read)
 	bytes_read = spi_xfer(&_spi_context, 1, buf, bytes_to_read, (uint8_t*) values);
 	BOOL_OK(bytes_read == bytes_to_read);
 
-/*
+#ifdef IMU_MODULE_DEBUG
  	for(uint8_t j=0;j<bytes_read/2;j+=3){
 		//PRINTS("IMU: ");
 		for(uint8_t i=0;i<3;i++){
@@ -451,7 +455,7 @@ static uint16_t imu_fifo_read_all(uint16_t* values, uint8_t bytes_to_read)
 		}
 		PRINTS("\r\n");
 	}
-*/
+#endif
 
 	return bytes_read;
 
@@ -525,7 +529,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		APP_ASSERT(0);
 	}
 
-	// Reset chip (Reboot memory content - enables SPI 3 wire mode by default)
+	// Reset chip (Reboot memory content)
 	imu_reset();
 
 	imu_enable_all_axis();
@@ -600,7 +604,6 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 #define	SELF_TEST_SAMPLE_SIZE				(32UL)
 #define SELF_TEST_PASS(x)	(((uint8_t)(x) >= ST_CHANGE_MIN) && ((uint8_t)(x) <= ST_CHANGE_MAX) )
 
-// TODO self test not implemented
 int imu_self_test(void){
 
 
@@ -611,12 +614,9 @@ int imu_self_test(void){
 
 	PRINTS("Self test start\r\n");
 
-	// TODO
-	/*
     imu_power_off();
     nrf_delay_ms(20);
     imu_power_on();
-    */
 
     nrf_delay_ms(20);
     imu_reset();
@@ -653,7 +653,7 @@ int imu_self_test(void){
 		values_avg[ch] /= count;
 	}
 
-
+#ifdef IMU_MODULE_DEBUG
 	PRINTS("AVG: ");
  	for(uint8_t i=0;i<3;i++){
  		int16_t diff = values_avg[i];
@@ -663,77 +663,95 @@ int imu_self_test(void){
 			PRINTS(" ");
 	}
  	PRINTS("\r\n");
-
+#endif
 
  	nrf_delay_ms(20);
 
 	// Enable self-test mode
 	imu_self_test_enable();
 
-	//nrf_delay_ms(20);
+	nrf_delay_ms(20);
 
-	// Reset FIFO
-	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+	int16_t values_st_avg_2[3] = {0};
 
-	// Enable FIFO mode
-	imu_set_fifo_mode(IMU_FIFO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, SELF_TEST_SAMPLE_SIZE-1);
-
-	//nrf_delay_ms(20);
-
-	// Poll for wtm flag
-	while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
-
-	// Read samples with self-test enabled
-	bytes_read = imu_fifo_read_all(&values_st[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
-
-
-	// calculate average for each axis
-	for(uint8_t ch=0;ch<3;ch++)
+	// TODO loop added to check if delay helps in self test, remove if not needed
+	for(uint8_t j=0;j<3;j++)
 	{
-		uint8_t count = 0;
-		values_st_avg[ch] = 0;
-		for(uint8_t i=5;i<bytes_read/3/2;i++)
+		// Reset FIFO
+		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+
+		// Enable FIFO mode
+		imu_set_fifo_mode(IMU_FIFO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, SELF_TEST_SAMPLE_SIZE-1);
+
+		//nrf_delay_ms(20);
+
+		// Poll for wtm flag
+		while(!(imu_read_fifo_src_reg() & FIFO_WATERMARK));
+
+		// Read samples with self-test enabled
+		bytes_read = imu_fifo_read_all(&values_st[0][0],SELF_TEST_SAMPLE_SIZE*3*2);
+
+
+		// calculate average for each axis
+		for(uint8_t ch=0;ch<3;ch++)
 		{
-			values_st_avg[ch] += values_st[i][ch];
-			count++;
+			uint8_t count = 0;
+			values_st_avg[ch] = 0;
+			for(uint8_t i=5;i<bytes_read/3/2;i++)
+			{
+				values_st_avg[ch] += values_st[i][ch];
+				count++;
+			}
+			values_st_avg[ch] /= count;
 		}
-		values_st_avg[ch] /= count;
+
+		values_st_avg_2[0] += values_st_avg[0];
+		values_st_avg_2[1] += values_st_avg[1];
+		values_st_avg_2[2] += values_st_avg[2];
+
 	}
 
+	values_st_avg_2[0] /= 3;
+	values_st_avg_2[1] /= 3;
+	values_st_avg_2[2] /= 3;
 
+#ifdef IMU_MODULE_DEBUG
 	PRINTS("ST AVG: ");
  	for(uint8_t i=0;i<3;i++){
- 		int16_t diff = values_st_avg[i];
-			uint8_t temp = ((diff & 0xFF00) >> 8);
-			PRINT_BYTE(&temp,sizeof(uint8_t));
-			PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
-			PRINTS(" ");
+		int16_t diff = values_st_avg_2[i];
+		uint8_t temp = ((diff & 0xFF00) >> 8);
+		PRINT_BYTE(&temp,sizeof(uint8_t));
+		PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
+		PRINTS(" ");
 	}
  	PRINTS("\r\n");
-
+#endif
 
 	// Disable self-test mode
 	imu_self_test_disable();
 
 	nrf_delay_ms(20);
 
-	/*
+#ifdef IMU_MODULE_DEBUG
 	PRINTS("DIFF: ");
  	for(uint8_t i=0;i<3;i++){
- 		uint16_t diff = abs(values_st_avg[i] - values_avg[i]);
- 		PRINT_DEC(&diff,sizeof(uint16_t));
-			PRINTS(" ");
+		uint16_t diff = 0;
+		diff = abs(values_st_avg_2[i] - values_avg[i]);
+		PRINT_BYTE(&diff,sizeof(uint8_t));
+		PRINTS(" ");
 	}
  	PRINTS("\r\n");
-	 */
+
 
 	PRINTS("Self test end\r\n");
+#endif
+
 	// Calculate self-test output change Output_st_enabled[LSB] - Ouput_st_disbled[LSB]
 
 	// If ST output change is with 17 and 360 - Self-test pass, else fail
-	if((SELF_TEST_PASS(abs(values_st_avg[0] - values_avg[0]))) &&
-		(SELF_TEST_PASS(abs(values_st_avg[1] - values_avg[1]))) &&
-		(SELF_TEST_PASS(abs(values_st_avg[2] - values_avg[2]))))
+	if((SELF_TEST_PASS(abs(values_st_avg_2[0] - values_avg[0]))) &&
+		(SELF_TEST_PASS(abs(values_st_avg_2[1] - values_avg[1]))) &&
+		(SELF_TEST_PASS(abs(values_st_avg_2[2] - values_avg[2]))))
 	{
 		PRINTS("Pass\r\n");
 		return 0;
