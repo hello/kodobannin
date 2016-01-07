@@ -4,7 +4,7 @@
 
 // Based on LIS2DH datasheet
 
-#define CHIP_ID 0x33
+#define DEVICE_ID 0x33
 
 typedef enum IMU_Registers {
 	REG_STATUS_AUX = 0x7,

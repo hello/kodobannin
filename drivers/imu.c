@@ -31,31 +31,16 @@
 	#error Use either pin INT1 or INT2 for IMU. Not both.
 #endif
 
+// Uncomment to display debug print statements
 //#define IMU_MODULE_DEBUG
 
 enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
 };
 
-// TODO delete this if not needed
-/*
-typedef struct __attribute__((packed)){
-
-	uint16_t x;
-	uint16_t y;
-	uint16_t z;
-}imu_data_t;
-typedef union fifo_buffer {
-
-	uint8_t bytes[IMU_FIFO_CAPACITY_BYTES];
-	int16_t values[IMU_FIFO_CAPACITY_WORDS];
-	imu_data_t imu_data[IMU_FIFO_CAPACITY_SAMPLES];
-
-}fifo_buffer_t;
-*/
-
 static SPI_Context _spi_context;
 
+// true if imu fifo watermark interrupt is enabled
 static bool imu_wtm_intr_en = false;
 
 static uint16_t imu_fifo_read_all(uint16_t* values, uint32_t bytes_to_read);
@@ -232,21 +217,17 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 		// Read FIFO
 		ret = imu_fifo_read_all(values, (fifo_unread_samples*fifo_channels_per_sample*fifo_bytes_per_channel));
 
-		// Reset FIFO - change mode to bypass
-		imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
-
-		// Enable stream to FIFO mode
-		imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
-
 		_register_write(REG_CTRL_3, INT1_AOI1);
 
 		imu_wtm_intr_en = false;
+
 	}
 	else if(imu_wtm_intr_en == false)
 	{
 		// AOI intr occurred but FIFO not full, wait for WTM INT
 		_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
 		imu_wtm_intr_en = true;
+
 	}
 
 	return ret;
@@ -496,7 +477,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	_register_read(REG_WHO_AM_I, &whoami_value);
 
 
-	if (whoami_value != CHIP_ID) {
+	if (whoami_value != DEVICE_ID) {
 		DEBUG("Invalid IMU ID found. Expected 0x33, got 0x", whoami_value);
 		APP_ASSERT(0);
 	}
@@ -540,16 +521,13 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	imu_fifo_enable();
 
 	// Update FIFO mode
-	imu_set_fifo_mode(IMU_FIFO_STREAM_TO_FIFO_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
 
 	imu_wtm_intr_en = false;
 #else
 	imu_fifo_disable();
 
 #endif
-
-	// TODO
-	//_register_write(REG_ACT_THR,wom_threshold);
 
 	int16_t values[3];
 	imu_accel_reg_read(values);
@@ -566,7 +544,6 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 #endif
 
 	imu_enable_intr();
-
 
 	return err;
 }
