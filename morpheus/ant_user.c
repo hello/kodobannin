@@ -18,6 +18,28 @@ static struct{
     volatile uint64_t dfu_pill_id;
 }self;
 
+static int _copy_pill_meta_data(MorpheusCommand * c, MSG_ANT_PillData_t * pill_data, const hlo_ant_device_t * id, char * device_id){
+    memcpy(c->pill_data.device_id, device_id, sizeof(c->pill_data.device_id));
+
+    c->pill_data.has_firmware_version = true;
+    c->pill_data.firmware_version = pill_data->version;
+
+    c->pill_data.has_rssi = true;
+    c->pill_data.rssi = id->rssi;
+
+    c->pill_data.timestamp = 0;
+    return 0;
+}
+static int _copy_encrypted_data(MorpheusCommand * c, MorpheusCommand_CommandType type, MSG_ANT_PillData_t * pill_data){
+    c->type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_PROX_DATA;
+    c->has_pill_data = true;
+
+    c->pill_data.has_motion_data_entrypted = true;
+    memcpy(c->pill_data.motion_data_entrypted.bytes, pill_data->payload, pill_data->payload_len);
+    c->pill_data.motion_data_entrypted.size = pill_data->payload_len;
+
+    return 0;
+}
 static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
     // TODO, this shit needs to be tested on CC3200 side.
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
@@ -26,11 +48,10 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
     memset(&morpheus_command, 0, sizeof(MorpheusCommand));
 
     uint64_t device_id = pill_data->UUID;
-    char buffer[17] = {0};
+    char buffer[sizeof(morpheus_command.pill_data.device_id)] = {0};
     size_t buffer_len = sizeof(buffer);
 
-    if(!hble_uint64_to_hex_device_id(device_id, buffer, &buffer_len))
-    {
+    if(!hble_uint64_to_hex_device_id(device_id, buffer, &buffer_len)){
         PRINTS("Get pill id failed.\r\n");
     }else{
         if( MSG_Base_FreeCount() < configLOW_MEM )
@@ -54,22 +75,9 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                                 APP_OK(NRF_ERROR_NO_MEM);
                             }
 
-                            morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_PROX_DATA;
-                            morpheus_command.has_pill_data = true;
+                            _copy_pill_meta_data(&morpheus_command, pill_data, id, buffer);
+                            _copy_encrypted_data(&morpheus_command, MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_PROX_DATA, pill_data);
 
-                            morpheus_command.pill_data.has_motion_data_entrypted = true;
-                            memcpy(morpheus_command.pill_data.motion_data_entrypted.bytes, pill_data->payload, pill_data->payload_len);
-                            morpheus_command.pill_data.motion_data_entrypted.size = pill_data->payload_len;
-
-                            memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
-
-                            morpheus_command.pill_data.has_firmware_version = true;
-                            morpheus_command.pill_data.firmware_version = pill_data->version;
-
-                            morpheus_command.pill_data.has_rssi = true;
-                            morpheus_command.pill_data.rssi = id->rssi;
-
-                            morpheus_command.pill_data.timestamp = 0;
                             PRINTS("ANT Encrypted Pill Prox Received:");
                             PRINTS(morpheus_command.pill_data.device_id);
                             PRINTS("\r\n");
@@ -83,22 +91,9 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                                 APP_OK(NRF_ERROR_NO_MEM);
                             }
 
-                            morpheus_command.type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA;
-                            morpheus_command.has_pill_data = true;
+                            _copy_pill_meta_data(&morpheus_command, pill_data, id, buffer);
+                            _copy_encrypted_data(&morpheus_command, MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_DATA, pill_data);
 
-                            morpheus_command.pill_data.has_motion_data_entrypted = true;
-                            memcpy(morpheus_command.pill_data.motion_data_entrypted.bytes, pill_data->payload, pill_data->payload_len);
-                            morpheus_command.pill_data.motion_data_entrypted.size = pill_data->payload_len;
-
-                            memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
-                            
-                            morpheus_command.pill_data.has_firmware_version = true;
-                            morpheus_command.pill_data.firmware_version = pill_data->version;
-
-                            morpheus_command.pill_data.has_rssi = true;
-                            morpheus_command.pill_data.rssi = id->rssi;
-
-                            morpheus_command.pill_data.timestamp = 0;
                             PRINTS("ANT Encrypted Pill Data Received:");
                             PRINTS(morpheus_command.pill_data.device_id);
                             PRINTS("\r\n");
@@ -120,15 +115,8 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                             morpheus_command.pill_data.has_uptime = true;
                             morpheus_command.pill_data.uptime = heartbeat.uptime_sec;
 
-                            morpheus_command.pill_data.has_firmware_version = true;
-                            morpheus_command.pill_data.firmware_version = pill_data->version;
+                            _copy_pill_meta_data(&morpheus_command, pill_data, id, buffer);
 
-                            morpheus_command.pill_data.has_rssi = true;
-                            morpheus_command.pill_data.rssi = id->rssi;
-
-                            memcpy(morpheus_command.pill_data.device_id, buffer, sizeof(buffer));
-
-                            morpheus_command.pill_data.timestamp = 0;
                             PRINTS("ANT Pill Heartbeat Received.\r\n");
                         }
                         break;
