@@ -146,38 +146,10 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
         MSG_Base_ReleaseDataAtomic(string_page);
         return false;
     }
+    string_page = (uint8_t*)pvPortRealloc( string_page, strlen((const char*)string_page->buf)+1+sizeof(MSG_Data_t));
 	
     //PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
 	*arg = string_page;
-
-    return true;
-}
-
-static bool _decode_bytes_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
-{
-    /* We could read block-by-block to avoid the large buffer... */
-    if (stream->bytes_left > PROTOBUF_MAX_LEN - 1 || stream->bytes_left == 0)
-    {
-        return false;
-    }
-    
-    MSG_Data_t* buffer_page = MSG_Base_AllocateDataAtomic(stream->bytes_left);
-    //PRINTS("malloc in _decode_bytes_field\r\n");// nrf_delay_ms(1);
-
-    if(!buffer_page)
-    {
-        return false;
-    }
-
-    memset(buffer_page->buf, 0, stream->bytes_left);
-    if (!pb_read(stream, buffer_page->buf, stream->bytes_left))
-    {
-        MSG_Base_ReleaseDataAtomic(buffer_page);
-        PRINTS("free in _decode_bytes_field\r\n");// nrf_delay_ms(1);
-        return false;
-    }
-
-    *arg = buffer_page;
 
     return true;
 }
