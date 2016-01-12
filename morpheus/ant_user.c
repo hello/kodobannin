@@ -31,7 +31,7 @@ static int _copy_pill_meta_data(MorpheusCommand * c, MSG_ANT_PillData_t * pill_d
     return 0;
 }
 static int _copy_encrypted_data(MorpheusCommand * c, MorpheusCommand_CommandType type, MSG_ANT_PillData_t * pill_data){
-    c->type = MorpheusCommand_CommandType_MORPHEUS_COMMAND_PILL_PROX_DATA;
+    c->type = type;
     c->has_pill_data = true;
 
     c->pill_data.has_motion_data_entrypted = true;
