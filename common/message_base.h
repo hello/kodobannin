@@ -100,6 +100,7 @@ MSG_Data_t * INCREF MSG_Base_AllocateObjectAtomic(const void * obj, size_t size)
 MSG_Data_t * INCREF MSG_Base_Dupe(MSG_Data_t * orig);
 uint32_t MSG_Base_FreeCount(void);
 bool MSG_Base_HasMemoryLeak(void);
+MSG_Data_t * MSG_Base_ResizeObjectAtomic(MSG_Data_t * obj, size_t new_size);
 
 MSG_Status   INCREF MSG_Base_AcquireDataAtomic(MSG_Data_t * d);
 MSG_Status   DECREF MSG_Base_ReleaseDataAtomic(MSG_Data_t * d);

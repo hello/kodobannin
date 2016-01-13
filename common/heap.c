@@ -76,6 +76,7 @@
 #include "stdbool.h"
 #include "app.h"
 #include "platform.h"
+#include <string.h>
 
 
 #include "util.h"
@@ -95,7 +96,6 @@
 #define portPOINTER_SIZE_TYPE uint32_t
 
 #include <stdlib.h>
-void * memmove ( void * destination, const void * source, size_t num );
 
 /* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
 all the API functions to use the MPU wrappers.  That should only be done when
@@ -266,7 +266,7 @@ BlockLink_t *pxLink, *pxNewBlockLink;
 			{
 				void * mem = pvPortMalloc(xWantedSize);
 				if( mem ) {
-					memmove(mem, pv, B(pxLink->xBlockSize) - heapSTRUCT_SIZE);
+					memcpy(mem, pv, B(pxLink->xBlockSize) - heapSTRUCT_SIZE);
 					vPortFree(pv);
 					xTaskResumeAll();
 					return mem;
