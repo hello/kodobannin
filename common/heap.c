@@ -76,6 +76,7 @@
 #include "stdbool.h"
 #include "app.h"
 #include "platform.h"
+#include <string.h>
 
 
 #include "util.h"
