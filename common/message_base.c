@@ -37,6 +37,8 @@ MSG_Data_t * MSG_Base_ResizeObjectAtomic(MSG_Data_t * obj, size_t new_size){
         ret = (MSG_Data_t*)pvPortRealloc(ret, new_size + sizeof(MSG_Data_t));
         if(ret){
             ret->len = new_size;
+        }else{
+            APP_OK(NRF_ERROR_NO_MEM);
         }
         CRITICAL_REGION_EXIT();
     }
