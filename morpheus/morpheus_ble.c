@@ -146,7 +146,7 @@ static bool _decode_string_field(pb_istream_t *stream, const pb_field_t *field, 
         MSG_Base_ReleaseDataAtomic(string_page);
         return false;
     }
-    string_page = (uint8_t*)pvPortRealloc( string_page, strlen((const char*)string_page->buf)+1+sizeof(MSG_Data_t));
+    string_page = MSG_Base_ResizeObjectAtomic(string_page, strlen((const char*)string_page->buf) + 1);
 	
     //PRINTS("malloc in _decode_string_field\r\n");// nrf_delay_ms(1);
 	*arg = string_page;
