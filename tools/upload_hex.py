@@ -39,6 +39,9 @@ def upload_files(flist, bucket, prefix):
         k.key = os.path.join(prefix, extract_name(f))
         k.set_content_from_filename(f, cb = percent_cb, num_cb = 10)
 
+def is_master():
+    return True
+
 def upload(commit_info = "limbo"):
     bucket = conn.lookup(S3_ROOT)
     if bucket:
