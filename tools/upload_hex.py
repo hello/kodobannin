@@ -37,21 +37,19 @@ def upload_files(flist, bucket, prefix):
     for f in flist:
         k = Key(bucket)
         k.key = os.path.join(prefix, extract_name(f))
-        k.set_content_from_filename(f, cb = percent_cb, num_cb = 10)
+        k.set_contents_from_filename(f, cb = percent_cb, num_cb = 10)
 
-def is_master():
-    return True
-
-def upload(commit_info = "limbo"):
+def upload(commit_info = "limbo", branch="unknown"):
     bucket = conn.lookup(S3_ROOT)
     if bucket:
         hexes = find_hexes("build")
-
         upload_files(hexes, bucket, os.path.join(BUILD_BASE_KEY, commit_info))
-        if is_master():
-            print "Building Alpha"
-            delete_folder(ka, ALPHA_BASE_NAME)
-            upload_files(hexes, bucket, os.path.join(ALPHA_BASE_NAME))
+        if branch == "master":
+            print "Updating Alpha"
+            delete_folder(bucket, ALPHA_BASE_KEY)
+            upload_files(hexes, bucket, os.path.join(ALPHA_BASE_KEY))
+        else:
+            print "Updating %s"%(branch)
 
         print "Uploads finished"
         return True
@@ -59,8 +57,8 @@ def upload(commit_info = "limbo"):
         print "no such bukkit"
         return False
 
-if len(sys.argv) > 1:
-    upload(commit_info = sys.argv[1])
+if len(sys.argv) > 2:
+    upload(sys.argv[1], sys.argv[2])
 else:
     print "no commit, no upload"
 
