@@ -29,7 +29,7 @@ def percent_cb(complete, total):
     sys.stdout.flush()
 
 def upload(commit_info = "limbo"):
-    bucket = conn.lookup("hello-firmware")
+    bucket = conn.lookup(S3_ROOT)
     if bucket:
         #delete latest key
         for key in bucket.list(prefix=BUILD_LATEST_KEY):
