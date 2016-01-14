@@ -28,14 +28,28 @@ def percent_cb(complete, total):
     sys.stdout.write('.')
     sys.stdout.flush()
 
+def delete_folder(bucket, prefix_key):
+    for key in bucket.list(prefix=prefix_key):
+        print "Deleting Key: " + key.name
+        key.delete()
+
+def upload_files(flist, bucket, prefix):
+    for f in flist:
+        k = Key(bucket)
+        k.key = os.path.join(prefix, extract_name(f))
+        k.set_content_from_filename(f, cb = percent_cb, num_cb = 10)
+
 def upload(commit_info = "limbo"):
     bucket = conn.lookup(S3_ROOT)
     if bucket:
         hexes = find_hexes("build")
-        for h in hexes:
-            k = Key(bucket)
-            k.key = os.path.join(BUILD_BASE_KEY, commit_info, extract_name(h))
-            k.set_contents_from_filename(h, cb = percent_cb, num_cb=10)
+
+        upload_files(hexes, bucket, os.path.join(BUILD_BASE_KEY, commit_info))
+        if is_master():
+            print "Building Alpha"
+            delete_folder(ka, ALPHA_BASE_NAME)
+            upload_files(hexes, bucket, os.path.join(ALPHA_BASE_NAME))
+
         print "Uploads finished"
         return True
     else:
