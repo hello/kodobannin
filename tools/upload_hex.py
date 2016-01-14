@@ -7,9 +7,10 @@ import sys
 #TODO not hardcode this!
 S3_ACCESS_ID = "AKIAJ7SHF3VSR7KB7VMA"
 S3_SECRET_KEY = "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"
-BUILD_BASE_KEY = "builds/"
-BUILD_LATEST_KEY = "latest/"
-ALPHA_BASE_KEY = "alpha/"
+KODOBANNIN_BASE = "kodobannin/"
+BUILD_BASE_KEY = KODOBANNIN_BASE + "builds/"
+BUILD_LATEST_KEY = KODOBANNIN_BASE + "latest/"
+ALPHA_BASE_KEY = KODOBANNIN_BASE + "alpha/"
 S3_ROOT = "hello-firmware"
 
 conn = S3Connection(S3_ACCESS_ID, S3_SECRET_KEY)
