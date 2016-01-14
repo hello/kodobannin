@@ -8,6 +8,7 @@
 #include "app.h"
 #include "battery.h"
 #include <ble.h>
+#include "heap.h"
 
 static adc_t Vref, Vrel, Voff;
 static uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
