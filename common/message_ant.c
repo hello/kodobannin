@@ -200,7 +200,7 @@ MSG_Data_t * INCREF AllocateEncryptedAntPayload(MSG_ANT_PillDataType_t type, voi
     MSG_Data_t* data_page = _AllocateAntPacket(type ,sizeof(uint64_t) + len);
     if( data_page ){
         //ant data comes from the data page (allocated above, and freed at the end of this function)
-        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
+        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*)data_page->buf;
         //motion_data is a pointer to the blob of data that antdata->payload points to
         //the goal is to fill out the motion_data pointer
         MSG_ANT_EncryptedData20_t *edata = (MSG_ANT_EncryptedData20_t *)ant_data->payload;
@@ -211,11 +211,11 @@ MSG_Data_t * INCREF AllocateEncryptedAntPayload(MSG_ANT_PillDataType_t type, voi
         if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
             sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
         }
-        memcpy(edata->nonce, nonce, sizeof(nonce));
+        memcpy(&edata->nonce, nonce, sizeof(nonce));
 
         //now encrypt
         memcpy(edata->payload, payload, len);
-        aes128_ctr_encrypt_inplace(edata->payload, sizeof(edata->payload), get_aes128_key(), nonce);
+        aes128_ctr_encrypt_inplace(edata->payload, len, get_aes128_key(), nonce);
     }
     return data_page;
 }
