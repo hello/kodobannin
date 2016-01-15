@@ -1,6 +1,7 @@
 #include "message_ant.h"
 #include "util.h"
 #include "hlo_queue.h"
+#include <string.h>
 
 static struct{
     MSG_Central_t * parent;
