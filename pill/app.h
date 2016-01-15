@@ -8,7 +8,7 @@
 #include "platform.h"
 
 enum {
-    APP_TIMER_PRESCALER = 0,
+    APP_TIMER_PRESCALER = 255,
     APP_TIMER_MAX_TIMERS = 9,
     APP_TIMER_OP_QUEUE_SIZE = 8,
 };
