@@ -1,8 +1,6 @@
-bootloader+pill_DVT1
 bootloader+pill_PVT1
-bootloader_serial+morpheus_DVT1
+bootloader+pillx_EVT1
 bootloader_serial+morpheus_PVT1
-morpheus+morpheus_DVT1
 morpheus+morpheus_PVT1
-pill+pill_DVT1
 pill+pill_PVT1
+pill+pillx_EVT1
