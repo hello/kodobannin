@@ -68,6 +68,16 @@ _flush(void){
 }
 
 #ifdef ANT_STACK_SUPPORT_REQD
+static void _send_available_prox_ant(){
+    uint16_t prox_reading = 0;
+    MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_PROX_ENCRYPTED, &prox_reading, sizeof(prox_reading));
+    if(data){
+        self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data);
+        self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,MSG_UART_HEX}, data);
+        MSG_Base_ReleaseDataAtomic(data);
+    }
+
+}
 static void _send_available_data_ant(){
     MotionPayload_t motion[TF_CONDENSED_BUFFER_SIZE] = {0};
     if(TF_GetCondensed(motion, TF_CONDENSED_BUFFER_SIZE)){
