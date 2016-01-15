@@ -17,6 +17,7 @@ typedef struct{
     MSG_Address_t address;
 }queue_message_t;
 
+static MSG_Data_t INCREF * _AllocateAntPacket(MSG_ANT_PillDataType_t type, size_t payload_size);
 //returns -1 if not found, otherwise return index
 static int
 _find_paired(const hlo_ant_device_t * device){
@@ -176,6 +177,58 @@ static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * messa
             PRINTS("error closing\r\n");
         }
     }
+}
+
+static MSG_Data_t INCREF * _AllocateAntPacket(MSG_ANT_PillDataType_t type, size_t payload_size){
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + payload_size);
+    if(data_page){
+        memset(&data_page->buf, 0, data_page->len);
+
+        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
+        ant_data->version = ANT_PROTOCOL_VER;
+        ant_data->type = type;
+        ant_data->UUID = GET_UUID_64();
+        ant_data->payload_len = payload_size;
+    }
+    return data_page;
+}
+typedef struct{
+    uint64_t nonce;
+    uint8_t payload[14];
+}__attribute__((packed)) MSG_ANT_EncryptedData20_t;
+MSG_Data_t * INCREF AllocateEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len){
+    MSG_Data_t* data_page = _AllocateAntPacket(type ,sizeof(MSG_ANT_EncryptedData20_t));
+    if( data_page ){
+        //ant data comes from the data page (allocated above, and freed at the end of this function)
+        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
+        //motion_data is a pointer to the blob of data that antdata->payload points to
+        //the goal is to fill out the motion_data pointer
+        MSG_ANT_EncryptedData20_t *edata = (MSG_ANT_EncryptedData20_t *)ant_data->payload;
+
+        //now set the nonce
+        uint8_t pool_size = 0;
+        uint8_t nonce[8] = {0};
+        if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
+            sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
+        }
+        memcpy(edata->nonce, nonce, sizeof(nonce));
+
+        //now encrypt
+        if(len > sizeof(edata->payload)){
+            //error?
+        }
+        memcpy(edata->payload, payload, sizeof(edata->payload));
+        aes128_ctr_encrypt_inplace(edata->payload, sizeof(edata->payload), get_aes128_key(), nonce);
+    }
+    return data_page;
+}
+MSG_Data_t * INCREF AllocateAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len){
+    MSG_Data_t* data_page = _AllocateAntPacket(type ,len);
+    if( data_page ){
+        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
+        memcpy(ant_data->payload, payload, len);
+    }
+    return data_page;
 }
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler){

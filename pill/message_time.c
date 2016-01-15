@@ -68,54 +68,11 @@ _flush(void){
 }
 
 #ifdef ANT_STACK_SUPPORT_REQD
-typedef struct{
-    uint64_t nonce;
-    uint8_t payload[14];
-}__attribute__((packed)) MSG_ANT_EncryptedData20_t;
-MSG_Data_t * MakeAntPacket(MSG_ANT_PillDataType_t type, size_t payload_size){
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + payload_size);
-    if(data_page){
-        memset(&data_page->buf, 0, data_page->len);
-
-        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
-        ant_data->version = ANT_PROTOCOL_VER;
-        ant_data->type = type;
-        ant_data->UUID = GET_UUID_64();
-        ant_data->payload_len = payload_size;
-    }
-    return data_page;
-}
-MSG_Data_t * MakeEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len){
-    MSG_Data_t* data_page = MakeAntPacket(type ,sizeof(MSG_ANT_EncryptedData20_t));
-    if( data_page ){
-        //ant data comes from the data page (allocated above, and freed at the end of this function)
-        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
-        //motion_data is a pointer to the blob of data that antdata->payload points to
-        //the goal is to fill out the motion_data pointer
-        MSG_ANT_EncryptedData20_t *edata = (MSG_ANT_EncryptedData20_t *)ant_data->payload;
-
-        //now set the nonce
-        uint8_t pool_size = 0;
-        uint8_t nonce[8] = {0};
-        if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
-            sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
-        }
-        memcpy(edata->nonce, nonce, sizeof(nonce));
-
-        //now encrypt
-        if(len > sizeof(edata->payload)){
-            //error?
-        }
-        memcpy(edata->payload, payload, sizeof(edata->payload));
-        aes128_ctr_encrypt_inplace(edata->payload, sizeof(edata->payload), get_aes128_key(), nonce);
-    }
-    return data_page;
-}
 static void _send_available_data_ant(){
 
     MotionPayload_t motion[TF_CONDENSED_BUFFER_SIZE] = {0};
     if(TF_GetCondensed(motion, TF_CONDENSED_BUFFER_SIZE)){
-        MSG_Data_t * data = MakeEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
+        MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
         if(data){
             self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data);
             MSG_Base_ReleaseDataAtomic(data);
