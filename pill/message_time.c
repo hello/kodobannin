@@ -83,22 +83,13 @@ static void _send_available_data_ant(){
 static void _send_heartbeat_data_ant(){
     // TODO: Jackson please do review & test this.
     // I packed all the struct and I am not sure it will work as expected.
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_heartbeat_t));
+    pill_heartbeat_t heartbeat = {0};
+    heartbeat.battery_level = battery_get_percent_cached();
+    heartbeat.uptime_sec = self.uptime;
+    heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
+    MSG_Data_t* data_page = AllocateAntPayload(ANT_PILL_HEARTBEAT,&heartbeat , sizeof(pill_heartbeat_t));
     if(data_page){
-        pill_heartbeat_t heartbeat = {0};
-
-        heartbeat.battery_level = battery_get_percent_cached();
-        heartbeat.uptime_sec = self.uptime;
-        heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
-        
         PRINTF("HB battery %d uptime %d fw %d\r\n", heartbeat.battery_level, heartbeat.uptime_sec, heartbeat.firmware_version);
-        
-        memset(&data_page->buf, 0, data_page->len);
-        MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
-        ant_data->version = ANT_PROTOCOL_VER;
-        ant_data->type = ANT_PILL_HEARTBEAT;
-        ant_data->UUID = GET_UUID_64();
-        memcpy(ant_data->payload, &heartbeat, sizeof(heartbeat));
         self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
         MSG_Base_ReleaseDataAtomic(data_page);
     }
