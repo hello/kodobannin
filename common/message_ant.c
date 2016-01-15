@@ -194,10 +194,10 @@ static MSG_Data_t INCREF * _AllocateAntPacket(MSG_ANT_PillDataType_t type, size_
 }
 typedef struct{
     uint64_t nonce;
-    uint8_t payload[14];
+    uint8_t payload[0];
 }__attribute__((packed)) MSG_ANT_EncryptedData20_t;
 MSG_Data_t * INCREF AllocateEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len){
-    MSG_Data_t* data_page = _AllocateAntPacket(type ,sizeof(MSG_ANT_EncryptedData20_t));
+    MSG_Data_t* data_page = _AllocateAntPacket(type ,sizeof(uint64_t) + len);
     if( data_page ){
         //ant data comes from the data page (allocated above, and freed at the end of this function)
         MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
@@ -214,10 +214,7 @@ MSG_Data_t * INCREF AllocateEncryptedAntPayload(MSG_ANT_PillDataType_t type, voi
         memcpy(edata->nonce, nonce, sizeof(nonce));
 
         //now encrypt
-        if(len > sizeof(edata->payload)){
-            //error?
-        }
-        memcpy(edata->payload, payload, sizeof(edata->payload));
+        memcpy(edata->payload, payload, len);
         aes128_ctr_encrypt_inplace(edata->payload, sizeof(edata->payload), get_aes128_key(), nonce);
     }
     return data_page;
