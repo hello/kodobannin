@@ -30,12 +30,6 @@
 #include <app_gpiote.h>
 #endif
 
-typedef struct{
-    uint64_t nonce;
-    MotionPayload_t payload[TF_CONDENSED_BUFFER_SIZE];
-    uint16_t magic_bytes; //this must be here at the end of the struct,  or Jackson will kill you
-}__attribute__((packed)) MSG_ANT_EncryptedMotionData_t;
-
 static struct{
     MSG_Base_t base;
     bool initialized;
@@ -74,76 +68,56 @@ _flush(void){
 }
 
 #ifdef ANT_STACK_SUPPORT_REQD
-#define MOTION_DATA_MAGIC 0x5A5A
-static void _send_available_data_ant(){
+typedef struct{
+    uint64_t nonce;
+    uint8_t payload[14];
+}__attribute__((packed)) MSG_ANT_EncryptedData20_t;
 
-    //allocate memory
+MSG_Data_t * MakeEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len){
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
-        sizeof(MSG_ANT_EncryptedMotionData_t));
-
-    //if allocation worked
-    if(data_page) {
-        //ant data comes from the data page (allocated above, and freed at the end of this function)
-        MSG_ANT_PillData_t* ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
-
-        //motion_data is a pointer to the blob of data that antdata->payload points to
-        //the goal is to fill out the motion_data pointer
-        MSG_ANT_EncryptedMotionData_t* motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
-
+        sizeof(MSG_ANT_EncryptedData20_t));
+    if( data_page ){
         //zero out my blob
         memset(&data_page->buf, 0, data_page->len);
 
+        //ant data comes from the data page (allocated above, and freed at the end of this function)
+        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
+        //motion_data is a pointer to the blob of data that antdata->payload points to
+        //the goal is to fill out the motion_data pointer
+        MSG_ANT_EncryptedData20_t *edata = (MSG_ANT_EncryptedData20_t *)ant_data->payload;
+
+        //set meta
         ant_data->version = ANT_PROTOCOL_VER;
-        ant_data->type = ANT_PILL_DATA_ENCRYPTED;
+        ant_data->type = type;
         ant_data->UUID = GET_UUID_64();
-        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t);
+        ant_data->payload_len = sizeof(*edata);
 
-        //fill out the motion data payload
-        if(TF_GetCondensed(motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
-        {
-            uint8_t pool_size = 0;
-
-            //magic is pre-defined, assign it.
-            motion_data->magic_bytes = MOTION_DATA_MAGIC;
-
-            //do the nonce stuff (encrypting it all)  
-            if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
-                uint8_t nonce[8] = {0};
-
-                //this payload struct is packed (packed attributed in GCC)
-                uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
-
-                sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
-
-                aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
-                
-                memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
-
-                //this sends out the data
-                self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
-
-                /*
-                 * //Uncomment me to debug
-                 * 
-                 *self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
-
-                 *MSG_Data_t * dupe = MSG_Base_Dupe(data_page);
-                 *if(dupe){
-                 *    ant_data = (MSG_ANT_PillData_t *)&dupe->buf;
-                 *    motion_data = (MSG_ANT_EncryptedMotionData_t*)ant_data->payload;
-                 *    uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
-                 *    aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
-                 *    self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, dupe);
-                 *    MSG_Base_ReleaseDataAtomic(dupe);
-                 *}
-                 */
-            }else{
-                //pools closed
-            }
-        }else{
-            // Morpheus should fake data if there is nothing received for that minute.
+        //now set the nonce
+        uint8_t pool_size = 0;
+        uint8_t nonce[8] = {0};
+        if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
+            sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
         }
-        MSG_Base_ReleaseDataAtomic(data_page);
+        memcpy(edata->nonce, nonce, sizeof(nonce));
+
+        //now encrypt
+        if(len > sizeof(edata->payload)){
+            //error?
+        }
+        memcpy(edata->payload, payload, sizeof(edata->payload));
+        aes128_ctr_encrypt_inplace(edata->payload, sizeof(edata->payload), get_aes128_key(), nonce);
+    }
+    return data_page;
+}
+static void _send_available_data_ant(){
+
+    MotionPayload_t motion[TF_CONDENSED_BUFFER_SIZE] = {0};
+    if(TF_GetCondensed(motion, TF_CONDENSED_BUFFER_SIZE)){
+        MSG_Data_t * data = MakeEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
+        if(data){
+            self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data);
+            MSG_Base_ReleaseDataAtomic(data);
+        }
     }
 }
 
