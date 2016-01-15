@@ -72,25 +72,27 @@ typedef struct{
     uint64_t nonce;
     uint8_t payload[14];
 }__attribute__((packed)) MSG_ANT_EncryptedData20_t;
-
-MSG_Data_t * MakeEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len){
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
-        sizeof(MSG_ANT_EncryptedData20_t));
-    if( data_page ){
-        //zero out my blob
+MSG_Data_t * MakeAntPacket(MSG_ANT_PillDataType_t type, size_t payload_size){
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + payload_size);
+    if(data_page){
         memset(&data_page->buf, 0, data_page->len);
 
+        MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
+        ant_data->version = ANT_PROTOCOL_VER;
+        ant_data->type = type;
+        ant_data->UUID = GET_UUID_64();
+        ant_data->payload_len = payload_size;
+    }
+    return data_page;
+}
+MSG_Data_t * MakeEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len){
+    MSG_Data_t* data_page = MakeAntPacket(type ,sizeof(MSG_ANT_EncryptedData20_t));
+    if( data_page ){
         //ant data comes from the data page (allocated above, and freed at the end of this function)
         MSG_ANT_PillData_t *ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
         //motion_data is a pointer to the blob of data that antdata->payload points to
         //the goal is to fill out the motion_data pointer
         MSG_ANT_EncryptedData20_t *edata = (MSG_ANT_EncryptedData20_t *)ant_data->payload;
-
-        //set meta
-        ant_data->version = ANT_PROTOCOL_VER;
-        ant_data->type = type;
-        ant_data->UUID = GET_UUID_64();
-        ant_data->payload_len = sizeof(*edata);
 
         //now set the nonce
         uint8_t pool_size = 0;
