@@ -79,7 +79,7 @@ static void _send_available_prox_ant(){
 
 }
 static void _send_available_data_ant(){
-    MotionPayload_t motion[TF_CONDENSED_BUFFER_SIZE] = {0};
+    MotionPayload_t motion[TF_CONDENSED_BUFFER_SIZE];
     if(TF_GetCondensed(motion, TF_CONDENSED_BUFFER_SIZE)){
         MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
         if(data){
@@ -118,6 +118,7 @@ static void _update_uptime() {
 void _send_data_test(void){
     _send_available_data_ant();
     _send_heartbeat_data_ant();
+    _send_available_prox_ant();
 }
 static void _1min_timer_handler(void * ctx) {
     _update_uptime();
