@@ -69,7 +69,6 @@ _flush(void){
 
 #ifdef ANT_STACK_SUPPORT_REQD
 static void _send_available_data_ant(){
-
     MotionPayload_t motion[TF_CONDENSED_BUFFER_SIZE] = {0};
     if(TF_GetCondensed(motion, TF_CONDENSED_BUFFER_SIZE)){
         MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
@@ -81,8 +80,6 @@ static void _send_available_data_ant(){
 }
 
 static void _send_heartbeat_data_ant(){
-    // TODO: Jackson please do review & test this.
-    // I packed all the struct and I am not sure it will work as expected.
     pill_heartbeat_t heartbeat = {0};
     heartbeat.battery_level = battery_get_percent_cached();
     heartbeat.uptime_sec = self.uptime;
