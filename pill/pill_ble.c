@@ -296,6 +296,7 @@ void pill_ble_load_modules(void){
 #endif
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
+        central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_PROX), NULL);
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
 #endif

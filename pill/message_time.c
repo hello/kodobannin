@@ -36,6 +36,9 @@ static struct{
     const MSG_Central_t * central;
     app_timer_id_t timer_id_1sec;
     app_timer_id_t timer_id_1min;
+#ifdef PLATFORM_HAS_PROX
+    app_timer_id_t timer_id_prox;
+#endif
     uint32_t uptime;
     uint32_t minutes;
     uint32_t last_wakeup;
@@ -118,6 +121,9 @@ static void _update_uptime() {
 void _send_data_test(void){
     _send_available_data_ant();
     _send_heartbeat_data_ant();
+    _send_available_prox_ant();
+}
+static void _prox_timer_handler(void * ctx) {
     _send_available_prox_ant();
 }
 static void _1min_timer_handler(void * ctx) {
@@ -211,9 +217,12 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
         case MSG_TIME_PING:
             break;
         case MSG_TIME_STOP_PERIODIC:
-            PRINTS("STOP_HEARTBEAT");
+            PRINTS("STOP_HEARTBEAT\r\n");
             app_timer_stop(self.timer_id_1min);
             app_timer_stop(self.timer_id_1sec);
+#ifdef PLATFORM_HAS_PROX
+            app_timer_stop(self.timer_id_prox);
+#endif
             break;
         case MSG_TIME_SET_START_1SEC:
             {
@@ -227,10 +236,21 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
         case MSG_TIME_SET_START_1MIN:
         {
             uint32_t ticks;
-            PRINTS("PERIODIC 1 MIN");
+            PRINTS("PERIODIC 1 MIN\r\n");
             ticks = APP_TIMER_TICKS(60000,APP_TIMER_PRESCALER);
             app_timer_stop(self.timer_id_1min);
             app_timer_start(self.timer_id_1min, ticks, NULL);
+        }
+            break;
+        case MSG_TIME_SET_START_PROX:
+        {
+#ifdef PLATFORM_HAS_PROX
+            uint32_t ticks;
+            PRINTS("PROX 15 SEC\r\n");
+            ticks = APP_TIMER_TICKS(15000,APP_TIMER_PRESCALER);
+            app_timer_stop(self.timer_id_prox);
+            app_timer_start(self.timer_id_prox, ticks, NULL);
+#endif
         }
             break;
     }
@@ -260,8 +280,12 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
         self.last_wakeup = 0;
         self.onesec_runtime = 0;
       
-        if(app_timer_create(&self.timer_id_1sec,APP_TIMER_MODE_REPEATED,_1sec_timer_handler) == NRF_SUCCESS &&
-           app_timer_create(&self.timer_id_1min,APP_TIMER_MODE_REPEATED,_1min_timer_handler) == NRF_SUCCESS){
+        if(app_timer_create(&self.timer_id_1sec,APP_TIMER_MODE_REPEATED,_1sec_timer_handler) == NRF_SUCCESS
+           && app_timer_create(&self.timer_id_1min,APP_TIMER_MODE_REPEATED,_1min_timer_handler) == NRF_SUCCESS
+#ifdef PLATFORM_HAS_PROX
+           && app_timer_create(&self.timer_id_prox,APP_TIMER_MODE_REPEATED, _prox_timer_handler) == NRF_SUCCESS
+#endif
+          ){
             self.initialized = 1;
             TF_Initialize();
 
