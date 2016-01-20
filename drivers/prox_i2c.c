@@ -4,6 +4,7 @@
 #include "util.h"
 #include "stdint.h"
 #include "stdbool.h"
+#include <nrf_delay.h>
 
 #define I2C_DELAY   10
 
@@ -16,8 +17,8 @@
 #define DEVICE_ID_ADDRESS 0xFF
 
 
-static inline void TWI_WRITE(uint8_t addr, void * ptr, size_t ptr_size){
-    twi_master_transfer( (addr << 1), ptr, ptr_size, TWI_ISSUE_STOP);
+static inline void TWI_WRITE(uint8_t addr, const void * ptr, size_t ptr_size){
+    twi_master_transfer( (addr << 1), (void*)ptr, ptr_size, TWI_ISSUE_STOP);
 }
 
 static inline void TWI_READ(uint8_t addr, uint8_t reg, void * ptr, size_t ptr_size){
@@ -95,6 +96,6 @@ void read_prox(uint16_t * out_val1, uint16_t * out_val4){
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_HI, &cap_meas4_hi, 2);
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_LO, &cap_meas4_lo, 2);
 
-    *out_val1 = swap_endian(cap_meas1_lo) | (swap_endian(cap_meas1_hi) << 16);
-    *out_val4 = swap_endian(cap_meas4_lo) | (swap_endian(cap_meas4_hi) << 16);
+    *out_val1 = swap_endian16(cap_meas1_lo) | (swap_endian16(cap_meas1_hi) << 16);
+    *out_val4 = swap_endian16(cap_meas4_lo) | (swap_endian16(cap_meas4_hi) << 16);
 }
