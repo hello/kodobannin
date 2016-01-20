@@ -230,6 +230,8 @@ void MSG_Uart_PrintDec(const int * ptr){
 void MSG_Uart_Printf(char * fmt, ... ) { //look, no buffer...
     va_list va_args;
     char * p = fmt;
+    int x;
+    char *c;
     unsigned int ux;
     
     if(!self.initialized){ return; }
@@ -240,24 +242,24 @@ void MSG_Uart_Printf(char * fmt, ... ) { //look, no buffer...
             case '%': //control char
                 ++p; //skip control char
                 switch(*p) {
-                    case 'x': { int x;
+                    case 'x':
                         x = va_arg(va_args, int);
                         MSG_Uart_PrintHex((const uint8_t *)&x, sizeof(x));
-                        break; }
-                    case 'd': { int x;
+                        break;
+                    case 'd':
                         x = va_arg(va_args, int);
                         MSG_Uart_PrintDec(&x);
                         break;
                     case 'u':
                         ux = va_arg(va_args, unsigned int);
                         MSG_Uart_PrintUnsignedDec(&ux);
-                        break; }
-                    case 's': { char *c;
+                        break;
+                    case 's':
                         c = va_arg(va_args, char*);
                         while( *c++ ) {
                             app_uart_put(*c);
                         }
-                        break; }
+                        break;
                     default:
                         app_uart_put((uint8_t)'%');
                         app_uart_put(*p);
