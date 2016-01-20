@@ -4,12 +4,12 @@
 #include "util.h"
 
 static app_timer_id_t timer;
-static uint32_t unix_time;
+static uint32_t user_time;
 static uint32_t uptime;
 
 static void _time_keeper_handler(void * ctx){
-    if(unix_time){
-        unix_time++;
+    if(user_time){
+        user_time++;
     }
     uptime++;
 }
@@ -25,11 +25,11 @@ void time_keeper_init(void){
 }
 
 void time_keeper_set(uint32_t utime){
-    unix_time = utime;
+    user_time = utime;
 }
 
 uint32_t time_keeper_get(void){
-    return unix_time;
+    return user_time;
 }
 uint32_t time_keeper_uptime(void){
     return uptime;
