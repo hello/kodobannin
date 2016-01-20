@@ -197,23 +197,19 @@ void MSG_Uart_PrintByte(const uint8_t * ptr, uint32_t len){
     }
 }
 
-void MSG_Uart_PrintDec(const int * ptr){
-     uint8_t index,digit[8];
+void MSG_Uart_PrintDec(const unsigned int * ptr){
+     uint8_t index,digit[32] = {0};
      uint32_t number;
 
      if(self.initialized){
          index = 0;
          number = *ptr;
-         if( number < 0 ) {
-             app_uart_put('-');
-             number = -number;
-         }
 
          while(number) {
              digit[index++] = number % 10;
              number /= 10;
          }
-         while(index-- >0) {
+         while(index-- > 0){
              app_uart_put(hex[0xF&(digit[index])]);
          }
     }
@@ -238,6 +234,14 @@ void MSG_Uart_Printf(char * fmt, ... ) { //look, no buffer...
                         MSG_Uart_PrintHex((const uint8_t *)&x, sizeof(x));
                         break;
                     case 'd':
+                        x = va_arg(va_args, int);
+                        if( x < 0){
+                            app_uart_put((uint8_t)'-');
+                            x = -x;
+                        }
+                        MSG_Uart_PrintDec(&x);
+                        break;
+                    case 'u':
                         x = va_arg(va_args, int);
                         MSG_Uart_PrintDec(&x);
                         break;
