@@ -66,7 +66,7 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "time") ){
         if( argc > 1 ) {
             uint32_t time = nrf_atoi(argv[1]);
-            PRINTF("Setting time %d\n", time);
+            PRINTF("Setting time %u\n", time);
             time_keeper_set(time);
         } else if(time_keeper_get()) {
             PRINTF("\n_ set-time %u\n", time_keeper_get());
