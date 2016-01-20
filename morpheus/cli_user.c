@@ -72,6 +72,12 @@ _handle_command(int argc, char * argv[]){
             PRINTF("\n_ set-time %u\n", time_keeper_get());
         }
     }
+    if( !match_command(argv[0], "printf") ){
+        PRINTF("sm %d\r\n", INT32_MAX);
+        PRINTF("usm %u\r\n", UINT32_MAX);
+        PRINTF("s %d\r\n", -1);
+        PRINTF("u %u\r\n", -1);
+    }
     if( !match_command(argv[0], "bounce") ){
         PRINTS("Bouncing 3.3v rail...\r\n");
         nrf_delay_ms(500);
