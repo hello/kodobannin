@@ -109,7 +109,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
     case PILL_COMMAND_SEND_DATA:
-		hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
+		//hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_START_ACCELEROMETER:
     	PRINTS("Streamming started\r\n");

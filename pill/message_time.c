@@ -131,8 +131,7 @@ static void _1min_timer_handler(void * ctx) {
     self.minutes += 1;
     
     fix_imu_interrupt(); // look for imu int stuck low
-    imu_update_timers();
-    
+
 #ifdef ANT_ENABLE
     _send_available_data_ant();
     if(self.minutes % HEARTBEAT_INTERVAL_MIN == 0) { // update percent battery capacity
@@ -147,6 +146,7 @@ static void _1min_timer_handler(void * ctx) {
     }
 #endif
     TF_TickOneMinute();
+    top_of_meas_minute();
 }
 
 #define POWER_STATE_MASK 0x7
