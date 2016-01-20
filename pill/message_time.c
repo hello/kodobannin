@@ -327,7 +327,7 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
 
 #if defined(PLATFORM_HAS_REED) && !defined(PLATFORM_HAS_VLED)
             nrf_gpio_cfg_input(LED_REED_ENABLE, NRF_GPIO_PIN_NOPULL);
-            APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << LED_REED_ENABLE, _reed_gpiote_process));
+            APP_OK(app_gpiote_user_register(&_gpiote_user, 1 << LED_REED_ENABLE, 1 << LED_REED_ENABLE, _reed_gpiote_process));
             APP_OK(app_gpiote_user_disable(_gpiote_user));
             
 #elif defined(PLATFORM_HAS_REED)

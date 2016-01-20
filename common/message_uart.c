@@ -197,31 +197,40 @@ void MSG_Uart_PrintByte(const uint8_t * ptr, uint32_t len){
     }
 }
 
-void MSG_Uart_PrintDec(const int * ptr){
-     uint8_t index,digit[8];
-     uint32_t number;
-
+void MSG_Uart_PrintUnsignedDec(const unsigned int * ptr){
+     uint8_t index,digit[16] = {0};
+     unsigned int number = *ptr;
      if(self.initialized){
-         index = 0;
-         number = *ptr;
-         if( number < 0 ) {
-             app_uart_put('-');
-             number = -number;
+         if(number == 0){
+             app_uart_put('0');
+             return;
          }
-
+         index = 0;
          while(number) {
              digit[index++] = number % 10;
              number /= 10;
          }
-         while(index-- >0) {
+         while(index-- > 0){
              app_uart_put(hex[0xF&(digit[index])]);
          }
+     }
+
+}
+void MSG_Uart_PrintDec(const int * ptr){
+    int number = *ptr;
+    if(self.initialized){
+        if(number < 0){
+            app_uart_put('-');
+            number = -number;
+        }
+        MSG_Uart_PrintUnsignedDec( &number );
     }
 }
 #include "stdarg.h"
 void MSG_Uart_Printf(char * fmt, ... ) { //look, no buffer...
     va_list va_args;
     char * p = fmt;
+    unsigned int ux;
     
     if(!self.initialized){ return; }
     va_start(va_args, fmt);
@@ -238,10 +247,10 @@ void MSG_Uart_Printf(char * fmt, ... ) { //look, no buffer...
                     case 'd': { int x;
                         x = va_arg(va_args, int);
                         MSG_Uart_PrintDec(&x);
-                        break; }
-                    case 'l': { uint64_t x;
-                        x = va_arg(va_args, uint64_t);
-                        MSG_Uart_PrintHex((const uint8_t *)&x, sizeof(uint64_t));
+                        break;
+                    case 'u':
+                        ux = va_arg(va_args, unsigned int);
+                        MSG_Uart_PrintUnsignedDec(&ux);
                         break; }
                     case 's': { char *c;
                         c = va_arg(va_args, char*);
