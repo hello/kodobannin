@@ -201,6 +201,10 @@ void MSG_Uart_PrintUnsignedDec(const unsigned int * ptr){
      uint8_t index,digit[16] = {0};
      unsigned int number = *ptr;
      if(self.initialized){
+         if(number == 0){
+             app_uart_put('0');
+             return;
+         }
          index = 0;
          while(number) {
              digit[index++] = number % 10;

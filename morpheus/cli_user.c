@@ -77,6 +77,8 @@ _handle_command(int argc, char * argv[]){
         PRINTF("usm %u\r\n", UINT32_MAX);
         PRINTF("s %d\r\n", -1);
         PRINTF("u %u\r\n", -1);
+        PRINTF("s0 %u\r\n", 0);
+        PRINTF("u0 %u\r\n", 0);
     }
     if( !match_command(argv[0], "bounce") ){
         PRINTS("Bouncing 3.3v rail...\r\n");
