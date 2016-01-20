@@ -82,8 +82,8 @@ static void _send_available_prox_ant(){
 
 }
 static void _send_available_data_ant(){
-    MotionPayload_t motion[TF_CONDENSED_BUFFER_SIZE];
-    if(TF_GetCondensed(motion, TF_CONDENSED_BUFFER_SIZE)){
+    MotionPayload_t motion[1];
+    if(TF_GetCondensed(motion)){
         MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
         if(data){
             self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data);
