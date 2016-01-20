@@ -7,6 +7,7 @@
 #include "app.h"
 #include "hble.h"
 #include "heap.h"
+#include "time_keeper.h"
 
 #include <nrf_gpio.h>
 #include <nrf_delay.h>
@@ -63,20 +64,12 @@ _handle_command(int argc, char * argv[]){
         PRINTS("\r\n");
     }
     if( !match_command(argv[0], "time") ){
-        static uint32_t time = 0;
-        static uint32_t rtc = 0;
-        uint32_t current_time = 0;
-        app_timer_cnt_get(&current_time);
-        
         if( argc > 1 ) {
-            time = nrf_atoi(argv[1]);
+            uint32_t time = nrf_atoi(argv[1]);
             PRINTF("Setting time %d\n", time);
-            rtc = current_time;
-        } else if(time) {
-            uint32_t time_diff;
-            app_timer_cnt_diff_compute(current_time, rtc, &time_diff);
-            time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
-            PRINTF("\n_ set-time %d\n", time + time_diff);
+            time_keeper_set(time);
+        } else if(time_keeper_get()) {
+            PRINTF("\n_ set-time %u\n", time_keeper_get());
         }
     }
     if( !match_command(argv[0], "bounce") ){
