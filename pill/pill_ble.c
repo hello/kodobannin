@@ -45,7 +45,9 @@
 #include "cli_user.h"
 #include "gpio_nor.h"
 
-
+#ifdef PLATFORM_HAS_PROX
+#include "message_prox.h"
+#endif
 
 extern uint8_t hello_type;
 
@@ -294,12 +296,19 @@ void pill_ble_load_modules(void){
         }
 
 #endif
+
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
-        central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_PROX), NULL);
+
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
 #endif
+
+#ifdef PLATFORM_HAS_PROX
+		central->loadmod(MSG_Prox_Init(central));
+        central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_PROX), NULL);
+#endif
+
 		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
     }else{
         PRINTS("FAIL");

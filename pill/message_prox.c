@@ -1,20 +1,17 @@
 #include "message_prox.h"
 #include "platform.h"
 #include "util.h"
+#include "prox_i2c.h"
+#include "twi_master.h"
+#include "twi_master_config.h"
 
 static char * name = "PROX";
 static const MSG_Central_t * parent;
 static MSG_Base_t base;
 
-MSG_Status _init_prox(void){
-#ifdef PLATFORM_HAS_PROX
-    return SUCCESS;
-#else
-    return SUCCESS;
-#endif
-}
+
 static MSG_Status _init(void){
-    return _init_prox();
+    return init_prox();
 }
 static MSG_Status _destroy(void){
     return SUCCESS;
@@ -37,5 +34,12 @@ MSG_Base_t * MSG_Prox_Init(const MSG_Central_t * central){
 	base.send = _on_message;
 	base.type = PROX;
 	base.typestr = name;
+
+#ifdef PLATFORM_HAS_I2C
+    twi_master_init();
+#else
+    return NULL;
+#endif
+
     return &base;
 }
