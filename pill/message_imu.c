@@ -267,10 +267,10 @@ static void _on_pill_pairing_guesture_detected(void){
 	static uint8_t counter;
     //TODO: send pairing request packets via ANT
 #ifdef ANT_ENABLE
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_shakedata_t));
+    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_IMUData_t) + sizeof(pill_shakedata_t));
     if(data_page){
         memset(&data_page->buf, 0, sizeof(data_page->len));
-        MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
+        MSG_ANT_IMUData_t* ant_data = (MSG_ANT_IMUData_t*)&data_page->buf;
 		pill_shakedata_t * shake_data = (pill_shakedata_t*)ant_data->payload;
         ant_data->version = ANT_PROTOCOL_VER;
         ant_data->type = ANT_PILL_SHAKING;

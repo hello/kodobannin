@@ -5,7 +5,7 @@ all: b m
 
 # apps & platforms
 
-APPS = bootloader bootloader_serial morpheus pill
+APPS = bootloader bootloader_serial morpheus pill smith
 S310_PLATFORMS = morpheus_DVT1 pill_DVT1 morpheus_PVT1 pill_PVT1
 
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)

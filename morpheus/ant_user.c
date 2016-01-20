@@ -20,7 +20,7 @@ static struct{
 
 static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
     // TODO, this shit needs to be tested on CC3200 side.
-    MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
+    MSG_ANT_IMUData_t* pill_data = (MSG_ANT_IMUData_t*)msg->buf;
 
     MorpheusCommand morpheus_command;
     memset(&morpheus_command, 0, sizeof(MorpheusCommand));
