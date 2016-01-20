@@ -7,14 +7,15 @@ import sys
 #TODO not hardcode this!
 S3_ACCESS_ID = "AKIAJ7SHF3VSR7KB7VMA"
 S3_SECRET_KEY = "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"
-BUILD_BASE_KEY = "builds/"
-BUILD_LATEST_KEY = "latest/"
+KODOBANNIN_BASE = "kodobannin/"
+BUILD_BASE_KEY = KODOBANNIN_BASE + "builds/"
+ALPHA_BASE_KEY = KODOBANNIN_BASE + "alpha/"
 S3_ROOT = "hello-firmware"
 
 conn = S3Connection(S3_ACCESS_ID, S3_SECRET_KEY)
 
 def find_hexes(bin_dir):
-    return glob.glob(os.path.join(bin_dir, "*.hex")) + glob.glob(os.path.join(bin_dir, "*.crc"))
+    return glob.glob(os.path.join(bin_dir, "*.hex")) + glob.glob(os.path.join(bin_dir, "*.crc")) + glob.glob(os.path.join(bin_dir, "*.bin"))
 
 
 def extract_name(hex_path):
@@ -27,30 +28,37 @@ def percent_cb(complete, total):
     sys.stdout.write('.')
     sys.stdout.flush()
 
-def upload(commit_info = "limbo"):
-    bucket = conn.lookup("hello-firmware")
+def delete_folder(bucket, prefix_key):
+    for key in bucket.list(prefix=prefix_key):
+        print "Deleting Key: " + key.name
+        key.delete()
+
+def upload_files(flist, bucket, prefix):
+    for f in flist:
+        k = Key(bucket)
+        k.key = os.path.join(prefix, extract_name(f))
+        k.set_contents_from_filename(f, cb = percent_cb, num_cb = 10)
+
+def upload(commit_info = "limbo", branch="unknown"):
+    bucket = conn.lookup(S3_ROOT)
     if bucket:
-        #delete latest key
-        for key in bucket.list(prefix=BUILD_LATEST_KEY):
-            print "Deleting Key: " + key.name
-            key.delete()
-        #upload
         hexes = find_hexes("build")
-        for h in hexes:
-            k = Key(bucket)
-            k.key = os.path.join(BUILD_BASE_KEY, commit_info, extract_name(h))
-            k.set_contents_from_filename(h, cb = percent_cb, num_cb=10)
-            kl = Key(bucket)
-            kl.key = os.path.join(BUILD_LATEST_KEY, commit_info, extract_name(h))
-            kl.set_contents_from_filename(h, cb = percent_cb, num_cb=10)
+        upload_files(hexes, bucket, os.path.join(BUILD_BASE_KEY, commit_info))
+        if branch == "master":
+            print "Updating Alpha"
+            delete_folder(bucket, ALPHA_BASE_KEY)
+            upload_files(hexes, bucket, os.path.join(ALPHA_BASE_KEY))
+        else:
+            print "Updating %s"%(branch)
+
         print "Uploads finished"
         return True
     else:
         print "no such bukkit"
         return False
 
-if len(sys.argv) > 1:
-    upload(commit_info = sys.argv[1])
+if len(sys.argv) > 2:
+    upload(sys.argv[1], sys.argv[2])
 else:
     print "no commit, no upload"
 

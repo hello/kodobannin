@@ -28,6 +28,7 @@
 #include "hble.h"
 #include "platform.h"
 #include "morpheus_ble.h"
+#include "time_keeper.h"
 
 void
 _start()
@@ -84,6 +85,7 @@ _start()
 
 	watchdog_init(10,0);
 	watchdog_task_start(5);
+	time_keeper_init();
 
     for(;;) {
         APP_OK(sd_app_evt_wait());
