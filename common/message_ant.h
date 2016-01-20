@@ -28,7 +28,7 @@
  * +----------------------------------------------------+
  **/
 
-#define ANT_PROTOCOL_VER      (3)
+#define ANT_PROTOCOL_VER      (4)
 
 
 typedef enum{
