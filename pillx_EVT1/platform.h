@@ -162,4 +162,5 @@ enum {
     FSPI_MISO = 25,
 };
 
+#define PLATFORM_HAS_I2C
 #define PLATFORM_HAS_PROX
