@@ -64,15 +64,6 @@ enum {
 // IMU_MISO P10      // 16 P0.10
 // IMU_INT  P23      // 42 P0.23
 
-#define PLATFORM_HAS_I2C
-
-enum {
-    I2C_SCL = 21,
-    I2C_SDA = 22,
-
-    RTC_INT =  2,
-    LDO_INT = 24,
-};
 
 // Real Time Calendar
 // RTC_SCL  P21      // 40 P0.21
@@ -172,10 +163,3 @@ enum {
 };
 
 #define PLATFORM_HAS_PROX
-
-// FRAM SPI powered from VRGB requires 2.0V min to 3.6V max
-// FRAM_SSEL   P29      // 48 P0.29
-// FRAM_SCLK   P13      // 19 P0.13
-// FRAM_MOSI   P15      // 21 P0.15
-// FRAM_MISO   P25      // 44 P0.25
-
