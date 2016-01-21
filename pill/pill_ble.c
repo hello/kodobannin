@@ -2,33 +2,34 @@
 
 #include <stddef.h>
 #include <string.h>
-
 #include <app_timer.h>
 #include <ble_gatts.h>
 #include <ble_srv_common.h>
 #include <ble_advdata.h>
 #include "platform.h"
 #include "app.h"
-
-#include "pill_ble.h"
-
-#ifdef PLATFORM_HAS_IMU
-
-#include "message_imu.h"
-#include "imu_data.h"
-#include "sensor_data.h"
-
-#endif
-
 #include "pill_gatt.h"
-
 #include "util.h"
 #include "message_app.h"
 #include "message_uart.h"
+#include "pill_ble.h"
+#include "message_time.h"
+#include "message_led.h"
+#include "nrf.h"
+#include "timedfifo.h"
+#include "cli_user.h"
+#include "gpio_nor.h"
+
+#ifdef PLATFORM_HAS_IMU
+#include "message_imu.h"
+#include "imu_data.h"
+#include "sensor_data.h"
+#endif
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include <ant_parameters.h>
 #endif
+
 #ifdef ANT_ENABLE
 #include "ant_user.h"
 #include "message_ant.h"
@@ -36,14 +37,6 @@
 #include "ant_driver.h"
 #include "ant_packet.h"
 #endif
-
-#include "message_time.h"
-#include "message_led.h"
-
-#include "nrf.h"
-#include "timedfifo.h"
-#include "cli_user.h"
-#include "gpio_nor.h"
 
 #ifdef PLATFORM_HAS_PROX
 #include "message_prox.h"
@@ -271,7 +264,6 @@ void pill_ble_load_modules(void){
 		central->loadmod(MSG_IMU_Init(central));
 #endif
 
-        
 #ifdef ANT_ENABLE
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
         {
