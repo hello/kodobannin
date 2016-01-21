@@ -269,7 +269,7 @@ static void _on_advertise_timeout(void * p_event_data, uint16_t event_size)
 
 
 static void hble_start_delay_tasks(void){
-    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER), NULL));
+    APP_OK(app_timer_start(_delay_timer, APP_TIMER_TICKS(200, APP_TIMER_PRESCALER), NULL));
 }
 
 static uint32_t
