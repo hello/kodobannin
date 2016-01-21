@@ -16,19 +16,6 @@
 
 #define configTOTAL_HEAP_SIZE 1280
 
-/*
-// This is from EVT1, not used
-// TODO: Maybe just usesomething from PLATFORM_HAS_I2C?
-
-#define PLATFORM_HAS_GAUGE
-enum {
-    GAUGE_SDA = 0,
-    GAUGE_SCL = 25,
-    GAUGE_INT = 21,
-};
-
-*/
-
 #define PLATFORM_HAS_SERIAL
 
 enum {
@@ -38,9 +25,6 @@ enum {
     SERIAL_RTS_PIN = 31,
 };
 
-// uart serial diagnostic port
-// MCU_TXD  P18      // 26 P0.18
-// MCU_RXD  P19      // 27 P0.19
 
 #define PLATFORM_HAS_IMU
 #define PLATFORM_HAS_IMU_VDD_CONTROL
@@ -55,23 +39,6 @@ enum {
 
     IMU_INT = 23,
 };
-
-// inertial motion sensor
-// IMU_EN   P20      // 28 P0.20
-// IMU_SSEL P16      // 22 P0.16
-// IMU_SCLK P12      // 18 P0.12
-// IMU_MOSI P14      // 20 P0.14
-// IMU_MISO P10      // 16 P0.10
-// IMU_INT  P23      // 42 P0.23
-
-
-// Real Time Calendar
-// RTC_SCL  P21      // 40 P0.21
-// RTC_SDA  P22      // 41 P0.22
-// RTC_INT  P02      //  6 P0.02 AIN3 // from real time calendar
-// LDO_INT  P24      // 43 P0.24 // from gas gauge
-// XTL_CLK  P27      // 46 P0.27 AIN1 // low frequency crystal input
-// XTL_OUT  P26      // 45 P0.26 AIN0 // low frequency crystal output
 
 #define PLATFORM_HAS_BATTERY
 #define PLATFORM_HAS_VERSION
