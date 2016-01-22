@@ -35,11 +35,7 @@ MSG_Base_t * MSG_Prox_Init(const MSG_Central_t * central){
 	base.type = PROX;
 	base.typestr = name;
 
-#ifdef PLATFORM_HAS_I2C
     twi_master_init();
-#else
-    return NULL;
-#endif
 
     return &base;
 }

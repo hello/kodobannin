@@ -16,19 +16,6 @@
 
 #define configTOTAL_HEAP_SIZE 1280
 
-/*
-// This is from EVT1, not used
-// TODO: Maybe just usesomething from PLATFORM_HAS_I2C?
-
-#define PLATFORM_HAS_GAUGE
-enum {
-    GAUGE_SDA = 0,
-    GAUGE_SCL = 25,
-    GAUGE_INT = 21,
-};
-
-*/
-
 #define PLATFORM_HAS_SERIAL
 
 enum {
@@ -38,9 +25,6 @@ enum {
     SERIAL_RTS_PIN = 31,
 };
 
-// uart serial diagnostic port
-// MCU_TXD  P18      // 26 P0.18
-// MCU_RXD  P19      // 27 P0.19
 
 #define PLATFORM_HAS_IMU
 #define PLATFORM_HAS_IMU_VDD_CONTROL
@@ -153,14 +137,5 @@ enum {
 // LED2     P28      // 47 P0.28
 // LED1     P07      // 11 P0.07
 
-#define PLATFORM_HAS_FSPI
 
-enum {
-    FSPI_SSEL = 29,
-    FSPI_SCLK = 13,
-    FSPI_MOSI = 15,
-    FSPI_MISO = 25,
-};
-
-#define PLATFORM_HAS_I2C
 #define PLATFORM_HAS_PROX
