@@ -79,9 +79,9 @@ DRIVER_SRCS = \
 	$(wildcard drivers/gpio_nor.c) \
 	$(wildcard drivers/pwm.c) \
 	$(wildcard drivers/prox_i2c.c) \
-	$(wildcard drivers/twi_hw_master_softdevice.c) \
+	$(wildcard drivers/twi_sw_master.c) \
+	#$(wildcard drivers/twi_hw_master_softdevice.c) \
 	#$(wildcard drivers/twi_hw_master.c) \
-	#$(wildcard drivers/twi_sw_master.c) \
 
 #ifeq ($(USE_SDK_BONDMNGR), 1)
 #	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
