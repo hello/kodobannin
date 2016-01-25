@@ -71,9 +71,8 @@ static int32_t _try_send_ant(MSG_Data_t * data, MSG_Address_t dst){
     if(self.paired_devices[idx].device_number){
         return hlo_ant_packet_send_message(&self.paired_devices[idx], data);
     }else{
-        return -1;
+        return NRF_ERROR_NOT_FOUND;
     }
-    return -3;
 }
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
