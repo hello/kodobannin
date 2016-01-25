@@ -3,14 +3,21 @@
 #include "util.h"
 #include "prox_i2c.h"
 #include "twi_master.h"
+#include "message_ant.h"
+#include "app_timer.h"
 #include "twi_master_config.h"
 
 static char * name = "PROX";
 static const MSG_Central_t * parent;
 static MSG_Base_t base;
+static app_timer_id_t timer_id_prox;
 
 
 static MSG_Status _init(void){
+    uint32_t ticks = 0;
+    PRINTS("PROX 5 SEC\r\n");
+    ticks = APP_TIMER_TICKS(5000,APP_TIMER_PRESCALER);
+    app_timer_start(timer_id_prox, ticks, NULL);
     return init_prox();
 }
 static MSG_Status _destroy(void){
@@ -23,8 +30,18 @@ static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t *
     PRINTS("PROX CMD\r\n");
     return SUCCESS;
 }
-uint16_t MSG_Prox_Read(void){
-    return 0xBEEF;
+static void _send_available_prox_ant(){
+    uint16_t prox_reading[2] = {0};
+    MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_PROX_ENCRYPTED, &prox_reading, sizeof(prox_reading));
+    if(data){
+        parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){ANT,1}, data);
+        parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){UART,MSG_UART_HEX}, data);
+        MSG_Base_ReleaseDataAtomic(data);
+    }
+
+}
+static void _prox_timer_handler(void * ctx) {
+    _send_available_prox_ant();
 }
 MSG_Base_t * MSG_Prox_Init(const MSG_Central_t * central){
 	parent = central;
@@ -36,6 +53,6 @@ MSG_Base_t * MSG_Prox_Init(const MSG_Central_t * central){
 	base.typestr = name;
 
     twi_master_init();
-
+    APP_OK(app_timer_create(&timer_id_prox,APP_TIMER_MODE_REPEATED, _prox_timer_handler));
     return &base;
 }

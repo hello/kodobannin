@@ -13,7 +13,6 @@ typedef enum{
     MSG_TIME_STOP_PERIODIC,
     MSG_TIME_SET_START_1SEC,
     MSG_TIME_SET_START_1MIN,
-    MSG_TIME_SET_START_PROX,
 }MSG_Time_Commands;
 
 MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central);

@@ -36,9 +36,6 @@ static struct{
     const MSG_Central_t * central;
     app_timer_id_t timer_id_1sec;
     app_timer_id_t timer_id_1min;
-#ifdef PLATFORM_HAS_PROX
-    app_timer_id_t timer_id_prox;
-#endif
     uint32_t uptime;
     uint32_t minutes;
     uint32_t last_wakeup;
@@ -71,24 +68,17 @@ _flush(void){
 }
 
 #ifdef ANT_STACK_SUPPORT_REQD
-static void _send_available_prox_ant(){
-    uint16_t prox_reading = 0;
-    MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_PROX_ENCRYPTED, &prox_reading, sizeof(prox_reading));
-    if(data){
-        self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data);
-        self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,MSG_UART_HEX}, data);
-        MSG_Base_ReleaseDataAtomic(data);
-    }
-
-}
 static void _send_available_data_ant(){
     MotionPayload_t motion[1];
     if(TF_GetCondensed(motion)){
         MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
         if(data){
             self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data);
+            self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,MSG_UART_HEX}, data);
             MSG_Base_ReleaseDataAtomic(data);
         }
+    }else{
+        PRINTS("No Motion Recorded\r\n");
     }
 }
 
@@ -119,12 +109,9 @@ static void _update_uptime() {
 }
 
 void _send_data_test(void){
+    PRINTS("Sending\r\n");
     _send_available_data_ant();
     _send_heartbeat_data_ant();
-    _send_available_prox_ant();
-}
-static void _prox_timer_handler(void * ctx) {
-    _send_available_prox_ant();
 }
 static void _1min_timer_handler(void * ctx) {
     _update_uptime();
@@ -220,9 +207,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
             PRINTS("STOP_HEARTBEAT\r\n");
             app_timer_stop(self.timer_id_1min);
             app_timer_stop(self.timer_id_1sec);
-#ifdef PLATFORM_HAS_PROX
-            app_timer_stop(self.timer_id_prox);
-#endif
             break;
         case MSG_TIME_SET_START_1SEC:
             {
@@ -240,17 +224,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
             ticks = APP_TIMER_TICKS(60000,APP_TIMER_PRESCALER);
             app_timer_stop(self.timer_id_1min);
             app_timer_start(self.timer_id_1min, ticks, NULL);
-        }
-            break;
-        case MSG_TIME_SET_START_PROX:
-        {
-#ifdef PLATFORM_HAS_PROX
-            uint32_t ticks;
-            PRINTS("PROX 15 SEC\r\n");
-            ticks = APP_TIMER_TICKS(15000,APP_TIMER_PRESCALER);
-            app_timer_stop(self.timer_id_prox);
-            app_timer_start(self.timer_id_prox, ticks, NULL);
-#endif
         }
             break;
     }
@@ -282,9 +255,6 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
       
         if(app_timer_create(&self.timer_id_1sec,APP_TIMER_MODE_REPEATED,_1sec_timer_handler) == NRF_SUCCESS
            && app_timer_create(&self.timer_id_1min,APP_TIMER_MODE_REPEATED,_1min_timer_handler) == NRF_SUCCESS
-#ifdef PLATFORM_HAS_PROX
-           && app_timer_create(&self.timer_id_prox,APP_TIMER_MODE_REPEATED, _prox_timer_handler) == NRF_SUCCESS
-#endif
           ){
             self.initialized = 1;
             TF_Initialize();

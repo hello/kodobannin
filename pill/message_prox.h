@@ -4,6 +4,4 @@
 
 MSG_Base_t * MSG_Prox_Init(const MSG_Central_t * central);
 
-uint16_t MSG_Prox_Read(void);
-
 #endif

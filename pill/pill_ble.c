@@ -222,7 +222,6 @@ void pill_ble_load_modules(void){
 
 #ifdef PLATFORM_HAS_PROX
 		central->loadmod(MSG_Prox_Init(central));
-        central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_PROX), NULL);
 #endif
 
 		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
