@@ -14,20 +14,7 @@
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
 
-
-#define configTOTAL_HEAP_SIZE 1024
-/*
-// This is from EVT1, not used
-// TODO: Maybe just usesomething from PLATFORM_HAS_I2C?
-
-#define PLATFORM_HAS_GAUGE
-enum {
-    GAUGE_SDA = 0,
-    GAUGE_SCL = 25,
-    GAUGE_INT = 21,
-};
-
-*/
+#define configTOTAL_HEAP_SIZE 1280
 
 #define PLATFORM_HAS_SERIAL
 
@@ -38,9 +25,6 @@ enum {
     SERIAL_RTS_PIN = 31,
 };
 
-// uart serial diagnostic port
-// MCU_TXD  P18      // 26 P0.18
-// MCU_RXD  P19      // 27 P0.19
 
 #define PLATFORM_HAS_IMU
 #define PLATFORM_HAS_IMU_VDD_CONTROL
@@ -64,15 +48,6 @@ enum {
 // IMU_MISO P10      // 16 P0.10
 // IMU_INT  P23      // 42 P0.23
 
-#define PLATFORM_HAS_I2C
-
-enum {
-    I2C_SCL = 21,
-    I2C_SDA = 22,
-
-    RTC_INT =  2,
-    LDO_INT = 24,
-};
 
 // Real Time Calendar
 // RTC_SCL  P21      // 40 P0.21
@@ -102,7 +77,7 @@ enum {
 // vbat and version measurement enable
 // VER      P00      //  4 P0.00
 
-#define PLATFORM_HAS_VLED
+//#define PLATFORM_HAS_VLED
 
 enum {
     VLED_VDD_EN  = 17,
@@ -120,7 +95,6 @@ enum {
     LED2_ENABLE  = 28, // magnetic reed switch (evt)
     LED1_ENABLE  =  7,
 };
-
 #define LED_BLUE_CHANNEL LED1_ENABLE
 #define LED_RED_CHANNEL LED3_ENABLE
 #define LED_GREEN_CHANNEL LED2_ENABLE
@@ -146,7 +120,6 @@ enum {
 // pFet LED boost power enable
 // EN_LED   P17      // 25 P0.17
 
-// Boost Converter Power Output Control
 // BOOST    P11      // 17 P0.11 Boost Converter Enable
 // LED_RGB  P09      // 15 P0.09 Red (1.7) or Grn/Blu (2.7)
 // LED_ADJ  P08      // 14 P0.08 Adjust RGB Voltage w/PWM RC DAC
@@ -164,18 +137,5 @@ enum {
 // LED2     P28      // 47 P0.28
 // LED1     P07      // 11 P0.07
 
-#define PLATFORM_HAS_FSPI
 
-enum {
-    FSPI_SSEL = 29,
-    FSPI_SCLK = 13,
-    FSPI_MOSI = 15,
-    FSPI_MISO = 25,
-};
-
-// FRAM SPI powered from VRGB requires 2.0V min to 3.6V max
-// FRAM_SSEL   P29      // 48 P0.29
-// FRAM_SCLK   P13      // 19 P0.13
-// FRAM_MOSI   P15      // 21 P0.15
-// FRAM_MISO   P25      // 44 P0.25
-
+#define PLATFORM_HAS_PROX

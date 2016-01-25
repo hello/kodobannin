@@ -6,7 +6,7 @@ all: b m
 # apps & platforms
 
 APPS = bootloader bootloader_serial morpheus pill
-S310_PLATFORMS = morpheus_DVT1 pill_DVT1 morpheus_PVT1 pill_PVT1
+S310_PLATFORMS = morpheus_PVT1 pill_PVT1 pillx_EVT1
 
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 UNAME := $(shell uname)
@@ -78,9 +78,10 @@ DRIVER_SRCS = \
 	$(wildcard drivers/battery.c) \
 	$(wildcard drivers/gpio_nor.c) \
 	$(wildcard drivers/pwm.c) \
+	$(wildcard drivers/prox_i2c.c) \
+	$(wildcard drivers/twi_sw_master.c) \
 	#$(wildcard drivers/twi_hw_master_softdevice.c) \
 	#$(wildcard drivers/twi_hw_master.c) \
-	#$(wildcard drivers/twi_sw_master.c) \
 
 #ifeq ($(USE_SDK_BONDMNGR), 1)
 #	NRF_SRCS += nRF51_SDK/nrf51422/Source/ble/ble_bondmngr.c
