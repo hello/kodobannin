@@ -15,6 +15,8 @@
  */
 #define MANU_ID_ADDRESS 0xFE
 #define DEVICE_ID_ADDRESS 0xFF
+#define MANU_ID_VAL 0x5449
+#define DEV_ID_VAL 0x1004
 
 
 static inline void TWI_WRITE(uint8_t addr, const void * ptr, size_t ptr_size){
@@ -40,26 +42,35 @@ static const uint8_t CONF_READ4[3] = {0x0C, 0x04, 0x10};//config nonrepeat
 #define READ_4_ADDRESS_HI  0x06
 #define READ_4_ADDRESS_LO  0x07
 
+#define swap_endian16(x) ( (x >> 8) | ((x & 0xff) << 8) )
+static uint32_t _byte_check(const uint8_t * compare, const uint8_t * actual, size_t sz){
+    int i;
+    for(i = 0; i < sz; i++){
+        if ( compare[i] != actual[i] ){
+            PRINTS("Byte Check Failed, ");
+            PRINT_HEX(compare, sz);
+            PRINTS(" | ");
+            PRINT_HEX(actual, sz);
+            PRINTS("\r\n");
+            return 1;
+        }
+    }
+    return 0;
+}
 static void _reset_config(void){
     uint8_t RST[3] = {0x0C, 0x84, 0x90};
-    //reset fdc first configuratio register
-    /*
-     *twi_master_transfer(FDC_ADDRESS_WRITE, &RST, sizeof(RST), TWI_ISSUE_STOP);
-     *nrf_delay_ms(I2C_DELAY);
-     */
     TWI_WRITE(FDC_ADDRESS, RST, sizeof(RST));
 }
-
 static void _check_id(void){
-    uint8_t r[2] = {0};
-    TWI_READ(FDC_ADDRESS, MANU_ID_ADDRESS, r, 2);
-    PRINTS("MANU ID = ");
-    PRINT_HEX(r, sizeof(r));
-    PRINTS("\r\n");
-    TWI_READ(FDC_ADDRESS, DEVICE_ID_ADDRESS, r, 2);
-    PRINTS("DEV ID = ");
-    PRINT_HEX(r, sizeof(r));
-    PRINTS("\r\n");
+    uint16_t r = 0;
+    uint16_t MANU_ID = MANU_ID_VAL;
+    uint16_t DEV_ID = DEV_ID_VAL;
+    TWI_READ(FDC_ADDRESS, MANU_ID_ADDRESS, &r, sizeof(r));
+    r = swap_endian16(r);
+    APP_OK( _byte_check(&r, &MANU_ID, sizeof(r)) );
+    TWI_READ(FDC_ADDRESS, DEVICE_ID_ADDRESS, &r, sizeof(r));
+    r = swap_endian16(r);
+    APP_OK( _byte_check(&r, &DEV_ID, sizeof(r)) );
 }
 static void _conf_prox(void){
     uint8_t r[2] = {0};
@@ -67,13 +78,9 @@ static void _conf_prox(void){
     TWI_WRITE(FDC_ADDRESS, CONF_MEAS4, sizeof(CONF_MEAS4));
     //verify
     TWI_READ(FDC_ADDRESS, CONF_MEAS1[0], r,sizeof(r));
-    PRINTS("I2C READ CONF_MEAS1 = ");
-    PRINT_HEX(r, 2);
-    PRINTS("\r\n");
+    APP_OK( _byte_check(r, &CONF_MEAS1[1], sizeof(r)) );
     TWI_READ(FDC_ADDRESS, CONF_MEAS4[0], r,sizeof(r));
-    PRINTS("I2C READ CONF_MEAS4 = ");
-    PRINT_HEX(r, 2);
-    PRINTS("\r\n");
+    APP_OK( _byte_check(r, &CONF_MEAS4[1], sizeof(r)) );
 }
 
 
@@ -81,9 +88,9 @@ MSG_Status init_prox(void){
     _reset_config();
     _check_id();
     _conf_prox();
+    return SUCCESS;
 }
 
-#define swap_endian16(x) ( (x >> 8) | ((x & 0xff) << 8) )
 void read_prox(uint16_t * out_val1, uint16_t * out_val4){
     uint16_t cap_meas1_hi = 0;
     uint16_t cap_meas1_lo = 0;
