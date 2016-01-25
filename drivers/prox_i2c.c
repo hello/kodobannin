@@ -54,11 +54,11 @@ static void _check_id(void){
     uint8_t r[2] = {0};
     TWI_READ(FDC_ADDRESS, MANU_ID_ADDRESS, r, 2);
     PRINTS("MANU ID = ");
-    PRINT_HEX(&r, sizeof(r));
+    PRINT_HEX(r, sizeof(r));
     PRINTS("\r\n");
     TWI_READ(FDC_ADDRESS, DEVICE_ID_ADDRESS, r, 2);
     PRINTS("DEV ID = ");
-    PRINT_HEX(&r, sizeof(r));
+    PRINT_HEX(r, sizeof(r));
     PRINTS("\r\n");
 }
 static void _conf_prox(void){
