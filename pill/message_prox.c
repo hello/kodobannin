@@ -12,11 +12,12 @@ static const MSG_Central_t * parent;
 static MSG_Base_t base;
 static app_timer_id_t timer_id_prox;
 
+#define PROX_POLL_INTERVAL 15000 /*in ms*/
 
 static MSG_Status _init(void){
     uint32_t ticks = 0;
-    PRINTS("PROX 5 SEC\r\n");
-    ticks = APP_TIMER_TICKS(15000,APP_TIMER_PRESCALER);
+    ticks = APP_TIMER_TICKS(PROX_POLL_INTERVAL,APP_TIMER_PRESCALER);
+    PRINTF("PROX %u ms\r\n", PROX_POLL_INTERVAL);
     app_timer_start(timer_id_prox, ticks, NULL);
     return init_prox();
 }
