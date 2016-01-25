@@ -67,10 +67,10 @@ static void _check_id(void){
     uint16_t DEV_ID = DEV_ID_VAL;
     TWI_READ(FDC_ADDRESS, MANU_ID_ADDRESS, &r, sizeof(r));
     r = swap_endian16(r);
-    APP_OK( _byte_check(&r, &MANU_ID, sizeof(r)) );
+    APP_OK( _byte_check((uint8_t*)&r, (uint8_t*)&MANU_ID, sizeof(r)) );
     TWI_READ(FDC_ADDRESS, DEVICE_ID_ADDRESS, &r, sizeof(r));
     r = swap_endian16(r);
-    APP_OK( _byte_check(&r, &DEV_ID, sizeof(r)) );
+    APP_OK( _byte_check((uint8_t*)&r, (uint8_t*)&DEV_ID, sizeof(r)) );
 }
 static void _conf_prox(void){
     uint8_t r[2] = {0};
