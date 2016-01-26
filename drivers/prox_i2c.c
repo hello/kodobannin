@@ -110,6 +110,6 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     cap_meas1_raw = cap_meas1_raw >> 8;
     cap_meas4_raw = swap_endian16(cap_meas4_lo) | (swap_endian16(cap_meas4_hi) << 16);
     cap_meas4_raw = cap_meas4_raw >> 8;
-    *out_val1 = (cap_meas1_raw << 10) / 524288;
-    *out_val4 = (cap_meas4_raw << 10) / 524288;
+    *out_val1 = (uint32_t)((cap_meas1_raw << 10) / 524288);
+    *out_val4 = (uint32_t)((cap_meas4_raw << 10) / 524288);
 }
