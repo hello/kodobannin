@@ -32,7 +32,10 @@ static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t *
     return SUCCESS;
 }
 static void _send_available_prox_ant(){
-    pill_proxdata_t prox = (pill_proxdata_t){0};
+    pill_proxdata_t prox = (pill_proxdata_t){
+        .cap = {0},
+        .reserved = 0,
+    };
     read_prox(&prox.cap[0], &prox.cap[1]);
     PRINTF("P1: %u, P4: %u \r\n", prox.cap[0], prox.cap[1]);
     MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_PROX_ENCRYPTED, &prox, sizeof(prox));
