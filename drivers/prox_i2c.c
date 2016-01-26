@@ -105,5 +105,7 @@ void read_prox(uint16_t * out_val1, uint16_t * out_val4){
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_LO, &cap_meas4_lo, 2);
 
     *out_val1 = swap_endian16(cap_meas1_lo) | (swap_endian16(cap_meas1_hi) << 16);
+    *out_val1 = (*out_val1) >> 8;
     *out_val4 = swap_endian16(cap_meas4_lo) | (swap_endian16(cap_meas4_hi) << 16);
+    *out_val4 = (*out_val4) >> 8;
 }
