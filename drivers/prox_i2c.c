@@ -97,6 +97,7 @@ void read_prox(uint16_t * out_val1, uint16_t * out_val4){
     uint16_t cap_meas4_hi = 0;
     uint16_t cap_meas4_lo = 0;
     TWI_WRITE(FDC_ADDRESS, CONF_READ1, sizeof(CONF_READ1));
+    TWI_WRITE(FDC_ADDRESS, CONF_READ4, sizeof(CONF_READ4));
     //todo verify write
     TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_HI, &cap_meas1_hi, 2);
     TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_LO, &cap_meas1_lo, 2);
