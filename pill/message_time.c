@@ -30,12 +30,6 @@
 #include <app_gpiote.h>
 #endif
 
-typedef struct{
-    uint64_t nonce;
-    MotionPayload_t payload[TF_CONDENSED_BUFFER_SIZE];
-    uint16_t magic_bytes; //this must be here at the end of the struct,  or Jackson will kill you
-}__attribute__((packed)) MSG_ANT_EncryptedMotionData_t;
-
 static struct{
     MSG_Base_t base;
     bool initialized;
@@ -74,98 +68,28 @@ _flush(void){
 }
 
 #ifdef ANT_STACK_SUPPORT_REQD
-#define MOTION_DATA_MAGIC 0x5A5A
 static void _send_available_data_ant(){
-
-    //allocate memory
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) +  // ANT packet headers
-        sizeof(MSG_ANT_EncryptedMotionData_t));
-
-    //if allocation worked
-    if(data_page) {
-        //ant data comes from the data page (allocated above, and freed at the end of this function)
-        MSG_ANT_PillData_t* ant_data =(MSG_ANT_PillData_t*) &data_page->buf;
-
-        //motion_data is a pointer to the blob of data that antdata->payload points to
-        //the goal is to fill out the motion_data pointer
-        MSG_ANT_EncryptedMotionData_t* motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
-
-        //zero out my blob
-        memset(&data_page->buf, 0, data_page->len);
-
-        ant_data->version = ANT_PROTOCOL_VER;
-        ant_data->type = ANT_PILL_DATA_ENCRYPTED;
-        ant_data->UUID = GET_UUID_64();
-        ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t);
-
-        //fill out the motion data payload
-        if(TF_GetCondensed(motion_data->payload, TF_CONDENSED_BUFFER_SIZE))
-        {
-            uint8_t pool_size = 0;
-
-            //magic is pre-defined, assign it.
-            motion_data->magic_bytes = MOTION_DATA_MAGIC;
-
-            //do the nonce stuff (encrypting it all)  
-            if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
-                uint8_t nonce[8] = {0};
-
-                //this payload struct is packed (packed attributed in GCC)
-                uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
-
-                sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce) ? sizeof(nonce) : pool_size));
-
-                aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
-                
-                memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
-
-                //this sends out the data
-                self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
-
-                /*
-                 * //Uncomment me to debug
-                 * 
-                 *self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
-
-                 *MSG_Data_t * dupe = MSG_Base_Dupe(data_page);
-                 *if(dupe){
-                 *    ant_data = (MSG_ANT_PillData_t *)&dupe->buf;
-                 *    motion_data = (MSG_ANT_EncryptedMotionData_t*)ant_data->payload;
-                 *    uint8_t * after_the_nonce = (uint8_t *)&motion_data->payload;
-                 *    aes128_ctr_encrypt_inplace(after_the_nonce, sizeof(MotionPayload_t) + sizeof(motion_data->magic_bytes), get_aes128_key(), nonce);
-                 *    self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, dupe);
-                 *    MSG_Base_ReleaseDataAtomic(dupe);
-                 *}
-                 */
-            }else{
-                //pools closed
-            }
-        }else{
-            // Morpheus should fake data if there is nothing received for that minute.
+    MotionPayload_t motion[1];
+    if(TF_GetCondensed(motion)){
+        MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
+        if(data){
+            self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data);
+            self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,MSG_UART_HEX}, data);
+            MSG_Base_ReleaseDataAtomic(data);
         }
-        MSG_Base_ReleaseDataAtomic(data_page);
+    }else{
+        PRINTS("No Motion Recorded\r\n");
     }
 }
 
 static void _send_heartbeat_data_ant(){
-    // TODO: Jackson please do review & test this.
-    // I packed all the struct and I am not sure it will work as expected.
-    MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_heartbeat_t));
+    pill_heartbeat_t heartbeat = {0};
+    heartbeat.battery_level = battery_get_percent_cached();
+    heartbeat.uptime_sec = self.uptime;
+    heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
+    MSG_Data_t* data_page = AllocateAntPayload(ANT_PILL_HEARTBEAT,&heartbeat , sizeof(pill_heartbeat_t));
     if(data_page){
-        pill_heartbeat_t heartbeat = {0};
-
-        heartbeat.battery_level = battery_get_percent_cached();
-        heartbeat.uptime_sec = self.uptime;
-        heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
-        
         PRINTF("HB battery %d uptime %d fw %d\r\n", heartbeat.battery_level, heartbeat.uptime_sec, heartbeat.firmware_version);
-        
-        memset(&data_page->buf, 0, data_page->len);
-        MSG_ANT_PillData_t* ant_data = (MSG_ANT_PillData_t*)&data_page->buf;
-        ant_data->version = ANT_PROTOCOL_VER;
-        ant_data->type = ANT_PILL_HEARTBEAT;
-        ant_data->UUID = GET_UUID_64();
-        memcpy(ant_data->payload, &heartbeat, sizeof(heartbeat));
         self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
         MSG_Base_ReleaseDataAtomic(data_page);
     }
@@ -184,13 +108,17 @@ static void _update_uptime() {
     self.last_wakeup = current_time;
 }
 
+void _send_data_test(void){
+    PRINTS("Sending\r\n");
+    _send_available_data_ant();
+    _send_heartbeat_data_ant();
+}
 static void _1min_timer_handler(void * ctx) {
     _update_uptime();
     self.minutes += 1;
     
     fix_imu_interrupt(); // look for imu int stuck low
-    imu_update_timers();
-    
+
 #ifdef ANT_ENABLE
     _send_available_data_ant();
     if(self.minutes % HEARTBEAT_INTERVAL_MIN == 0) { // update percent battery capacity
@@ -205,6 +133,7 @@ static void _1min_timer_handler(void * ctx) {
     }
 #endif
     TF_TickOneMinute();
+    top_of_meas_minute();
 }
 
 #define POWER_STATE_MASK 0x7
@@ -275,7 +204,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
         case MSG_TIME_PING:
             break;
         case MSG_TIME_STOP_PERIODIC:
-            PRINTS("STOP_HEARTBEAT");
+            PRINTS("STOP_HEARTBEAT\r\n");
             app_timer_stop(self.timer_id_1min);
             app_timer_stop(self.timer_id_1sec);
             break;
@@ -291,7 +220,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
         case MSG_TIME_SET_START_1MIN:
         {
             uint32_t ticks;
-            PRINTS("PERIODIC 1 MIN");
+            PRINTS("PERIODIC 1 MIN\r\n");
             ticks = APP_TIMER_TICKS(60000,APP_TIMER_PRESCALER);
             app_timer_stop(self.timer_id_1min);
             app_timer_start(self.timer_id_1min, ticks, NULL);
@@ -324,8 +253,9 @@ MSG_Base_t * MSG_Time_Init(const MSG_Central_t * central){
         self.last_wakeup = 0;
         self.onesec_runtime = 0;
       
-        if(app_timer_create(&self.timer_id_1sec,APP_TIMER_MODE_REPEATED,_1sec_timer_handler) == NRF_SUCCESS &&
-           app_timer_create(&self.timer_id_1min,APP_TIMER_MODE_REPEATED,_1min_timer_handler) == NRF_SUCCESS){
+        if(app_timer_create(&self.timer_id_1sec,APP_TIMER_MODE_REPEATED,_1sec_timer_handler) == NRF_SUCCESS
+           && app_timer_create(&self.timer_id_1min,APP_TIMER_MODE_REPEATED,_1min_timer_handler) == NRF_SUCCESS
+          ){
             self.initialized = 1;
             TF_Initialize();
 

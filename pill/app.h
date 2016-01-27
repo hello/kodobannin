@@ -9,7 +9,7 @@
 
 enum {
     APP_TIMER_PRESCALER = 255,
-    APP_TIMER_MAX_TIMERS = 9,
+    APP_TIMER_MAX_TIMERS = 10,
     APP_TIMER_OP_QUEUE_SIZE = 8,
 };
 
@@ -49,6 +49,7 @@ enum {
 
 #define IMU_CONSTANT_FREQ    (IMU_HZ_15_63)
 
+#define IMU_ONE_G            (15564u)
 /*
  * BLE Connection Parameters
  */

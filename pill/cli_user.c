@@ -8,6 +8,7 @@
 #include "app.h"
 #include "battery.h"
 #include <ble.h>
+#include "heap.h"
 
 static adc_t Vref, Vrel, Voff;
 static uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
@@ -118,7 +119,7 @@ static struct{
     MSG_Central_t * parent;
     MSG_CliUserListener_t listener;
 }self;
-
+void _send_data_test(void);
 static void
 _handle_command(int argc, char * argv[]){
     if(argc > 1 && !match_command(argv[0], "echo")){
@@ -144,17 +145,16 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
+    if( !match_command(argv[0], "free")){
+        size_t free_size = xPortGetFreeHeapSize();
+        PRINTS("\r\n");
+        PRINT_HEX(&free_size, 4);
+        PRINTS("\r\n");
+    }
     //dispatch message through ANT
     if(argc > 1 && !match_command(argv[0], "ant") ){
         //Create a message object from uart string
-        MSG_Data_t * data = MSG_Base_AllocateStringAtomic(argv[1]);
-        if(data){
-            self.parent->dispatch(  (MSG_Address_t){CLI, 0}, //source address, CLI
-                                    (MSG_Address_t){ANT,1},//destination address, ANT
-                                    data);
-            //release message object after dispatch to prevent memory leak
-            MSG_Base_ReleaseDataAtomic(data);
-        }
+        _send_data_test();
     }
 }
 

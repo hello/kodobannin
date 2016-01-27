@@ -2,33 +2,34 @@
 
 #include <stddef.h>
 #include <string.h>
-
 #include <app_timer.h>
 #include <ble_gatts.h>
 #include <ble_srv_common.h>
 #include <ble_advdata.h>
 #include "platform.h"
 #include "app.h"
-
-#include "pill_ble.h"
-
-#ifdef PLATFORM_HAS_IMU
-
-#include "message_imu.h"
-#include "imu_data.h"
-#include "sensor_data.h"
-
-#endif
-
 #include "pill_gatt.h"
-
 #include "util.h"
 #include "message_app.h"
 #include "message_uart.h"
+#include "pill_ble.h"
+#include "message_time.h"
+#include "message_led.h"
+#include "nrf.h"
+#include "timedfifo.h"
+#include "cli_user.h"
+#include "gpio_nor.h"
+
+#ifdef PLATFORM_HAS_IMU
+#include "message_imu.h"
+#include "imu_data.h"
+#include "sensor_data.h"
+#endif
 
 #ifdef ANT_STACK_SUPPORT_REQD
 #include <ant_parameters.h>
 #endif
+
 #ifdef ANT_ENABLE
 #include "ant_user.h"
 #include "message_ant.h"
@@ -37,15 +38,9 @@
 #include "ant_packet.h"
 #endif
 
-#include "message_time.h"
-#include "message_led.h"
-
-#include "nrf.h"
-#include "timedfifo.h"
-#include "cli_user.h"
-#include "gpio_nor.h"
-
-
+#ifdef PLATFORM_HAS_PROX
+#include "message_prox.h"
+#endif
 
 extern uint8_t hello_type;
 
@@ -107,7 +102,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
     case PILL_COMMAND_SEND_DATA:
-		hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
+		//hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
     case PILL_COMMAND_START_ACCELEROMETER:
     	PRINTS("Streamming started\r\n");
@@ -159,94 +154,18 @@ pill_ble_services_init(void)
 
 }
 
-/*
-#include "nrf_soc.h"
-#include "message_ant.h"
-static app_timer_id_t _ant_timer_id;
-static uint8_t _test_count;
-
-static void _test_send_available_data_ant(void *ctx){
-    if(_test_count % 2 == 0)
-    {
-        PRINTS("TRANSMIT 1\r\n");
-        MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + 
-            sizeof(MSG_ANT_EncryptedMotionData_t) + 
-            TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t));
-        if(data_page){
-            memset(&data_page->buf, 0, sizeof(data_page->len));
-            MSG_ANT_PillData_t* ant_data = &data_page->buf;
-            MSG_ANT_EncryptedMotionData_t * motion_data = (MSG_ANT_EncryptedMotionData_t *)ant_data->payload;
-            ant_data->version = ANT_PROTOCOL_VER;
-            ant_data->type = ANT_PILL_DATA_ENCRYPTED;
-            ant_data->UUID = GET_UUID_64();
-            ant_data->payload_len = sizeof(MSG_ANT_EncryptedMotionData_t) + TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t);
-            
-            uint8_t pool_size = 0;
-            if(NRF_SUCCESS == sd_rand_application_bytes_available_get(&pool_size)){
-                uint8_t nonce[8] = {0};
-                sd_rand_application_vector_get(nonce, (pool_size > sizeof(nonce)?sizeof(nonce):pool_size));
-
-                PRINTS("Nonce: ");
-                PRINT_HEX(nonce, sizeof(nonce));
-                PRINTS("\r\n");
-
-                PRINTS("Raw Payload: ");
-                PRINT_HEX(motion_data->payload, ant_data->payload_len - 8);
-                PRINTS("\r\n");
-
-
-                aes128_ctr_encrypt_inplace(motion_data->payload, TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t), get_aes128_key(), nonce);
-                memcpy((uint8_t*)&motion_data->nonce, nonce, sizeof(nonce));
-
-                PRINTS("Encrypted Payload: ");
-                PRINT_HEX(motion_data, ant_data->payload_len);
-                PRINTS("\r\n");
-
-                central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
-                central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
-            }else{
-                //pools closed
-            }
-            
-            MSG_Base_ReleaseDataAtomic(data_page);
-        }
-    }else{
-        PRINTS("TRANSMIT 2\r\n");
-        MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t));
-        if(data_page){
-            memset(&data_page->buf, 0, sizeof(data_page->len));
-            MSG_ANT_PillData_t* ant_data = &data_page->buf;
-            ant_data->version = ANT_PROTOCOL_VER;
-            ant_data->type = ANT_PILL_DATA;
-            ant_data->UUID = GET_UUID_64();
-            ant_data->payload_len = TF_CONDENSED_BUFFER_SIZE * sizeof(tf_unit_t);
-            //if(TF_GetCondensed(ant_data->payload, TF_CONDENSED_BUFFER_SIZE))
-            {
-                central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data_page);
-                central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,1}, data_page);
-            }
-            MSG_Base_ReleaseDataAtomic(data_page);
-        }
-    }
-
-    
-    _test_count++;
-}
-*/
 int is_debug_enabled(){
 #ifdef DEBUG_SERIAL
 	return 1;
 #endif
 #ifdef PLATFORM_HAS_SERIAL
 	uint32_t val = nrf_gpio_pin_read(SERIAL_RX_PIN);
-	/*
-	 *gpio_input_disconnect(SERIAL_RX_PIN);
-	 */
 	gpio_cfg_d0s1_output_disconnect(SERIAL_RX_PIN);
 	return !val;
 #endif
 	return 0;
 }
+
 void pill_ble_load_modules(void){
     central = MSG_App_Central(_unhandled_msg_event );
     if(central){
@@ -269,7 +188,6 @@ void pill_ble_load_modules(void){
 		central->loadmod(MSG_IMU_Init(central));
 #endif
 
-        
 #ifdef ANT_ENABLE
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
         {
@@ -294,11 +212,18 @@ void pill_ble_load_modules(void){
         }
 
 #endif
+
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
+
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
 #endif
+
+#ifdef PLATFORM_HAS_PROX
+		central->loadmod(MSG_Prox_Init(central));
+#endif
+
 		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
     }else{
         PRINTS("FAIL");

@@ -28,7 +28,7 @@
  * +----------------------------------------------------+
  **/
 
-#define ANT_PROTOCOL_VER      (3)
+#define ANT_PROTOCOL_VER      (4)
 
 
 typedef enum{
@@ -56,11 +56,17 @@ typedef struct{
     uint8_t counter;
 }__attribute__((packed)) pill_shakedata_t;
 
+typedef struct{
+    uint32_t cap[2];
+    uint32_t reserved;
+}__attribute__((packed)) pill_proxdata_t;
+
 typedef enum {
     ANT_PILL_DATA = 0,
     ANT_PILL_HEARTBEAT,
     ANT_PILL_SHAKING,
-    ANT_PILL_DATA_ENCRYPTED
+    ANT_PILL_DATA_ENCRYPTED,
+    ANT_PILL_PROX_ENCRYPTED,
 }MSG_ANT_PillDataType_t;
 
 typedef struct{
@@ -90,4 +96,5 @@ typedef struct{
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);
 /* Helper API an Object based on type */
-MSG_Data_t * INCREF MSG_ANT_AllocateObject(MSG_ANT_PillDataType_t type, void * payload);
+MSG_Data_t * INCREF AllocateEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len);
+MSG_Data_t * INCREF AllocateAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len);
