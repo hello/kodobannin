@@ -12,11 +12,12 @@ static const MSG_Central_t * parent;
 static MSG_Base_t base;
 static app_timer_id_t timer_id_prox;
 
+#define PROX_POLL_INTERVAL 15000 /*in ms*/
 
 static MSG_Status _init(void){
     uint32_t ticks = 0;
-    PRINTS("PROX 5 SEC\r\n");
-    ticks = APP_TIMER_TICKS(15000,APP_TIMER_PRESCALER);
+    ticks = APP_TIMER_TICKS(PROX_POLL_INTERVAL,APP_TIMER_PRESCALER);
+    PRINTF("PROX %u ms\r\n", PROX_POLL_INTERVAL);
     app_timer_start(timer_id_prox, ticks, NULL);
     return init_prox();
 }
@@ -31,10 +32,13 @@ static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t *
     return SUCCESS;
 }
 static void _send_available_prox_ant(){
-    uint16_t prox[2] = {0};
-    read_prox(&prox[0], &prox[1]);
-    PRINTF("P1: %u, P4: %u \r\n", prox[0], prox[1]);
-    MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_PROX_ENCRYPTED, prox, sizeof(prox));
+    pill_proxdata_t prox = (pill_proxdata_t){
+        .cap = {0},
+        .reserved = 0,
+    };
+    read_prox(&prox.cap[0], &prox.cap[1]);
+    PRINTF("P1: %u, P4: %u \r\n", prox.cap[0], prox.cap[1]);
+    MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_PROX_ENCRYPTED, &prox, sizeof(prox));
     if(data){
         parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){ANT,1}, data);
         /*
