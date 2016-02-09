@@ -38,7 +38,7 @@ static void _send_available_prox_ant(){
     };
     read_prox(&prox.cap[0], &prox.cap[1]);
     PRINTF("P1: %u, P4: %u \r\n", prox.cap[0], prox.cap[1]);
-    MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_PROX_ENCRYPTED, &prox, sizeof(prox));
+    MSG_Data_t * data = AllocateAntPayload(ANT_PILL_PROX_PLAINTEXT, &prox, sizeof(prox));
     if(data){
         parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){ANT,1}, data);
         /*
