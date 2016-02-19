@@ -41,7 +41,7 @@
 
 #define PSTORAGE_MAX_BLOCK_SIZE     PSTORAGE_FLASH_PAGE_SIZE                                    /**< Maximum size of block that can be registered with the module. Should be configured based on system requirements. And should be greater than or equal to the minimum size. */
 
-#define PSTORAGE_CMD_QUEUE_SIZE     10                                                          /**< Maximum number of flash access commands that can be maintained by the */
+#define PSTORAGE_CMD_QUEUE_SIZE     30                                                          /**< Maximum number of flash access commands that can be maintained by the */
 
 #define PSTORAGE_RAW_MODE_ENABLE
 
