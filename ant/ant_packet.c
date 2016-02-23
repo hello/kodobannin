@@ -46,6 +46,7 @@ typedef struct{
     uint16_t tx_stretch;
     MSG_Data_t * tx_obj;
     uint32_t age;
+    uint8_t page_received;
 }hlo_ant_packet_session_t;
 
 
@@ -143,7 +144,8 @@ static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_
 }
 static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * buffer, uint8_t len){
     if(PACKET_INTEGRITY_CHECK(buffer)){
-        if(buffer[0] == 0){
+        hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
+        if(packet->page == 0){
             //header
             uint16_t new_crc = (uint16_t)(buffer[7] << 8) | buffer[6];
             uint16_t new_size = (uint16_t)(buffer[5] << 8) | buffer[4];
@@ -162,13 +164,15 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
                 session->rx_obj = MSG_Base_AllocateDataAtomic(new_size);
             }
         }else if(session->rx_obj){
-            _assemble_rx_payload(session->rx_obj, (hlo_ant_payload_packet_t *)buffer);
+            _assemble_rx_payload(session->rx_obj,packet);
             if(session->rx_count >= (session->rx_header.page_count)){
                 if(_calc_checksum(session->rx_obj) == session->rx_header.checksum){
                     return session->rx_obj;
                 }
             }
         }
+        //increcement page received
+        session->page_received = packet->page;
         session->rx_count++;
     }else{
         //invalid packet
