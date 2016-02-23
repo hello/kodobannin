@@ -175,7 +175,7 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
     }
     return NULL;
 }
-static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len){
+static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session->tx_obj){
         //we always transmit a minimum number of packets regardless of packet size to ensure delivery
@@ -219,10 +219,9 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
 }
 
 
-static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len){
+static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session){
-        //TODO handle timeout on session
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
             if(self.user && self.user->on_message){

@@ -200,7 +200,7 @@ _handle_rx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
     }else{
         return;
     }
-    self.event_listener->on_rx_event(&device, rx_payload, 8);
+    self.event_listener->on_rx_event(&device, rx_payload, 8, self.role);
 }
 
 static void
@@ -219,7 +219,7 @@ _handle_tx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
             return;
         }
     }
-    self.event_listener->on_tx_event(&device, out_buf, &out_size);
+    self.event_listener->on_tx_event(&device, out_buf, &out_size, self.role);
     if(out_size && out_size <= 8){
         sd_ant_broadcast_message_tx(channel, out_size, out_buf);
     }
