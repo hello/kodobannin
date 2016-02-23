@@ -74,7 +74,7 @@ _configure_channel_as_central(uint8_t channel,const hlo_ant_channel_phy_t * phy,
 int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     hlo_ant_channel_phy_t phy = {
         .period = 273,
-        .frequency = 66,
+        .frequency = 67,
         .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0
     };
