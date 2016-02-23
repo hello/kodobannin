@@ -231,6 +231,11 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
             }
             _reset_session_rx(session);
         }
+        if( role == HLO_ANT_ROLE_CENTRAL ){//central receives first, then sets up transmit
+            if (session->tx_obj){
+                //set up next transmission
+            }
+        }
         if(session->rx_obj && session->tx_obj){
             session->tx_stretch++;
         }
