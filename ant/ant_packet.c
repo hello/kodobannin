@@ -5,7 +5,6 @@
 
 #define CID2UID(cid) (cid)
 #define UID2CID(uid) ((uint16_t)uid)
-#define PACKET_INTEGRITY_CHECK(buf) (buf[1] != 0 && buf[0] <= buf[1])
 #define DEFAULT_ANT_RETRANSMIT_COUNT 3
 #define DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT 24
 #define DEFAULT_ANT_HEADER_RETRANSMIT_COUNT 5
@@ -143,8 +142,12 @@ static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_
    return 0;
 }
 static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * buffer, uint8_t len){
-    if(PACKET_INTEGRITY_CHECK(buffer)){
-        hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
+
+    hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
+    session->page_received = packet->page;
+    session->rx_count++;
+
+    if( packet->page <= packet->page_count ){//packet can be assembled
         if(packet->page == 0){
             //header
             uint16_t new_crc = (uint16_t)(buffer[7] << 8) | buffer[6];
@@ -171,11 +174,6 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
                 }
             }
         }
-        //increcement page received
-        session->page_received = packet->page;
-        session->rx_count++;
-    }else{
-        //invalid packet
     }
     return NULL;
 }
