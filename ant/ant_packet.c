@@ -185,6 +185,15 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
 }
 static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
+    if(session){//always ack if nothing to send
+        PRINTS("t:");
+        PRINT_HEX(&session->lockstep.tx, 1);
+        PRINTS("\r\n");
+        *out_buffer_len = 1;
+        out_buffer[0] = session->lockstep.tx;
+    }else{
+        PRINTS("no session\r\n");
+    }
     if(session->tx_obj){
         //we always transmit a minimum number of packets regardless of packet size to ensure delivery
         uint32_t transmit_mark = (( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)) + (session->tx_stretch >> 1);
@@ -240,16 +249,25 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
         }
         if( role == HLO_ANT_ROLE_CENTRAL ){
             if ( !rx ){
-                self.lockstep.tx = rx;  //rx means peripheral has initiated a transmission
-            }else if( rx = self.lockstep.tx + 1){
-                self.lockstep.tx++;  //rx means peripheral has initiated a transmission
+                session->lockstep.tx = rx;  //rx means peripheral has initiated a transmission
+                PRINTS("r:");
+                PRINT_HEX(&session->lockstep.tx, 1);
+                PRINTS("\r\n");
+            }else if( rx == (session->lockstep.tx + 1)){
+                session->lockstep.tx++;  //rx means peripheral has initiated a transmission
+                PRINTS("r:");
+                PRINT_HEX(&session->lockstep.tx, 1);
+                PRINTS("\r\n");
+            }else{
+                //TODO:if lockstep fails (legacy mode or dropped packet), mark the session as failed
+                session->lockstep.failed = 1;
             }
             //set up transmit
         }else if(role == HLO_ANT_ROLE_PERIPHERAL){
-            if ( rx == self.lockstep.tx || !self.lockstep.retry){
-                self.lockstep.tx = self.lockstep.tx + 1; //rx means central has acked our last packet
-                self.lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
-            }else if(self.lockstep.retry--){
+            if ( rx == session->lockstep.tx || !session->lockstep.retry){
+                session->lockstep.tx = session->lockstep.tx + 1; //rx means central has acked our last packet
+                session->lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
+            }else if(session->lockstep.retry--){
                 //will always attempt to retransmit, up to N times
                 PRINTS("miss\r\n");
             }
