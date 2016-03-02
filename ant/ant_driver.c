@@ -201,10 +201,19 @@ _handle_rx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
         return;
     }
     self.event_listener->on_rx_event(&device, rx_payload, 8, self.role);
+
+    if(self.role == HLO_ANT_ROLE_CENTRAL){
+        uint8_t out_buf[8] = {0};
+        uint8_t out_size = 0;
+        self.event_listener->on_tx_event(&device, out_buf, &out_size, self.role);
+        if(out_size && out_size <= 8){
+            sd_ant_broadcast_message_tx(channel, out_size, out_buf);
+        }
+    }
 }
 
-static void
-_handle_tx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
+static void  //peripheral tx mode
+_handle_tx(uint8_t channel){
     hlo_ant_device_t device;
     uint8_t out_buf[8] = {0};
     uint8_t out_size = 0;
@@ -247,7 +256,9 @@ void ant_handler(ant_evt_t * p_ant_evt){
             break;
         case EVENT_TX:
             DEBUGS("T");
-            _handle_tx(ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            if(self.role == HLO_ANT_ROLE_PERIPHERAL){
+                _handle_tx(ant_channel);
+            }
             break;
         case EVENT_TRANSFER_TX_FAILED:
             break;
