@@ -45,7 +45,11 @@ typedef struct{
     uint16_t tx_stretch;
     MSG_Data_t * tx_obj;
     uint32_t age;
-    uint8_t page_received;
+    struct{
+        uint8_t rx;
+        uint8_t tx;
+        uint8_t retry;
+    }lockstep;
 }hlo_ant_packet_session_t;
 
 
@@ -141,10 +145,13 @@ static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_
    }
    return 0;
 }
-static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * buffer, uint8_t len){
-
+static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * buffer, uint8_t len, uint8_t * page){
+    //this function still uses the legacy way of counting packets (total received >= header max -> crc check -> produce object)
+    //rather than using lockstep mode (rx page == header max) for backward compatibility reasons
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
-    session->page_received = packet->page;
+    //updates lockstep state
+    *page = packet->page;
+    //updates the meta counter
     session->rx_count++;
 
     if( packet->page <= packet->page_count ){//packet can be assembled
@@ -224,16 +231,28 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
 static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session){
-        MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
+        uint8_t rx;
+        MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len, &rx);
         if(ret_obj){
             if(self.user && self.user->on_message){
                 self.user->on_message(device, ret_obj);
             }
             _reset_session_rx(session);
         }
-        if( role == HLO_ANT_ROLE_CENTRAL ){//central receives first, then sets up transmit
-            if (session->tx_obj){
-                //set up next transmission
+        if( role == HLO_ANT_ROLE_CENTRAL ){
+            if ( !rx ){
+                self.lockstep.tx = rx;  //rx means peripheral has initiated a transmission
+            }else if( rx = self.lockstep.tx + 1){
+                self.lockstep.tx++;  //rx means peripheral has initiated a transmission
+            }
+            //set up transmit
+        }else if(role == HLO_ANT_ROLE_PERIPHERAL){
+            if ( rx == self.lockstep.tx || !self.lockstep.retry){
+                self.lockstep.tx = self.lockstep.tx + 1; //rx means central has acked our last packet
+                self.lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
+            }else if(self.lockstep.retry--){
+                //will always attempt to retransmit, up to N times
+                PRINTS("miss\r\n");
             }
         }
         if(session->rx_obj && session->tx_obj){
