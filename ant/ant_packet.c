@@ -161,8 +161,6 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
             uint16_t new_size = (uint16_t)(buffer[5] << 8) | buffer[4];
             
             if( new_size > MSG_Base_FreeCount() || new_size == 0) {
-                PRINTS("ANT packet too big\n");
-                PRINT_HEX(&new_size, sizeof(new_size));
                 _reset_session_rx(session);
                 return NULL;
             }
