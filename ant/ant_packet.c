@@ -148,12 +148,10 @@ static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_
    }
    return 0;
 }
-static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * buffer, uint8_t len, uint8_t * page){
+static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * buffer, uint8_t len){
     //this function still uses the legacy way of counting packets (total received >= header max -> crc check -> produce object)
     //rather than using lockstep mode (rx page == header max) for backward compatibility reasons
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
-    //updates lockstep state
-    *page = packet->page;
     //updates the meta counter
     session->rx_count++;
 
@@ -237,12 +235,11 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
     }
 }
 
-
 static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
+    hlo_ant_payload_packet_t packet = (hlo_ant_payload_packet_t*)buffer;
     if(session){
-        uint8_t rx = 0;
-        MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len, &rx);
+        MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
             if(self.user && self.user->on_message){
                 self.user->on_message(device, ret_obj);
@@ -250,23 +247,25 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
             _reset_session_rx(session);
         }
         if( role == HLO_ANT_ROLE_CENTRAL ){
-            if ( !rx ){
-                session->lockstep.tx = rx;  //rx means peripheral has initiated a transmission
-                PRINTS("r:");
-                PRINT_HEX(&session->lockstep.tx, 1);
-                PRINTS("\r\n");
-            }else if( rx == (session->lockstep.tx + 1)){
+            PRINTS("r:");
+            PRINT_HEX(&packet->page, 1);
+            PRINTS("\r\n");
+            if ( !packet->page ){
+                session->lockstep.tx = packet->page;  //rx means peripheral has initiated a transmission
+            }else if( packet->page == (session->lockstep.tx + 1)){
                 session->lockstep.tx++;  //if peripheral has increased its page count, we also increase it
-                PRINTS("r:");
-                PRINT_HEX(&session->lockstep.tx, 1);
-                PRINTS("\r\n");
+            }else if( packet->page == session->lockstep.tx) {
+                //retransmit is needed
             }else{
-                //TODO:if lockstep fails (legacy mode or dropped packet), mark the session as failed
                 session->lockstep.status |= LOCKSTEP_STATUS_DESYNC;
+                PRINTS("desync\r\n");
             }
+            PRINTS("t:");
+            PRINT_HEX(&session->lockstep.tx, 1);
+            PRINTS("\r\n");
             //set up transmit
         }else if(role == HLO_ANT_ROLE_PERIPHERAL){
-            if ( rx == session->lockstep.tx || !session->lockstep.retry){
+            if ( packet->page == session->lockstep.tx || !session->lockstep.retry){
                 session->lockstep.tx = session->lockstep.tx + 1; //rx means central has acked our last packet
                 session->lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
             }else if(session->lockstep.retry--){
