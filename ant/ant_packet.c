@@ -230,7 +230,7 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
 static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session){
-        uint8_t rx;
+        uint8_t rx = 0;
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len, &rx);
         if(ret_obj){
             if(self.user && self.user->on_message){
