@@ -49,9 +49,11 @@ typedef struct{
         uint8_t rx;
         uint8_t tx;
         uint8_t retry;
-        uint8_t failed;
+        uint8_t status;
     }lockstep;
 }hlo_ant_packet_session_t;
+
+#define LOCKSTEP_STATUS_DESYNC 1
 
 
 static struct{
@@ -254,13 +256,13 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
                 PRINT_HEX(&session->lockstep.tx, 1);
                 PRINTS("\r\n");
             }else if( rx == (session->lockstep.tx + 1)){
-                session->lockstep.tx++;  //rx means peripheral has initiated a transmission
+                session->lockstep.tx++;  //if peripheral has increased its page count, we also increase it
                 PRINTS("r:");
                 PRINT_HEX(&session->lockstep.tx, 1);
                 PRINTS("\r\n");
             }else{
                 //TODO:if lockstep fails (legacy mode or dropped packet), mark the session as failed
-                session->lockstep.failed = 1;
+                session->lockstep.status |= LOCKSTEP_STATUS_DESYNC;
             }
             //set up transmit
         }else if(role == HLO_ANT_ROLE_PERIPHERAL){
