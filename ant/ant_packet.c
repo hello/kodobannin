@@ -49,6 +49,7 @@ typedef struct{
         uint8_t rx;
         uint8_t tx;
         uint8_t retry;
+        uint8_t failed;
     }lockstep;
 }hlo_ant_packet_session_t;
 
