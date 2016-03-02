@@ -228,11 +228,16 @@ MSG_Data_t * INCREF AllocateAntPayload(MSG_ANT_PillDataType_t type, void * paylo
     return data_page;
 }
 
+void _on_message_failed(const hlo_ant_device_t * device){
+    PRINTS("failed\r\n");
+}
+
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler){
     self.parent = parent;
     self.user_handler = handler;
     self.message_listener.on_message = _on_message;
     self.message_listener.on_message_sent = _on_message_sent;
+    self.message_listener.on_message_failed = _on_message_failed;
     self.tx_queue = hlo_queue_init(64);
     APP_ASSERT(self.tx_queue);
     {
