@@ -6,16 +6,6 @@
 #define CID2UID(cid) (cid)
 #define UID2CID(uid) ((uint16_t)uid)
 #define DEFAULT_ANT_RETRANSMIT_COUNT 3
-#define DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT 24
-#define DEFAULT_ANT_HEADER_RETRANSMIT_COUNT 5
-
-#ifndef ANT_RETRANSMIT_COUNT
-#define ANT_RETRANSMIT_COUNT DEFAULT_ANT_RETRANSMIT_COUNT
-#endif
-
-#ifndef ANT_HEADER_TRANSMIT_COUNT
-#define ANT_HEADER_TRANSMIT_COUNT DEFAULT_ANT_HEADER_RETRANSMIT_COUNT
-#endif
 
 //defines how old a session can be before getting swept
 #define ANT_SESSION_AGE_LIMIT 4
@@ -41,8 +31,6 @@ typedef struct{
     hlo_ant_header_packet_t rx_header;
     hlo_ant_header_packet_t tx_header;
     MSG_Data_t * rx_obj;
-    int16_t tx_count;
-    uint16_t tx_stretch;
     MSG_Data_t * tx_obj;
     uint32_t age;
     struct{
@@ -74,8 +62,6 @@ _reset_session_tx(hlo_ant_packet_session_t * session){
     }
     //TODO: trick to sendbunch of headers before the body is to use negative number
     session->tx_obj = NULL;
-    session->tx_count = ANT_HEADER_TRANSMIT_COUNT * -1;
-    session->tx_stretch = 0;
 }
 static inline DECREF void
 _reset_session_rx(hlo_ant_packet_session_t * session){
@@ -193,48 +179,43 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
     }
     if(session->tx_obj){
         //we always transmit a minimum number of packets regardless of packet size to ensure delivery
-        uint32_t transmit_mark = (( (session->tx_header.page_count+1) * ANT_RETRANSMIT_COUNT)) + (session->tx_stretch >> 1);
-        if(transmit_mark < DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT){
-            transmit_mark = DEFAULT_ANT_MINIMUM_TRANSMIT_COUNT;
-        }
         *out_buffer_len = 8;
-        if(session->tx_count < 0){
-            //copy header to prime transmission
-            memcpy(out_buffer, &session->tx_header, 8);
-        }else if(session->tx_count < transmit_mark){
-            uint16_t mod = session->tx_count % (session->tx_header.page_count+1);
-            if(mod == 0){
-                memcpy(out_buffer, &session->tx_header, 8);
-            }else{
-                uint16_t offset = (mod - 1) * 6;
-                uint16_t i;
-                out_buffer[0] = mod;
-                out_buffer[1] = session->tx_header.page_count;
-                for(i = 0; i < 6; i++){
-                    if(offset + i < session->tx_obj->len){
-                        out_buffer[2+i] = session->tx_obj->buf[offset+i];
-                    }else{
-                        out_buffer[2+i] = 0;
-                    }
-                }
-            }
-        }else{
-            MSG_Data_t * sent_obj = session->tx_obj;
-            MSG_Base_AcquireDataAtomic(sent_obj);
-            //reset to prepare ahead of time if user has any more data to be sent
-            _reset_session_tx(session);
-            if(self.user && self.user->on_message_sent)
-                self.user->on_message_sent(device, sent_obj);
-            MSG_Base_ReleaseDataAtomic(sent_obj);
-            return;
-        }
-        session->tx_count++;
+        /*
+         *if(session->tx_count < transmit_mark){
+         *    uint16_t mod = session->tx_count % (session->tx_header.page_count+1);
+         *    if(mod == 0){
+         *        memcpy(out_buffer, &session->tx_header, 8);
+         *    }else{
+         *        uint16_t offset = (mod - 1) * 6;
+         *        uint16_t i;
+         *        out_buffer[0] = mod;
+         *        out_buffer[1] = session->tx_header.page_count;
+         *        for(i = 0; i < 6; i++){
+         *            if(offset + i < session->tx_obj->len){
+         *                out_buffer[2+i] = session->tx_obj->buf[offset+i];
+         *            }else{
+         *                out_buffer[2+i] = 0;
+         *            }
+         *        }
+         *    }
+         *}else{
+         *    MSG_Data_t * sent_obj = session->tx_obj;
+         *    MSG_Base_AcquireDataAtomic(sent_obj);
+         *    //reset to prepare ahead of time if user has any more data to be sent
+         *    _reset_session_tx(session);
+         *    if(self.user && self.user->on_message_sent)
+         *        self.user->on_message_sent(device, sent_obj);
+         *    MSG_Base_ReleaseDataAtomic(sent_obj);
+         *    return;
+         *}
+         *session->tx_count++;
+         */
     }
 }
 
 static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
-    hlo_ant_payload_packet_t packet = (hlo_ant_payload_packet_t*)buffer;
+    hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
     if(session){
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
@@ -269,9 +250,6 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
                 //will always attempt to retransmit, up to N times
                 PRINTS("miss\r\n");
             }
-        }
-        if(session->rx_obj && session->tx_obj){
-            session->tx_stretch++;
         }
     }else{
         //no more sessions available
