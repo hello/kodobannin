@@ -207,7 +207,8 @@ _handle_tx(uint8_t channel, const hlo_ant_device_t * dev){
     uint8_t out_size = 0;
     self.event_listener->on_tx_event(dev, out_buf, &out_size, self.role);
     if(out_size && out_size <= 8){
-        sd_ant_broadcast_message_tx(channel, out_size, out_buf);
+        //we always send out the maximum size and pad the remainder with 0
+        sd_ant_broadcast_message_tx(channel, 8, out_buf);
     }
 }
 
