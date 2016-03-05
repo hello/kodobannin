@@ -56,6 +56,7 @@ static inline uint16_t _calc_checksum(MSG_Data_t * data){
     return (crc16_compute(data->buf, data->len, NULL));
 }
 
+
 static inline DECREF void
 _reset_session_tx(hlo_ant_packet_session_t * session){
     if(session->tx_obj){
@@ -196,10 +197,14 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
     }
     if(session->tx_obj){
         //always send out the maximum length
-        if( session->lockstep.page <= session->tx_header.page_count ){
-            _write_buffer(session, out_buffer);
-        }else if( session->lockstep.page > session->tx_header.page_count ){
-            session->lockstep.status |= LOCKSTEP_STATUS_TX_DONE;
+        if(session->lockstep.retry--){
+            if( session->lockstep.page <= session->tx_header.page_count ){
+                _write_buffer(session, out_buffer);
+            }else if( session->lockstep.page > session->tx_header.page_count ){
+                session->lockstep.status |= LOCKSTEP_STATUS_TX_DONE;
+            }
+        }else{
+            session->lockstep.status |= LOCKSTEP_STATUS_DESYNC;
         }
     }
     if(session->lockstep.status){
@@ -209,11 +214,15 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
             _reset_session_tx(session);
         }
         if(session->lockstep.status & LOCKSTEP_STATUS_RX_DONE){
-            /*
-             *self.user->on_message(device, ret_obj);
-             */
+            self.user->on_message(device, session->rx_obj);
             _reset_session_rx(session);
             session->lockstep.status &= ~LOCKSTEP_STATUS_RX_DONE;
+        }
+        if(session->lockstep.status & LOCKSTEP_STATUS_DESYNC){
+            //stop transmission
+            self.user->on_message_failed(device);
+            PRINTS("desync\r\n");
+            session->lockstep.status &= ~LOCKSTEP_STATUS_DESYNC;
         }
     }
 }
@@ -238,7 +247,6 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
                 //retransmit is needed
             }else{
                 session->lockstep.status |= LOCKSTEP_STATUS_DESYNC;
-                PRINTS("desync\r\n");
             }
             PRINTS("t:");
             PRINT_HEX(&session->lockstep.page, 1);
