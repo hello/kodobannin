@@ -199,6 +199,7 @@ static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
                 session->lockstep.status |= LOCKSTEP_STATUS_TX_DONE;
             }
         }else{
+            PRINTS("timeout\r\n");
             session->lockstep.status |= LOCKSTEP_STATUS_DESYNC;
         }
     }

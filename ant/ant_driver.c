@@ -7,6 +7,7 @@
 
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32
 #define HLO_ANT_NETWORK_KEY {0xA8, 0xAC, 0x20, 0x7A, 0x1D, 0x72, 0xE3, 0x4D}
+#define HLO_ANT_NETWORK_CHANNEL 66
 typedef struct{
     //cached status
     uint8_t reserved;
@@ -74,7 +75,7 @@ _configure_channel_as_central(uint8_t channel,const hlo_ant_channel_phy_t * phy,
 int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     hlo_ant_channel_phy_t phy = {
         .period = 273,
-        .frequency = 66,
+        .frequency = HLO_ANT_NETWORK_CHANNEL,
         .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0
     };
@@ -122,7 +123,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
             uint16_t device_period = (1092 - 4) + (device->device_number % 8);
             hlo_ant_channel_phy_t phy = {
                 .period = device_period,
-                .frequency = 66,
+                .frequency = HLO_ANT_NETWORK_CHANNEL,
                 .channel_type = CHANNEL_TYPE_MASTER_TX_ONLY,
                 .network = 0
             };
