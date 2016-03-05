@@ -180,7 +180,7 @@ static void _write_buffer(const hlo_ant_packet_session_t * session, uint8_t * ou
     }
 
 }
-static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hlo_ant_role role){
+static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session && role == HLO_ANT_ROLE_CENTRAL){//always ack if acting as central
         /*
@@ -215,13 +215,13 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
         }
         if(session->lockstep.status & LOCKSTEP_STATUS_DESYNC){
             //stop transmission, desync means tx failure
-            /*
-             *self.user->on_message_failed(device);
-             */
+            self.user->on_message_failed(device);
             PRINTS("desync\r\n");
             session->lockstep.status &= ~LOCKSTEP_STATUS_DESYNC;
+            return false;
         }
     }
+    return true;
 }
 
 static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){

@@ -204,8 +204,9 @@ _handle_rx(uint8_t * msg_buffer, uint16_t size, const hlo_ant_device_t * device)
 static void  //peripheral tx mode
 _handle_tx(uint8_t channel, const hlo_ant_device_t * dev){
     uint8_t out_buf[8] = {0};
-    self.event_listener->on_tx_event(dev, out_buf, self.role);
-    sd_ant_broadcast_message_tx(channel, 8, out_buf);
+    if(self.event_listener->on_tx_event(dev, out_buf, self.role)){
+        sd_ant_broadcast_message_tx(channel, 8, out_buf);
+    }
 }
 
 void ant_handler(ant_evt_t * p_ant_evt){

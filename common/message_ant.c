@@ -178,6 +178,11 @@ static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * messa
         }
     }
 }
+void _on_message_failed(const hlo_ant_device_t * device){
+    PRINTS("failed\r\n");
+    _on_message_sent(device, NULL);
+}
+
 
 static MSG_Data_t INCREF * _AllocateAntPacket(MSG_ANT_PillDataType_t type, size_t payload_size){
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + payload_size);
@@ -226,10 +231,6 @@ MSG_Data_t * INCREF AllocateAntPayload(MSG_ANT_PillDataType_t type, void * paylo
         memcpy(ant_data->payload, payload, len);
     }
     return data_page;
-}
-
-void _on_message_failed(const hlo_ant_device_t * device){
-    PRINTS("failed\r\n");
 }
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler){
