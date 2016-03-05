@@ -41,6 +41,8 @@ typedef struct{
 }hlo_ant_packet_session_t;
 
 #define LOCKSTEP_STATUS_DESYNC (1 << 0)
+#define LOCKSTEP_STATUS_TX_DONE (1 << 1)
+#define LOCKSTEP_STATUS_RX_DONE (1 << 2)
 
 
 static struct{
@@ -165,51 +167,54 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
     }
     return NULL;
 }
+static void _write_buffer(const hlo_ant_packet_session_t * session, uint8_t * out_buffer){
+    int i;
+    uint16_t offset = session->lockstep.page;
+    if(offset == 0){
+        memcpy(out_buffer, &session->tx_header, 8);
+    }else{
+        out_buffer[0] = offset;
+        out_buffer[1] = session->tx_header.page_count;
+        for(i = 0; i < 6; i++){
+            if(offset + i < session->tx_obj->len){
+                out_buffer[2+i] = session->tx_obj->buf[offset+i];
+            }else{
+                out_buffer[2+i] = 0;
+            }
+        }
+    }
+
+}
 static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
-    if(session){//always ack if nothing to send
+    if(session && role == HLO_ANT_ROLE_CENTRAL){//always ack if acting as central
+        *out_buffer_len = 8;
         PRINTS("t:");
         PRINT_HEX(&session->lockstep.page, 1);
         PRINTS("\r\n");
-        *out_buffer_len = 8;
         out_buffer[0] = session->lockstep.page;
-    }else{
-        PRINTS("no session\r\n");
     }
     if(session->tx_obj){
         //always send out the maximum length
-        *out_buffer_len = 8;
-        //we always transmit a minimum number of packets regardless of packet size to ensure delivery
-        /*
-         *if(session->tx_count < transmit_mark){
-         *    uint16_t mod = session->tx_count % (session->tx_header.page_count+1);
-         *    if(mod == 0){
-         *        memcpy(out_buffer, &session->tx_header, 8);
-         *    }else{
-         *        uint16_t offset = (mod - 1) * 6;
-         *        uint16_t i;
-         *        out_buffer[0] = mod;
-         *        out_buffer[1] = session->tx_header.page_count;
-         *        for(i = 0; i < 6; i++){
-         *            if(offset + i < session->tx_obj->len){
-         *                out_buffer[2+i] = session->tx_obj->buf[offset+i];
-         *            }else{
-         *                out_buffer[2+i] = 0;
-         *            }
-         *        }
-         *    }
-         *}else{
-         *    MSG_Data_t * sent_obj = session->tx_obj;
-         *    MSG_Base_AcquireDataAtomic(sent_obj);
-         *    //reset to prepare ahead of time if user has any more data to be sent
-         *    _reset_session_tx(session);
-         *    if(self.user && self.user->on_message_sent)
-         *        self.user->on_message_sent(device, sent_obj);
-         *    MSG_Base_ReleaseDataAtomic(sent_obj);
-         *    return;
-         *}
-         *session->tx_count++;
-         */
+        if( session->lockstep.page <= session->tx_header.page_count ){
+            _write_buffer(session, out_buffer);
+        }else if( session->lockstep.page > session->tx_header.page_count ){
+            session->lockstep.status |= LOCKSTEP_STATUS_TX_DONE;
+        }
+    }
+    if(session->lockstep.status){
+        if(session->lockstep.status & LOCKSTEP_STATUS_TX_DONE){
+            self.user->on_message_sent(device, session->tx_obj);
+            session->lockstep.status &= ~LOCKSTEP_STATUS_TX_DONE;
+            _reset_session_tx(session);
+        }
+        if(session->lockstep.status & LOCKSTEP_STATUS_RX_DONE){
+            /*
+             *self.user->on_message(device, ret_obj);
+             */
+            _reset_session_rx(session);
+            session->lockstep.status &= ~LOCKSTEP_STATUS_RX_DONE;
+        }
     }
 }
 
@@ -217,17 +222,14 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
     hlo_ant_packet_session_t * session = _acquire_session(device);
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
     if(session){
+        PRINTS("r:");
+        PRINT_HEX(&packet->page, 1);
+        PRINTS("\r\n");
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
-            if(self.user && self.user->on_message){
-                self.user->on_message(device, ret_obj);
-            }
-            _reset_session_rx(session);
+            session->lockstep.status |= LOCKSTEP_STATUS_TX_DONE;
         }
-        if( role == HLO_ANT_ROLE_CENTRAL ){
-            PRINTS("r:");
-            PRINT_HEX(&packet->page, 1);
-            PRINTS("\r\n");
+        if( role == HLO_ANT_ROLE_CENTRAL ){//central follows the page from peripheral
             if ( !packet->page ){
                 session->lockstep.page = packet->page;  //rx means peripheral has initiated a transmission
             }else if( packet->page == (session->lockstep.page + 1)){
@@ -243,12 +245,9 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
             PRINTS("\r\n");
             //set up transmit
         }else if(role == HLO_ANT_ROLE_PERIPHERAL){
-            if ( packet->page == session->lockstep.page || !session->lockstep.retry){
-                session->lockstep.page = session->lockstep.page + 1; //rx means central has acked our last packet
+            if( packet->page == session->lockstep.page ){
+                session->lockstep.page++;
                 session->lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
-            }else if(session->lockstep.retry--){
-                //will always attempt to retransmit, up to N times
-                PRINTS("miss\r\n");
             }
         }
     }else{
