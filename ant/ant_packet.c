@@ -236,7 +236,7 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
         PRINTS("\r\n");
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
-            session->lockstep.status |= LOCKSTEP_STATUS_TX_DONE;
+            session->lockstep.status |= LOCKSTEP_STATUS_RX_DONE;
         }
         if( role == HLO_ANT_ROLE_CENTRAL ){//central follows the page from peripheral
             if ( !packet->page ){
