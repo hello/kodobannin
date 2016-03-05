@@ -215,8 +215,9 @@ static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
         }
         if(session->lockstep.status & LOCKSTEP_STATUS_DESYNC){
             //stop transmission, desync means tx failure
-            self.user->on_message_failed(device);
+            self.user->on_message_failed(device, session->tx_obj);
             PRINTS("desync\r\n");
+            _reset_session_tx(session);
             session->lockstep.status &= ~LOCKSTEP_STATUS_DESYNC;
             return false;
         }

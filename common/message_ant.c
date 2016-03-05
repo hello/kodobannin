@@ -178,7 +178,7 @@ static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * messa
         }
     }
 }
-void _on_message_failed(const hlo_ant_device_t * device){
+static void _on_message_failed(const hlo_ant_device_t * device, MSG_Data_t * message){
     PRINTS("failed\r\n");
     _on_message_sent(device, NULL);
 }
