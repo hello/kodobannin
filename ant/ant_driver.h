@@ -19,7 +19,7 @@ typedef struct{
 
 typedef struct{
     /* tx event indicates opportunity to send data to the id */
-    void (*on_tx_event)(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len, hlo_ant_role role);
+    void (*on_tx_event)(const hlo_ant_device_t * device, uint8_t * out_buffer, hlo_ant_role role);
     /* rx event indicates receiving a packet from the channel */
     void (*on_rx_event)(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role);
     void (*on_error_event)(const hlo_ant_device_t * device, uint32_t event);

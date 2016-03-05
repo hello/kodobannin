@@ -27,7 +27,6 @@ typedef struct{
 
 typedef struct{
     uint16_t cid;
-    uint16_t rx_count;
     hlo_ant_header_packet_t rx_header;
     hlo_ant_header_packet_t tx_header;
     MSG_Data_t * rx_obj;
@@ -71,7 +70,6 @@ _reset_session_rx(hlo_ant_packet_session_t * session){
         MSG_Base_ReleaseDataAtomic(session->rx_obj);
     }
     session->rx_obj = NULL;
-    session->rx_count = 0;
 }
 //finds session, if not exist allocates one
 static inline hlo_ant_packet_session_t *
@@ -137,34 +135,30 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
     //this function still uses the legacy way of counting packets (total received >= header max -> crc check -> produce object)
     //rather than using lockstep mode (rx page == header max) for backward compatibility reasons
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
-    //updates the meta counter
-    session->rx_count++;
 
-    if( packet->page <= packet->page_count ){//packet can be assembled
-        if(packet->page == 0){
-            //header
-            uint16_t new_crc = (uint16_t)(buffer[7] << 8) | buffer[6];
-            uint16_t new_size = (uint16_t)(buffer[5] << 8) | buffer[4];
-            
-            if( new_size > MSG_Base_FreeCount() || new_size == 0) {
-                _reset_session_rx(session);
-                return NULL;
-            }
-            if(new_crc != session->rx_header.checksum){
-                //if crc is new, create new obj
-                //TODO optimize by not swapping objects, but reusing it
-                memcpy(&session->rx_header, buffer, sizeof(hlo_ant_header_packet_t));
-                _reset_session_rx(session);
-                session->rx_obj = MSG_Base_AllocateDataAtomic(new_size);
-            }
-        }else if(session->rx_obj){
-            _assemble_rx_payload(session->rx_obj,packet);
-            if(session->rx_count >= (session->rx_header.page_count)){
-                if(_calc_checksum(session->rx_obj) == session->rx_header.checksum){
-                    return session->rx_obj;
-                }
-            }
+    if(packet->page == 0 && packet->page_count > 0){
+    //1. check if it's a header packet
+        uint16_t new_size = (uint16_t)(buffer[5] << 8) | buffer[4];
+        //1.a check if header doesn't makes sense:
+        if( new_size > MSG_Base_FreeCount() || new_size == 0){
+            _reset_session_rx(session);
+            return NULL;
         }
+        //1.b now check if it's the same object as before
+        uint16_t new_crc = (uint16_t)(buffer[7] << 8) | buffer[6];
+        if( new_crc != session->rx_header.checksum ){
+            memcpy(&session->rx_header, buffer, sizeof(hlo_ant_header_packet_t));
+            _reset_session_rx(session);//this is just to refresh any stale objects that hasn't been completed
+            session->rx_obj = MSG_Base_AllocateDataAtomic(new_size);
+        }
+
+    }else if(session->rx_obj && packet->page_count == session->rx_header.page_count){
+    //2. if an object already exists, and the bounds make sense
+        _assemble_rx_payload(session->rx_obj,packet);
+        if(_calc_checksum(session->rx_obj) == session->rx_header.checksum){
+            return session->rx_obj;
+        }
+
     }
     return NULL;
 }
@@ -186,13 +180,14 @@ static void _write_buffer(const hlo_ant_packet_session_t * session, uint8_t * ou
     }
 
 }
-static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, uint8_t * out_buffer_len, hlo_ant_role role){
+static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(session && role == HLO_ANT_ROLE_CENTRAL){//always ack if acting as central
-        *out_buffer_len = 8;
-        PRINTS("t:");
-        PRINT_HEX(&session->lockstep.page, 1);
-        PRINTS("\r\n");
+        /*
+         *PRINTS("t:");
+         *PRINT_HEX(&session->lockstep.page, 1);
+         *PRINTS("\r\n");
+         */
         out_buffer[0] = session->lockstep.page;
     }
     if(session->tx_obj){
@@ -210,8 +205,8 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
     if(session->lockstep.status){
         if(session->lockstep.status & LOCKSTEP_STATUS_TX_DONE){
             self.user->on_message_sent(device, session->tx_obj);
-            session->lockstep.status &= ~LOCKSTEP_STATUS_TX_DONE;
             _reset_session_tx(session);
+            session->lockstep.status &= ~LOCKSTEP_STATUS_TX_DONE;
         }
         if(session->lockstep.status & LOCKSTEP_STATUS_RX_DONE){
             self.user->on_message(device, session->rx_obj);
@@ -219,8 +214,10 @@ static void _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, ui
             session->lockstep.status &= ~LOCKSTEP_STATUS_RX_DONE;
         }
         if(session->lockstep.status & LOCKSTEP_STATUS_DESYNC){
-            //stop transmission
-            self.user->on_message_failed(device);
+            //stop transmission, desync means tx failure
+            /*
+             *self.user->on_message_failed(device);
+             */
             PRINTS("desync\r\n");
             session->lockstep.status &= ~LOCKSTEP_STATUS_DESYNC;
         }
@@ -231,26 +228,25 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
     hlo_ant_packet_session_t * session = _acquire_session(device);
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
     if(session){
-        PRINTS("r:");
-        PRINT_HEX(&packet->page, 1);
-        PRINTS("\r\n");
+        if(packet->page == 0 || session->rx_obj){
+            PRINTS("r:");
+            PRINT_HEX(&packet->page, 1);
+            PRINTS("/");
+            PRINT_HEX(&packet->page_count, 1);
+            PRINTS("\r\n");
+        }
         MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
         if(ret_obj){
             session->lockstep.status |= LOCKSTEP_STATUS_RX_DONE;
         }
         if( role == HLO_ANT_ROLE_CENTRAL ){//central follows the page from peripheral
-            if ( !packet->page ){
-                session->lockstep.page = packet->page;  //rx means peripheral has initiated a transmission
-            }else if( packet->page == (session->lockstep.page + 1)){
-                session->lockstep.page++;  //if peripheral has increased its page count, we also increase it
-            }else if( packet->page == session->lockstep.page) {
-                //retransmit is needed
+            if(         packet->page == 0
+                    ||  packet->page == session->lockstep.page
+                    ||  packet->page == (session->lockstep.page + 1) ){
+                session->lockstep.page = packet->page;
             }else{
                 session->lockstep.status |= LOCKSTEP_STATUS_DESYNC;
             }
-            PRINTS("t:");
-            PRINT_HEX(&session->lockstep.page, 1);
-            PRINTS("\r\n");
             //set up transmit
         }else if(role == HLO_ANT_ROLE_PERIPHERAL){
             if( packet->page == session->lockstep.page ){
