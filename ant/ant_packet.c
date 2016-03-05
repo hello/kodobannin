@@ -28,7 +28,6 @@ typedef struct{
 typedef struct{
     uint16_t cid;
     hlo_ant_header_packet_t rx_header;
-    hlo_ant_header_packet_t tx_header;
     MSG_Data_t * rx_obj;
     MSG_Data_t * tx_obj;
     uint32_t age;
@@ -162,11 +161,19 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
     }
     return NULL;
 }
+static void _write_header(const MSG_Data_t * msg, uint8_t * out_buf){
+    hlo_ant_header_packet_t tx_header = {0};
+    tx_header.size = msg->len;
+    tx_header.checksum = _calc_checksum(msg);
+    tx_header.page = 0;
+    tx_header.page_count = msg->len / 6 + ((msg->len % 6) ? 1 : 0);
+    memcpy(out_buf, &tx_header, 8);
+}
 static void _write_buffer(const hlo_ant_packet_session_t * session, uint8_t * out_buffer){
     int i;
     uint16_t offset = session->lockstep.page;
     if(offset == 0){
-        memcpy(out_buffer, &session->tx_header, 8);
+        _write_header(session->tx_obj, out_buffer);
     }else{
         out_buffer[0] = offset;
         out_buffer[1] = session->tx_header.page_count;
@@ -277,11 +284,6 @@ int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * ms
             _reset_session_tx(session);
             session->tx_obj = msg;
             MSG_Base_AcquireDataAtomic(msg);
-            memset(&session->tx_header, 0, sizeof(session->tx_header));
-            session->tx_header.size = msg->len;
-            session->tx_header.checksum = _calc_checksum(msg);
-            session->tx_header.page = 0;
-            session->tx_header.page_count = msg->len / 6 + ((msg->len % 6) ? 1 : 0);
             return hlo_ant_connect(device);
         }else{
             PRINTS("Session Full \r\n");
