@@ -26,6 +26,7 @@ static struct{
     const hlo_ant_event_listener_t * event_listener;
 }self;
 
+static void _handle_tx(uint8_t channel, const hlo_ant_device_t * dev);
 static int _find_open_channel_by_device(const hlo_ant_device_t * device, uint8_t begin, uint8_t end){
     uint8_t i;
     for(i = begin; i <= end; i++){
@@ -57,7 +58,9 @@ _configure_channel(uint8_t channel,const hlo_ant_channel_phy_t * phy,  const hlo
     int ret = 0;
     ret += sd_ant_channel_assign(channel, phy->channel_type, phy->network, ext_fields);
     ret += sd_ant_channel_radio_freq_set(channel, phy->frequency);
-//    ret += sd_ant_channel_period_set(channel, phy->period);
+    if(! (ext_fields & EXT_PARAM_ASYNC_TX_MODE) ){
+        ret += sd_ant_channel_period_set(channel, phy->period);
+    }
     ret += sd_ant_channel_id_set(channel, device->device_number, device->device_type, device->transmit_type);
     ret += sd_ant_channel_low_priority_rx_search_timeout_set(channel, 0xFF);
     ret += sd_ant_channel_rx_search_timeout_set(channel, 0);
@@ -111,9 +114,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
     if(ch >= begin){
-        PRINTS("ANT: Channel already open!\r\n");
-        uint8_t message[8] = {0};
-        sd_ant_broadcast_message_tx((uint8_t)ch, sizeof(message), message);
+        _handle_tx(ch, device);
         return 0;
     }else{
         //open channel
@@ -124,12 +125,18 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
             hlo_ant_channel_phy_t phy = {
                 .period = device_period,
                 .frequency = HLO_ANT_NETWORK_CHANNEL,
-                .channel_type = CHANNEL_TYPE_MASTER_TX_ONLY,
+                .channel_type = CHANNEL_TYPE_MASTER,
                 .network = 0
             };
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
-                APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, EXT_PARAM_ASYNC_TX_MODE));
-                //APP_OK(sd_ant_channel_open((uint8_t)new_ch));
+                /*
+                 *uint8_t opt = EXT_PARAM_ASYNC_TX_MODE;
+                 */
+                uint8_t opt = 0;
+                APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, opt));
+                if(!(opt & EXT_PARAM_ASYNC_TX_MODE)){
+                    APP_OK(sd_ant_channel_open((uint8_t)new_ch));
+                }
             }else{
                 //as central, we dont connect, but instead start by sending a dud message
                 phy.channel_type = CHANNEL_TYPE_SLAVE;
@@ -153,9 +160,7 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
         if(self.role == HLO_ANT_ROLE_CENTRAL){
             return sd_ant_channel_unassign(ch);
         }else{
-            //with async mode, it does not need to be closed
-            //return sd_ant_channel_close(ch);
-            return 0;
+            return sd_ant_channel_close(ch);
         }
     }
     return -1;
@@ -223,7 +228,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
             if( _parse_device(ant_channel, event_message_buffer, &dev, self.role) ){
                 _handle_rx(event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE, &dev);
                 if(self.role == HLO_ANT_ROLE_CENTRAL){
-                    _handle_tx(ant_channel, &dev);
+                    hlo_ant_connect(&dev);
                 }
             }
             break;
