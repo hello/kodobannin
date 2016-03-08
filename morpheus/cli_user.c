@@ -20,10 +20,15 @@ static struct{
 
 #include "message_ant.h"
 #include "ant_devices.h"
+extern void ant_set_rssi_limit(int8_t limit);
 static void
 _handle_command(int argc, char * argv[]){
     if(argc > 1 && !match_command(argv[0], "echo")){
         PRINTS(argv[1]);
+    }
+    if(argc > 1 && !match_command(argv[0], "rssi") ){
+        int rssi = nrf_atoi(argv[1]);
+        ant_set_rssi_limit(rssi);
     }
     if(argc > 1 && !match_command(argv[0], "spi") ){
         MSG_Data_t * data = NULL;

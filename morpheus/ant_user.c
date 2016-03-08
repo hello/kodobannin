@@ -180,10 +180,21 @@ static void _disp_ant_id(const hlo_ant_device_t * id){
     PRINT_DEC(&rssi);
     PRINTS("\r\n");
 }
+static int8_t rssi_limit;
+
+void ant_set_rssi_limit(int8_t limit){
+    rssi_limit = limit;
+}
 static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
     if(!msg)
     {
         PRINTS("ANT Data error.\r\n");
+        return;
+    }
+    if(rssi_limit != 0 && id->rssi < rssi_limit){
+        PRINTS("dropping due to rssi: ");
+        _disp_ant_id(id);
+        PRINTS("\r\n");
         return;
     }
     _disp_ant_id(id);
@@ -210,6 +221,7 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     };
     self.parent = central;
     self.dfu_pill_id = 0;
+    rssi_limit = -58;
 
     return &handler;
 }
