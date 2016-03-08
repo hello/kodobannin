@@ -63,6 +63,8 @@ _reset_session_tx(hlo_ant_packet_session_t * session){
     }
     //TODO: trick to sendbunch of headers before the body is to use negative number
     session->tx_obj = NULL;
+    session->lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
+    session->lockstep.page = 0;
 }
 static inline DECREF void
 _reset_session_rx(hlo_ant_packet_session_t * session){
