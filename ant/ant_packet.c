@@ -5,7 +5,7 @@
 
 #define CID2UID(cid) (cid)
 #define UID2CID(uid) ((uint16_t)uid)
-#define DEFAULT_ANT_RETRANSMIT_COUNT 3
+#define DEFAULT_ANT_RETRANSMIT_COUNT 4
 
 //defines how old a session can be before getting swept
 #define ANT_SESSION_AGE_LIMIT 4
