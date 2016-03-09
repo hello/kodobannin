@@ -8,6 +8,8 @@
 #define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32
 #define HLO_ANT_NETWORK_KEY {0xA8, 0xAC, 0x20, 0x7A, 0x1D, 0x72, 0xE3, 0x4D}
 #define HLO_ANT_NETWORK_CHANNEL 66
+#define HLO_ANT_NETWORK_PERIOD 128
+#define HLO_ANT_NETWORK_PERIOD_BIAS 8
 typedef struct{
     //cached status
     uint8_t reserved;
@@ -121,7 +123,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
         int new_ch = _find_unassigned_channel(begin, 7);
         if(new_ch >= begin){
             //bias the period to reduce chance for channel collision
-            uint16_t device_period = (1092 - 4) + (device->device_number % 8);
+            uint16_t device_period = (HLO_ANT_NETWORK_PERIOD - (HLO_ANT_NETWORK_PERIOD_BIAS/2)) + (device->device_number % HLO_ANT_NETWORK_PERIOD_BIAS);
             hlo_ant_channel_phy_t phy = {
                 .period = device_period,
                 .frequency = HLO_ANT_NETWORK_CHANNEL,
