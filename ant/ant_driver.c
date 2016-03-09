@@ -5,7 +5,6 @@
 #include "util.h"
 #include "app.h"
 
-#define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32
 #define HLO_ANT_NETWORK_KEY {0xA8, 0xAC, 0x20, 0x7A, 0x1D, 0x72, 0xE3, 0x4D}
 #define HLO_ANT_NETWORK_CHANNEL 66
 #define HLO_ANT_NETWORK_PERIOD 128
@@ -203,7 +202,7 @@ static bool _parse_device(uint8_t channel, uint8_t * msg_buffer, hlo_ant_device_
     return false;
 }
 static void
-_handle_rx(uint8_t * msg_buffer, uint16_t size, const hlo_ant_device_t * device){
+_handle_rx(uint8_t * msg_buffer, const hlo_ant_device_t * device){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)msg_buffer;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
     self.event_listener->on_rx_event(device, rx_payload, 8, self.role);
@@ -230,7 +229,7 @@ void ant_handler(ant_evt_t * p_ant_evt){
         case EVENT_RX:
             DEBUGS("R");
             if( _parse_device(ant_channel, event_message_buffer, &dev, self.role) ){
-                _handle_rx(event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE, &dev);
+                _handle_rx(event_message_buffer, &dev);
                 if(self.role == HLO_ANT_ROLE_CENTRAL){
                     hlo_ant_connect(&dev);
                 }
