@@ -212,6 +212,8 @@ _handle_tx(uint8_t channel, const hlo_ant_device_t * dev){
     uint8_t out_buf[8] = {0};
     if(self.event_listener->on_tx_event(dev, out_buf, self.role)){
         sd_ant_broadcast_message_tx(channel, 8, out_buf);
+    }else{
+        hlo_ant_disconnect(dev);
     }
 }
 
