@@ -87,7 +87,6 @@ typedef enum{
 typedef struct{
     /* Called when a known and connected device sends a message */
     void (*on_message)(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg);
-    void (*on_status_update)(const hlo_ant_device_t * id, ANT_Status_t status);
 }MSG_ANTHandler_t;
 
 MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler,hlo_ant_role role, uint8_t device_type);

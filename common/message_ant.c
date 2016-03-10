@@ -35,7 +35,7 @@ static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * messag
 }
 static uint32_t
 _queue_tx(MSG_Data_t * o){
-    queue_message_t msg = {
+    queue_message_t msg = (queue_message_t){
         .msg = o,
         .address = 0,
     };
@@ -99,6 +99,9 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
         self.parent->dispatch( ADDR(ANT,0), ADDR(ANT,MSG_ANT_HANDLE_MESSAGE), parcel);
         MSG_Base_ReleaseDataAtomic(parcel);
     }
+}
+static MSG_Data_t * _on_connect(const hlo_ant_device_t * device){
+    return NULL;
 }
 
 static uint32_t
@@ -185,6 +188,7 @@ MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handl
     }
 
     {//driver side init
+        self.message_listener.on_connect = _on_connect;
         self.message_listener.on_message = _on_message;
         self.message_listener.on_message_sent = _on_message_sent;
         self.message_listener.on_message_failed = _on_message_failed;
