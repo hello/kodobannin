@@ -104,27 +104,38 @@ static MSG_Data_t * INCREF _on_connect(const hlo_ant_device_t * device){
 }
 
 static uint32_t
-_dequeue_tx(queue_message_t * out_msg){
+_dequeue_tx(const hlo_ant_device_t * device){
     PRINTS("Dequeue\r\n");
-    uint32_t ret = hlo_queue_read(self.tx_queue, (unsigned char *)out_msg, sizeof(*out_msg));
+    queue_message_t out;
+    uint32_t ret = hlo_queue_read(self.tx_queue, (unsigned char *)&out, sizeof(out));
+    if(ret == NRF_SUCCESS){
+        MSG_Base_ReleaseDataAtomic(out.msg);
+        self.parent->dispatch( ADDR(ANT,0), ADDR(ANT, MSG_ANT_TRANSMIT), out.msg);
+    }else{
+        ret = hlo_ant_disconnect(device);
+    }
     return ret;
 }
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){
     //get next queued tx message
     PRINTS("message sent \r\n");
     if(self.role == HLO_ANT_ROLE_PERIPHERAL){
-        queue_message_t out;
-        uint32_t ret = _dequeue_tx(&out);
-        if( ret == NRF_SUCCESS ){
-            MSG_Base_ReleaseDataAtomic(out.msg);
-            self.parent->dispatch((MSG_Address_t){ANT,0}, ADDR(ANT, MSG_ANT_TRANSMIT), out.msg);
-        }
-    }else{
-        //wat do?
+        APP_OK(_dequeue_tx(device));
     }
 }
 static void _on_message_failed(const hlo_ant_device_t * device, MSG_Data_t * message){
     PRINTS("message failed \r\n");
+    if(self.role == HLO_ANT_ROLE_PERIPHERAL){
+        static int retry;
+        if(retry++ < 3){
+            PRINTS("retry...");
+            self.parent->dispatch(ADDR(ANT,0), ADDR(ANT,MSG_ANT_TRANSMIT), message);
+        }else{
+            PRINTS("drop...");
+            retry = 0;
+            _dequeue_tx(device);
+        }
+    }
 }
 
 
