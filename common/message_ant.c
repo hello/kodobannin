@@ -29,8 +29,7 @@ _flush(void){
     return SUCCESS;
 }
 static void _handle_message(const hlo_ant_device_t * device, MSG_Data_t * message){
-    MSG_Address_t default_src = {ANT, 0};
-    self.user_handler->on_message(device, default_src, message);
+    self.user_handler->on_message(device, message);
 }
 static uint32_t
 _queue_tx(MSG_Data_t * o){

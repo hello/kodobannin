@@ -40,7 +40,7 @@ static int _copy_encrypted_data(MorpheusCommand * c, MorpheusCommand_CommandType
 
     return 0;
 }
-static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
+static void _handle_pill(const hlo_ant_device_t * id, MSG_Data_t * msg){
     // TODO, this shit needs to be tested on CC3200 side.
     MSG_ANT_PillData_t* pill_data = (MSG_ANT_PillData_t*)msg->buf;
 
@@ -151,7 +151,7 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Dat
                         memset(proto_page->buf, 0, proto_page->len);
                         if(morpheus_ble_encode_protobuf(&morpheus_command, proto_page->buf, &proto_len))
                         {
-                            self.parent->dispatch(src, (MSG_Address_t){SSPI,1}, proto_page);
+                            self.parent->dispatch(ADDR(ANT,1), ADDR(SSPI,1), proto_page);
                             /*
                              *self.parent->dispatch(src, (MSG_Address_t){UART,1}, proto_page);
                              */
@@ -180,7 +180,7 @@ static void _disp_ant_id(const hlo_ant_device_t * id){
     PRINT_DEC(&rssi);
     PRINTS("\r\n");
 }
-static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
+static void _on_message(const hlo_ant_device_t * id, MSG_Data_t * msg){
     if(!msg)
     {
         PRINTS("ANT Data error.\r\n");
@@ -190,10 +190,10 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
     _disp_ant_id(id);
     switch(id->device_type){
         case HLO_ANT_DEVICE_TYPE_PILL:
-            _handle_pill(id, src, msg);
+            _handle_pill(id, msg);
             break;
         default:
-            PRINTS("Unknown ANT Device");
+            PRINTS("Unknown ANT Device: ");
             PRINT_HEX(&id->device_type, 1);
             PRINTS("\r\n");
             break;

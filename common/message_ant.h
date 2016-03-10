@@ -77,7 +77,7 @@ typedef struct{
 
 typedef struct{
     /* Called when a known and connected device sends a message */
-    void (*on_message)(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg);
+    void (*on_message)(const hlo_ant_device_t * id, MSG_Data_t * msg);
     /* Called when an ant initiates a connection, allocate(but don't release) a response if needed*/
     MSG_Data_t * INCREF (*on_connection)(const hlo_ant_device_t * id); 
 }MSG_ANTHandler_t;
