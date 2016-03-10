@@ -155,9 +155,11 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
     if(ch >= begin){
-        PRINTS("Closing Channel = ");
-        PRINT_HEX(&ch, 1);
-        PRINTS("\r\n");
+        /*
+         *PRINTS("Closing Channel = ");
+         *PRINT_HEX(&ch, 1);
+         *PRINTS("\r\n");
+         */
         if(self.role == HLO_ANT_ROLE_CENTRAL){
             return sd_ant_channel_unassign(ch);
         }else{
