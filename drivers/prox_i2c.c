@@ -21,6 +21,7 @@
 
 static inline void TWI_WRITE(uint8_t addr, const void * ptr, size_t ptr_size){
     twi_master_transfer( (addr << 1), (void*)ptr, ptr_size, TWI_ISSUE_STOP);
+    nrf_delay_ms(I2C_DELAY);
 }
 
 static inline void TWI_READ(uint8_t addr, uint8_t reg, void * ptr, size_t ptr_size){
