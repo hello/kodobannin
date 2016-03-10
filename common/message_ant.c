@@ -100,8 +100,10 @@ static void _on_message(const hlo_ant_device_t * device, MSG_Data_t * message){
         MSG_Base_ReleaseDataAtomic(parcel);
     }
 }
-static MSG_Data_t * _on_connect(const hlo_ant_device_t * device){
-    return NULL;
+static MSG_Data_t * INCREF _on_connect(const hlo_ant_device_t * device){
+    if( self.user_handler->on_connection ){
+        return self.user_handler->on_connection(device);
+    }
 }
 
 static uint32_t

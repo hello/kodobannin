@@ -10,7 +10,7 @@
 #endif
 
 typedef struct{
-    MSG_Data_t* (*on_connect)(const hlo_ant_device_t * device);                                 //called when central receives a header packet
+    MSG_Data_t* INCREF (*on_connect)(const hlo_ant_device_t * device);                          //called when central receives a header packet
     void (*on_message)(const hlo_ant_device_t * device, MSG_Data_t * message);                  //called when device receives a complete message
     void DECREF (*on_message_sent)(const hlo_ant_device_t * device, MSG_Data_t * message);      //called when messag has been sent
     void DECREF (*on_message_failed)(const hlo_ant_device_t * device, MSG_Data_t * message);    //called on failed transmission

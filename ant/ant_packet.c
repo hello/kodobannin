@@ -211,6 +211,14 @@ static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
     return true;
 }
 
+static void _set_header(hlo_ant_header_packet_t * header, const MSG_Data_t * msg){
+    memset(header, 0, sizeof(*header));
+    header->size = msg->len;
+    header->checksum = _calc_checksum(msg);
+    header->page = 0;
+    header->page_count = msg->len / 6 + ((msg->len % 6) ? 1 : 0);
+}
+
 static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
@@ -247,6 +255,13 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
                 _reset_tx_obj(session);
             }
         }
+        if( packet->page == 0 && !session->tx_obj){
+            MSG_Data_t * ret = self.user->on_connect(device);
+            if(ret){
+                _set_header(&session->tx_header, ret);
+                session->tx_obj = ret;
+            }
+        }
         //as central, we always ack back what we receive
         session->lockstep.page = packet->page;
     }else if(role == HLO_ANT_ROLE_PERIPHERAL) {
@@ -276,11 +291,7 @@ int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * ms
             _reset_lockstep(session);
             session->tx_obj = msg;
             MSG_Base_AcquireDataAtomic(msg);
-            memset(&session->tx_header, 0, sizeof(session->tx_header));
-            session->tx_header.size = msg->len;
-            session->tx_header.checksum = _calc_checksum(msg);
-            session->tx_header.page = 0;
-            session->tx_header.page_count = msg->len / 6 + ((msg->len % 6) ? 1 : 0);
+            _set_header(&session->tx_header, msg);
             return hlo_ant_connect(device);
         }else{
             PRINTS("Session Full \r\n");
