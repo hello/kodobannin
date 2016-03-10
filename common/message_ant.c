@@ -120,7 +120,7 @@ static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * messa
         uint32_t ret = _dequeue_tx(&out);
         if( ret == NRF_SUCCESS ){
             MSG_Base_ReleaseDataAtomic(out.msg);
-            self.parent->dispatch((MSG_Address_t){ANT,0}, out.address, out.msg);
+            self.parent->dispatch((MSG_Address_t){ANT,0}, ADDR(ANT, MSG_ANT_TRANSMIT), out.msg);
         }
     }else{
         //wat do?
