@@ -199,6 +199,9 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
     }
 }
 static MSG_Data_t * INCREF _on_connection(const hlo_ant_device_t * id){
+    PRINTS("Connected: ");
+    _disp_ant_id(id);
+    PRINTS("\r\n");
     static uint32_t uptime;
     pill_heartbeat_t heartbeat = {0};
     heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
