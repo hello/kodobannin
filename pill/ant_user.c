@@ -7,6 +7,7 @@ static struct{
 static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
 }
 static MSG_Data_t * _on_connection(const hlo_ant_device_t * id){
+    return NULL;
 }
 
 

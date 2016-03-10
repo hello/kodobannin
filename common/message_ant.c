@@ -37,7 +37,7 @@ static uint32_t
 _queue_tx(MSG_Data_t * o){
     queue_message_t msg = (queue_message_t){
         .msg = o,
-        .address = 0,
+        .address = ADDR(0,0),
     };
     if( hlo_queue_empty_size(self.tx_queue) >= sizeof(msg) ){
         PRINTS("Queue\r\n");

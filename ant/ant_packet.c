@@ -45,7 +45,7 @@ static struct{
     uint32_t global_age;
 }self;
 
-static inline uint16_t _calc_checksum(MSG_Data_t * data){
+static inline uint16_t _calc_checksum(const MSG_Data_t * data){
     return (crc16_compute(data->buf, data->len, NULL));
 }
 
