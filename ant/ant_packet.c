@@ -113,12 +113,6 @@ _acquire_session(const hlo_ant_device_t * device){
     }
     return NULL;
 }
-static inline void
-_close_session(hlo_ant_packet_session_t * session){
-    _reset_rx_obj(session);
-    _reset_tx_obj(session);
-    session->cid = 0;
-}
 
 static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_packet_t * packet){
    uint16_t offset = (packet->page - 1) * 6; 
