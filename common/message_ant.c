@@ -16,7 +16,6 @@ static char * name = "ANT";
 
 typedef struct{
     MSG_Data_t * msg;
-    MSG_Address_t address;
 }queue_message_t;
 
 static MSG_Data_t INCREF * _AllocateAntPacket(MSG_ANT_PillDataType_t type, size_t payload_size);
@@ -37,7 +36,6 @@ static uint32_t
 _queue_tx(MSG_Data_t * o){
     queue_message_t msg = (queue_message_t){
         .msg = o,
-        .address = ADDR(0,0),
     };
     if( hlo_queue_empty_size(self.tx_queue) >= sizeof(msg) ){
         PRINTS("Queue\r\n");
