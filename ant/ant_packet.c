@@ -129,7 +129,7 @@ static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_
    }
    return 0;
 }
-static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * buffer, uint8_t len){
+static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * buffer, uint8_t len, bool * out_has_new_obj){
     //this function still uses the legacy way of counting packets (total received >= header max -> crc check -> produce object)
     //rather than using lockstep mode (rx page == header max) for backward compatibility reasons
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
@@ -143,6 +143,9 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
             if(session->rx_header.size <= MSG_Base_FreeCount() && session->rx_header.size != 0){
                 _reset_rx_obj(session);//this is just to refresh any stale objects that hasn't been completed
                 session->rx_obj = MSG_Base_AllocateDataAtomic(session->rx_header.size);
+                if ( out_has_new_obj ){
+                    *out_has_new_obj = true;
+                }
             }
         }
 
@@ -223,6 +226,7 @@ static void _set_header(hlo_ant_header_packet_t * header, const MSG_Data_t * msg
 static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
+    bool new_obj = false;//flag that indicates a new object is allocated(connected)
     if(!session){
         return;
     }
@@ -235,7 +239,7 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
      */
     //legacy handling mode, we don't care about lockstep on rx here
     //since delivery is checked by crc
-    MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
+    MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len, &new_obj);
     if ( ret_obj ){
         self.user->on_message(device, ret_obj);
         _reset_rx_obj(session);
@@ -253,7 +257,7 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
             self.user->on_message_failed(device, session->tx_obj);
             _reset_tx_obj(session);
         }
-        if( packet->page == 0 && !session->tx_obj){
+        if( !session->tx_obj && new_obj){
             MSG_Data_t * ret = self.user->on_connect(device);
             if(ret){
                 _set_header(&session->tx_header, ret);
