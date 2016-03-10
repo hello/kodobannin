@@ -189,27 +189,11 @@ void pill_ble_load_modules(void){
 #endif
 
 #ifdef ANT_ENABLE
-        central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central)));
-        {
-            hlo_ant_role role = HLO_ANT_ROLE_PERIPHERAL;
-			hlo_ant_device_t id = {
-				.device_number = GET_UUID_16(),
-				.device_type = HLO_ANT_DEVICE_TYPE_PILL,
-				.transmit_type = 1
-			};
-
-			MSG_Data_t * prole = MSG_Base_AllocateObjectAtomic(&role, sizeof(role));
-			if(prole){
-				central->dispatch( ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_SET_ROLE), prole);
-				MSG_Base_ReleaseDataAtomic(prole);
-			}
-
-			MSG_Data_t * pid = MSG_Base_AllocateObjectAtomic(&id, sizeof(id));
-			if(pid){
-				central->dispatch(ADDR(CENTRAL,0), ADDR(ANT, MSG_ANT_ADD_DEVICE), pid);
-				MSG_Base_ReleaseDataAtomic(pid);
-			}
-        }
+#ifdef PILL_ANT_TYPE
+        central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central), HLO_ANT_ROLE_PERIPHERAL, PILL_ANT_TYPE));
+#else
+        central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central), HLO_ANT_ROLE_PERIPHERAL, HLO_ANT_DEVICE_TYPE_PILL));
+#endif
 
 #endif
 

@@ -186,6 +186,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
         PRINTS("ANT Data error.\r\n");
         return;
     }
+    PRINTS("Message:\t");
     _disp_ant_id(id);
     switch(id->device_type){
         case HLO_ANT_DEVICE_TYPE_PILL:
@@ -199,14 +200,17 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
     }
 }
 static MSG_Data_t * INCREF _on_connection(const hlo_ant_device_t * id){
-    PRINTS("Connected: ");
-    _disp_ant_id(id);
-    PRINTS("\r\n");
     static uint32_t uptime;
-    pill_heartbeat_t heartbeat = {0};
-    heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
-    heartbeat.uptime_sec = uptime++;
-    return AllocateAntPayload(ANT_SENSE_RESPONSE_HEARTBEAT,&heartbeat , sizeof(pill_heartbeat_t));
+    if(id->device_type == HLO_ANT_DEVICE_TYPE_PILL1_5){
+        PRINTS("Connected:\t");
+        _disp_ant_id(id);
+        pill_heartbeat_t heartbeat = {0};
+        heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
+        heartbeat.uptime_sec = uptime++;
+        return AllocateAntPayload(ANT_SENSE_RESPONSE_HEARTBEAT,&heartbeat , sizeof(pill_heartbeat_t));
+    }else{
+        return NULL;
+    }
 }
 
 

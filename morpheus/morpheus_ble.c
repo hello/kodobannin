@@ -604,10 +604,10 @@ void morpheus_load_modules(void){
 
         central->loadmod(MSG_Cli_Base(central, Cli_User_Init(central, NULL)));
 #ifdef ANT_ENABLE
-#if 0
+#if 1
         central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central), HLO_ANT_ROLE_CENTRAL, 0));
 #else
-        central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central), HLO_ANT_ROLE_PERIPHERAL, HLO_ANT_DEVICE_TYPE_PILL));
+        central->loadmod(MSG_ANT_Base(central, ANT_UserInit(central), HLO_ANT_ROLE_PERIPHERAL, HLO_ANT_DEVICE_TYPE_PILL1_5));
 #endif
 #endif
 		central->dispatch( ADDR(CENTRAL, 0), ADDR(CENTRAL,MSG_APP_LSMOD), NULL);
