@@ -198,15 +198,22 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data
             break;
     }
 }
-
-static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
-
+static MSG_Data_t * INCREF _on_connection(const hlo_ant_device_t * id){
+    PRINTS("Connected: ");
+    _disp_ant_id(id);
+    PRINTS("\r\n");
+    static uint32_t uptime;
+    pill_heartbeat_t heartbeat = {0};
+    heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
+    heartbeat.uptime_sec = uptime++;
+    return AllocateAntPayload(ANT_SENSE_RESPONSE_HEARTBEAT,&heartbeat , sizeof(pill_heartbeat_t));
 }
+
 
 MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     static MSG_ANTHandler_t handler = {
         .on_message = _on_message,
-        .on_status_update = _on_status_update,
+        .on_connection = _on_connection,
     };
     self.parent = central;
     self.dfu_pill_id = 0;
