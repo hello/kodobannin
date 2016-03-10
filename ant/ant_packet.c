@@ -178,10 +178,11 @@ static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
     if(!session){
         return false;
     }
-    PRINTS("t:");
-    PRINT_HEX(&session->lockstep.page, 1);
-    PRINTS("\r\n");
-
+    /*
+     *PRINTS("t:");
+     *PRINT_HEX(&session->lockstep.page, 1);
+     *PRINTS("\r\n");
+     */
     out_buffer[0] = session->lockstep.page;
 
     if(role == HLO_ANT_ROLE_CENTRAL){
@@ -225,17 +226,17 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
     if(!session){
         return;
     }
-    PRINTS("r:");
-    PRINT_HEX(&packet->page, 1);
-    PRINTS("/");
-    PRINT_HEX(&packet->page_count, 1);
-    PRINTS("\r\n");
-
+    /*
+     *PRINTS("r:");
+     *PRINT_HEX(&packet->page, 1);
+     *PRINTS("/");
+     *PRINT_HEX(&packet->page_count, 1);
+     *PRINTS("\r\n");
+     */
     //legacy handling mode, we don't care about lockstep on rx here
     //since delivery is checked by crc
     MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len);
     if ( ret_obj ){
-        PRINTS("received");
         self.user->on_message(device, ret_obj);
         _reset_rx_obj(session);
     }
@@ -247,13 +248,10 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
                 self.user->on_message_sent(device, session->tx_obj);
                 _reset_tx_obj(session);
             }
-        }else{
+        }else if (session->tx_obj){
             //desync has happened
-            if (session->tx_obj){
-                PRINTS("tx failed");
-                self.user->on_message_failed(device, session->tx_obj);
-                _reset_tx_obj(session);
-            }
+            self.user->on_message_failed(device, session->tx_obj);
+            _reset_tx_obj(session);
         }
         if( packet->page == 0 && !session->tx_obj){
             MSG_Data_t * ret = self.user->on_connect(device);
