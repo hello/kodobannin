@@ -27,22 +27,16 @@ typedef struct{
 
 typedef struct{
     uint16_t cid;
+    struct{
+        uint8_t page;
+        uint8_t retry;
+    }lockstep;
     hlo_ant_header_packet_t rx_header;
     hlo_ant_header_packet_t tx_header;
     MSG_Data_t * rx_obj;
     MSG_Data_t * tx_obj;
     uint32_t age;
-    struct{
-        uint8_t page;
-        uint8_t retry;
-        uint8_t status;
-    }lockstep;
 }hlo_ant_packet_session_t;
-
-#define LOCKSTEP_STATUS_DESYNC (1 << 0)
-#define LOCKSTEP_STATUS_TX_DONE (1 << 1)
-#define LOCKSTEP_STATUS_RX_DONE (1 << 2)
-
 
 static struct{
     hlo_ant_event_listener_t cbs;
@@ -55,19 +49,21 @@ static inline uint16_t _calc_checksum(MSG_Data_t * data){
     return (crc16_compute(data->buf, data->len, NULL));
 }
 
-
-static inline DECREF void
-_reset_session_tx(hlo_ant_packet_session_t * session){
-    if(session->tx_obj){
-        MSG_Base_ReleaseDataAtomic(session->tx_obj);
-    }
-    //TODO: trick to sendbunch of headers before the body is to use negative number
-    session->tx_obj = NULL;
+static inline void
+_reset_lockstep(hlo_ant_packet_session_t * session){
     session->lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
     session->lockstep.page = 0;
 }
+
 static inline DECREF void
-_reset_session_rx(hlo_ant_packet_session_t * session){
+_reset_tx_obj(hlo_ant_packet_session_t * session){
+    if(session->tx_obj){
+        MSG_Base_ReleaseDataAtomic(session->tx_obj);
+    }
+    session->tx_obj = NULL;
+}
+static inline DECREF void
+_reset_rx_obj(hlo_ant_packet_session_t * session){
     if(session->rx_obj){
         MSG_Base_ReleaseDataAtomic(session->rx_obj);
     }
@@ -91,8 +87,8 @@ _acquire_session(const hlo_ant_device_t * device){
         if(self.entries[i].cid == 0){
             self.entries[i].cid = cid;
             self.entries[i].age = self.global_age;
-            _reset_session_tx(&(self.entries[i]));
-            _reset_session_rx(&(self.entries[i]));
+            _reset_tx_obj(&(self.entries[i]));
+            _reset_rx_obj(&(self.entries[i]));
             return &(self.entries[i]);
         }
     }
@@ -108,7 +104,7 @@ _acquire_session(const hlo_ant_device_t * device){
     for(i = 0; i < ANT_PACKET_MAX_CONCURRENT_SESSIONS; i++){
         if(self.entries[i].cid != 0 && !self.entries[i].tx_obj){
             if(self.global_age - self.entries[i].age >= ANT_SESSION_AGE_LIMIT){
-                _reset_session_rx(&(self.entries[i]));
+                _reset_rx_obj(&(self.entries[i]));
                 self.entries[i].age = self.global_age;
                 self.entries[i].cid = cid;
                 return &(self.entries[i]);
@@ -119,8 +115,8 @@ _acquire_session(const hlo_ant_device_t * device){
 }
 static inline void
 _close_session(hlo_ant_packet_session_t * session){
-    _reset_session_rx(session);
-    _reset_session_tx(session);
+    _reset_rx_obj(session);
+    _reset_tx_obj(session);
     session->cid = 0;
 }
 
@@ -128,7 +124,7 @@ static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_
    uint16_t offset = (packet->page - 1) * 6; 
    //make sure the offset does not exceed the length
    uint8_t i;
-   for(i = 0; i < (payload->len - offset); i++){
+   for(i = 0; i < payload->len - offset; i++){
        payload->buf[offset + i] = packet->payload[i];
    }
    return 0;
@@ -145,7 +141,7 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
         if( new_crc != session->rx_header.checksum ){
             memcpy(&session->rx_header, buffer, sizeof(hlo_ant_header_packet_t));
             if(session->rx_header.size <= MSG_Base_FreeCount() && session->rx_header.size != 0){
-                _reset_session_rx(session);//this is just to refresh any stale objects that hasn't been completed
+                _reset_rx_obj(session);//this is just to refresh any stale objects that hasn't been completed
                 session->rx_obj = MSG_Base_AllocateDataAtomic(session->rx_header.size);
             }
         }
@@ -199,7 +195,7 @@ static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
                     _write_buffer(session, out_buffer);
                 }else{
                     self.user->on_message_sent(device, session->tx_obj);
-                    _reset_session_tx(session);
+                    _reset_tx_obj(session);
                 }
             }else if(!session->rx_obj){
                 return false;
@@ -207,7 +203,7 @@ static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
         }else{
             if(session->tx_obj){
                 self.user->on_message_failed(device, session->tx_obj);
-                _reset_session_tx(session);
+                _reset_tx_obj(session);
             }
             return false;
         }
@@ -233,28 +229,27 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
     if ( ret_obj ){
         PRINTS("received");
         self.user->on_message(device, ret_obj);
-        _reset_session_rx(session);
+        _reset_rx_obj(session);
     }
 
     if(role == HLO_ANT_ROLE_CENTRAL){//central receives first, then transmits
-        //make sure page follows the flow: either it goes up by 1, or stay the same
         if ( packet->page == session->lockstep.page || packet->page == (session->lockstep.page + 1) ){
-            //tx can only be guaranteed if incoming page exceeds our tx size
+            //good path for page counter
             if ( session->tx_obj && packet->page > session->tx_header.page_count ){
                 self.user->on_message_sent(device, session->tx_obj);
-                _reset_session_tx(session);
+                _reset_tx_obj(session);
             }
         }else{
             //desync has happened
             if (session->tx_obj){
                 PRINTS("tx failed");
                 self.user->on_message_failed(device, session->tx_obj);
-                _reset_session_tx(session);
+                _reset_tx_obj(session);
             }
         }
         //as central, we always ack back what we receive
         session->lockstep.page = packet->page;
-    }else{//peripheral send first, then receive
+    }else if(role == HLO_ANT_ROLE_PERIPHERAL) {
         if( packet->page == session->lockstep.page ){
             session->lockstep.page++;
             session->lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
@@ -277,7 +272,8 @@ int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * ms
     if(msg){
         hlo_ant_packet_session_t * session = _acquire_session(device);
         if(session && !session->tx_obj){
-            _reset_session_tx(session);
+            _reset_tx_obj(session);
+            _reset_lockstep(session);
             session->tx_obj = msg;
             MSG_Base_AcquireDataAtomic(msg);
             memset(&session->tx_header, 0, sizeof(session->tx_header));
