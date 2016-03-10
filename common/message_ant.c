@@ -114,11 +114,16 @@ _dequeue_tx(queue_message_t * out_msg){
 }
 static void _on_message_sent(const hlo_ant_device_t * device, MSG_Data_t * message){
     //get next queued tx message
-    queue_message_t out;
-    uint32_t ret = _dequeue_tx(&out);
-    if( ret == NRF_SUCCESS ){
-        MSG_Base_ReleaseDataAtomic(out.msg);
-        self.parent->dispatch((MSG_Address_t){ANT,0}, out.address, out.msg);
+    PRINTS("message sent \r\n");
+    if(self.role == HLO_ANT_ROLE_PERIPHERAL){
+        queue_message_t out;
+        uint32_t ret = _dequeue_tx(&out);
+        if( ret == NRF_SUCCESS ){
+            MSG_Base_ReleaseDataAtomic(out.msg);
+            self.parent->dispatch((MSG_Address_t){ANT,0}, out.address, out.msg);
+        }
+    }else{
+        //wat do?
     }
 }
 static void _on_message_failed(const hlo_ant_device_t * device, MSG_Data_t * message){
