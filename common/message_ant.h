@@ -33,10 +33,7 @@
 
 typedef enum{
     MSG_ANT_PING = 0,
-    MSG_ANT_CONNECTION_BASE,
-    MSG_ANT_SET_ROLE = 100,
-    MSG_ANT_REMOVE_DEVICE,
-    MSG_ANT_ADD_DEVICE,
+    MSG_ANT_TRANSMIT,
     MSG_ANT_HANDLE_MESSAGE,
 }MSG_ANT_Commands;
 
@@ -90,11 +87,10 @@ typedef enum{
 typedef struct{
     /* Called when a known and connected device sends a message */
     void (*on_message)(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg);
-
     void (*on_status_update)(const hlo_ant_device_t * id, ANT_Status_t status);
 }MSG_ANTHandler_t;
 
-MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);
+MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler,hlo_ant_role role, uint8_t device_type);
 /* Helper API an Object based on type */
 MSG_Data_t * INCREF AllocateEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len);
 MSG_Data_t * INCREF AllocateAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len);
