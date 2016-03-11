@@ -240,6 +240,13 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
     }
 
     if(role == HLO_ANT_ROLE_CENTRAL){//central receives first, then transmits
+        if( !session->tx_obj && new_obj){
+            MSG_Data_t * ret = self.user->on_connect(device);
+            if(ret){
+                _set_header(&session->tx_header, ret);
+                session->tx_obj = ret;
+            }
+        }
         if ( packet->page == session->lockstep.page || packet->page == (session->lockstep.page + 1) ){
             //good path for page counter
             if ( session->tx_obj && packet->page > session->tx_header.page_count ){
@@ -250,13 +257,6 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
             //desync has happened
             self.user->on_message_failed(device, session->tx_obj);
             _reset_tx_obj(session);
-        }
-        if( !session->tx_obj && new_obj){
-            MSG_Data_t * ret = self.user->on_connect(device);
-            if(ret){
-                _set_header(&session->tx_header, ret);
-                session->tx_obj = ret;
-            }
         }
         //as central, we always ack back what we receive
         session->lockstep.page = packet->page;
