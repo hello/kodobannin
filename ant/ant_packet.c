@@ -247,7 +247,9 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
                 session->tx_obj = ret;
             }
         }
-        if ( packet->page == session->lockstep.page || packet->page == (session->lockstep.page + 1) ){
+        if ( packet->page == 0 ){
+            _reset_lockstep(session);
+        }else if ( packet->page == session->lockstep.page || packet->page == (session->lockstep.page + 1) ){
             //good path for page counter
             if ( session->tx_obj && packet->page > session->tx_header.page_count ){
                 self.user->on_message_sent(device, session->tx_obj);
