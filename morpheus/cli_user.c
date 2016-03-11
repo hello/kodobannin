@@ -45,6 +45,7 @@ _handle_command(int argc, char * argv[]){
     if(!match_command(argv[0], "ant")){
         pill_heartbeat_t heartbeat = {0};
         heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
+        heartbeat.uptime_sec = time_keeper_get();
         MSG_Data_t* data_page = AllocateAntPayload(ANT_PILL_HEARTBEAT,&heartbeat , sizeof(pill_heartbeat_t));
         if(data_page){
             PRINTF("HB battery %d uptime %d fw %d\r\n", heartbeat.battery_level, heartbeat.uptime_sec, heartbeat.firmware_version);

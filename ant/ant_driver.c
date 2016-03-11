@@ -135,12 +135,12 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
                 if(!(opt & EXT_PARAM_ASYNC_TX_MODE)){
                     APP_OK(sd_ant_channel_open((uint8_t)new_ch));
                 }
-                _handle_tx(ch, device);
             }else{
                 //as central, we dont connect, but instead start by sending a dud message
                 phy.channel_type = CHANNEL_TYPE_SLAVE;
                 APP_OK(_configure_channel_as_central((uint8_t)new_ch, &phy, device, 0));
             }
+            _handle_tx(ch, device);
             return new_ch;
         }
     }
