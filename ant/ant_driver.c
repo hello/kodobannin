@@ -130,21 +130,17 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
                 .network = 0
             };
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
-                /*
-                 *uint8_t opt = EXT_PARAM_ASYNC_TX_MODE;
-                 */
                 uint8_t opt = 0;
                 APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, opt));
                 if(!(opt & EXT_PARAM_ASYNC_TX_MODE)){
                     APP_OK(sd_ant_channel_open((uint8_t)new_ch));
                 }
+                _handle_tx(ch, device);
             }else{
                 //as central, we dont connect, but instead start by sending a dud message
                 phy.channel_type = CHANNEL_TYPE_SLAVE;
                 APP_OK(_configure_channel_as_central((uint8_t)new_ch, &phy, device, 0));
             }
-            uint8_t message[8] = {0};
-            sd_ant_broadcast_message_tx((uint8_t)new_ch, sizeof(message), message);
             return new_ch;
         }
     }
