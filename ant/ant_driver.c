@@ -115,7 +115,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
     if(ch >= begin){
-        _handle_tx(ch, device);
+        _handle_tx((uint8_t)ch, device);
         return 0;
     }else{
         //open channel
@@ -140,7 +140,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
                 phy.channel_type = CHANNEL_TYPE_SLAVE;
                 APP_OK(_configure_channel_as_central((uint8_t)new_ch, &phy, device, 0));
             }
-            _handle_tx(ch, device);
+            _handle_tx((uint8_t)new_ch, device);
             return new_ch;
         }
     }
