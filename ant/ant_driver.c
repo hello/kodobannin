@@ -9,6 +9,7 @@
 #define HLO_ANT_NETWORK_CHANNEL 66
 #define HLO_ANT_NETWORK_PERIOD 128
 #define HLO_ANT_NETWORK_PERIOD_BIAS 8
+#define HLO_ANT_CHANNEL_EXT_OPT 0
 typedef struct{
     //cached status
     uint8_t reserved;
@@ -130,7 +131,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
                 .network = 0
             };
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
-                uint8_t opt = 0;
+                uint8_t opt = HLO_ANT_CHANNEL_EXT_OPT;
                 APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, opt));
                 if(!(opt & EXT_PARAM_ASYNC_TX_MODE)){
                     APP_OK(sd_ant_channel_open((uint8_t)new_ch));
@@ -159,7 +160,12 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
         if(self.role == HLO_ANT_ROLE_CENTRAL){
             return sd_ant_channel_unassign(ch);
         }else{
-            return sd_ant_channel_close(ch);
+            uint8_t opt = HLO_ANT_CHANNEL_EXT_OPT;
+            if( opt & EXT_PARAM_ASYNC_TX_MODE ){
+                return 0;
+            }else{
+                return sd_ant_channel_close(ch);
+            }
         }
     }
     return -1;
