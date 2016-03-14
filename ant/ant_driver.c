@@ -176,6 +176,10 @@ int32_t hlo_ant_cw_test(uint8_t freq, uint8_t tx_power){
     return 0;
 }
 
+#define ANT_EXT_DEVICE_TYPE_OFFSET 2
+#define ANT_EXT_TRANSMIT_TYPE_OFFSET 3
+#define ANT_EXT_MEAS_TYPE_OFFSET 4
+#define ANT_EXT_RSSI_OFFSET 5
 static bool _parse_device(uint8_t channel, uint8_t * msg_buffer, hlo_ant_device_t * out_device, hlo_ant_role role){
     if(role == HLO_ANT_ROLE_CENTRAL){
         ANT_MESSAGE * msg = (ANT_MESSAGE*)msg_buffer;
@@ -184,10 +188,10 @@ static bool _parse_device(uint8_t channel, uint8_t * msg_buffer, hlo_ant_device_
         if(ext.ucExtMesgBF & MSG_EXT_ID_MASK){
             *out_device = (hlo_ant_device_t){
                 .device_number = *((uint16_t*)extbytes),
-                    .device_type = extbytes[2],
-                    .transmit_type = extbytes[3],
-                    .measurement_type = extbytes[4],
-                    .rssi = extbytes[5],
+                    .device_type = extbytes[ANT_EXT_DEVICE_TYPE_OFFSET],
+                    .transmit_type = extbytes[ANT_EXT_TRANSMIT_TYPE_OFFSET],
+                    .measurement_type = extbytes[ANT_EXT_MEAS_TYPE_OFFSET],
+                    .rssi = extbytes[ANT_EXT_RSSI_OFFSET],
             };
             return true;
         }
