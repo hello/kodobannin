@@ -218,11 +218,7 @@ static void hble_erase_1st_bond()
 
 static void _delay_task_memory_checkpoint()
 {
-	uint8_t small;
-	small = MSG_Base_FreeCount();
-    PRINTS("Top Mem Free: ");
-	PRINT_HEX(&small, 1);
-	PRINTS("\r\n");
+	PRINTF("Top Mem Free: %u\r\n", MSG_Base_FreeCount());
 }
 
 static void _delay_tasks(void* context)
@@ -877,6 +873,7 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 	_pairing_mode = pairing_mode;
 
     if( m == ERASE_ALL_BOND) {
+		APP_OK(_task_queue(_delay_task_memory_checkpoint));
         APP_OK(_task_queue(_delay_task_bond_reboot));
 		hble_start_delay_tasks();
         return;
