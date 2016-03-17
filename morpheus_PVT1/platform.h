@@ -15,7 +15,7 @@
 #define DEVICE_ID_SIZE        8
 
 
-#define configTOTAL_HEAP_SIZE 1024
+#define configTOTAL_HEAP_SIZE 1152
 #define configLOW_MEM 128
 
 //use hello's ant network key
