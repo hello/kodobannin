@@ -874,7 +874,7 @@ void hble_refresh_bonds(bond_save_mode m, bool pairing_mode){
 
     if( m == ERASE_ALL_BOND) {
 		APP_OK(_task_queue(_delay_task_memory_checkpoint));
-        APP_OK(_task_queue(_delay_task_bond_reboot));
+		APP_OK(_task_queue(_delay_task_bond_reboot));
 		hble_start_delay_tasks();
         return;
     }
