@@ -221,7 +221,7 @@ MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     };
     self.parent = central;
     self.dfu_pill_id = 0;
-    rssi_limit = -58;
+    rssi_limit = -65;
 
     return &handler;
 }
