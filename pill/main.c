@@ -143,7 +143,7 @@ void _start()
 
     _init_rf_modules();
     _load_watchdog();
-	battery_update_level();
+    battery_update_level();
 
     for(;;) {
         APP_OK(sd_app_evt_wait());

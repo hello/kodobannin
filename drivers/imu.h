@@ -10,8 +10,11 @@
 struct sensor_data_header;
 
 enum {
-    IMU_FIFO_CAPACITY = 4096, // Must be 512, 1024, 2048 or 4096
+    IMU_FIFO_CAPACITY_BYTES = 192, // 4096, // Must be 512, 1024, 2048 or 4096
+	IMU_FIFO_CAPACITY_WORDS = IMU_FIFO_CAPACITY_BYTES/2,
+	IMU_FIFO_CAPACITY_SAMPLES = IMU_FIFO_CAPACITY_WORDS/3,
 };
+
 
 /* See README_IMU.md for an introduction to the IMU, and vocabulary
    that you may need to understand the rest of this. */
@@ -24,46 +27,83 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
             enum imu_hz sampling_rate,
             enum imu_accel_range acc_range, uint16_t wom_threshold);
 
-int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode, 
-            uint8_t miso, uint8_t mosi, 
-            uint8_t sclk, uint8_t nCS, 
-            enum imu_hz sampling_rate,
-            enum imu_sensor_set active_sensors,
-            enum imu_accel_range acc_range, enum imu_gyro_range gyro_range);
-
-uint16_t imu_accel_reg_read(uint8_t *buf);
-uint16_t imu_read_regs(uint8_t *buf);
+uint16_t imu_accel_reg_read(uint16_t *values);
 
 void imu_set_accel_range(enum imu_accel_range range);
-void imu_set_gyro_range(enum imu_gyro_range range);
+
+void imu_enable_all_axis();
 
 /// Given the enum imu_hz passed to it, returns the sampling interval (a.k.a. sampling period or sampling time, in milliseconds).
 unsigned imu_get_sampling_interval(enum imu_hz);
+
 void imu_set_accel_freq(enum imu_hz sampling_rate);
 
-void imu_set_sensors(enum imu_sensor_set sensors);
+// Enable high resolution
+void imu_enable_hres();
 
-uint16_t imu_fifo_bytes_available();
-uint16_t imu_fifo_read(uint16_t count, uint8_t *buf);
-void imu_fifo_clear();
+// Disable high resolution
+void imu_disable_hres();
+
+// Enable low power mode
+void imu_lp_enable();
+
+// Disable Low power mode
+void imu_lp_disable();
+
+// Reset high pass filter
+void imu_reset_hp_filter();
+
+// Enable IMU FIFO
+void imu_fifo_enable();
+
+// Disable IMU FIFO
+void imu_fifo_disable();
+
+// Read from FIFO
+uint8_t imu_handle_fifo_read(uint16_t* values);
+
+// Set FIFO mode
+void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode, uint8_t fifo_trigger, uint8_t wtm_threshold);
+
+// Read FIFO source register
+uint8_t imu_read_fifo_src_reg();
 
 /// Activate the IMU by waking it up from sleep mode.
-void imu_enter_normal_mode(uint8_t sampling_rate, enum imu_sensor_set active_sensors);
+void imu_enter_normal_mode();
+
 /// Deactivate the IMU by putting it into sleep mode. This also clears the the IMU interrupt.
-void imu_enter_low_power_mode(enum imu_hz sampling_rate, uint16_t wom_threshold);
+void imu_enter_low_power_mode();
+
+// Clear IMU interrupt on PIN1
 uint8_t imu_clear_interrupt_status();
 
+// Set IMU threshold
 void imu_wom_set_threshold(uint16_t microgravities);
-void imu_wom_disable();
 
-
-void imu_calibrate_zero();
-
+// Reset IMU
 void imu_reset();
-uint8_t imu_clear_interrupt_status();
 
 void imu_spi_enable();
+
 void imu_power_on();
+
 void imu_power_off();
 
+// Enable self-test mode
+void imu_self_test_enable();
+
+// Disable self-test mode
+void imu_self_test_disable();
+
+// perform imu self-test
 int imu_self_test(void);
+
+// Enable interrupts
+void imu_enable_intr();
+
+// Disable IMU interrupts
+void imu_disable_intr();
+
+// Check if data read from IMU is within threshold
+bool imu_data_within_thr(int16_t value);
+
