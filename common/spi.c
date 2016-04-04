@@ -11,7 +11,7 @@
 
 inline void spi_disable(SPI_Context* obj) {
     obj->spi_hw->ENABLE = (SPI_ENABLE_ENABLE_Disabled << SPI_ENABLE_ENABLE_Pos);
-    nrf_gpio_cfg_input(obj->spi_hw->PSELMISO, NRF_GPIO_PIN_PULLDOWN);
+    nrf_gpio_cfg_input(obj->spi_hw->PSELMISO, NRF_GPIO_PIN_PULLUP);
 }
 
 inline void spi_enable(SPI_Context *obj) {

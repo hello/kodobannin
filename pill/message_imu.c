@@ -262,7 +262,7 @@ static MSG_Status _init(void){
 	if(!initialized){
 		imu_power_on();
 
-		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLDOWN);
+		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLUP);
 
 #ifdef IMU_DYNAMIC_SAMPLING
 		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode3, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
