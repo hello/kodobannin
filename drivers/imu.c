@@ -472,8 +472,8 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		return err;
 	}
 
-	_register_write(REG_CTRL_4, 0x00);
 	_register_read(REG_WHO_AM_I, &whoami_value);
+	_register_write(REG_CTRL_4, 0x00);
 
 	// Check for valid Chip ID
 	uint8_t whoami_value = 0xA5;
