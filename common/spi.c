@@ -53,6 +53,7 @@ spi_init(enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, 
     spi_base_address->PSELMISO = SPI_PSELMISO1;
     nrf_gpio_pin_set(SPI_PSELSS1);
 */
+	nrf_gpio_cfg_output(nCS);
     nrf_gpio_pin_clear(nCS);
     nrf_delay_us(40);
 	imu_power_on();
