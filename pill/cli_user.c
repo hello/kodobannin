@@ -10,6 +10,8 @@
 #include <ble.h>
 #include "heap.h"
 
+#include "nrf_gpio.h"
+
 static adc_t Vref, Vrel, Voff;
 static uint8_t cli_ant_packet_enable; // heartbeat periodic Vbat percentage
 
@@ -145,6 +147,19 @@ _handle_command(int argc, char * argv[]){
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
     }
+
+    if( !match_command(argv[0], "gpio")){
+    	bool en = nrf_atoi(argv[1]);
+    	int pin = nrf_atoi(argv[2]);
+
+		nrf_gpio_pin_set(pin);
+    	if( en ) {
+			nrf_gpio_cfg_output(pin);
+    	} else {
+    		nrf_gpio_pin_clear(pin);
+    	}
+    }
+
     if( !match_command(argv[0], "free")){
         size_t free_size = xPortGetFreeHeapSize();
         PRINTS("\r\n");
