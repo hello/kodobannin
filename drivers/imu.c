@@ -334,7 +334,7 @@ void imu_spi_disable()
 inline void imu_power_on()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-	nrf_gpio_pin_set(IMU_VDD_EN);
+	nrf_gpio_cfg_output(IMU_VDD_EN);
 	nrf_gpio_pin_clear(IMU_VDD_EN);
 #endif
 }
@@ -342,8 +342,8 @@ inline void imu_power_on()
 inline void imu_power_off()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-	nrf_gpio_pin_set(IMU_VDD_EN);
 	nrf_gpio_cfg_output(IMU_VDD_EN);
+	nrf_gpio_pin_set(IMU_VDD_EN);
 #endif
 }
 
