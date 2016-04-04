@@ -67,7 +67,7 @@ spi_init(enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, 
     nrf_gpio_pin_clear(IMU_INT);
     nrf_delay_us(20);
 	imu_power_on();
-    nrf_delay_us(20);
+    nrf_delay_us(120);
 
 	nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLUP);
 
