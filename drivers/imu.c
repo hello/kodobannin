@@ -334,16 +334,16 @@ void imu_spi_disable()
 inline void imu_power_on()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-	gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 0);
+	nrf_gpio_pin_set(IMU_VDD_EN);
+	nrf_gpio_pin_clear(IMU_VDD_EN);
 #endif
 }
 
 inline void imu_power_off()
 {
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
-	gpio_cfg_s0s1_output_connect(IMU_VDD_EN, 1);
-	gpio_cfg_d0s1_output_disconnect(IMU_VDD_EN);
-
+	nrf_gpio_pin_set(IMU_VDD_EN);
+	nrf_gpio_cfg_output(IMU_VDD_EN);
 #endif
 }
 
@@ -472,6 +472,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 		return err;
 	}
 
+	imu_power_on();
 
 	// Check for valid Chip ID
 	uint8_t whoami_value = 0xA5;

@@ -260,8 +260,6 @@ static void _on_pill_pairing_guesture_detected(void){
 
 static MSG_Status _init(void){
 	if(!initialized){
-		imu_power_on();
-
 		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLUP);
 
 #ifdef IMU_DYNAMIC_SAMPLING
