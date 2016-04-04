@@ -54,6 +54,22 @@ spi_init(enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, 
     nrf_gpio_pin_set(SPI_PSELSS1);
 */
 	nrf_gpio_cfg_output(nCS);
+    nrf_gpio_cfg_output(miso);
+    nrf_gpio_cfg_output(mosi);
+    nrf_gpio_cfg_output(sclk);
+    nrf_gpio_cfg_output(IMU_INT);
+
+	imu_power_off();
+    nrf_gpio_pin_clear(nCS);
+    nrf_gpio_pin_clear(mosi);
+    nrf_gpio_pin_clear(miso);
+    nrf_gpio_pin_clear(sclk);
+    nrf_gpio_pin_clear(IMU_INT);
+    nrf_delay_us(40);
+	imu_power_on();
+    nrf_delay_us(40);
+
+	nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLUP);
 
     //configure GPIOs
     nrf_gpio_cfg_output(mosi);
@@ -62,12 +78,6 @@ spi_init(enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, 
     nrf_gpio_pin_set(nCS);
     nrf_gpio_cfg_input(miso, NRF_GPIO_PIN_NOPULL);
 
-    nrf_gpio_pin_clear(nCS);
-    nrf_gpio_pin_clear(mosi);
-    nrf_gpio_pin_clear(sclk);
-    nrf_delay_us(40);
-	imu_power_on();
-    nrf_delay_us(40);
 
     //configure SPI channel
     ctx->spi_hw->PSELSCK  = sclk;
