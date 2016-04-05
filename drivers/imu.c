@@ -466,6 +466,24 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	int32_t err;
 	uint8_t reg;
 
+	nrf_gpio_cfg_output(nCS);
+    nrf_gpio_cfg_output(miso);
+    nrf_gpio_cfg_output(mosi);
+    nrf_gpio_cfg_output(sclk);
+    nrf_gpio_cfg_output(IMU_INT);
+
+	imu_power_off();
+    nrf_gpio_pin_clear(nCS);
+    nrf_gpio_pin_clear(mosi);
+    nrf_gpio_pin_clear(miso);
+    nrf_gpio_pin_clear(sclk);
+    nrf_gpio_pin_clear(IMU_INT);
+    nrf_delay_us(20);
+	imu_power_on();
+    nrf_delay_us(240);
+
+	nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLUP);
+
 	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
 	if (err != 0) {
 		PRINTS("Could not configure SPI bus for IMU\r\n");
