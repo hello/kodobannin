@@ -86,6 +86,7 @@ static void _conf_prox(void){
 
 
 MSG_Status init_prox(void){
+	twi_master_init();
     _reset_config();
     _check_id();
     _conf_prox();
