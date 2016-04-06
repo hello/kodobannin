@@ -107,7 +107,7 @@ static void _load_watchdog()
 
 void _start()
 {
-    
+	sd_power_dcdc_mode_set(NRF_POWER_DCDC_MODE_ON); //run on DCDC always todo remove this later, it's a few extra uA
 	battery_init();
 	//HACK TO DISABLE PINS ON LED
 #ifdef PLATFORM_HAS_VLED
