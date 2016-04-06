@@ -152,9 +152,9 @@ _handle_command(int argc, char * argv[]){
     	bool en = nrf_atoi(argv[1]);
     	int pin = nrf_atoi(argv[2]);
 
-		nrf_gpio_pin_set(pin);
+    	nrf_gpio_cfg_output(pin);
     	if( en ) {
-			nrf_gpio_cfg_output(pin);
+    		nrf_gpio_pin_set(pin);
     	} else {
     		nrf_gpio_pin_clear(pin);
     	}
