@@ -65,6 +65,7 @@ enum {
 // IMU_INT  P23      // 42 P0.23
 
 #define PLATFORM_HAS_I2C
+#define PLATFORM_HAS_PROX
 
 enum {
     I2C_SCL = 24, // 21,
