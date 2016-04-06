@@ -5,6 +5,7 @@
 #include "stdint.h"
 #include "stdbool.h"
 #include <nrf_delay.h>
+#include <nrf_gpio.h>
 
 #define I2C_DELAY   10
 
