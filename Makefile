@@ -74,7 +74,7 @@ NRF_SRCS = \
 	nRF51_SDK/nrf51422/Source/nrf_ecb/nrf_ecb.c \
 
 DRIVER_SRCS = \
-	$(wildcard drivers/imu.c) \
+	$(wildcard drivers/$(platform)/*.c) \
 	$(wildcard drivers/battery.c) \
 	$(wildcard drivers/gpio_nor.c) \
 	$(wildcard drivers/pwm.c) \
