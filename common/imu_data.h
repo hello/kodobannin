@@ -86,6 +86,13 @@ struct imu_accel_gyro16_sample {
     struct imu_gyro16_sample gyro;
 } PACKED;
 
+enum imu_fifo_mode {
+	IMU_FIFO_BYPASS_MODE = 0,
+	IMU_FIFO_FIFO_MODE = 1,
+	IMU_FIFO_STREAM_MODE = 2,
+	IMU_FIFO_STREAM_TO_FIFO_MODE = 3,
+};
+
 // struct imu_accel_gyro_data {
 //     struct imu_accel_gyro16_sample samples[];
 // } PACKED;

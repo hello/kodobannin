@@ -83,7 +83,7 @@ static void _calibrate_imu(void * p_event_data, uint16_t event_size)
 {
 #ifdef PLATFORM_HAS_IMU
 #include "imu.h"
-        imu_calibrate_zero();
+//        imu_calibrate_zero();
 #endif
         struct pill_command* command = (struct pill_command*)p_event_data;
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
