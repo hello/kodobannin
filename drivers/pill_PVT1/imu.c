@@ -110,33 +110,10 @@ uint16_t imu_accel_reg_read(uint8_t *buf) {
 	return 6;
 }
 
-uint16_t imu_read_regs(uint8_t *buf) {
-	_register_read(MPU_REG_ACC_X_LO, buf++);
-	_register_read(MPU_REG_ACC_X_HI, buf++);
-	_register_read(MPU_REG_ACC_Y_LO, buf++);
-	_register_read(MPU_REG_ACC_Y_HI, buf++);
-	_register_read(MPU_REG_ACC_Z_LO, buf++);
-	_register_read(MPU_REG_ACC_Z_HI, buf++);
-
-	_register_read(MPU_REG_GYRO_X_LO, buf++);
-	_register_read(MPU_REG_GYRO_X_HI, buf++);
-	_register_read(MPU_REG_GYRO_Y_LO, buf++);
-	_register_read(MPU_REG_GYRO_Y_HI, buf++);
-	_register_read(MPU_REG_GYRO_Z_LO, buf++);
-	_register_read(MPU_REG_GYRO_Z_HI, buf++);
-
-	return 12;
-}
-
 
 inline void imu_set_accel_range(enum imu_accel_range range)
 {
     _register_write(MPU_REG_ACC_CFG, range << ACCEL_CFG_SCALE_OFFSET);
-}
-
-inline void imu_set_gyro_range(enum imu_gyro_range range)
-{
-	_register_write(MPU_REG_GYRO_CFG, range << GYRO_CFG_SCALE_OFFSET);
 }
 
 inline uint8_t imu_clear_interrupt_status()
@@ -155,31 +132,6 @@ inline uint8_t imu_clear_interrupt_status()
 
     return int_status;
 }
-
-void imu_set_sensors(enum imu_sensor_set sensors)
-{
-    uint8_t fifo_register, power_management_2_register;
-    _register_read(MPU_REG_FIFO_EN, &fifo_register);
-	_register_read(MPU_REG_PWR_MGMT_2, &power_management_2_register);
-
-	switch(sensors) {
-	case IMU_SENSORS_ACCEL:
-        fifo_register |= FIFO_EN_QUEUE_ACCEL;
-        power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS);
-		break;
-	case IMU_SENSORS_ACCEL_GYRO:
-        fifo_register |= FIFO_EN_QUEUE_ACCEL|FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z;
-        power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS|PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
-		break;
-	}
-
-    _register_write(MPU_REG_PWR_MGMT_2, power_management_2_register);
-	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN|USR_CTL_FIFO_RST);
-    _register_write(MPU_REG_FIFO_EN, fifo_register);
-
-	DEBUG("IMU: sensors set to ", sensors);
-}
-
 
 uint16_t imu_fifo_read(uint16_t count, uint8_t *buf) {
 	uint16_t avail;
@@ -200,7 +152,7 @@ uint16_t imu_fifo_read(uint16_t count, uint8_t *buf) {
 	return count;
 }
 
-inline void imu_fifo_clear()
+static void imu_fifo_clear()
 {
 	// [TODO]: This will overflow the stack!
 
@@ -274,6 +226,7 @@ _continuous()
 	}
 }
 
+static void imu_fifo_clear();
 static void _self_test() __attribute__((unused));
 static void _self_test()
 {
@@ -402,6 +355,29 @@ static void _imu_set_low_pass_filter(enum imu_hz hz)
     _register_write(MPU_REG_ACC_CFG2, accel_config2);
 }
 
+
+static void imu_set_sensors(enum imu_sensor_set sensors){
+    uint8_t fifo_register, power_management_2_register;
+    _register_read(MPU_REG_FIFO_EN, &fifo_register);
+	_register_read(MPU_REG_PWR_MGMT_2, &power_management_2_register);
+
+	switch(sensors) {
+	case IMU_SENSORS_ACCEL:
+        fifo_register |= FIFO_EN_QUEUE_ACCEL;
+        power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS);
+		break;
+	case IMU_SENSORS_ACCEL_GYRO:
+        fifo_register |= FIFO_EN_QUEUE_ACCEL|FIFO_EN_QUEUE_GYRO_X|FIFO_EN_QUEUE_GYRO_Y|FIFO_EN_QUEUE_GYRO_Z;
+        power_management_2_register &= ~(PWR_MGMT_2_ACCEL_X_DIS|PWR_MGMT_2_ACCEL_Y_DIS|PWR_MGMT_2_ACCEL_Z_DIS|PWR_MGMT_2_GYRO_X_DIS|PWR_MGMT_2_GYRO_Y_DIS|PWR_MGMT_2_GYRO_Z_DIS);
+		break;
+	}
+
+    _register_write(MPU_REG_PWR_MGMT_2, power_management_2_register);
+	_register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN|USR_CTL_FIFO_RST);
+    _register_write(MPU_REG_FIFO_EN, fifo_register);
+
+	DEBUG("IMU: sensors set to ", sensors);
+}
 
 void imu_enter_normal_mode(enum imu_hz sampling_rate, enum imu_sensor_set active_sensors)
 {
@@ -652,11 +628,6 @@ static inline void _config_imu_interrputs()
 	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
 }
 
-void imu_spi_enable()
-{
-	spi_enable(&_spi_context);
-}
-
 
 void imu_spi_disable()
 {
@@ -720,83 +691,6 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 }
 
 
-int32_t imu_init_normal(enum SPI_Channel channel, enum SPI_Mode mode, 
-			uint8_t miso, uint8_t mosi, 
-			uint8_t sclk, uint8_t nCS, 
-			enum imu_hz sampling_rate,
-			enum imu_sensor_set active_sensors,
-			enum imu_accel_range acc_range, enum imu_gyro_range gyro_range)
-{
- 	int32_t err;
-
-	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
-	if (err != 0) {
-		PRINTS("Could not configure SPI bus for IMU\r\n");
-		return err;
-	}
-
-	// Reset procedure as per "MPU-6500 Register Map and Descriptions Revision 2.0"
-	// page 43
-
-	// Reset chip
-	imu_reset();
-
-	_register_write(MPU_REG_PWR_MGMT_1, 0);
-
-	// Check for valid Chip ID
-	uint8_t whoami_value;
-	_register_read(MPU_REG_WHO_AM_I, &whoami_value);
-
-	if (whoami_value != CHIP_ID) {
-		DEBUG("Invalid MPU-6500 ID found. Expected 0x70, got 0x", whoami_value);
-		APP_ASSERT(0);
-	}
-
-	// Init interrupts
-	_register_write(MPU_REG_INT_CFG, INT_CFG_ACT_LO | INT_CFG_PUSH_PULL | INT_CFG_LATCH_OUT | INT_CFG_CLR_ON_STS | INT_CFG_BYPASS_EN);
-
-	// Config interrupts
-	_register_write(MPU_REG_INT_EN, INT_EN_FIFO_OVRFLO);
-
-	switch(active_sensors)
-	{
-		case IMU_SENSORS_ACCEL:
-			imu_set_accel_range(acc_range);
-			break;
-		case IMU_SENSORS_ACCEL_GYRO:
-			imu_set_accel_range(acc_range);
-			imu_set_gyro_range(gyro_range);
-			break;
-	}
-
-	// Init FIFO
-	uint8_t fifo_size_bits;
-	switch(IMU_FIFO_CAPACITY) {
-	case 4096:
-		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_4096;
-		break;
-	case 2048:
-		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_2048;
-		break;
-	case 1024:
-		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_1024;
-		break;
-	case 512:
-		fifo_size_bits = ACCEL_CFG2_FIFO_SIZE_512;
-		break;
-	default:
-		APP_ASSERT(0);
-		break;
-	}
-	_register_write(MPU_REG_ACC_CFG2, fifo_size_bits);
-
-    // Reset FIFO, disable i2c, and clear regs
-    _register_write(MPU_REG_USER_CTL, USR_CTL_FIFO_EN | USR_CTL_I2C_DIS | USR_CTL_FIFO_RST | USR_CTL_SIG_RST);
-
-    imu_enter_normal_mode(sampling_rate, active_sensors);
-
-	return err;
-}
 int32_t
 _stream_avg(int32_t prev, int16_t x,  int32_t n){
 	if(n == 0){

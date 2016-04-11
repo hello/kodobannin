@@ -101,26 +101,11 @@ static void _dispatch_motion_data_via_ant(const int16_t* values, size_t len)
 static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
 {
     int16_t values[3];
-//    uint16_t range;
-//    uint16_t maxrange
-    //auxillary_data_t * paux;
+
     memcpy(values, raw_xyz, len);
 
-    //int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
     uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
 	
-    /*
-    tf_unit_t curr = TF_GetCurrent();
-
-    PRINTS("Current value: ");
-    PRINT_HEX(&curr, sizeof(curr));
-    PRINTS("\r\n");
-    PRINTS("New value: ");
-    PRINT_HEX(&aggregate, sizeof(tf_unit_t));
-    PRINTS("\r\n");
-    */
-
-	//TF_SetCurrent((uint16_t)values[0]);
 	tf_unit_t* current = TF_GetCurrent();
     ++current->num_meas;
     if(current->max_amp < aggregate){
