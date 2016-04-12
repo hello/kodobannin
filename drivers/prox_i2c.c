@@ -88,11 +88,12 @@ static void _conf_prox(void){
 
 MSG_Status init_prox(void){
 	//tie vaux to vbat
-	nrf_gpio_cfg_output(VRGB_ENABLE);
-	nrf_gpio_pin_clear(VRGB_ENABLE);
-	nrf_gpio_cfg_output(VLED_VDD_EN);
-	nrf_gpio_pin_set(VLED_VDD_EN);
-
+#ifdef PLATFORM_HAS_PROX
+	nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
+	nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
+	nrf_gpio_cfg_output(PROX_VDD_EN);
+	nrf_gpio_pin_set(PROX_VDD_EN);
+#endif
     _reset_config();
     _check_id();
     _conf_prox();

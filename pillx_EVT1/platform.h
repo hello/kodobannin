@@ -73,6 +73,8 @@ enum {
 
     RTC_INT =  2,
     LDO_INT = 24,
+    PROX_VDD_EN  = 17, // VPROX_VDD_EN
+    PROX_BOOST_ENABLE  = 10, // 11, BOOST ENABLE
 };
 
 // Real Time Calendar
