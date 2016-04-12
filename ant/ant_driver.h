@@ -20,14 +20,14 @@ typedef struct{
 
 typedef struct{
     /* tx event indicates opportunity to send data to the id */
-    bool (*on_tx_event)(const hlo_ant_device_t * device, uint8_t * out_buffer, hlo_ant_role role);
+    bool (*on_tx_event)(const hlo_ant_device_t * device, uint8_t * out_buffer, hlo_ant_role role, bool lockstep);
     /* rx event indicates receiving a packet from the channel */
     void (*on_rx_event)(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role);
     void (*on_error_event)(const hlo_ant_device_t * device, uint32_t event);
 }hlo_ant_event_listener_t;
 
 int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * callbacks);
-int32_t hlo_ant_connect(const hlo_ant_device_t * device);
+int32_t hlo_ant_connect(const hlo_ant_device_t * device, bool full_duplex);
 int32_t hlo_ant_disconnect(const hlo_ant_device_t * device);
 int32_t hlo_ant_pause_radio(void);
 int32_t hlo_ant_resume_radio(void);

@@ -35,6 +35,7 @@ typedef enum{
     MSG_ANT_PING = 0,
     MSG_ANT_TRANSMIT,
     MSG_ANT_HANDLE_MESSAGE,
+    MSG_ANT_TRANSMIT_RECEIVE,
 }MSG_ANT_Commands;
 
 typedef struct{
