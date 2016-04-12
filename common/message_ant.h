@@ -33,10 +33,7 @@
 
 typedef enum{
     MSG_ANT_PING = 0,
-    MSG_ANT_CONNECTION_BASE,
-    MSG_ANT_SET_ROLE = 100,
-    MSG_ANT_REMOVE_DEVICE,
-    MSG_ANT_ADD_DEVICE,
+    MSG_ANT_TRANSMIT,
     MSG_ANT_HANDLE_MESSAGE,
 }MSG_ANT_Commands;
 
@@ -67,6 +64,7 @@ typedef enum {
     ANT_PILL_SHAKING,
     ANT_PILL_DATA_ENCRYPTED,
     ANT_PILL_PROX_ENCRYPTED,
+    ANT_SENSE_RESPONSE_HEARTBEAT,
     ANT_PILL_PROX_PLAINTEXT,
 }MSG_ANT_PillDataType_t;
 
@@ -78,24 +76,14 @@ typedef struct{
     uint8_t payload[0];
 }__attribute__((packed)) MSG_ANT_PillData_t;
 
-/**
- * ANT user defined actions
- * all callbacks must be defined(can not be NULL)
- **/
-typedef enum{
-    ANT_STATUS_NULL = 0,
-    ANT_STATUS_DISCONNECTED,
-    ANT_STATUS_CONNECTED
-}ANT_Status_t;
-
 typedef struct{
     /* Called when a known and connected device sends a message */
-    void (*on_message)(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg);
-
-    void (*on_status_update)(const hlo_ant_device_t * id, ANT_Status_t status);
+    void (*on_message)(const hlo_ant_device_t * id, MSG_Data_t * msg);
+    /* Called when an ant initiates a connection, allocate(but don't release) a response if needed*/
+    MSG_Data_t * INCREF (*on_connection)(const hlo_ant_device_t * id); 
 }MSG_ANTHandler_t;
 
-MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler);
+MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handler,hlo_ant_role role, uint8_t device_type);
 /* Helper API an Object based on type */
 MSG_Data_t * INCREF AllocateEncryptedAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len);
 MSG_Data_t * INCREF AllocateAntPayload(MSG_ANT_PillDataType_t type, void * payload, size_t len);

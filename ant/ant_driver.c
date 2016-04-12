@@ -5,8 +5,11 @@
 #include "util.h"
 #include "app.h"
 
-#define ANT_EVENT_MSG_BUFFER_MIN_SIZE 32
 #define HLO_ANT_NETWORK_KEY {0xA8, 0xAC, 0x20, 0x7A, 0x1D, 0x72, 0xE3, 0x4D}
+#define HLO_ANT_NETWORK_CHANNEL 66
+#define HLO_ANT_NETWORK_PERIOD 128
+#define HLO_ANT_NETWORK_PERIOD_BIAS 8
+#define HLO_ANT_CHANNEL_EXT_OPT 0
 typedef struct{
     //cached status
     uint8_t reserved;
@@ -25,6 +28,7 @@ static struct{
     const hlo_ant_event_listener_t * event_listener;
 }self;
 
+static void _handle_tx(uint8_t channel, const hlo_ant_device_t * dev);
 static int _find_open_channel_by_device(const hlo_ant_device_t * device, uint8_t begin, uint8_t end){
     uint8_t i;
     for(i = begin; i <= end; i++){
@@ -56,7 +60,9 @@ _configure_channel(uint8_t channel,const hlo_ant_channel_phy_t * phy,  const hlo
     int ret = 0;
     ret += sd_ant_channel_assign(channel, phy->channel_type, phy->network, ext_fields);
     ret += sd_ant_channel_radio_freq_set(channel, phy->frequency);
-//    ret += sd_ant_channel_period_set(channel, phy->period);
+    if(! (ext_fields & EXT_PARAM_ASYNC_TX_MODE) ){
+        ret += sd_ant_channel_period_set(channel, phy->period);
+    }
     ret += sd_ant_channel_id_set(channel, device->device_number, device->device_type, device->transmit_type);
     ret += sd_ant_channel_low_priority_rx_search_timeout_set(channel, 0xFF);
     ret += sd_ant_channel_rx_search_timeout_set(channel, 0);
@@ -74,7 +80,7 @@ _configure_channel_as_central(uint8_t channel,const hlo_ant_channel_phy_t * phy,
 int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     hlo_ant_channel_phy_t phy = {
         .period = 273,
-        .frequency = 66,
+        .frequency = HLO_ANT_NETWORK_CHANNEL,
         .channel_type = CHANNEL_TYPE_SLAVE,
         .network = 0
     };
@@ -110,32 +116,32 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
     if(ch >= begin){
-        PRINTS("ANT: Channel already open!\r\n");
-        uint8_t message[8] = {0};
-        sd_ant_broadcast_message_tx((uint8_t)ch, sizeof(message), message);
+        _handle_tx((uint8_t)ch, device);
         return 0;
     }else{
         //open channel
         int new_ch = _find_unassigned_channel(begin, 7);
         if(new_ch >= begin){
             //bias the period to reduce chance for channel collision
-            uint16_t device_period = (1092 - 4) + (device->device_number % 8);
+            uint16_t device_period = (HLO_ANT_NETWORK_PERIOD - (HLO_ANT_NETWORK_PERIOD_BIAS/2)) + (device->device_number % HLO_ANT_NETWORK_PERIOD_BIAS);
             hlo_ant_channel_phy_t phy = {
                 .period = device_period,
-                .frequency = 66,
-                .channel_type = CHANNEL_TYPE_MASTER_TX_ONLY,
+                .frequency = HLO_ANT_NETWORK_CHANNEL,
+                .channel_type = CHANNEL_TYPE_MASTER,
                 .network = 0
             };
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
-                APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, EXT_PARAM_ASYNC_TX_MODE));
-                //APP_OK(sd_ant_channel_open((uint8_t)new_ch));
+                uint8_t opt = HLO_ANT_CHANNEL_EXT_OPT;
+                APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, opt));
+                if(!(opt & EXT_PARAM_ASYNC_TX_MODE)){
+                    APP_OK(sd_ant_channel_open((uint8_t)new_ch));
+                }
             }else{
                 //as central, we dont connect, but instead start by sending a dud message
                 phy.channel_type = CHANNEL_TYPE_SLAVE;
                 APP_OK(_configure_channel_as_central((uint8_t)new_ch, &phy, device, 0));
             }
-            uint8_t message[8] = {0};
-            sd_ant_broadcast_message_tx((uint8_t)new_ch, sizeof(message), message);
+            _handle_tx((uint8_t)new_ch, device);
             return new_ch;
         }
     }
@@ -146,15 +152,20 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
     uint8_t begin = (self.role == HLO_ANT_ROLE_CENTRAL)?1:0;
     int ch = _find_open_channel_by_device(device, begin,7);
     if(ch >= begin){
-        PRINTS("Closing Channel = ");
-        PRINT_HEX(&ch, 1);
-        PRINTS("\r\n");
+        /*
+         *PRINTS("Closing Channel = ");
+         *PRINT_HEX(&ch, 1);
+         *PRINTS("\r\n");
+         */
         if(self.role == HLO_ANT_ROLE_CENTRAL){
             return sd_ant_channel_unassign(ch);
         }else{
-            //with async mode, it does not need to be closed
-            //return sd_ant_channel_close(ch);
-            return 0;
+            uint8_t opt = HLO_ANT_CHANNEL_EXT_OPT;
+            if( opt & EXT_PARAM_ASYNC_TX_MODE ){
+                return 0;
+            }else{
+                return sd_ant_channel_close(ch);
+            }
         }
     }
     return -1;
@@ -171,57 +182,45 @@ int32_t hlo_ant_cw_test(uint8_t freq, uint8_t tx_power){
     return 0;
 }
 
-static void
-_handle_rx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
-    ANT_MESSAGE * msg = (ANT_MESSAGE*)msg_buffer;
-    uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
-    hlo_ant_device_t device;
-    if(self.role == HLO_ANT_ROLE_CENTRAL){
+#define ANT_EXT_DEVICE_TYPE_OFFSET 2
+#define ANT_EXT_TRANSMIT_TYPE_OFFSET 3
+#define ANT_EXT_MEAS_TYPE_OFFSET 4
+#define ANT_EXT_RSSI_OFFSET 5
+static bool _parse_device(uint8_t channel, uint8_t * msg_buffer, hlo_ant_device_t * out_device, hlo_ant_role role){
+    if(role == HLO_ANT_ROLE_CENTRAL){
+        ANT_MESSAGE * msg = (ANT_MESSAGE*)msg_buffer;
         EXT_MESG_BF ext = msg->ANT_MESSAGE_sExtMesgBF;
         uint8_t * extbytes = msg->ANT_MESSAGE_aucExtData;
         if(ext.ucExtMesgBF & MSG_EXT_ID_MASK){
-            device = (hlo_ant_device_t){
+            *out_device = (hlo_ant_device_t){
                 .device_number = *((uint16_t*)extbytes),
-                .device_type = extbytes[2],
-                .transmit_type = extbytes[3],
-                .measurement_type = extbytes[4],
-                .rssi = extbytes[5],
+                    .device_type = extbytes[ANT_EXT_DEVICE_TYPE_OFFSET],
+                    .transmit_type = extbytes[ANT_EXT_TRANSMIT_TYPE_OFFSET],
+                    .measurement_type = extbytes[ANT_EXT_MEAS_TYPE_OFFSET],
+                    .rssi = extbytes[ANT_EXT_RSSI_OFFSET],
             };
-        }else{
-            //error
-            return;
-        }
-    }else if(self.role == HLO_ANT_ROLE_PERIPHERAL){
-        if(NRF_SUCCESS == sd_ant_channel_id_get(channel, &device.device_number, &device.device_type, &device.transmit_type)){
-        }else{
-            //error
-            return;
+            return true;
         }
     }else{
-        return;
+        if(NRF_SUCCESS == sd_ant_channel_id_get(channel, &out_device->device_number, &out_device->device_type, &out_device->transmit_type)){
+            return true;
+        }
+
     }
-    self.event_listener->on_rx_event(&device, rx_payload, 8);
+    return false;
+}
+static void
+_handle_rx(uint8_t * msg_buffer, const hlo_ant_device_t * device){
+    ANT_MESSAGE * msg = (ANT_MESSAGE*)msg_buffer;
+    uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
+    self.event_listener->on_rx_event(device, rx_payload, 8, self.role);
 }
 
-static void
-_handle_tx(uint8_t channel, uint8_t * msg_buffer, uint16_t size){
-    hlo_ant_device_t device;
+static void  //peripheral tx mode
+_handle_tx(uint8_t channel, const hlo_ant_device_t * dev){
     uint8_t out_buf[8] = {0};
-    uint8_t out_size = 0;
-    if(channel == 0 && self.role == HLO_ANT_ROLE_CENTRAL){
-        //this should not happen
-        return;
-    }else{
-        if(NRF_SUCCESS == sd_ant_channel_id_get(channel, &device.device_number, &device.device_type, &device.transmit_type)){
-
-        }else{
-            //error
-            return;
-        }
-    }
-    self.event_listener->on_tx_event(&device, out_buf, &out_size);
-    if(out_size && out_size <= 8){
-        sd_ant_broadcast_message_tx(channel, out_size, out_buf);
+    if(self.event_listener->on_tx_event(dev, out_buf, self.role)){
+        sd_ant_broadcast_message_tx(channel, 8, out_buf);
     }
 }
 
@@ -229,12 +228,18 @@ void ant_handler(ant_evt_t * p_ant_evt){
     uint8_t event = p_ant_evt->event;
     uint8_t ant_channel = p_ant_evt->channel;
     uint8_t * event_message_buffer = (uint8_t*)p_ant_evt->evt_buffer;
+    hlo_ant_device_t dev;
     switch(event){
         case EVENT_RX_FAIL:
             break;
         case EVENT_RX:
             DEBUGS("R");
-            _handle_rx(ant_channel,event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            if( _parse_device(ant_channel, event_message_buffer, &dev, self.role) ){
+                _handle_rx(event_message_buffer, &dev);
+                if(self.role == HLO_ANT_ROLE_CENTRAL){
+                    hlo_ant_connect(&dev);
+                }
+            }
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
             DEBUGS("RXTO\r\n");
@@ -247,7 +252,11 @@ void ant_handler(ant_evt_t * p_ant_evt){
             break;
         case EVENT_TX:
             DEBUGS("T");
-            _handle_tx(ant_channel, event_message_buffer, ANT_EVENT_MSG_BUFFER_MIN_SIZE);
+            if( _parse_device(ant_channel, event_message_buffer, &dev, self.role) ){
+                if(self.role == HLO_ANT_ROLE_PERIPHERAL){
+                    _handle_tx(ant_channel, &dev);
+                }
+            }
             break;
         case EVENT_TRANSFER_TX_FAILED:
             break;

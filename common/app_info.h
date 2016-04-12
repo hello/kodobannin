@@ -6,5 +6,5 @@
 #define FW_VERSION_STRING "1.2.0"
 
 //pill only
-#define FIRMWARE_VERSION_8BIT (20)
+#define FIRMWARE_VERSION_8BIT (30)
 

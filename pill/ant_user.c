@@ -4,16 +4,17 @@ static struct{
     MSG_Central_t * parent;
 }self;
 
-static void _on_message(const hlo_ant_device_t * id, MSG_Address_t src, MSG_Data_t * msg){
+static void _on_message(const hlo_ant_device_t * id, MSG_Data_t * msg){
+}
+static MSG_Data_t * _on_connection(const hlo_ant_device_t * id){
+    return NULL;
 }
 
-static void _on_status_update(const hlo_ant_device_t * id, ANT_Status_t  status){
-}
 
 MSG_ANTHandler_t * ANT_UserInit(MSG_Central_t * central){
     static MSG_ANTHandler_t handler = {
         .on_message = _on_message,
-        .on_status_update = _on_status_update,
+        .on_connection = _on_connection,
     };
     self.parent = central;
     return &handler;
