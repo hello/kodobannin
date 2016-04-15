@@ -19,6 +19,7 @@ static struct{
 }self;
 
 void pwr_reset_3200() {
+#if HAS_CC3200
     PRINTS("Bouncing 3.3v rail...\r\n");
     nrf_delay_ms(500);
 
@@ -26,6 +27,7 @@ void pwr_reset_3200() {
     nrf_gpio_pin_clear(0);
     nrf_delay_ms(100);
     nrf_gpio_pin_set(0);
+#endif
 }
 
 #include "message_ant.h"
