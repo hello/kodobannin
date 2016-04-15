@@ -19,7 +19,7 @@ static struct{
 }self;
 
 void pwr_reset_3200() {
-#if HAS_CC3200
+#ifdef HAS_CC3200
     PRINTS("Bouncing 3.3v rail...\r\n");
     nrf_delay_ms(500);
 
