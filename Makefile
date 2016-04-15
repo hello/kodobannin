@@ -6,7 +6,7 @@ all: b m
 # apps & platforms
 
 APPS = bootloader bootloader_serial morpheus pill
-S310_PLATFORMS = morpheus_PVT1 pill_PVT1 pillx_EVT1
+S310_PLATFORMS = morpheus_PVT1 pill_PVT1 pillx_EVT1 morpheusx_EVT1
 
 PLATFORMS = $(S110_PLATFORMS) $(S310_PLATFORMS)
 UNAME := $(shell uname)

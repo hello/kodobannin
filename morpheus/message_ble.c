@@ -20,6 +20,8 @@
 #include "ant_user.h"
 #endif
 
+void pwr_reset_3200();
+
 static void _release_pending_resources();
 static void _on_notify_failed(void* data_page);
 static void _on_notify_completed(const void* data, void* data_page);
@@ -302,6 +304,7 @@ static MSG_Status _route_protobuf_to_ble(MSG_Data_t * data){
                 PRINTS("Factory reset from CC3200..\r\n");
                 _queue_tx(data);
                 hble_refresh_bonds(ERASE_ALL_BOND, true);
+                pwr_reset_3200();
                 break;
             default:
                 // protobuf, dump the thing straight back?
