@@ -74,6 +74,16 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             break;
         case MSG_ANT_TRANSMIT_RECEIVE:
             //not support yet
+            if(self.role == HLO_ANT_ROLE_PERIPHERAL){
+                int32_t ret = _try_send_ant_peripheral(data, true);
+                PRINTS("Sending:");
+                PRINT_HEX(&ret, 2);
+                PRINTS("\r\n");
+                if( ret == -2 ){
+                    MSG_Base_AcquireDataAtomic(data);
+                    APP_ASSERT( (NRF_SUCCESS == _queue_tx(data)) );
+                }
+            }
             break;
     }
     return SUCCESS;
