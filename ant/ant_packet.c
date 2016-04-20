@@ -118,7 +118,8 @@ static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_
    uint16_t offset = (packet->page - 1) * 6; 
    //make sure the offset does not exceed the length
    uint8_t i;
-   for(i = 0; i < payload->len - offset; i++){
+   uint8_t len = MIN(6, payload->len - offset);
+   for(i = 0; i < len; i++){
        payload->buf[offset + i] = packet->payload[i];
    }
    return 0;
@@ -142,8 +143,7 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
                 }
             }
         }
-
-    }else if(session->rx_obj && packet->page && packet->page <= session->rx_header.page_count){
+    }else if(session->rx_obj && packet->page && packet->page_count && packet->page <= session->rx_header.page_count){
     //2. if an object already exists, and the bounds make sense
         _assemble_rx_payload(session->rx_obj,packet);
         if(_calc_checksum(session->rx_obj) == session->rx_header.checksum){
