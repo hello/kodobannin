@@ -10,6 +10,7 @@
 #define HLO_ANT_NETWORK_PERIOD 128
 #define HLO_ANT_NETWORK_PERIOD_BIAS 8
 #define HLO_ANT_CHANNEL_EXT_OPT 0
+#define ANT_USE_ACK_TRANSMIT 1 /* use acknowledged transmit mode, this uses more power but improves reliability */
 typedef struct{
     //cached status
     uint8_t reserved;
@@ -108,7 +109,7 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     }
     return 0;
 }
-int32_t hlo_ant_connect(const hlo_ant_device_t * device, bool full_duplex){
+int32_t hlo_ant_connect(const hlo_ant_device_t * device, bool reliable){
     //scenarios:
     //no channel with device : create channel, return success
     //channel with device : return success
@@ -129,7 +130,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device, bool full_duplex){
                 .frequency = HLO_ANT_NETWORK_CHANNEL,
                 .network = 0
             };
-            if(full_duplex){
+            if(reliable){
                 phy.channel_type = CHANNEL_TYPE_MASTER;
             }else{
                 phy.channel_type = CHANNEL_TYPE_MASTER_TX_ONLY;
@@ -223,9 +224,13 @@ _handle_rx(uint8_t * msg_buffer, const hlo_ant_device_t * device){
 static void  //peripheral tx mode
 _handle_tx(uint8_t channel, const hlo_ant_device_t * dev){
     uint8_t out_buf[8] = {0};
-    bool lockstep = dev->transmit_type == CHANNEL_TYPE_MASTER ? true : false;
+    bool lockstep = false;
     if(self.event_listener->on_tx_event(dev, out_buf, self.role, lockstep)){
+#if ANT_USE_ACK_TRANSMIT
+        sd_ant_acknowledge_message_tx(channel, 8, out_buf);
+#else
         sd_ant_broadcast_message_tx(channel, 8, out_buf);
+#endif
     }
 }
 

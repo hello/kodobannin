@@ -175,7 +175,9 @@ static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
     if(!session){
         return false;
     }
-    PRINTF("t: %d\r\n", session->lockste.page);
+    /*
+     *PRINTF("t: %d\r\n", session->lockste.page);
+     */
 
     out_buffer[0] = session->lockstep.page;
 
@@ -224,7 +226,9 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
     if(!session){
         return;
     }
-    PRINTF("r: %d/%d\r\n", packet->page, packet->page_count);
+    /*
+     *PRINTF("r: %d/%d\r\n", packet->page, packet->page_count);
+     */
 
     //legacy handling mode, we don't care about lockstep on rx here
     //since delivery is checked by crc
