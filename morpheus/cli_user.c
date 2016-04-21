@@ -54,6 +54,14 @@ _handle_command(int argc, char * argv[]){
             MSG_Base_ReleaseDataAtomic(data);
         }
     }
+    if(!match_command(argv[0], "ent")){
+        uint8_t data[17] = {0};
+        MSG_Data_t* data_page = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED,&data , sizeof(data));
+        if(data_page){
+            self.parent->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,MSG_ANT_TRANSMIT_RECEIVE}, data_page);
+            MSG_Base_ReleaseDataAtomic(data_page);
+        }
+    }
     if(!match_command(argv[0], "ant")){
         pill_heartbeat_t heartbeat = {0};
         heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;

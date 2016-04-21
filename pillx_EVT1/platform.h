@@ -15,17 +15,33 @@
 #define USE_HLO_ANT_NETWORK
 #define PILL_ANT_TYPE HLO_ANT_DEVICE_TYPE_PILL1_5
 
-#define configTOTAL_HEAP_SIZE 1280
+#define configTOTAL_HEAP_SIZE 1024
+
+/*
+// This is from EVT1, not used
+// TODO: Maybe just usesomething from PLATFORM_HAS_I2C?
+
+#define PLATFORM_HAS_GAUGE
+enum {
+    GAUGE_SDA = 0,
+    GAUGE_SCL = 25,
+    GAUGE_INT = 21,
+};
+
+*/
 
 #define PLATFORM_HAS_SERIAL
 
 enum {
-    SERIAL_TX_PIN = 18,
-    SERIAL_RX_PIN = 19,
+    SERIAL_TX_PIN = 19, // 18,
+    SERIAL_RX_PIN = 18, // 19,
     SERIAL_CTS_PIN = 31,
     SERIAL_RTS_PIN = 31,
 };
 
+// uart serial diagnostic port
+// MCU_TXD  P18      // 26 P0.18
+// MCU_RXD  P19      // 27 P0.19
 
 #define PLATFORM_HAS_IMU
 #define PLATFORM_HAS_IMU_VDD_CONTROL
@@ -33,12 +49,12 @@ enum {
 enum {
     IMU_VDD_EN   = 20,
 
-    IMU_SPI_nCS  = 16,
-    IMU_SPI_SCLK = 14,
-    IMU_SPI_MOSI = 12,
-    IMU_SPI_MISO = 10,
+    IMU_SPI_nCS  = 13, // 16,
+    IMU_SPI_SCLK = 15, // 14,
+    IMU_SPI_MOSI =  9, // 12,
+    IMU_SPI_MISO = 11, // 10,
 
-    IMU_INT = 23,
+    IMU_INT = 16, // 23,
 };
 
 // inertial motion sensor
@@ -49,6 +65,18 @@ enum {
 // IMU_MISO P10      // 16 P0.10
 // IMU_INT  P23      // 42 P0.23
 
+#define PLATFORM_HAS_I2C
+#define PLATFORM_HAS_PROX
+
+enum {
+    I2C_SCL = 24, // 21,
+    I2C_SDA = 23, // 22,
+
+    RTC_INT =  2,
+    LDO_INT = 24,
+    PROX_VDD_EN  = 17, // VPROX_VDD_EN
+    PROX_BOOST_ENABLE  = 10, // 11, BOOST ENABLE
+};
 
 // Real Time Calendar
 // RTC_SCL  P21      // 40 P0.21
@@ -64,6 +92,8 @@ enum {
 enum {
     VBAT_SENSE  = 6,
     VMCU_SENSE  = 2,
+
+    VMCU_REBOOT  = 22,
 
     VBAT_VER_EN = 0,
 };
@@ -81,11 +111,11 @@ enum {
 //#define PLATFORM_HAS_VLED
 
 enum {
-    VLED_VDD_EN  = 17,
-    VRGB_ENABLE  = 11,
+    VLED_VDD_EN  = 17, // VPROX_VDD_EN
+    VRGB_ENABLE  = 10, // 11, BOOST ENABLE
 
-    VRGB_SELECT  =  8,
-    VRGB_ADJUST  =  9,
+    VRGB_SELECT  = 21, // 8, BOOST MODE
+    VRGB_ADJUST  =  8, // 9,
     VRGB_SENSE   =  4,
 
     LED3_SENSE   =  3,
@@ -138,5 +168,18 @@ enum {
 // LED2     P28      // 47 P0.28
 // LED1     P07      // 11 P0.07
 
+#define PLATFORM_HAS_FSPI
 
-#define PLATFORM_HAS_PROX
+enum {
+    FSPI_SSEL = 29,
+    FSPI_SCLK = 12, // 13,
+    FSPI_MOSI = 14, // 15,
+    FSPI_MISO = 25,
+};
+
+// FRAM SPI powered from VRGB requires 2.0V min to 3.6V max
+// FRAM_SSEL   P29      // 48 P0.29
+// FRAM_SCLK   P13      // 19 P0.13
+// FRAM_MOSI   P15      // 21 P0.15
+// FRAM_MISO   P25      // 44 P0.25
+

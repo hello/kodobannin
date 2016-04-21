@@ -27,16 +27,16 @@ enum {
 
 
 #define PLATFORM_HAS_IMU
-#define PLATFORM_HAS_IMU_VDD_CONTROL
+//#define PLATFORM_HAS_IMU_VDD_CONTROL
 
 enum {
     IMU_VDD_EN   = 20,
 
-    IMU_SPI_nCS  = 16,
-    IMU_SPI_SCLK = 14,
-    IMU_SPI_MOSI = 12,
-    IMU_SPI_MISO = 10,
-
+    IMU_SPI_nCS  = 29,//16, temp change to fspi for test wiring
+    IMU_SPI_SCLK = 13,//14,
+    IMU_SPI_MOSI = 15,//12,
+    IMU_SPI_MISO = 25,//10,
+    
     IMU_INT = 23,
 };
 
