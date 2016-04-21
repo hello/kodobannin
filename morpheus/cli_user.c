@@ -58,10 +58,7 @@ _handle_command(int argc, char * argv[]){
         uint8_t data[17] = {0};
         MSG_Data_t* data_page = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED,&data , sizeof(data));
         if(data_page){
-            /*
-             *self.parent->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,MSG_ANT_TRANSMIT_RECEIVE}, data_page);
-             */
-            self.parent->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,MSG_ANT_TRANSMIT}, data_page);
+            self.parent->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,MSG_ANT_TRANSMIT_RECEIVE}, data_page);
             MSG_Base_ReleaseDataAtomic(data_page);
         }
     }

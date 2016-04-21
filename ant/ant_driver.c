@@ -25,6 +25,7 @@ typedef struct{
 
 static struct{
     hlo_ant_role role;
+    volatile bool reliable_mode;
     const hlo_ant_event_listener_t * event_listener;
 }self;
 
@@ -134,6 +135,7 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device, bool reliable){
             }else{
                 phy.channel_type = CHANNEL_TYPE_MASTER_TX_ONLY;
             }
+            self.reliable_mode = reliable;
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
                 uint8_t opt = HLO_ANT_CHANNEL_EXT_OPT;
                 APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, opt));
@@ -225,13 +227,12 @@ _handle_rx(uint8_t * msg_buffer, const hlo_ant_device_t * device){
 static void  //peripheral tx mode
 _handle_tx(uint8_t channel, const hlo_ant_device_t * dev){
     uint8_t out_buf[8] = {0};
-    bool lockstep = false;
-    if(self.event_listener->on_tx_event(dev, out_buf, self.role, lockstep)){
-#if ANT_USE_ACK_TRANSMIT
-        sd_ant_acknowledge_message_tx(channel, 8, out_buf);
-#else
-        sd_ant_broadcast_message_tx(channel, 8, out_buf);
-#endif
+    if(self.event_listener->on_tx_event(dev, out_buf, self.role, self.reliable_mode)){
+        if(self.reliable_mode){
+            sd_ant_acknowledge_message_tx(channel, 8, out_buf);
+        }else{
+            sd_ant_broadcast_message_tx(channel, 8, out_buf);
+        }
     }
 }
 
