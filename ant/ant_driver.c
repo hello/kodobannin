@@ -163,6 +163,8 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
          *PRINTS("\r\n");
          */
         if(self.role == HLO_ANT_ROLE_CENTRAL){
+            uint8_t ret;
+            sd_ant_pending_transmit_clear (ch, &ret);
             return sd_ant_channel_unassign(ch);
         }else{
             uint8_t opt = HLO_ANT_CHANNEL_EXT_OPT;
