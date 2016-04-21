@@ -10,7 +10,6 @@
 #define HLO_ANT_NETWORK_PERIOD 128
 #define HLO_ANT_NETWORK_PERIOD_BIAS 8
 #define HLO_ANT_CHANNEL_EXT_OPT 0
-#define ANT_USE_ACK_TRANSMIT 1 /* use acknowledged transmit mode, this uses more power but improves reliability */
 typedef struct{
     //cached status
     uint8_t reserved;
