@@ -218,10 +218,10 @@ static bool _parse_device(uint8_t channel, uint8_t * msg_buffer, hlo_ant_device_
     return false;
 }
 static void
-_handle_rx(uint8_t * msg_buffer, const hlo_ant_device_t * device){
+_handle_rx(uint8_t * msg_buffer, const hlo_ant_device_t * device, bool * ack){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)msg_buffer;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
-    self.event_listener->on_rx_event(device, rx_payload, 8, self.role);
+    self.event_listener->on_rx_event(device, rx_payload, 8, self.role, ack);
 }
 
 static void  //peripheral tx mode
@@ -241,14 +241,15 @@ void ant_handler(ant_evt_t * p_ant_evt){
     uint8_t ant_channel = p_ant_evt->channel;
     uint8_t * event_message_buffer = (uint8_t*)p_ant_evt->evt_buffer;
     hlo_ant_device_t dev;
+    bool ack = true;
     switch(event){
         case EVENT_RX_FAIL:
             break;
         case EVENT_RX:
             DEBUGS("R");
             if( _parse_device(ant_channel, event_message_buffer, &dev, self.role) ){
-                _handle_rx(event_message_buffer, &dev);
-                if(self.role == HLO_ANT_ROLE_CENTRAL){
+                _handle_rx(event_message_buffer, &dev, &ack);
+                if(ack && self.role == HLO_ANT_ROLE_CENTRAL){
                     hlo_ant_connect(&dev, true);
                 }
             }
