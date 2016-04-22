@@ -2,6 +2,7 @@
 #include "util.h"
 #include "crc16.h"
 #include <string.h>
+#include "ant_devices.h"
 
 #define CID2UID(cid) (cid)
 #define UID2CID(uid) ((uint16_t)uid)
@@ -219,7 +220,7 @@ static void _set_header(hlo_ant_header_packet_t * header, const MSG_Data_t * msg
     header->page_count = msg->len / 6 + ((msg->len % 6) ? 1 : 0);
 }
 
-static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role){
+static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_t buffer_len, hlo_ant_role role, bool * ack){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     hlo_ant_payload_packet_t * packet = (hlo_ant_payload_packet_t*)buffer;
     bool new_obj = false;//flag that indicates a new object is allocated(connected)
@@ -239,7 +240,11 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
     }
 
     if(role == HLO_ANT_ROLE_CENTRAL){//central receives first, then transmits
-        if( !session->tx_obj && new_obj){
+        if( device->device_type == HLO_ANT_DEVICE_TYPE_PILL ){//don't bother acking pill as it decreases rx sensitivity (runs in async mode)
+            *ack = false;
+            return;
+        }
+        if( !session->tx_obj && new_obj ){
             MSG_Data_t * ret = self.user->on_connect(device);
             if(ret){
                 _set_header(&session->tx_header, ret);
