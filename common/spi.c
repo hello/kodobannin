@@ -11,7 +11,7 @@
 
 inline void spi_disable(SPI_Context* obj) {
     obj->spi_hw->ENABLE = (SPI_ENABLE_ENABLE_Disabled << SPI_ENABLE_ENABLE_Pos);
-    nrf_gpio_cfg_input(obj->spi_hw->PSELMISO, NRF_GPIO_PIN_PULLDOWN);
+    nrf_gpio_cfg_input(obj->spi_hw->PSELMISO, NRF_GPIO_PIN_PULLUP);
 }
 
 inline void spi_enable(SPI_Context *obj) {
@@ -50,13 +50,14 @@ spi_init(enum SPI_Channel chan, enum SPI_Mode mode, uint8_t miso, uint8_t mosi, 
     spi_base_address->PSELMISO = SPI_PSELMISO1;
     nrf_gpio_pin_set(SPI_PSELSS1);
 */
-    
+
     //configure GPIOs
     nrf_gpio_cfg_output(mosi);
     nrf_gpio_cfg_output(sclk);
     nrf_gpio_cfg_output(nCS);
-    nrf_gpio_pin_set(nCS);
+    nrf_gpio_pin_clear(nCS);
     nrf_gpio_cfg_input(miso, NRF_GPIO_PIN_NOPULL);
+
 
     //configure SPI channel
     ctx->spi_hw->PSELSCK  = sclk;

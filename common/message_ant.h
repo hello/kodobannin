@@ -35,6 +35,7 @@ typedef enum{
     MSG_ANT_PING = 0,
     MSG_ANT_TRANSMIT,
     MSG_ANT_HANDLE_MESSAGE,
+    MSG_ANT_TRANSMIT_RECEIVE,
 }MSG_ANT_Commands;
 
 typedef struct{
@@ -65,6 +66,7 @@ typedef enum {
     ANT_PILL_DATA_ENCRYPTED,
     ANT_PILL_PROX_ENCRYPTED,
     ANT_SENSE_RESPONSE_HEARTBEAT,
+    ANT_PILL_PROX_PLAINTEXT,
 }MSG_ANT_PillDataType_t;
 
 typedef struct{

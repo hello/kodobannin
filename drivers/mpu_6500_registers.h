@@ -2,170 +2,130 @@
 
 // vi:noet:sw=4 ts=4
 
-// Based on MPU-6500 Register Map and Descriptions Revision 2.0
+// Based on LIS2DH datasheet
 
-#define CHIP_ID 0x70
+#define CHIP_ID 0b00110011
 
-typedef enum MPU_Registers {
-	MPU_REG_ACC_SELF_TEST_X                = 13,
-	MPU_REG_ACC_SELF_TEST_Y                = 14,
-	MPU_REG_ACC_SELF_TEST_Z                = 15,
-	MPU_REG_SAMPLE_RATE_DIVIDER    = 25,
-	MPU_REG_CONFIG                                 = 26,
-	MPU_REG_GYRO_CFG                       = 27,
-	MPU_REG_ACC_CFG                                = 28,
-	MPU_REG_ACC_CFG2                       = 29,
-	MPU_REG_ACCEL_ODR                      = 30,
-	MPU_REG_WOM_THR                                = 31,
-	MPU_REG_FIFO_EN                                = 35,
-	MPU_REG_INT_CFG                                = 55,
-	MPU_REG_INT_EN                                 = 56,
-	MPU_REG_INT_STS                                = 58,
-	MPU_REG_ACC_X_HI                       = 59,
-	MPU_REG_ACC_X_LO                       = 60,
-	MPU_REG_ACC_Y_HI                       = 61,
-	MPU_REG_ACC_Y_LO                       = 62,
-	MPU_REG_ACC_Z_HI                       = 63,
-	MPU_REG_ACC_Z_LO                       = 64,
-	MPU_REG_TMP_HI                                 = 65,
-	MPU_REG_TMP_LO                                 = 66,
-	MPU_REG_GYRO_X_HI                      = 67,
-	MPU_REG_GYRO_X_LO                      = 68,
-	MPU_REG_GYRO_Y_HI                      = 69,
-	MPU_REG_GYRO_Y_LO                      = 70,
-	MPU_REG_GYRO_Z_HI                      = 71,
-	MPU_REG_GYRO_Z_LO                      = 72,
-	MPU_REG_SIG_RST                                = 104,
-	MPU_REG_ACCEL_INTEL_CTRL       = 105,
-	MPU_REG_USER_CTL                       = 106,
-	MPU_REG_PWR_MGMT_1                     = 107,
-	MPU_REG_PWR_MGMT_2                     = 108,
-	MPU_REG_FIFO_CNT_HI                    = 114,
-	MPU_REG_FIFO_CNT_LO                    = 115,
-	MPU_REG_FIFO                           = 116,
-	MPU_REG_WHO_AM_I                       = 117,
-    MPU_REG_XA_OFFS_H = 119,
-    MPU_REG_XA_OFFS_L = 120,
-    MPU_REG_YA_OFFS_H = 122,
-    MPU_REG_YA_OFFS_L = 123,
-    MPU_REG_ZA_OFFS_H = 125,
-    MPU_REG_ZA_OFFS_L = 126,
+typedef enum IMU_Registers {
+    REG_STATUS_AUX = 0x7,
+    REG_OUT_TEMP_LO = 0xc,
+    REG_OUT_TEMP_HI = 0xd,
+    REG_INT_COUNTER = 0xe,
+    REG_WHO_AM_I = 0xf,
+    REG_TEMP_CFG = 0x1f,
+    REG_CTRL_1 = 0x20,
+   	REG_CTRL_2 = 0x21,
+   	REG_CTRL_3 = 0x22,
+   	REG_CTRL_4 = 0x23,
+   	REG_CTRL_5 = 0x24,
+   	REG_CTRL_6 = 0x25,
+   	REG_REFERENCE = 0x26,
+   	REG_STATUS_2 = 0x27,
+    REG_ACC_X_HI = 0x28,
+	REG_ACC_X_LO = 0x29,
+	REG_ACC_Y_HI = 0x2a,
+	REG_ACC_Y_LO = 0x2b,
+    REG_ACC_Z_HI = 0x2c,
+    REG_ACC_Z_LO = 0x2d,
+    REG_FIFO_CTRL = 0x2e,
+    REG_FIFO_SRC = 0x2f,
+    REG_INT1_CFG = 0x30,
+    REG_INT1_SRC = 0x31,
+    REG_INT1_THR = 0x32,
+    REG_INT1_DUR = 0x33,
+    REG_INT2_CFG = 0x34,
+    REG_INT2_SRC = 0x35,
+    REG_INT2_THR = 0x36,
+    REG_INT2_DUR = 0x37,
+    REG_CLICK_CFG = 0x38,
+    REG_CLICK_SRC = 0x39,
+    REG_CLICK_THR = 0x3a,
+    REG_TIME_LIMIT = 0x3b,
+    REG_TIME_LATENCY = 0x3c,
+    REG_TIME_WINDOW = 0x3d,
+    REG_ACT_THR = 0x3e,
+    REG_ACT_DUR = 0x3f,
 
-} MPU_Register_t;
+} Register_t;
 
-enum MPU_Reg_Bits {
-	CONFIG_FIFO_MODE_DROP = (1UL << 6),
-	CONFIG_DLPF_MASK = 0x7,
+enum IMU_Reg_Bits {
+    //REG_TEMP_CFG
+	TEMPERATURE_DATA_OVERRUN  = 0x40,
+   	TEMPERATURE_DATA_AVAILABLE  = 0x4,
+    TEMPERATURE_ENABLE = 0xc0,
+    
+    //REG_CTRL_1
+    OUTPUT_DATA_RATE = 0xf0,
+    LOW_POWER_MODE = 0x8,
+    AXIS_ENABLE = 0x7,
+    
+    //REG_CTRL_2
+    HIGHPASS_FILTER_MODE = 0xc0,
+    HIGHPASS_FILTER_CUTOFF = 0x30,
+    FILTERED_DATA_SELECTION = 0x7,
+    HIGHPASS_FILTER_CLICK = 0x4,
+    HIGHPASS_AOI_INT2 = 0x2,
+    HIGHPASS_AOI_INT1 = 0x1,
+    
+    //REG_CTRL_3
+    INT1_CLICK = 0x80,
+    INT1_AOI1 = 0x40,
+    INT1_AOI2 = 0x20,
+    INT1_DRDY1 = 0x10,
+    INT1_DRDY2 = 0x8,
+    INT1_FIFO_WATERMARK = 0x4,
+    INT1_FIFO_OVERRUN = 0x2,
 
-	INT_CFG_ACT_LO        = (1UL << 7),
-	INT_CFG_ACT_HI        = (0UL << 7),
-    INT_CFG_OPEN_DRN      = (1UL << 6),
-	INT_CFG_PUSH_PULL     = (0UL << 6),
-	INT_CFG_LATCH_OUT     = (1UL << 5),
-	INT_CFG_PULSE_OUT     = (0UL << 5),
-	INT_CFG_CLR_ANY_READ  = (1UL << 4),
-	INT_CFG_CLR_ON_STS    = (0UL << 4),
-	INT_CFG_FSYNC_ACT_LO  = (1UL << 3),
-	INT_CFG_FSYNC_ACT_HI  = (0UL << 3),
-	INT_CFG_INT_ON_FSYNC  = (1UL << 2),
-	INT_CFG_BYPASS_EN     = (1UL << 1),
-
-	INT_EN_WOM         = (1UL << 6),
-	INT_EN_FIFO_OVRFLO = (1UL << 4),
-	INT_EN_FSYNC       = (1UL << 3),
-	INT_EN_RAW_READY   = (1UL << 0),
-
-    INT_STS_WOM_INT = (1UL << 6),
-	INT_STS_FIFO_OVRFLO = (1UL << 4),
-    INT_STS_RAW_READY = (1UL << 0),
-
-	CONFIG_LPF_32kHz_8800bw = 0,
-	CONFIG_LPF_32kHz_3600bw = 0,
-	CONFIG_LPF_8kHz_250bw   = 0,
-	CONFIG_LPF_1kHz_184bw   = 1,
-	CONFIG_LPF_1kHz_92bw    = 2,
-	CONFIG_LPF_1kHz_41bw    = 3,
-	CONFIG_LPF_1kHz_20bw    = 4,
-	CONFIG_LPF_1kHz_10bw    = 5,
-	CONFIG_LPF_1kHz_5bw     = 6,
-	CONFIG_LPF_8kHz_3600bw  = 7,
-	CONFIG_LPF_B_MASK       = 0x7,
-
-	GYRO_CFG_X_TEST         = (1UL << 7),
-	GYRO_CFG_Y_TEST         = (1UL << 6),
-	GYRO_CFG_Z_TEST         = (1UL << 5),
-	GYRO_CFG_SCALE_2k_DPS   = 0x3,
-	GYRO_CFG_SCALE_1k_DPS   = 0x2,
-	GYRO_CFG_SCALE_500_DPS  = 0x1,
-	GYRO_CFG_SCALE_250_DPS  = 0,
-	GYRO_CFG_SCALE_OFFSET   = 3,
-	GYRO_CFG_FCHOICE_00     = 0x3,
-	GYRO_CFG_FCHOICE_01     = 0x2,
-	GYRO_CFG_FCHOICE_11     = 0x0,
-	GYRO_CFG_FCHOICE_B_MASK = 0x3,
-
-	ACCEL_CFG_X_TEST     = (1UL << 7),
-	ACCEL_CFG_Y_TEST     = (1UL << 6),
-	ACCEL_CFG_Z_TEST     = (1UL << 5),
-	ACCEL_CFG_SCALE_2G   = (0UL << 4) | (0UL << 3),
-	ACCEL_CFG_SCALE_4G   = (0UL << 4) | (1UL << 3),
-	ACCEL_CFG_SCALE_8G   = (1UL << 4) | (0UL << 3),
-	ACCEL_CFG_SCALE_16G  = (1UL << 4) | (1UL << 3),
-	ACCEL_CFG_SCALE_OFFSET = 0x3,
-
-	ACCEL_CFG2_FCHOICE_1        = (0UL << 3),
-	ACCEL_CFG2_FCHOICE_0        = (1UL << 3),
-	ACCEL_CFG2_LPF_4kHz_1130bw  = 0,
-	ACCEL_CFG2_LPF_1kHz_460bw   = 0,
-	ACCEL_CFG2_LPF_1kHz_184bw   = 1,
-	ACCEL_CFG2_LPF_1kHz_92bw    = 2,
-	ACCEL_CFG2_LPF_1kHz_41bw    = 3,
-	ACCEL_CFG2_LPF_1kHz_20bw    = 4,
-	ACCEL_CFG2_LPF_1kHz_10bw    = 5,
-	ACCEL_CFG2_LPF_1kHz_5bw     = 6,
-	ACCEL_CFG2_LPF_1kHz_460bw_2 = 7,
-	ACCEL_CFG2_LPF_B_MASK       = 0x7,
-	ACCEL_CFG2_FIFO_SIZE_512    = (0UL << 7) | (0UL << 6),
-	ACCEL_CFG2_FIFO_SIZE_1024   = (0UL << 7) | (1UL << 6),
-	ACCEL_CFG2_FIFO_SIZE_2048   = (1UL << 7) | (0UL << 6),
-	ACCEL_CFG2_FIFO_SIZE_4096   = (1UL << 7) | (1UL << 6),
-
-	FIFO_EN_QUEUE_TEMP   = (1UL << 7),
-	FIFO_EN_QUEUE_GYRO_X = (1UL << 6),
-	FIFO_EN_QUEUE_GYRO_Y = (1UL << 5),
-	FIFO_EN_QUEUE_GYRO_Z = (1UL << 4),
-	FIFO_EN_QUEUE_ACCEL  = (1UL << 3),
-	FIFO_EN_QUEUE_SLAVE2 = (1UL << 2),
-	FIFO_EN_QUEUE_SLAVE1 = (1UL << 1),
-	FIFO_EN_QUEUE_SLAVE0 = (1UL << 0),
-
-	ACCEL_INTEL_CTRL_EN        = (1UL << 7),
-	ACCEL_INTEL_CTRL_6500_MODE = (1UL << 6),
-
-	USR_CTL_FIFO_EN  = (1UL << 6),
-	USR_CTL_I2C_EN   = (1UL << 5),
-	USR_CTL_I2C_DIS  = (1UL << 4),
-	USR_CTL_FIFO_RST = (1UL << 2),
-	USR_CTL_SIG_RST  = (1UL << 0),
-
-	PWR_MGMT_1_RESET = (1UL << 7),
-	PWR_MGMT_1_SLEEP = (1UL << 6),
-	PWR_MGMT_1_CYCLE = (1UL << 5),
-	PWR_MGMT_1_GYRO_STANDBY = (1UL << 4),
-	PWR_MGMT_1_PD_PTAT = (1UL << 3),
-	PWR_MGMT_1_CLK_STOP = 0x7,
-	PWR_MGMT_1_CLK_OSC = 0x0,
-	PWR_MGMT_1_CLK_BEST = 0x1,
-
-	PWR_MGMT_2_LP_WAKE_OFFSET = 0x6,
-	PWR_MGMT_2_WAKE_1_25HZ = 0x0,
-	PWR_MGMT_2_WAKE_5HZ    = 0x1,
-	PWR_MGMT_2_WAKE_20HZ   = 0x2,
-	PWR_MGMT_2_WAKE_40HZ   = 0x3,
-	PWR_MGMT_2_ACCEL_X_DIS = (1UL << 5),
-	PWR_MGMT_2_ACCEL_Y_DIS = (1UL << 4),
-	PWR_MGMT_2_ACCEL_Z_DIS = (1UL << 3),
-	PWR_MGMT_2_GYRO_X_DIS  = (1UL << 2),
-	PWR_MGMT_2_GYRO_Y_DIS  = (1UL << 1),
-	PWR_MGMT_2_GYRO_Z_DIS  = (1UL << 0),
+    //REG_CTRL_4
+    BLOCKDATA_UPDATE = 0x80, //force atomic lsb and msb reads
+    ENDIANNESS_SELECTION = 0x40,
+    FULL_SCALE = 0x30,
+    HIGHRES = 0x8,
+    SELFTEST_ENABLE = 0x6,
+    SPI_SERIAL_MODE = 0x1, //0 == 4 wire, 1 == 3 wire
+    
+    //REG_CTRL_5
+    BOOT = 0x80,
+    FIFO_EN = 0x40,
+    LATCH_INTERRUPT1 = 0x8, // INT1_SRC cleared by reading INT1_SRC only
+    LATCH_INTERRUPT2 = 0x2,
+    
+    //REG_CTRL_6
+    INT2_CLICK_ENABLE = 0x80,
+    INT2_OUTPUT_ON_LINE_1 = 0x40, //output interrupt generator 2 on interrupt line 1...
+    INT2_OUTPUT_ON_LINE_2 = 0x20,
+    BOOT_INT2 = 0x8, //boot on assertion of interrupt 2
+    INT_ACTIVE = 0x2, // 1 = active high, 0 = active low
+    
+    //REG_FIFO_CTRL
+    FIFO_MODE_SELECTION = 0xc0,
+    FIFO_TRIGGER_SELECTION = 0x40,
+    FIFO_WATERMARK_THRESHOLD = 0x1f,
+    
+    //REG_FIFO_SRC
+    FIFO_WATERMARK = 0x80,
+    FIFO_OVERRUN = 0x40,
+    
+    //REG_INT1_CFG
+    INT1_AND_OR = 0x80,
+    INT1_6D = 0x40,
+    INT1_Z_HIGH = 0x20,
+    INT1_Z_LOW = 0x10,
+    INT1_Y_HIGH = 0x8,
+    INT1_Y_LOW = 0x4,
+    INT1_X_HIGH = 0x2,
+    INT1_X_LOW = 0x1,
+    
+    //INT1_SRC
+    //... we will just look for not zero...
+    // reading this one will clear the interrupt in latched mode
+    
+    //INT1_THS
+    //just a number... 1lsb = 16mg at 2g
+    
+    //INT1_DURATION
+    //minimum duration to trigger interrupt 1...
+    
+    
+    //INT2, click won't be used.
 };

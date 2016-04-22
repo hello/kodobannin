@@ -26,28 +26,28 @@ enum {
 //#define DATA_SCIENCE_TASK
 #define IMU_DYNAMIC_SAMPLING
 
-/*
-    IMU_HZ_0_25 = 0,
-    IMU_HZ_0_49 = 1,
-    IMU_HZ_0_98 = 2,
-    IMU_HZ_1_95 = 3,
-    IMU_HZ_3_91 = 4,
-    IMU_HZ_7_81 = 5,
-    IMU_HZ_15_63 = 6,
-    IMU_HZ_31_25 = 7,
-    IMU_HZ_62_50 = 8,
-    IMU_HZ_125 = 9,
-    IMU_HZ_250 = 10,
-    IMU_HZ_500 = 11,
-*/
+#define IMU_FIFO_ENABLE
 
-#define IMU_INACTIVE_FREQ    (IMU_HZ_1_95)
-#define IMU_INACTIVE_WOM     (55)
+// This define can be used to switch between 10Hz LP inactive to 1Hz inactive HRES
+#define IMU_ENABLE_LOW_POWER
 
-#define IMU_ACTIVE_FREQ      (IMU_HZ_15_63)
-#define IMU_ACTIVE_WOM       (80)
+#ifdef IMU_ENABLE_LOW_POWER
+	#define IMU_INACTIVE_FREQ    (IMU_HZ_10)
+	#define IMU_INACTIVE_WOM     (55)
+	#define IMU_ACTIVE_WOM       (80)
+#else
+	#define IMU_INACTIVE_FREQ    (IMU_HZ_1)
+	//TODO arbitrarily set, may need to be changed if using this mode
+	#define IMU_INACTIVE_WOM     (75)
+	#define IMU_ACTIVE_WOM       (100)
+#endif
 
-#define IMU_CONSTANT_FREQ    (IMU_HZ_15_63)
+#define IMU_ACTIVE_FREQ      (IMU_HZ_25)
+
+#define IMU_CONSTANT_FREQ    (IMU_HZ_25)
+
+// To enable/disable filtering IMU FIFO data before
+//#define IMU_FILTER_FIFO_DATA
 
 #define IMU_ONE_G            (15564u)
 /*

@@ -25,6 +25,7 @@ typedef struct{
 
 static struct{
     hlo_ant_role role;
+    volatile bool reliable_mode;
     const hlo_ant_event_listener_t * event_listener;
 }self;
 
@@ -108,7 +109,7 @@ int32_t hlo_ant_init(hlo_ant_role role, const hlo_ant_event_listener_t * user){
     }
     return 0;
 }
-int32_t hlo_ant_connect(const hlo_ant_device_t * device){
+int32_t hlo_ant_connect(const hlo_ant_device_t * device, bool reliable){
     //scenarios:
     //no channel with device : create channel, return success
     //channel with device : return success
@@ -127,9 +128,14 @@ int32_t hlo_ant_connect(const hlo_ant_device_t * device){
             hlo_ant_channel_phy_t phy = {
                 .period = device_period,
                 .frequency = HLO_ANT_NETWORK_CHANNEL,
-                .channel_type = CHANNEL_TYPE_MASTER,
                 .network = 0
             };
+            if(reliable){
+                phy.channel_type = CHANNEL_TYPE_MASTER;
+            }else{
+                phy.channel_type = CHANNEL_TYPE_MASTER_TX_ONLY;
+            }
+            self.reliable_mode = reliable;
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
                 uint8_t opt = HLO_ANT_CHANNEL_EXT_OPT;
                 APP_OK(_configure_channel((uint8_t)new_ch, &phy, device, opt));
@@ -158,6 +164,8 @@ int32_t hlo_ant_disconnect(const hlo_ant_device_t * device){
          *PRINTS("\r\n");
          */
         if(self.role == HLO_ANT_ROLE_CENTRAL){
+            uint8_t ret;
+            sd_ant_pending_transmit_clear (ch, &ret);
             return sd_ant_channel_unassign(ch);
         }else{
             uint8_t opt = HLO_ANT_CHANNEL_EXT_OPT;
@@ -210,17 +218,21 @@ static bool _parse_device(uint8_t channel, uint8_t * msg_buffer, hlo_ant_device_
     return false;
 }
 static void
-_handle_rx(uint8_t * msg_buffer, const hlo_ant_device_t * device){
+_handle_rx(uint8_t * msg_buffer, const hlo_ant_device_t * device, bool * ack){
     ANT_MESSAGE * msg = (ANT_MESSAGE*)msg_buffer;
     uint8_t * rx_payload = msg->ANT_MESSAGE_aucPayload;
-    self.event_listener->on_rx_event(device, rx_payload, 8, self.role);
+    self.event_listener->on_rx_event(device, rx_payload, 8, self.role, ack);
 }
 
 static void  //peripheral tx mode
 _handle_tx(uint8_t channel, const hlo_ant_device_t * dev){
     uint8_t out_buf[8] = {0};
-    if(self.event_listener->on_tx_event(dev, out_buf, self.role)){
-        sd_ant_broadcast_message_tx(channel, 8, out_buf);
+    if(self.event_listener->on_tx_event(dev, out_buf, self.role, self.reliable_mode)){
+        if(self.reliable_mode){
+            sd_ant_acknowledge_message_tx(channel, 8, out_buf);
+        }else{
+            sd_ant_broadcast_message_tx(channel, 8, out_buf);
+        }
     }
 }
 
@@ -229,15 +241,16 @@ void ant_handler(ant_evt_t * p_ant_evt){
     uint8_t ant_channel = p_ant_evt->channel;
     uint8_t * event_message_buffer = (uint8_t*)p_ant_evt->evt_buffer;
     hlo_ant_device_t dev;
+    bool ack = true;
     switch(event){
         case EVENT_RX_FAIL:
             break;
         case EVENT_RX:
             DEBUGS("R");
             if( _parse_device(ant_channel, event_message_buffer, &dev, self.role) ){
-                _handle_rx(event_message_buffer, &dev);
-                if(self.role == HLO_ANT_ROLE_CENTRAL){
-                    hlo_ant_connect(&dev);
+                _handle_rx(event_message_buffer, &dev, &ack);
+                if(ack && self.role == HLO_ANT_ROLE_CENTRAL){
+                    hlo_ant_connect(&dev, true);
                 }
             }
             break;

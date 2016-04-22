@@ -6,7 +6,7 @@
 #include "message_base.h"
 
 #ifndef ANT_PACKET_MAX_CONCURRENT_SESSIONS
-#define ANT_PACKET_MAX_CONCURRENT_SESSIONS 4
+#define ANT_PACKET_MAX_CONCURRENT_SESSIONS 2
 #endif
 
 typedef struct{
@@ -18,4 +18,4 @@ typedef struct{
 
 hlo_ant_event_listener_t * hlo_ant_packet_init(const hlo_ant_packet_listener * user_listener);
 //no queue enabled, returns error if sending
-int INCREF hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * msg);
+int INCREF hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * msg, bool full_duplex);

@@ -67,6 +67,15 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Data_t * msg){
 
                 //TODO it may be a good idea to check len from the msg
                 switch(pill_data->type){
+                    case ANT_PILL_PROX_PLAINTEXT:
+                        {
+                            pill_proxdata_t prox;
+                            // http://dbp-consulting.com/StrictAliasing.pdf
+                            memcpy(&prox, pill_data->payload, sizeof(prox));
+                            self.parent->dispatch((MSG_Address_t){SSPI,1}, (MSG_Address_t){UART,MSG_UART_HEX}, msg);
+                            PRINTF("Cap1: %u\r\nCap4: %u\r\n", prox.cap[0], prox.cap[1]);
+                        }
+                        break;
                     case ANT_PILL_PROX_ENCRYPTED:
                         {
                             if(pill_data->payload_len > sizeof(morpheus_command.pill_data.motion_data_entrypted.bytes))
