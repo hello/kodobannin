@@ -118,7 +118,8 @@ static uint8_t _assemble_rx_payload(MSG_Data_t * payload, const hlo_ant_payload_
    uint16_t offset = (packet->page - 1) * 6; 
    //make sure the offset does not exceed the length
    uint8_t i;
-   for(i = 0; i < payload->len - offset; i++){
+   uint8_t len = MIN(6, payload->len - offset);
+   for(i = 0; i < len; i++){
        payload->buf[offset + i] = packet->payload[i];
    }
    return 0;
@@ -142,8 +143,7 @@ static MSG_Data_t * _assemble_rx(hlo_ant_packet_session_t * session, uint8_t * b
                 }
             }
         }
-
-    }else if(session->rx_obj && packet->page && packet->page <= session->rx_header.page_count){
+    }else if(session->rx_obj && packet->page && packet->page_count && packet->page <= session->rx_header.page_count){
     //2. if an object already exists, and the bounds make sense
         _assemble_rx_payload(session->rx_obj,packet);
         if(_calc_checksum(session->rx_obj) == session->rx_header.checksum){
@@ -170,16 +170,15 @@ static void _write_buffer(const hlo_ant_packet_session_t * session, uint8_t * ou
     }
 
 }
-static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hlo_ant_role role){
+static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hlo_ant_role role, bool lockstep){
     hlo_ant_packet_session_t * session = _acquire_session(device);
     if(!session){
         return false;
     }
     /*
-     *PRINTS("t:");
-     *PRINT_HEX(&session->lockstep.page, 1);
-     *PRINTS("\r\n");
+     *PRINTF("t: %d\r\n", session->lockste.page);
      */
+
     out_buffer[0] = session->lockstep.page;
 
     if(role == HLO_ANT_ROLE_CENTRAL){
@@ -198,6 +197,9 @@ static bool _handle_tx(const hlo_ant_device_t * device, uint8_t * out_buffer, hl
             }else if(!session->rx_obj){
                 return false;
             }
+        }else if(!lockstep){
+            session->lockstep.page++;
+            session->lockstep.retry = DEFAULT_ANT_RETRANSMIT_COUNT;
         }else{
             if(session->tx_obj){
                 self.user->on_message_failed(device, session->tx_obj);
@@ -225,12 +227,9 @@ static void _handle_rx(const hlo_ant_device_t * device, uint8_t * buffer, uint8_
         return;
     }
     /*
-     *PRINTS("r:");
-     *PRINT_HEX(&packet->page, 1);
-     *PRINTS("/");
-     *PRINT_HEX(&packet->page_count, 1);
-     *PRINTS("\r\n");
+     *PRINTF("r: %d/%d\r\n", packet->page, packet->page_count);
      */
+
     //legacy handling mode, we don't care about lockstep on rx here
     //since delivery is checked by crc
     MSG_Data_t * ret_obj = _assemble_rx(session, buffer, buffer_len, &new_obj);
@@ -279,7 +278,7 @@ hlo_ant_event_listener_t * hlo_ant_packet_init(const hlo_ant_packet_listener * u
     self.user = user_listener;
     return &self.cbs;
 }
-int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * msg){
+int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * msg, bool reliable){
     if(msg){
         hlo_ant_packet_session_t * session = _acquire_session(device);
         if(session && !session->tx_obj){
@@ -288,7 +287,7 @@ int hlo_ant_packet_send_message(const hlo_ant_device_t * device, MSG_Data_t * ms
             session->tx_obj = msg;
             MSG_Base_AcquireDataAtomic(msg);
             _set_header(&session->tx_header, msg);
-            return hlo_ant_connect(device);
+            return hlo_ant_connect(device, reliable);
         }else{
             PRINTS("Session Full \r\n");
             return -2;

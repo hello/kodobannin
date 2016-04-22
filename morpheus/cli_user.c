@@ -18,6 +18,18 @@ static struct{
     MSG_CliUserListener_t listener;
 }self;
 
+void pwr_reset_3200() {
+#ifdef HAS_CC3200
+    PRINTS("Bouncing 3.3v rail...\r\n");
+    nrf_delay_ms(500);
+
+    nrf_gpio_cfg_output(0);
+    nrf_gpio_pin_clear(0);
+    nrf_delay_ms(100);
+    nrf_gpio_pin_set(0);
+#endif
+}
+
 #include "message_ant.h"
 #include "ant_devices.h"
 static void
@@ -40,6 +52,14 @@ _handle_command(int argc, char * argv[]){
                     data);
             //release message object after dispatch to prevent memory leak
             MSG_Base_ReleaseDataAtomic(data);
+        }
+    }
+    if(!match_command(argv[0], "ent")){
+        uint8_t data[17] = {0};
+        MSG_Data_t* data_page = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED,&data , sizeof(data));
+        if(data_page){
+            self.parent->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,MSG_ANT_TRANSMIT_RECEIVE}, data_page);
+            MSG_Base_ReleaseDataAtomic(data_page);
         }
     }
     if(!match_command(argv[0], "ant")){
@@ -112,14 +132,7 @@ _handle_command(int argc, char * argv[]){
         PRINTF("u0 %u\r\n", 0);
     }
     if( !match_command(argv[0], "bounce") ){
-        PRINTS("Bouncing 3.3v rail...\r\n");
-        nrf_delay_ms(500);
-        
-        nrf_gpio_cfg_output(0);
-        nrf_gpio_pin_clear(0);
-        nrf_delay_ms(100);
-        nrf_gpio_pin_set(0);
-
+    	pwr_reset_3200();
     }
     if( !match_command(argv[0], "free") ){
         PRINTF("Free Memory = %d Least Memory = %d\r\n", xPortGetFreeHeapSize(), xPortGetMinimumEverFreeHeapSize() );

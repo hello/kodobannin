@@ -44,8 +44,8 @@ _queue_tx(MSG_Data_t * o){
     }
     return 0;
 }
-static int32_t _try_send_ant_peripheral(MSG_Data_t * data){
-    return hlo_ant_packet_send_message(&self.local_device, data);
+static int32_t _try_send_ant_peripheral(MSG_Data_t * data, bool reliable){
+    return hlo_ant_packet_send_message(&self.local_device, data, reliable);
 }
 static MSG_Status
 _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
@@ -62,7 +62,19 @@ _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
             break;
         case MSG_ANT_TRANSMIT:
             if(self.role == HLO_ANT_ROLE_PERIPHERAL){
-                int32_t ret = _try_send_ant_peripheral(data);
+                int32_t ret = _try_send_ant_peripheral(data, false);
+                PRINTS("Sending:");
+                PRINT_HEX(&ret, 2);
+                PRINTS("\r\n");
+                if( ret == -2 ){
+                    MSG_Base_AcquireDataAtomic(data);
+                    APP_ASSERT( (NRF_SUCCESS == _queue_tx(data)) );
+                }
+            }
+            break;
+        case MSG_ANT_TRANSMIT_RECEIVE:
+            if(self.role == HLO_ANT_ROLE_PERIPHERAL){
+                int32_t ret = _try_send_ant_peripheral(data, true);
                 PRINTS("Sending:");
                 PRINT_HEX(&ret, 2);
                 PRINTS("\r\n");

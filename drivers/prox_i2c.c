@@ -5,6 +5,7 @@
 #include "stdint.h"
 #include "stdbool.h"
 #include <nrf_delay.h>
+#include <nrf_gpio.h>
 
 #define I2C_DELAY   10
 
@@ -86,6 +87,13 @@ static void _conf_prox(void){
 
 
 MSG_Status init_prox(void){
+	//tie vaux to vbat
+#ifdef PLATFORM_HAS_PROX
+	nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
+	nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
+	nrf_gpio_cfg_output(PROX_VDD_EN);
+	nrf_gpio_pin_set(PROX_VDD_EN);
+#endif
     _reset_config();
     _check_id();
     _conf_prox();
