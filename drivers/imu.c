@@ -431,7 +431,7 @@ inline void imu_enable_intr()
 
 
 	// Disable INT 1 function on INT 2 pin
-	_register_write(REG_CTRL_6, 0x00);
+	_register_write(REG_CTRL_6, 0x00 | INT_ACTIVE_LOW );
 
 #endif
 #ifdef IMU_USE_PIN_INT2
@@ -440,7 +440,7 @@ inline void imu_enable_intr()
 	_register_write(REG_CTRL_3, 0x00);
 
 	// Enable INT 1 function on INT 2 pin
-	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2 | INT_ACTIVE_LOW);
 
 #endif
 }

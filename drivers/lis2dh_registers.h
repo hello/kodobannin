@@ -100,7 +100,7 @@ enum IMU_Reg_Bits {
 	INT1_OUTPUT_ON_LINE_2 = 0x40, //output interrupt generator 2 on interrupt line 1...
 	INT2_OUTPUT_ON_LINE_2 = 0x20,
 	BOOT_INT2 = 0x8, //boot on assertion of interrupt 2
-	INT_ACTIVE = 0x2, // 1 = active high, 0 = active low
+	INT_ACTIVE_LOW = 0x2, // 1 = active low, 0 = active high
 
 	//REG_FIFO_CTRL
 	FIFO_MODE_SELECTION = 0xc0,

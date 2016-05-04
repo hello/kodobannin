@@ -260,7 +260,7 @@ static void _on_pill_pairing_guesture_detected(void){
 
 static MSG_Status _init(void){
 	if(!initialized){
-		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLUP);
+		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLDOWN);
 
 #ifdef IMU_DYNAMIC_SAMPLING
 		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode3, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
@@ -408,7 +408,7 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 #ifdef IMU_DYNAMIC_SAMPLING
 	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_REPEATED, _on_wom_timer));
 #endif
-	APP_OK(app_gpiote_user_register(&_gpiote_user, 1 << IMU_INT, 0, _imu_gpiote_process));
+	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
 	APP_OK(app_gpiote_user_disable(_gpiote_user));
     ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);
