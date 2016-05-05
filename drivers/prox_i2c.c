@@ -93,14 +93,15 @@ MSG_Status init_prox(void){
 	nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
 	nrf_gpio_cfg_output(PROX_VDD_EN);
 	nrf_gpio_pin_set(PROX_VDD_EN);
-#endif
     _reset_config();
     _check_id();
     _conf_prox();
+#endif
     return SUCCESS;
 }
 
 void read_prox(uint32_t * out_val1, uint32_t * out_val4){
+#ifdef PLATFORM_HAS_PROX
     uint16_t cap_meas1_hi = 0;
     uint16_t cap_meas1_lo = 0;
     uint16_t cap_meas4_hi = 0;
@@ -121,4 +122,5 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     cap_meas4_raw = cap_meas4_raw >> 8;
     *out_val1 = (uint32_t)((cap_meas1_raw << 10) / 524288);
     *out_val4 = (uint32_t)((cap_meas4_raw << 10) / 524288);
+#endif
 }

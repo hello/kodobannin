@@ -101,6 +101,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     case PILL_COMMAND_SEND_DATA:
 		//hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
         break;
+#ifdef PLATFORM_HAS_IMU
     case PILL_COMMAND_START_ACCELEROMETER:
     	PRINTS("Streamming started\r\n");
     	_should_stream = true;
@@ -111,6 +112,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     	imu_set_wom_callback(NULL);
     	PRINTS("Streamming stopped\r\n");
     	break;
+#endif
 	case PILL_COMMAND_GET_BATTERY_LEVEL:
 		break;
 	case PILL_COMMAND_WIPE_FIRMWARE:
