@@ -60,7 +60,7 @@ static uint32_t _byte_check(const uint8_t * compare, const uint8_t * actual, siz
     return 0;
 }
 static void _reset_config(void){
-    uint8_t RST[3] = {0x0C, 0x84, 0x90};
+    uint8_t RST[3] = {0x0C, 0x84, 0x00};
     TWI_WRITE(FDC_ADDRESS, RST, sizeof(RST));
 }
 static void _check_id(void){
@@ -90,9 +90,11 @@ MSG_Status init_prox(void){
 	//tie vaux to vbat
 #ifdef PLATFORM_HAS_PROX
 	nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
-	nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
-	nrf_gpio_cfg_output(PROX_VDD_EN);
-	nrf_gpio_pin_set(PROX_VDD_EN);
+	//nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
+	nrf_gpio_pin_write(PROX_BOOST_ENABLE, 0);
+    nrf_gpio_cfg_output(PROX_VDD_EN);
+	//nrf_gpio_pin_set(PROX_VDD_EN);
+    nrf_gpio_pin_write(PROX_VDD_EN, 1);
     _reset_config();
     _check_id();
     _conf_prox();
