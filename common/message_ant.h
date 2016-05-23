@@ -66,7 +66,6 @@ typedef enum {
     ANT_PILL_DATA_ENCRYPTED,
     ANT_PILL_PROX_ENCRYPTED,
     ANT_PILL_PROX_PLAINTEXT,
-    ANT_SENSE_RESPONSE_HEARTBEAT,
 }MSG_ANT_PillDataType_t;
 
 typedef struct{
