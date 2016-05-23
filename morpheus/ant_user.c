@@ -209,7 +209,6 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Data_t * msg){
     }
 }
 static MSG_Data_t * INCREF _on_connection(const hlo_ant_device_t * id){
-    static uint32_t uptime;
     if(id->device_type == HLO_ANT_DEVICE_TYPE_PILL1_5){
         PRINTS("Connected:\t");
         _disp_ant_id(id);
