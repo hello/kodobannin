@@ -102,9 +102,9 @@ MSG_Status init_prox(void){
 	//tie vaux to vbat
 #ifdef PLATFORM_HAS_PROX
 	nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
-	nrf_gpio_pin_write(PROX_BOOST_ENABLE, 0);
+	nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
     nrf_gpio_cfg_output(PROX_VDD_EN);
-    nrf_gpio_pin_write(PROX_VDD_EN, 1);
+    nrf_gpio_pin_set(PROX_VDD_EN);
     _reset_config();
     _check_id();
     _conf_prox();
