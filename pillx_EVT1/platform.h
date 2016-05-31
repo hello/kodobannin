@@ -6,14 +6,14 @@
 #define ANT_ENABLE
 #endif
 
-#define BLE_ENABLE
+//#define BLE_ENABLE
 
 #define HW_REVISION 3
 
 #define DEVICE_KEY_ADDRESS                   0x20003FF0
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
-#define PILL_ANT_TYPE HLO_ANT_DEVICE_TYPE_PILL1_5
+//#define PILL_ANT_TYPE HLO_ANT_DEVICE_TYPE_PILL1_5
 
 #define configTOTAL_HEAP_SIZE 1024
 
