@@ -35,7 +35,7 @@ static inline void TWI_READ(uint8_t addr, uint8_t reg, void * ptr, size_t ptr_si
 
 
 static const uint8_t CONF_MEAS1[3] = { 0x08, 0x12, 0xE0 };
-static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x73, 0x80 };
+static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x73, 0x40 };
 
 static const uint8_t CONF_READ1[3] = {0x0C, 0x04, 0x80};//config nonrepeat 
 static const uint8_t CONF_READ4[3] = {0x0C, 0x04, 0x10};//config nonrepeat 
