@@ -37,6 +37,9 @@ static inline void TWI_READ(uint8_t addr, uint8_t reg, void * ptr, size_t ptr_si
 static const uint8_t CONF_MEAS1[3] = { 0x08, 0x12, 0xE0 };
 static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x73, 0x40 };
 
+static const uint8_t CONF_GAIN_CAL1[3] = {0x11, 0xFF, 0xFF};// CIN1 4x gain as 0xFF
+static const uint8_t CONF_GAIN_CAL4[3] = {0x14, 0xFF, 0xFF};// CIN4 4x gain as 0xFF
+
 static const uint8_t CONF_READ1[3] = {0x0C, 0x04, 0x80};//config nonrepeat 
 static const uint8_t CONF_READ4[3] = {0x0C, 0x04, 0x10};//config nonrepeat 
 #define READ_1_ADDRESS_HI  0x00
@@ -78,6 +81,9 @@ static void _conf_prox(void){
     uint8_t r[2] = {0};
     TWI_WRITE(FDC_ADDRESS, CONF_MEAS1, sizeof(CONF_MEAS1));
     TWI_WRITE(FDC_ADDRESS, CONF_MEAS4, sizeof(CONF_MEAS4));
+       //config gain
+    TWI_WRITE(FDC_ADDRESS, CONF_GAIN_CAL1, sizeof(CONF_GAIN_CAL1));
+    TWI_WRITE(FDC_ADDRESS, CONF_GAIN_CAL4, sizeof(CONF_GAIN_CAL4));
     //verify
     TWI_READ(FDC_ADDRESS, CONF_MEAS1[0], r,sizeof(r));
     APP_OK( _byte_check(r, &CONF_MEAS1[1], sizeof(r)) );
