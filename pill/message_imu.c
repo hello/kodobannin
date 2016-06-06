@@ -29,6 +29,8 @@
 #include "gpio_nor.h"
 
 #include "message_time.h"
+#include "pill_gatt.h"
+#include "hble.h"
 
 
 enum {
@@ -252,6 +254,9 @@ static void _on_pill_pairing_guesture_detected(void){
         parent->dispatch((MSG_Address_t){IMU,1}, (MSG_Address_t){ANT,1}, data_page);
         MSG_Base_ReleaseDataAtomic(data_page);
     }
+#endif
+#ifdef BLE_ENABLE
+    hble_advertising_start();
 #endif
 
     PRINTS("Shake detected\r\n");
