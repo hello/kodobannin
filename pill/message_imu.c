@@ -29,7 +29,7 @@
 #include "gpio_nor.h"
 
 #include "message_time.h"
-
+#include "message_prox.h"
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -139,7 +139,7 @@ static void _imu_switch_mode(bool is_active)
     {
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
-
+      
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 
 #ifdef IMU_ENABLE_LOW_POWER
