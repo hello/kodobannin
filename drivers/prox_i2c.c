@@ -85,18 +85,29 @@ static void _conf_prox(void){
     APP_OK( _byte_check(r, &CONF_MEAS4[1], sizeof(r)) );
 }
 
+static void _prox_power(uint8_t on){
+#ifdef PLATFORM_HAS_PROX
+    if(on){
+        nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
+        nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
+        nrf_gpio_cfg_output(PROX_VDD_EN);
+        nrf_gpio_pin_set(PROX_VDD_EN);
+    }else{
+        nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
+        nrf_gpio_pin_set(PROX_BOOST_ENABLE);
+        nrf_gpio_cfg_output(PROX_VDD_EN);
+        nrf_gpio_pin_clear(PROX_VDD_EN);
+    }
+#endif
+}
 
 MSG_Status init_prox(void){
 	//tie vaux to vbat
-#ifdef PLATFORM_HAS_PROX
-	nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
-	nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
-	nrf_gpio_cfg_output(PROX_VDD_EN);
-	nrf_gpio_pin_set(PROX_VDD_EN);
+    _prox_power(1);
     _reset_config();
     _check_id();
     _conf_prox();
-#endif
+    _prox_power(0);
     return SUCCESS;
 }
 
@@ -108,6 +119,12 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     uint16_t cap_meas4_lo = 0;
     uint64_t cap_meas1_raw = 0;
     uint64_t cap_meas4_raw = 0;
+
+    _prox_power(1);
+    _reset_config();
+    _check_id();
+    _conf_prox();
+
     TWI_WRITE(FDC_ADDRESS, CONF_READ1, sizeof(CONF_READ1));
     TWI_WRITE(FDC_ADDRESS, CONF_READ4, sizeof(CONF_READ4));
     //todo verify write
@@ -122,5 +139,7 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     cap_meas4_raw = cap_meas4_raw >> 8;
     *out_val1 = (uint32_t)((cap_meas1_raw << 10) / 524288);
     *out_val4 = (uint32_t)((cap_meas4_raw << 10) / 524288);
+
+    _prox_power(0);
 #endif
 }
