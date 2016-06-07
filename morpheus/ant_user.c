@@ -199,6 +199,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Data_t * msg){
     _disp_ant_id(id);
     switch(id->device_type){
         case HLO_ANT_DEVICE_TYPE_PILL:
+        case HLO_ANT_DEVICE_TYPE_PILL1_5:
             _handle_pill(id, msg);
             break;
         default:
