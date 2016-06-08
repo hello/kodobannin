@@ -46,7 +46,6 @@ extern uint8_t hello_type;
 
 static uint16_t _pill_service_handle;
 static MSG_Central_t * central;
-static bool _should_stream = false;
 
 
 static void

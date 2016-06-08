@@ -13,17 +13,18 @@ static MSG_Base_t base;
 static app_timer_id_t timer_id_prox;
 
 #define PROX_POLL_INTERVAL 15000 /*in ms*/
+#define MSB_24_MASK (1<<23)
+#define VALID_PROX_RANGE(x) ( x <= (1<<22))
 
-typedef struct __attribute__((packed)){
+typedef struct {
     uint16_t gain[2];
     int16_t  offset[2];
 }prox_calibration_t;
 
 static int16_t get_offset(uint32_t meas){
-#define MSB_24_MASK (1<<23)
     int inv = meas;
     if(meas & MSB_24_MASK){//negative
-        inv = 2^23 - (meas & 0x009FFFFF);
+        inv = (2^23) - (meas & 0x009FFFFF);
     }else{//positive
         inv = -inv;
     }
@@ -38,7 +39,7 @@ static void _do_prox_calibration(void){
     uint32_t cap1 = 0;
     uint32_t cap4 = 0;
     read_prox(&cap1, &cap4);
-    if(cap1 < 2^21 && cap4 < 2^21){
+    if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
         //don't need to recalibrate
         PRINTF("Skipping Calibration [%u, %u]\r\n", cap1, cap4);
         return;
@@ -49,7 +50,7 @@ static void _do_prox_calibration(void){
 
     read_prox(&cap1, &cap4);
     //check if values are reasonable, if so, commit
-    if(cap1 < 2^21 && cap4 < 2^21){
+    if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
         //ok
         PRINTF("Calibration OK [%u, %u]\r\n", cap1, cap4);
         //commit
@@ -65,7 +66,7 @@ static MSG_Status _init(void){
     app_timer_start(timer_id_prox, ticks, NULL);
     {
         //load calibration values
-        prox_calibration_t c = {0};
+        prox_calibration_t c;
         if(0 == _get_calibration(&c)){
             set_prox_offset(c.offset[0], c.offset[1]);
             set_prox_gain(c.gain[0], c.gain[1]);

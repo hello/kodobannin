@@ -159,13 +159,13 @@ void set_prox_offset(int16_t off1, int16_t off4){
     CONF_OFFSET_CAL1[1] = (off1 & 0xFF00) >> 8;
     CONF_OFFSET_CAL1[2] = off1 & 0xFF;
 
-    CONF_OFFSET_CAL4[1] = (off4 & 0xFF00) >> 8
+    CONF_OFFSET_CAL4[1] = (off4 & 0xFF00) >> 8;
     CONF_OFFSET_CAL4[2] = off4 & 0xFF;
 }
 void set_prox_gain(uint16_t gain1, uint16_t gain4){
     CONF_GAIN_CAL1[1] = (gain1 & 0xFF00) >> 8;
     CONF_GAIN_CAL1[2] = gain1 & 0xFF;
 
-    CONF_GAIN_CAL4[1] = (gain4 & 0xFF00) >> 8
+    CONF_GAIN_CAL4[1] = (gain4 & 0xFF00) >> 8;
     CONF_GAIN_CAL4[2] = gain4 & 0xFF;
 }
