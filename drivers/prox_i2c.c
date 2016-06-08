@@ -108,8 +108,6 @@ static void _prox_power(uint8_t on){
     }else{
         nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
         nrf_gpio_pin_set(PROX_BOOST_ENABLE);
-        nrf_gpio_cfg_output(PROX_VDD_EN);
-        nrf_gpio_pin_clear(PROX_VDD_EN);
     }
 #endif
 }
