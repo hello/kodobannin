@@ -9,6 +9,7 @@
 #include "battery.h"
 #include <ble.h>
 #include "heap.h"
+#include "message_prox.h"
 
 #include "nrf_gpio.h"
 
@@ -146,6 +147,11 @@ _handle_command(int argc, char * argv[]){
     }
     if( !match_command(argv[0], "advstop")){
         sd_ble_gap_adv_stop();
+    }
+    if( !match_command(argv[0], "cal")){
+        self.parent->dispatch( (MSG_Address_t){CLI,0},
+                                (MSG_Address_t){PROX, PROX_CALIBRATE},
+                                NULL);
     }
 
     if( !match_command(argv[0], "gpio")){
