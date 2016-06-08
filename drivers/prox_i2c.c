@@ -155,3 +155,15 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     _prox_power(0);
 #endif
 }
+void set_prox_offset(int8_t off1, int8_t off4){
+    /*
+     *CONF_OFFSET_CAL1[3] = {0x0D, 0x48, 0x00};// 9 pF
+     *CONF_OFFSET_CAL4[3] = {0x10, 0x30, 0x00};// 6 pF
+     */
+}
+void set_prox_gain(int8_t gain1, int8_t gain4){
+    /*
+     *CONF_GAIN_CAL1[3] = {0x11, 0xFF, 0xFF};// CIN1 4x gain as 0xFF
+     *CONF_GAIN_CAL4[3] = {0x14, 0xFF, 0xFF};// CIN4 4x gain as 0xFF
+     */
+}
