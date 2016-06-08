@@ -76,13 +76,6 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     };
 }
 
-/*
- *static void _data_ack_handler(ble_gatts_evt_write_t* event)
- *{
- *    PRINTS("_data_ack_handler()\r\n");
- *}
- */
-
 void pill_ble_evt_handler(ble_evt_t* ble_evt)
 {
     PRINTS("Pill BLE event handler: ");
@@ -103,11 +96,6 @@ pill_ble_services_init(void)
 
     hlo_ble_char_write_request_add(0xDEED, &_command_write_handler, sizeof(struct pill_command));
     hlo_ble_char_notify_add(0xD00D);
-	/*
-     *hlo_ble_char_notify_add(0xFEED);
-     *hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
-     *hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
-	 */
 }
 
 int is_debug_enabled(){
