@@ -34,8 +34,14 @@ static inline void TWI_READ(uint8_t addr, uint8_t reg, void * ptr, size_t ptr_si
 }
 
 
-static const uint8_t CONF_MEAS1[3] = { 0x08, 0x1C, 0x00 };
-static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x7C, 0x00 };
+static const uint8_t CONF_MEAS1[3] = { 0x08, 0x1C, 0x00 };// if differential measurement- 0x0C/single ended measurement- 0x1C/ and store results in MEAS1 
+static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x7C, 0x00 };// single ended measurement- 0x7C/ and store results in MEAS4
+
+static const uint8_t CONF_GAIN_CAL1[3] = {0x11, 0xFF, 0xFF};// CIN1 4x gain as 0xFF
+static const uint8_t CONF_GAIN_CAL4[3] = {0x14, 0xFF, 0xFF};// CIN4 4x gain as 0xFF
+
+static const uint8_t CONF_OFFSET_CAL1[3] = {0x0D, 0xF0, 0x00};// CIN1 offset calibration -16pF -> 16pF
+//static const uint8_t CONF_OFFSET_CAL4[3] = {0x10, 0xC8, 0x00};
 
 static const uint8_t CONF_READ1[3] = {0x0C, 0x04, 0x80};//config nonrepeat 
 static const uint8_t CONF_READ4[3] = {0x0C, 0x04, 0x10};//config nonrepeat 
@@ -60,7 +66,7 @@ static uint32_t _byte_check(const uint8_t * compare, const uint8_t * actual, siz
     return 0;
 }
 static void _reset_config(void){
-    uint8_t RST[3] = {0x0C, 0x84, 0x90};
+    uint8_t RST[3] = {0x0C, 0x84, 0x00};
     TWI_WRITE(FDC_ADDRESS, RST, sizeof(RST));
 }
 static void _check_id(void){
@@ -78,6 +84,12 @@ static void _conf_prox(void){
     uint8_t r[2] = {0};
     TWI_WRITE(FDC_ADDRESS, CONF_MEAS1, sizeof(CONF_MEAS1));
     TWI_WRITE(FDC_ADDRESS, CONF_MEAS4, sizeof(CONF_MEAS4));
+    // CONFIG OFFSET
+    TWI_WRITE(FDC_ADDRESS, CONF_OFFSET_CAL1, sizeof(CONF_OFFSET_CAL1)); //OFFSET CANCELLATION FOR CAP1 (BATT SIDE)
+   // TWI_WRITE(FDC_ADDRESS, CONF_OFFSET_CAL4, sizeof(CONF_OFFSET_CAL4));
+    // CONFIG GAIN
+    TWI_WRITE(FDC_ADDRESS, CONF_GAIN_CAL1, sizeof(CONF_GAIN_CAL1)); // GAIN COMPENSATION FOR CAP1 (BATT SIDE)
+    TWI_WRITE(FDC_ADDRESS, CONF_GAIN_CAL4, sizeof(CONF_GAIN_CAL4));
     //verify
     TWI_READ(FDC_ADDRESS, CONF_MEAS1[0], r,sizeof(r));
     APP_OK( _byte_check(r, &CONF_MEAS1[1], sizeof(r)) );
@@ -91,8 +103,8 @@ MSG_Status init_prox(void){
 #ifdef PLATFORM_HAS_PROX
 	nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
 	nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
-	nrf_gpio_cfg_output(PROX_VDD_EN);
-	nrf_gpio_pin_set(PROX_VDD_EN);
+    nrf_gpio_cfg_output(PROX_VDD_EN);
+    nrf_gpio_pin_set(PROX_VDD_EN);
     _reset_config();
     _check_id();
     _conf_prox();
@@ -106,8 +118,8 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     uint16_t cap_meas1_lo = 0;
     uint16_t cap_meas4_hi = 0;
     uint16_t cap_meas4_lo = 0;
-    uint64_t cap_meas1_raw = 0;
-    uint64_t cap_meas4_raw = 0;
+    uint32_t cap_meas1_raw = 0;
+    uint32_t cap_meas4_raw = 0;
     TWI_WRITE(FDC_ADDRESS, CONF_READ1, sizeof(CONF_READ1));
     TWI_WRITE(FDC_ADDRESS, CONF_READ4, sizeof(CONF_READ4));
     //todo verify write
@@ -120,7 +132,7 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     cap_meas1_raw = cap_meas1_raw >> 8;
     cap_meas4_raw = swap_endian16(cap_meas4_lo) | (swap_endian16(cap_meas4_hi) << 16);
     cap_meas4_raw = cap_meas4_raw >> 8;
-    *out_val1 = (uint32_t)((cap_meas1_raw << 10) / 524288);
-    *out_val4 = (uint32_t)((cap_meas4_raw << 10) / 524288);
+    *out_val1 = (uint32_t)((cap_meas1_raw ));
+    *out_val4 = (uint32_t)((cap_meas4_raw ));
 #endif
 }
