@@ -38,11 +38,11 @@ static const uint8_t CONF_MEAS1[3] = { 0x08, 0x13, 0x40 };
 //static const uint8_t CONF_MEAS1[3] = { 0x08, 0x0C, 0x00 };
 static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x73, 0x40 }; //72
 
-static const uint8_t CONF_GAIN_CAL1[3] = {0x11, 0xFF, 0xFF};// CIN1 4x gain as 0xFF
-static const uint8_t CONF_GAIN_CAL4[3] = {0x14, 0xFF, 0xFF};// CIN4 4x gain as 0xFF
+static uint8_t CONF_GAIN_CAL1[3] = {0x11, 0xFF, 0xFF};// CIN1 4x gain as 0xFF
+static uint8_t CONF_GAIN_CAL4[3] = {0x14, 0xFF, 0xFF};// CIN4 4x gain as 0xFF
 
-static const uint8_t CONF_OFFSET_CAL1[3] = {0x0D, 0x48, 0x00};// 9 pF
-static const uint8_t CONF_OFFSET_CAL4[3] = {0x10, 0x30, 0x00};// 6 pF
+static uint8_t CONF_OFFSET_CAL1[3] = {0x0D, 0x48, 0x00};// 9 pF
+static uint8_t CONF_OFFSET_CAL4[3] = {0x10, 0x30, 0x00};// 6 pF
 
 static const uint8_t CONF_READ1[3] = {0x0C, 0x04, 0x80};//config nonrepeat 
 static const uint8_t CONF_READ4[3] = {0x0C, 0x04, 0x10};//config nonrepeat 
