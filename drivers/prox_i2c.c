@@ -105,6 +105,9 @@ static void _prox_power(uint8_t on){
         nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
         nrf_gpio_cfg_output(PROX_VDD_EN);
         nrf_gpio_pin_set(PROX_VDD_EN);
+        _reset_config();
+        _check_id();
+        _conf_prox();
     }else{
         nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
         nrf_gpio_pin_set(PROX_BOOST_ENABLE);
@@ -115,9 +118,6 @@ static void _prox_power(uint8_t on){
 MSG_Status init_prox(void){
 	//tie vaux to vbat
     _prox_power(1);
-    _reset_config();
-    _check_id();
-    _conf_prox();
     _prox_power(0);
     return SUCCESS;
 }
@@ -132,9 +132,6 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     uint32_t cap_meas4_raw = 0;
 
     _prox_power(1);
-    _reset_config();
-    _check_id();
-    _conf_prox();
 
     TWI_WRITE(FDC_ADDRESS, CONF_READ1, sizeof(CONF_READ1));
     TWI_WRITE(FDC_ADDRESS, CONF_READ4, sizeof(CONF_READ4));
