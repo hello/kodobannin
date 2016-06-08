@@ -55,41 +55,6 @@ _unhandled_msg_event(void* event_data, uint16_t event_size){
 	
 }
 
-
-static void
-_data_send_finished()
-{
-	PRINTS("DONE!");
-}
-
-static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
-{
-	if(_should_stream)
-	{
-        size_t new_len = len + sizeof(uint32_t);
-        uint32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
-        uint8_t buffer[new_len];
-        memcpy(buffer, raw_xyz, len);
-        memcpy(&buffer[len], &aggregate, sizeof(aggregate));
-
-		hlo_ble_notify(0xFEED, buffer, new_len, NULL);
-	}
-	
-}
-
-
-
-static void _calibrate_imu(void * p_event_data, uint16_t event_size)
-{
-#ifdef PLATFORM_HAS_IMU
-#include "imu.h"
-        //imu_calibrate_zero();
-#endif
-        struct pill_command* command = (struct pill_command*)p_event_data;
-        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
-}
-
-
 static void _command_write_handler(ble_gatts_evt_write_t* event)
 {
     struct pill_command* command = (struct pill_command*)event->data;
@@ -98,35 +63,25 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     case PILL_COMMAND_DISCONNECT:
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
-    case PILL_COMMAND_SEND_DATA:
-		//hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
-        break;
-#ifdef PLATFORM_HAS_IMU
-    case PILL_COMMAND_START_ACCELEROMETER:
-    	PRINTS("Streamming started\r\n");
-    	_should_stream = true;
-    	imu_set_wom_callback(_on_motion_data_arrival);
-    	break;
-    case PILL_COMMAND_STOP_ACCELEROMETER:
-    	_should_stream = false;
-    	imu_set_wom_callback(NULL);
-    	PRINTS("Streamming stopped\r\n");
-    	break;
-#endif
-	case PILL_COMMAND_GET_BATTERY_LEVEL:
-		break;
 	case PILL_COMMAND_WIPE_FIRMWARE:
 		REBOOT_TO_DFU();
 		break;
+#ifdef PLATFORM_HAS_PROX
+	case PILL_COMMAND_CALIBRATE:
+		//calibrate prox routine
+		break;
+#endif
     default:
         break;
     };
 }
 
-static void _data_ack_handler(ble_gatts_evt_write_t* event)
-{
-    PRINTS("_data_ack_handler()\r\n");
-}
+/*
+ *static void _data_ack_handler(ble_gatts_evt_write_t* event)
+ *{
+ *    PRINTS("_data_ack_handler()\r\n");
+ *}
+ */
 
 void pill_ble_evt_handler(ble_evt_t* ble_evt)
 {
@@ -148,11 +103,11 @@ pill_ble_services_init(void)
 
     hlo_ble_char_write_request_add(0xDEED, &_command_write_handler, sizeof(struct pill_command));
     hlo_ble_char_notify_add(0xD00D);
-    hlo_ble_char_notify_add(0xFEED);
-    hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
-    hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
-    
-
+	/*
+     *hlo_ble_char_notify_add(0xFEED);
+     *hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
+     *hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
+	 */
 }
 
 int is_debug_enabled(){
