@@ -86,6 +86,10 @@ static MSG_Status _init(void){
         if(0 == _get_calibration(&c)){
             set_prox_offset(c.offset[0], c.offset[1]);
             set_prox_gain(c.gain[0], c.gain[1]);
+        } else {
+            //using default value
+            set_prox_offset(0x9, 0x6);
+            set_prox_gain(0xFFFF, 0xFFFF);
         }
         /*
          *parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){PROX,PROX_CALIBRATE}, NULL);
