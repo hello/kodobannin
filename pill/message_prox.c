@@ -35,6 +35,16 @@ static uint16_t get_gain(uint32_t meas){
 static int _get_calibration(prox_calibration_t * out){
     return 1;//doesn't work atm
 }
+static void _notify_calibration_result(uint8_t good){
+    if(good){
+        hlo_ble_notify(0xD00D, "Pass", 4, NULL);
+        PRINT("Calibration Pass\r\n");
+    }else{
+        hlo_ble_notify(0xD00D, "Fail", 4, NULL);
+        PRINT("Calibration Fail\r\n");
+    }
+
+}
 static void _do_prox_calibration(void){
     uint32_t cap1 = 0;
     uint32_t cap4 = 0;
@@ -44,7 +54,7 @@ static void _do_prox_calibration(void){
     if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
         //don't need to recalibrate
         PRINTF("Skipping Calibration [%u, %u]\r\n", cap1, cap4);
-        hlo_ble_notify(0xD00D, "Pass", 4, NULL);
+        _notify_calibration_result(1);
         return;
     }
 
@@ -55,13 +65,11 @@ static void _do_prox_calibration(void){
     //check if values are reasonable, if so, commit
     if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
         //ok
-        PRINTF("Calibration OK [%u, %u]\r\n", cap1, cap4);
         //commit
-        hlo_ble_notify(0xD00D, "Pass", 4, NULL);
+        _notify_calibration_result(1);
     }else{
         //doesn't work, reset
-        PRINTF("Calibration Failed [%u, %u]\r\n", cap1, cap4);
-        hlo_ble_notify(0xD00D, "Failed", 6, NULL);
+        _notify_calibration_result(0);
     }
 
 }
