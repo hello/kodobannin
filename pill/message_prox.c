@@ -14,7 +14,7 @@ static app_timer_id_t timer_id_prox;
 
 #define PROX_POLL_INTERVAL 15000 /*in ms*/
 #define MSB_24_MASK (1<<23)
-#define VALID_PROX_RANGE(x) ( x <= (1<<22))
+#define VALID_PROX_RANGE(x) (x &&  x <= (1<<21))
 
 typedef struct {
     uint16_t gain[2];
@@ -24,9 +24,9 @@ typedef struct {
 static int16_t get_offset(uint32_t meas){
     int inv = meas;
     if(meas & MSB_24_MASK){//negative
-        inv = (2^23) - (meas & 0x009FFFFF);
+        inv = (~meas & 0x00FFFFFF) + 1;
     }else{//positive
-        inv = -inv;
+        inv = inv * -1;
     }
     return (inv/(2^19) + 1);
 }

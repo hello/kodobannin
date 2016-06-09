@@ -68,6 +68,7 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 #ifdef PLATFORM_HAS_PROX
 	case PILL_COMMAND_CALIBRATE:
 		//calibrate prox routine
+        central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_CALIBRATE), NULL);
 		break;
 #endif
     default:
