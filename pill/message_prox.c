@@ -24,24 +24,29 @@ typedef struct {
 static int16_t get_offset(uint32_t meas){
     int inv = meas;
     if(meas & MSB_24_MASK){//negative
-        inv = (~meas & 0x00FFFFFF) + 1;
+        inv = (1<<23) - (meas & 0x007FFFFF);
     }else{//positive
         inv = inv * -1;
     }
-    return (inv/(2^19) + 1);
+    return (inv/(1<<19) + 1);
 }
 static uint16_t get_gain(uint32_t meas){
+    return 0xFFFF;
 }
 static int _get_calibration(prox_calibration_t * out){
     return 1;//doesn't work atm
 }
 static void _notify_calibration_result(uint8_t good){
     if(good){
-        hlo_ble_notify(0xD00D, "Pass", 4, NULL);
-        PRINT("Calibration Pass\r\n");
+        /*
+         *hlo_ble_notify(0xD00D, "Pass", 4, NULL);
+         */
+        PRINTF("Calibration Pass\r\n");
     }else{
-        hlo_ble_notify(0xD00D, "Fail", 4, NULL);
-        PRINT("Calibration Fail\r\n");
+        /*
+         *hlo_ble_notify(0xD00D, "Fail", 4, NULL);
+         */
+        PRINTF("Calibration Fail\r\n");
     }
 
 }
@@ -62,6 +67,7 @@ static void _do_prox_calibration(void){
     set_prox_gain(get_gain(cap1), get_gain(cap4));
 
     read_prox(&cap1, &cap4);
+    PRINTF("Got [%u, %u]\r\n", cap1, cap4);
     //check if values are reasonable, if so, commit
     if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
         //ok
@@ -85,6 +91,7 @@ static MSG_Status _init(void){
             set_prox_offset(c.offset[0], c.offset[1]);
             set_prox_gain(c.gain[0], c.gain[1]);
         }
+        parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){PROX,PROX_CALIBRATE}, NULL);
     }
 
     return init_prox();
