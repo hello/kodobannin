@@ -38,14 +38,10 @@ static int _get_calibration(prox_calibration_t * out){
 }
 static void _notify_calibration_result(uint8_t good){
     if(good){
-        /*
-         *hlo_ble_notify(0xD00D, "Pass", 4, NULL);
-         */
+        hlo_ble_notify(0xD00D, "Pass", 4, NULL);
         PRINTF("Calibration Pass\r\n");
     }else{
-        /*
-         *hlo_ble_notify(0xD00D, "Fail", 4, NULL);
-         */
+        hlo_ble_notify(0xD00D, "Fail", 4, NULL);
         PRINTF("Calibration Fail\r\n");
     }
 
@@ -91,7 +87,9 @@ static MSG_Status _init(void){
             set_prox_offset(c.offset[0], c.offset[1]);
             set_prox_gain(c.gain[0], c.gain[1]);
         }
-        parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){PROX,PROX_CALIBRATE}, NULL);
+        /*
+         *parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){PROX,PROX_CALIBRATE}, NULL);
+         */
     }
 
     return init_prox();
