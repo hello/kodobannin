@@ -38,7 +38,9 @@ static int _get_calibration(prox_calibration_t * out){
 static void _do_prox_calibration(void){
     uint32_t cap1 = 0;
     uint32_t cap4 = 0;
+    PRINTF("Prox Calibration\r\n");
     read_prox(&cap1, &cap4);
+    PRINTF("Got [%u, %u]\r\n", cap1, cap4);
     if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
         //don't need to recalibrate
         PRINTF("Skipping Calibration [%u, %u]\r\n", cap1, cap4);
