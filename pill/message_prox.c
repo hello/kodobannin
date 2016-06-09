@@ -44,6 +44,7 @@ static void _do_prox_calibration(void){
     if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
         //don't need to recalibrate
         PRINTF("Skipping Calibration [%u, %u]\r\n", cap1, cap4);
+        hlo_ble_notify(0xD00D, "Pass", 4, NULL);
         return;
     }
 
@@ -56,10 +57,13 @@ static void _do_prox_calibration(void){
         //ok
         PRINTF("Calibration OK [%u, %u]\r\n", cap1, cap4);
         //commit
+        hlo_ble_notify(0xD00D, "Pass", 4, NULL);
     }else{
         //doesn't work, reset
         PRINTF("Calibration Failed [%u, %u]\r\n", cap1, cap4);
+        hlo_ble_notify(0xD00D, "Failed", 6, NULL);
     }
+
 }
 static MSG_Status _init(void){
     uint32_t ticks = 0;
