@@ -6,11 +6,14 @@
 #include "message_ant.h"
 #include "app_timer.h"
 #include "twi_master_config.h"
+#include "pstorage.h"
+#include "pill_gatt.h"
 
 static char * name = "PROX";
 static const MSG_Central_t * parent;
 static MSG_Base_t base;
 static app_timer_id_t timer_id_prox;
+static pstorage_handle_t fs;
 
 #define PROX_POLL_INTERVAL 15000 /*in ms*/
 #define MSB_24_MASK (1<<23)
@@ -75,11 +78,25 @@ static void _do_prox_calibration(void){
     }
 
 }
+static void _on_pstorage_error(pstorage_handle_t *  p_handle,
+                                  uint8_t              op_code,
+                                  uint32_t             result,
+                                  uint8_t *            p_data,
+                                  uint32_t             data_len){
+    PRINTF("has error\r\n");
+}
 static MSG_Status _init(void){
     uint32_t ticks = 0;
     ticks = APP_TIMER_TICKS(PROX_POLL_INTERVAL,APP_TIMER_PRESCALER);
     PRINTF("PROX %u ms\r\n", PROX_POLL_INTERVAL);
-    app_timer_start(timer_id_prox, ticks, NULL);
+    {
+        pstorage_module_param_t opts = (pstorage_module_param_t){
+            .cb = _on_pstorage_error,
+            .block_size = sizeof(prox_calibration_t),
+            .block_count = 1,
+        };
+        APP_OK(pstorage_register(&opts, &fs));
+    }
     {
         //load calibration values
         prox_calibration_t c;
@@ -95,6 +112,8 @@ static MSG_Status _init(void){
          *parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){PROX,PROX_CALIBRATE}, NULL);
          */
     }
+
+    app_timer_start(timer_id_prox, ticks, NULL);
 
     return init_prox();
 }
