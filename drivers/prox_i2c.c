@@ -70,16 +70,22 @@ static void _reset_config(void){
     uint8_t RST[3] = {0x0C, 0x84, 0x90};
     TWI_WRITE(FDC_ADDRESS, RST, sizeof(RST));
 }
-static void _check_id(void){
+static MSG_Status _check_id(void){
     uint16_t r = 0;
     uint16_t MANU_ID = MANU_ID_VAL;
     uint16_t DEV_ID = DEV_ID_VAL;
     TWI_READ(FDC_ADDRESS, MANU_ID_ADDRESS, &r, sizeof(r));
     r = swap_endian16(r);
-    APP_OK( _byte_check((uint8_t*)&r, (uint8_t*)&MANU_ID, sizeof(r)) );
+    if( 0 != _byte_check((uint8_t*)&r, (uint8_t*)&MANU_ID, sizeof(r)) ){
+        return FAIL;
+    }
+
     TWI_READ(FDC_ADDRESS, DEVICE_ID_ADDRESS, &r, sizeof(r));
     r = swap_endian16(r);
-    APP_OK( _byte_check((uint8_t*)&r, (uint8_t*)&DEV_ID, sizeof(r)) );
+    if(0 != _byte_check((uint8_t*)&r, (uint8_t*)&DEV_ID, sizeof(r)) ){
+        return FAIL;
+    }
+    return SUCCESS;
 }
 static void _conf_prox(void){
     uint8_t r[2] = {0};
@@ -106,7 +112,6 @@ static void _prox_power(uint8_t on){
         nrf_gpio_cfg_output(PROX_VDD_EN);
         nrf_gpio_pin_set(PROX_VDD_EN);
         _reset_config();
-        _check_id();
         _conf_prox();
     }else{
         nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
@@ -117,6 +122,9 @@ static void _prox_power(uint8_t on){
 
 MSG_Status init_prox(void){
 	//tie vaux to vbat
+    if(SUCCESS != _check_id()){
+        return FAIL;
+    }
     _prox_power(1);
     _prox_power(0);
     return SUCCESS;
