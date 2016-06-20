@@ -81,6 +81,9 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 			}
 		}
 		break;
+	case PILL_COMMAND_WIPE_CALIBRATION:
+		central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_ERASE_CALIBRATE), NULL);
+		break;
 #endif
 	case PILL_COMMAND_RESET:
 		REBOOT();

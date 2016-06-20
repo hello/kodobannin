@@ -150,7 +150,7 @@ _handle_command(int argc, char * argv[]){
     }
     if( !match_command(argv[0], "cal")){
         self.parent->dispatch( (MSG_Address_t){CLI,0},
-                                (MSG_Address_t){PROX, PROX_CALIBRATE},
+                                (MSG_Address_t){PROX, PROX_START_CALIBRATE},
                                 NULL);
     }
 

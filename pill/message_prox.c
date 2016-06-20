@@ -110,9 +110,6 @@ static MSG_Status _init(void){
             .block_size = sizeof(prox_calibration_t),
             .block_count = 1,
         };
-        /*
-         *fs.block_id   = APP_DATA_START_ADDRESS;
-         */
         APP_OK(pstorage_register(&opts, &fs));
     }
     {
@@ -123,6 +120,7 @@ static MSG_Status _init(void){
             set_prox_offset(c.offset[0], c.offset[1]);
             set_prox_gain(c.gain[0], c.gain[1]);
         } else {
+            PRINTF("fail to get calibration\r\n");
             //using default value
             /*
              *set_prox_offset(0x9, 0x6);
@@ -156,10 +154,10 @@ static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t *
         case PROX_READ:
             break;
         case PROX_START_CALIBRATE:
-            APP_OK(pstorage_clear(&fs, sizeof(prox_calibration_t)));
-            break;
-        case PROX_CALIBRATE:
             _do_prox_calibration();
+            break;
+        case PROX_ERASE_CALIBRATE:
+            APP_OK(pstorage_clear(&fs, sizeof(prox_calibration_t)));
             break;
     }
     return SUCCESS;

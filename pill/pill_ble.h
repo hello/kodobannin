@@ -19,6 +19,7 @@ enum pill_command_type {
     PILL_COMMAND_GET_BATTERY_LEVEL,
     PILL_COMMAND_WIPE_FIRMWARE = 8,
     PILL_COMMAND_RESET = 9,
+    PILL_COMMAND_WIPE_CALIBRATION,
 } __attribute__((packed));
 
 struct pill_command
