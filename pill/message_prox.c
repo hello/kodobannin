@@ -33,7 +33,7 @@ static int16_t get_offset(uint32_t meas){
     if(meas & MSB_24_MASK){//negative
         inv = (1<<23) - (meas & 0x007FFFFF);
     }else{//positive
-        inv = inv * -1;
+         inv = (~inv + 1) & 0x00FFFFFF;
     }
     return (inv/(1<<19) + 1);
 }
@@ -53,6 +53,7 @@ static int _get_calibration(prox_calibration_t * out){
 static void _notify_calibration_result(uint8_t good){
     if(good){
         hlo_ble_notify(0xD00D, "Pass", 4, NULL);
+        _send_available_prox_ant();
         PRINTF("Calibration Pass\r\n");
     }else{
         hlo_ble_notify(0xD00D, "Fail", 4, NULL);
