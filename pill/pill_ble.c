@@ -68,7 +68,18 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 #ifdef PLATFORM_HAS_PROX
 	case PILL_COMMAND_CALIBRATE:
 		//calibrate prox routine
-        central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_CALIBRATE), NULL);
+		if(MSG_App_IsModLoaded(PROX)){
+			central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_START_CALIBRATE), NULL);
+		} else {//try load it again
+#ifdef PLATFORM_HAS_PROX
+			central->loadmod(MSG_Prox_Init(central));
+#endif
+			if(MSG_App_IsModLoaded(PROX)){
+				central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_START_CALIBRATE), NULL);
+			}else{
+				hlo_ble_notify(0xD00D, "I2CFail", 7, NULL);
+			}
+		}
 		break;
 #endif
 	case PILL_COMMAND_RESET:

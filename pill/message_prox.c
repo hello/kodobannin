@@ -94,7 +94,10 @@ static void _on_pstorage_error(pstorage_handle_t *  p_handle,
                                   uint32_t             result,
                                   uint8_t *            p_data,
                                   uint32_t             data_len){
-    PRINTF("has error\r\n");
+    if(op_code == PSTORAGE_CLEAR_OP_CODE){
+        PRINTF("dispatch calibration\r\n");
+        parent->dispatch( ADDR(PROX, 0), ADDR(PROX, PROX_CALIBRATE), NULL);
+    }
 }
 static MSG_Status _init(void){
     uint32_t ticks = 0;
@@ -150,6 +153,9 @@ static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t *
         case PROX_PING:
             break;
         case PROX_READ:
+            break;
+        case PROX_START_CALIBRATE:
+            APP_OK(pstorage_clear(&fs, sizeof(prox_calibration_t)));
             break;
         case PROX_CALIBRATE:
             _do_prox_calibration();
