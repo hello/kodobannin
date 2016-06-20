@@ -105,17 +105,22 @@ static MSG_Status _init(void){
             set_prox_gain(c.gain[0], c.gain[1]);
         } else {
             //using default value
-            set_prox_offset(0x9, 0x6);
-            set_prox_gain(0xFFFF, 0xFFFF);
+            /*
+             *set_prox_offset(0x9, 0x6);
+             *set_prox_gain(0xFFFF, 0xFFFF);
+             */
         }
         /*
          *parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){PROX,PROX_CALIBRATE}, NULL);
          */
     }
 
-    app_timer_start(timer_id_prox, ticks, NULL);
-
-    return init_prox();
+    if(SUCCESS ==  init_prox()){
+        app_timer_start(timer_id_prox, ticks, NULL);
+        return SUCCESS;
+    }else{
+        return FAIL;
+    }
 }
 static MSG_Status _destroy(void){
     return SUCCESS;
