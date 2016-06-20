@@ -19,9 +19,13 @@ static pstorage_handle_t fs;
 #define MSB_24_MASK (1<<23)
 #define VALID_PROX_RANGE(x) (x &&  x <= (1<<21))
 
+static void _send_available_prox_ant();
+
+#define CALIBRATION_GOOD_MAGIC 0x55AA55AA /*reserved 0*/
 typedef struct {
     uint16_t gain[2];
     int16_t  offset[2];
+    uint16_t reserved[4];
 }prox_calibration_t;
 
 static int16_t get_offset(uint32_t meas){
@@ -37,7 +41,14 @@ static uint16_t get_gain(uint32_t meas){
     return 0xFFFF;
 }
 static int _get_calibration(prox_calibration_t * out){
-    return 1;//doesn't work atm
+    pstorage_handle_t block;
+    APP_OK(pstorage_block_identifier_get(&fs,0,&block));
+    APP_OK(pstorage_load(out, &block, sizeof(*out), 0));
+    if(out->reserved[0] == CALIBRATION_GOOD_MAGIC){
+        return 0;
+    }else{
+        return 1;
+    }
 }
 static void _notify_calibration_result(uint8_t good){
     if(good){
@@ -95,12 +106,16 @@ static MSG_Status _init(void){
             .block_size = sizeof(prox_calibration_t),
             .block_count = 1,
         };
+        /*
+         *fs.block_id   = APP_DATA_START_ADDRESS;
+         */
         APP_OK(pstorage_register(&opts, &fs));
     }
     {
         //load calibration values
         prox_calibration_t c;
         if(0 == _get_calibration(&c)){
+            PRINTF("got calibration\r\n");
             set_prox_offset(c.offset[0], c.offset[1]);
             set_prox_gain(c.gain[0], c.gain[1]);
         } else {

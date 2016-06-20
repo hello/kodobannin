@@ -261,7 +261,7 @@ void hble_advertising_start()
 #endif
 
     _advertising_data_init(flags);
-    APP_OK(sd_ble_gap_adv_start(&adv_params));
+    sd_ble_gap_adv_start(&adv_params);
 
     PRINTS("Advertising started.\r\n");
 }
