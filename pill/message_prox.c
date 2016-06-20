@@ -21,12 +21,13 @@ static pstorage_handle_t fs;
 
 static void _send_available_prox_ant();
 
-#define CALIBRATION_GOOD_MAGIC 0x55AA55AA /*reserved 0*/
+#define CALIBRATION_GOOD_MAGIC 0x5A5A /*reserved 0*/
 typedef struct {
     uint16_t gain[2];
     int16_t  offset[2];
     uint16_t reserved[4];
 }prox_calibration_t;
+static prox_calibration_t  cal;
 
 static int16_t get_offset(uint32_t meas){
     int inv = meas;
@@ -44,6 +45,7 @@ static int _get_calibration(prox_calibration_t * out){
     pstorage_handle_t block;
     APP_OK(pstorage_block_identifier_get(&fs,0,&block));
     APP_OK(pstorage_load(out, &block, sizeof(*out), 0));
+    PRINT_HEX(out, sizeof(*out));
     if(out->reserved[0] == CALIBRATION_GOOD_MAGIC){
         return 0;
     }else{
@@ -74,8 +76,13 @@ static void _do_prox_calibration(void){
         return;
     }
 
-    set_prox_offset(get_offset(cap1), get_offset(cap4));
-    set_prox_gain(get_gain(cap1), get_gain(cap4));
+    cal.offset[0] = get_offset(cap1);
+    cal.offset[1] = get_offset(cap4);
+    set_prox_offset(cal.offset[0], cal.offset[1]);
+
+    cal.gain[0] = get_gain(cap1);
+    cal.gain[1] = get_gain(cap4);
+    set_prox_gain(cal.gain[0], cal.gain[1]);
 
     read_prox(&cap1, &cap4);
     PRINTF("Got [%u, %u]\r\n", cap1, cap4);
@@ -83,7 +90,10 @@ static void _do_prox_calibration(void){
     if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
         //ok
         //commit
-        _notify_calibration_result(1);
+        cal.reserved[0] = CALIBRATION_GOOD_MAGIC;
+        pstorage_handle_t block;
+        APP_OK(pstorage_block_identifier_get(&fs,0,&block));
+        APP_OK(pstorage_store(&block, &cal, sizeof(cal), 0));
     }else{
         //doesn't work, reset
         _notify_calibration_result(0);
@@ -95,9 +105,12 @@ static void _on_pstorage_error(pstorage_handle_t *  p_handle,
                                   uint32_t             result,
                                   uint8_t *            p_data,
                                   uint32_t             data_len){
-    if(op_code == PSTORAGE_CLEAR_OP_CODE){
-        PRINTF("dispatch calibration\r\n");
-        parent->dispatch( ADDR(PROX, 0), ADDR(PROX, PROX_CALIBRATE), NULL);
+
+    PRINTF("res %d\r\n", result);
+    if(result == 0){
+        _notify_calibration_result(1);
+    }else{
+        _notify_calibration_result(0);
     }
 }
 static MSG_Status _init(void){
