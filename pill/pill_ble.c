@@ -88,6 +88,9 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
 	case PILL_COMMAND_RESET:
 		REBOOT();
 		break;
+	case PILL_COMMAND_READ_PROX:
+		central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_READ_REPLY_BLE), NULL);
+		break;
     default:
         break;
     };

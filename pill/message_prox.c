@@ -172,6 +172,13 @@ static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t *
         case PROX_ERASE_CALIBRATE:
             APP_OK(pstorage_clear(&fs, sizeof(prox_calibration_t)));
             break;
+        case PROX_READ_REPLY_BLE:
+            {
+                uint32_t prox[2] = {0};
+                read_prox(&prox[0], &prox[1]);
+                hlo_ble_notify(0xD00D, (uint8_t*)prox, sizeof(prox), NULL);
+            }
+            break;
     }
     return SUCCESS;
 }

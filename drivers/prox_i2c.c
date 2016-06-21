@@ -111,6 +111,10 @@ static MSG_Status _prox_power(uint8_t on){
         nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
         nrf_gpio_cfg_output(PROX_VDD_EN);
         nrf_gpio_pin_set(PROX_VDD_EN);
+        nrf_delay_ms(4 * I2C_DELAY);
+        if(SUCCESS != _check_id()){
+            return FAIL;
+        }
         _reset_config();
         _conf_prox();
     }else{
@@ -123,12 +127,9 @@ static MSG_Status _prox_power(uint8_t on){
 
 MSG_Status init_prox(void){
 	//tie vaux to vbat
-    _prox_power(1);
-    if(SUCCESS != _check_id()){
-        _prox_power(0);
-        return FAIL;
-    }
-    return SUCCESS;
+    MSG_Status ret = _prox_power(1);
+    _prox_power(0);
+    return ret;
 }
 
 void read_prox(uint32_t * out_val1, uint32_t * out_val4){

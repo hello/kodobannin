@@ -7,6 +7,7 @@ typedef enum{
 	PROX_READ,
 	PROX_START_CALIBRATE,
 	PROX_ERASE_CALIBRATE,
+	PROX_READ_REPLY_BLE,
 }MSG_ProxAddress;
 
 MSG_Base_t * MSG_Prox_Init(const MSG_Central_t * central);
