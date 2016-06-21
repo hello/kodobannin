@@ -44,7 +44,7 @@ static uint16_t get_gain(uint32_t meas){
 static int _get_calibration(prox_calibration_t * out){
     pstorage_handle_t block;
     APP_OK(pstorage_block_identifier_get(&fs,0,&block));
-    APP_OK(pstorage_load(out, &block, sizeof(*out), 0));
+    APP_OK(pstorage_load((uint8_t*)out, &block, sizeof(prox_calibration_t), 0));
     PRINT_HEX(out, sizeof(*out));
     if(out->reserved[0] == CALIBRATION_GOOD_MAGIC){
         return 0;
@@ -93,7 +93,7 @@ static void _do_prox_calibration(void){
         cal.reserved[0] = CALIBRATION_GOOD_MAGIC;
         pstorage_handle_t block;
         APP_OK(pstorage_block_identifier_get(&fs,0,&block));
-        APP_OK(pstorage_store(&block, &cal, sizeof(cal), 0));
+        APP_OK(pstorage_store(&block,(uint8_t*)&cal, sizeof(cal), 0));
     }else{
         //doesn't work, reset
         _notify_calibration_result(0);
