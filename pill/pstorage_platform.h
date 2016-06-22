@@ -26,7 +26,7 @@
 
 #define PSTORAGE_FLASH_PAGE_SIZE    ((uint16_t)NRF_FICR->CODEPAGESIZE)   /**< Size of one flash page. */
 #define APP_DATA_END_ADDRESS        (0x3EC00)                            /** defined in memory.ld */
-#define APP_DATA_START_ADDRESS      (0x3CC00)                            /** defined in memory.ld*/
+#define APP_DATA_START_ADDRESS      (0x3D000)                            /** defined in memory.ld*/
 #define PSTORAGE_FLASH_EMPTY_MASK    0xFFFFFFFF                          /**< Bit mask that defines an empty address in flash. */
 
 #define PSTORAGE_FLASH_PAGE_END	(APP_DATA_END_ADDRESS/PSTORAGE_FLASH_PAGE_SIZE)	

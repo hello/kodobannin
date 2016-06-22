@@ -67,6 +67,9 @@ _loadmod(MSG_Base_t * mod){
     }
     return FAIL;
 }
+uint8_t MSG_App_IsModLoaded(MSG_ModuleType type){
+    return self.mods[type] ? 1: 0;
+}
 
 static MSG_Status
 _unloadmod(MSG_Base_t * mod){

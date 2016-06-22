@@ -102,10 +102,7 @@ static void _on_sys_evt(uint32_t sys_evt)
     PRINT_HEX(&sys_evt, sizeof(sys_evt));
     PRINTS("\r\n");
 
-#ifdef BONDING_REQUIRED
     pstorage_sys_event_handler(sys_evt);
-#endif
-
 }
 
 static void _on_conn_params_evt(ble_conn_params_evt_t * p_evt)
@@ -261,7 +258,7 @@ void hble_advertising_start()
 #endif
 
     _advertising_data_init(flags);
-    APP_OK(sd_ble_gap_adv_start(&adv_params));
+    sd_ble_gap_adv_start(&adv_params);
 
     PRINTS("Advertising started.\r\n");
 }

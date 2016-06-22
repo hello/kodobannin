@@ -13,6 +13,7 @@ typedef enum{
 
 MSG_Central_t * MSG_App_Central( app_sched_event_handler_t unknown_handler );
 MSG_Base_t * MSG_App_Base(MSG_Central_t * parent);
+uint8_t MSG_App_IsModLoaded(MSG_ModuleType type);
 
 
 #endif

@@ -42,8 +42,8 @@ enum {
 #define PLATFORM_HAS_SERIAL_CROSS_CONNECT
 
 enum {
-    CCU_TX_PIN = 4,
-    CCU_RX_PIN = 1,
+    CCU_TX_PIN = 1,
+    CCU_RX_PIN = 4,
     CCU_CTS_PIN = NC,
     CCU_RTS_PIN = NC,
 };
