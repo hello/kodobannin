@@ -336,6 +336,7 @@ inline void imu_power_on()
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
 	nrf_gpio_cfg_output(IMU_VDD_EN);
 	nrf_gpio_pin_clear(IMU_VDD_EN);
+    nrf_delay_us(1000);
 #endif
 }
 
