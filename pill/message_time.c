@@ -144,6 +144,12 @@ static void _1sec_timer_handler(void * ctx){
     PRINTS("ONE SEC\r\n");
     _update_uptime();
 
+    //TODO REMOVE THIS AFTER DVT
+    if(self.uptime < 10){
+        self.central->dispatch( ADDR(CENTRAL, 0), ADDR(IMU, IMU_FORCE_SHAKE), NULL);
+        self.central->dispatch( ADDR(CENTRAL, 0), ADDR(IMU, IMU_FORCE_SHAKE), NULL);
+    }
+
     uint8_t current_reed_state = 0;
     self.onesec_runtime += 1;
 
