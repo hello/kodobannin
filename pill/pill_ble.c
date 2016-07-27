@@ -38,9 +38,7 @@
 #include "ant_packet.h"
 #endif
 
-#ifdef PLATFORM_HAS_PROX
 #include "message_prox.h"
-#endif
 
 extern uint8_t hello_type;
 
