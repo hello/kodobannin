@@ -28,7 +28,8 @@ struct imu_settings {
 typedef enum{
 	IMU_PING = 0,
 	IMU_READ_XYZ,
-	IMU_SELF_TEST
+	IMU_SELF_TEST,
+	IMU_FORCE_SHAKE,
 }MSG_IMUAddress;
 
 /* See README_IMU.md for an introduction to the IMU, and vocabulary

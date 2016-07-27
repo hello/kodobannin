@@ -394,6 +394,9 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
 			break;
+		case IMU_FORCE_SHAKE:
+			_on_pill_pairing_guesture_detected();
+			break;
 	}
 	return ret;
 }
