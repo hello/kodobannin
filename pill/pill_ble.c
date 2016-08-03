@@ -38,9 +38,7 @@
 #include "ant_packet.h"
 #endif
 
-#ifdef PLATFORM_HAS_PROX
 #include "message_prox.h"
-#endif
 
 extern uint8_t hello_type;
 
@@ -163,6 +161,7 @@ void pill_ble_load_modules(void){
 
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
+
 
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
