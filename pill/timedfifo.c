@@ -26,9 +26,7 @@ void TF_Initialize(){
 }
 
 void TF_TickOneMinute() {
-    if( self.data.motion_mask ) {
-        _reset_tf_unit(&self.data);
-    }
+    _reset_tf_unit(&self.data);
     PRINTS("^");
 }
 
