@@ -33,6 +33,7 @@
 
 // Uncomment to display debug print statements
 //#define IMU_MODULE_DEBUG
+#define IMU_MODULE_DEBUG_SELF_TEST
 
 enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -568,7 +569,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	return err;
 }
 
-#define ST_CHANGE_MIN						((uint16_t)17)
+#define ST_CHANGE_MIN						((uint16_t)0)
 #define ST_CHANGE_MAX						((uint16_t)360)
 #define	SELF_TEST_SAMPLE_SIZE				(32UL)
 #define SELF_TEST_PASS(x)	(((uint8_t)(x) >= ST_CHANGE_MIN) && ((uint8_t)(x) <= ST_CHANGE_MAX) )
@@ -622,14 +623,11 @@ int imu_self_test(void){
 		values_avg[ch] /= count;
 	}
 
-#ifdef IMU_MODULE_DEBUG
+#ifdef IMU_MODULE_DEBUG_SELF_TEST
 	PRINTS("AVG: ");
  	for(uint8_t i=0;i<3;i++){
- 		int16_t diff = values_avg[i];
-			uint8_t temp = ((diff & 0xFF00) >> 8);
-			PRINT_BYTE(&temp,sizeof(uint8_t));
-			PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
-			PRINTS(" ");
+        int16_t diff = values_avg[i];
+        PRINTF("%d, ", diff);
 	}
  	PRINTS("\r\n");
 #endif
@@ -684,14 +682,11 @@ int imu_self_test(void){
 	values_st_avg_2[1] /= 3;
 	values_st_avg_2[2] /= 3;
 
-#ifdef IMU_MODULE_DEBUG
+#ifdef IMU_MODULE_DEBUG_SELF_TEST
 	PRINTS("ST AVG: ");
  	for(uint8_t i=0;i<3;i++){
-		int16_t diff = values_st_avg_2[i];
-		uint8_t temp = ((diff & 0xFF00) >> 8);
-		PRINT_BYTE(&temp,sizeof(uint8_t));
-		PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
-		PRINTS(" ");
+        int16_t diff = values_st_avg_2[i];
+        PRINTF("%d, ", diff);
 	}
  	PRINTS("\r\n");
 #endif
@@ -701,13 +696,12 @@ int imu_self_test(void){
 
 	nrf_delay_ms(20);
 
-#ifdef IMU_MODULE_DEBUG
+#ifdef IMU_MODULE_DEBUG_SELF_TEST
 	PRINTS("DIFF: ");
  	for(uint8_t i=0;i<3;i++){
 		uint16_t diff = 0;
 		diff = abs(values_st_avg_2[i] - values_avg[i]);
-		PRINT_BYTE(&diff,sizeof(uint8_t));
-		PRINTS(" ");
+        PRINTF("%d, ", diff);
 	}
  	PRINTS("\r\n");
 
