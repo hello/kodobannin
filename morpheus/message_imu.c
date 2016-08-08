@@ -16,7 +16,7 @@ static MSG_Status _flush(void){
 }
 
 static MSG_Status _init(void){
-    if(0 == imu_init_simple(SPI_Channel_1, SPI_Mode3, ACCEL_MISO, ACCEL_MOSI, ACCEL_SCLK, ACCEL_nCS)){
+    if(0 == imu_init_simple(SPI_Channel_0, SPI_Mode3, ACCEL_MISO, ACCEL_MOSI, ACCEL_SCLK, ACCEL_nCS)){
         return SUCCESS;
     }else{
         return FAIL;
