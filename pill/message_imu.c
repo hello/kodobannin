@@ -63,7 +63,6 @@ static struct imu_settings _settings = {
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
     .accel_range = IMU_ACCEL_RANGE_2G,
     .data_ready_callback = NULL,
-    .wom_callback = NULL,
     .is_active = false,
 };
 
@@ -342,10 +341,6 @@ static MSG_Status _handle_read_xyz(void){
     PRINTS("R\r\n");
 
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
-	if(_settings.wom_callback){
-		_settings.wom_callback(values, sizeof(values));
-	}
-
 	mag = _aggregate_motion_data(values, sizeof(values));
 	ShakeDetect(mag);
 #endif
