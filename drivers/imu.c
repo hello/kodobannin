@@ -470,6 +470,7 @@ int32_t imu_init_simple(enum SPI_Channel channel,
 	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
 	if (err != 0) {
 		PRINTS("Could not configure SPI bus for IMU\r\n");
+		APP_ASSERT(0);
 		return err;
 	}
 	// Check for valid Chip ID
@@ -480,9 +481,11 @@ int32_t imu_init_simple(enum SPI_Channel channel,
 	_register_read(REG_WHO_AM_I, &whoami_value);
 
 	if (whoami_value != DEVICE_ID) {
-		PRINTS("Invalid IMU ID found. Expected 0x33, got 0x", whoami_value);
+		PRINTF("Invalid IMU ID found. Expected 0x33, got 0x%x", whoami_value);
 		APP_ASSERT(0);
+		return -1;
 	}
+	return 0;
 
 }
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
