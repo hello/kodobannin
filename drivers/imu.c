@@ -459,6 +459,32 @@ inline void imu_disable_intr()
 
 }
 
+int32_t imu_init_simple(enum SPI_Channel channel,
+		enum SPI_Mode mode,
+		uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS){
+	int32_t err;
+	nrf_gpio_cfg_output(nCS);
+    nrf_gpio_cfg_output(miso);
+    nrf_gpio_cfg_output(mosi);
+    nrf_gpio_cfg_output(sclk);
+	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
+	if (err != 0) {
+		PRINTS("Could not configure SPI bus for IMU\r\n");
+		return err;
+	}
+	// Check for valid Chip ID
+	uint8_t whoami_value = 0xA5;
+	_register_read(REG_WHO_AM_I, &whoami_value);
+	_register_write(REG_CTRL_4, 0x00);
+
+	_register_read(REG_WHO_AM_I, &whoami_value);
+
+	if (whoami_value != DEVICE_ID) {
+		PRINTS("Invalid IMU ID found. Expected 0x33, got 0x", whoami_value);
+		APP_ASSERT(0);
+	}
+
+}
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 		uint8_t miso, uint8_t mosi, uint8_t sclk,
 		uint8_t nCS,
