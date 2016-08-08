@@ -75,11 +75,6 @@ static inline void _reset_accel_range(enum imu_accel_range range)
 }
 
 
-void imu_set_wom_callback(imu_wom_callback_t callback)
-{
-    _settings.wom_callback = callback;
-}
-
 inline void imu_get_settings(struct imu_settings *settings)
 {
 	*settings = _settings;
@@ -330,11 +325,6 @@ static MSG_Status _handle_read_xyz(void){
 		//loop:
 		for(i=0;i<ret/6;i++)
 		{
-			// ble notify
-			if(_settings.wom_callback){
-				_settings.wom_callback(ptr, 3*sizeof(int16_t));
-			}
-
 			//aggregate value greater than threshold
 			mag = _aggregate_motion_data(ptr, 3*sizeof(int16_t));
 			ShakeDetect(mag);
@@ -389,7 +379,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
-
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
