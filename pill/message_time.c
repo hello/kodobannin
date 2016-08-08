@@ -142,6 +142,7 @@ static void _1min_timer_handler(void * ctx) {
 #define MAX_1SEC_TIMER_RUNTIME  10
 
 static bool self_test_complete = false;
+extern int imu_self_test();
 static void _1sec_timer_handler(void * ctx){
     PRINTS("*");
     _update_uptime();
