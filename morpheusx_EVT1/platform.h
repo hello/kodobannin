@@ -39,6 +39,16 @@ enum {
     SSPI_INT = 24,
 };
 
+#define PLATFORM_HAS_ACCEL_SPI
+
+enum{
+	ACCEL_nCS = 28,
+	ACCEL_SCLK = 8,
+	ACCEL_MOSI = 13,
+	ACCEL_MISO = 10,
+	ACCEL_INT = 29,
+};
+
 #define PLATFORM_HAS_SERIAL_CROSS_CONNECT
 
 enum {
