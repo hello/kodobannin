@@ -72,6 +72,7 @@ static void _send_available_data_ant(){
     MotionPayload_t motion[1];
     if(TF_GetCondensed(motion)){
         MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_DATA_ENCRYPTED, motion, sizeof(motion));
+        PRINTF("data len %d, pwr %d\r\n", data->len, motion->max);
         if(data){
             self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,1}, data);
             self.central->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){UART,MSG_UART_HEX}, data);
@@ -140,15 +141,28 @@ static void _1min_timer_handler(void * ctx) {
 //this one needs to be the max of all the requirements in the 1sec timer...
 #define MAX_1SEC_TIMER_RUNTIME  10
 
+static bool self_test_complete = false;
+extern int imu_self_test();
 static void _1sec_timer_handler(void * ctx){
-    PRINTS("ONE SEC\r\n");
+    PRINTS("*");
     _update_uptime();
 
-    //TODO REMOVE THIS AFTER DVT
-    if(self.uptime < 10){
+#if 1 /* DVT hack */
+    if(self.uptime == 1){
+        //do self test
+        if( 0 == imu_self_test() ){
+            self_test_complete = true;
+            PRINTS("IMU self test pass\r\n");
+        }else{
+            PRINTS("IMU self test fail\r\n");
+        }
+        self.central->unloadmod(MSG_IMU_GetBase());
+        self.central->loadmod(MSG_IMU_GetBase());
+    }else if(self.uptime < 5 && self_test_complete){
         self.central->dispatch( ADDR(CENTRAL, 0), ADDR(IMU, IMU_FORCE_SHAKE), NULL);
         self.central->dispatch( ADDR(CENTRAL, 0), ADDR(IMU, IMU_FORCE_SHAKE), NULL);
     }
+#endif
 
     uint8_t current_reed_state = 0;
     self.onesec_runtime += 1;

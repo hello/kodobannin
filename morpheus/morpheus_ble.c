@@ -597,6 +597,10 @@ void morpheus_load_modules(void){
 		};
 		central->loadmod(MSG_SSPI_Base(&spi_params,central));
 #endif
+#ifdef PLATFORM_HAS_ACCEL_SPI
+#include "message_imu.h"
+        central->loadmod(MSG_IMU_Init(central));
+#endif
 
 #ifdef BLE_ENABLE
 		central->loadmod(MSG_BLE_Base(central));

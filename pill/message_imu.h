@@ -10,7 +10,6 @@
 struct sensor_data_header;
 
 typedef void(*imu_data_ready_callback_t)(uint16_t fifo_bytes_available);
-typedef void(*imu_wom_callback_t)(const int16_t* raw_data_point, size_t len);
 
 struct imu_settings {
 	uint16_t active_wom_threshold; // in microgravities
@@ -21,7 +20,6 @@ struct imu_settings {
 	enum imu_accel_range accel_range;
     
     imu_data_ready_callback_t data_ready_callback;
-    imu_wom_callback_t wom_callback;
     bool is_active;
 };
 
@@ -41,7 +39,6 @@ void imu_get_settings(struct imu_settings* settings);
 bool imu_is_active();
 
 void imu_set_data_ready_callback(imu_data_ready_callback_t callback);
-void imu_set_wom_callback(imu_wom_callback_t callback);
 uint8_t clear_stuck_count(void);
 uint8_t fix_imu_interrupt(void);
 
