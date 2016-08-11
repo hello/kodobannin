@@ -219,12 +219,15 @@ MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handl
         self.message_listener.on_message = _on_message;
         self.message_listener.on_message_sent = _on_message_sent;
         self.message_listener.on_message_failed = _on_message_failed;
-        APP_OK(hlo_ant_init(role, hlo_ant_packet_init(&self.message_listener)));
+        /*
+         *APP_OK(hlo_ant_init(role, hlo_ant_packet_init(&self.message_listener)));
+         */
         self.role = role;
     }
     switch(role){
         default:
         case HLO_ANT_ROLE_CENTRAL:
+            hlo_ant_cw_test(66, 4);
             break;
         case HLO_ANT_ROLE_PERIPHERAL:
             self.local_device = (hlo_ant_device_t){
