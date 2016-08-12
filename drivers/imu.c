@@ -33,6 +33,7 @@
 
 // Uncomment to display debug print statements
 //#define IMU_MODULE_DEBUG
+#define IMU_MODULE_DEBUG_SELF_TEST
 
 enum {
 	IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -336,6 +337,7 @@ inline void imu_power_on()
 #ifdef PLATFORM_HAS_IMU_VDD_CONTROL
 	nrf_gpio_cfg_output(IMU_VDD_EN);
 	nrf_gpio_pin_clear(IMU_VDD_EN);
+    nrf_delay_us(1000);
 #endif
 }
 
@@ -431,7 +433,7 @@ inline void imu_enable_intr()
 
 
 	// Disable INT 1 function on INT 2 pin
-	_register_write(REG_CTRL_6, 0x00);
+	_register_write(REG_CTRL_6, 0x00 | INT_ACTIVE_LOW );
 
 #endif
 #ifdef IMU_USE_PIN_INT2
@@ -440,7 +442,7 @@ inline void imu_enable_intr()
 	_register_write(REG_CTRL_3, 0x00);
 
 	// Enable INT 1 function on INT 2 pin
-	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2);
+	_register_write(REG_CTRL_6, INT1_OUTPUT_ON_LINE_2 | INT_ACTIVE_LOW);
 
 #endif
 }
@@ -457,6 +459,35 @@ inline void imu_disable_intr()
 
 }
 
+int32_t imu_init_simple(enum SPI_Channel channel,
+		enum SPI_Mode mode,
+		uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS){
+	int32_t err;
+	nrf_gpio_cfg_output(nCS);
+    nrf_gpio_cfg_output(miso);
+    nrf_gpio_cfg_output(mosi);
+    nrf_gpio_cfg_output(sclk);
+	err = spi_init(channel, mode, miso, mosi, sclk, nCS, &_spi_context);
+	if (err != 0) {
+		PRINTS("Could not configure SPI bus for IMU\r\n");
+		APP_ASSERT(0);
+		return err;
+	}
+	// Check for valid Chip ID
+	uint8_t whoami_value = 0xA5;
+	_register_read(REG_WHO_AM_I, &whoami_value);
+	_register_write(REG_CTRL_4, 0x00);
+
+	_register_read(REG_WHO_AM_I, &whoami_value);
+
+	if (whoami_value != DEVICE_ID) {
+		PRINTF("Invalid IMU ID found. Expected 0x33, got 0x%x", whoami_value);
+		APP_ASSERT(0);
+		return -1;
+	}
+	return 0;
+
+}
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 		uint8_t miso, uint8_t mosi, uint8_t sclk,
 		uint8_t nCS,
@@ -567,7 +598,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	return err;
 }
 
-#define ST_CHANGE_MIN						((uint16_t)17)
+#define ST_CHANGE_MIN						((uint16_t)0)
 #define ST_CHANGE_MAX						((uint16_t)360)
 #define	SELF_TEST_SAMPLE_SIZE				(32UL)
 #define SELF_TEST_PASS(x)	(((uint8_t)(x) >= ST_CHANGE_MIN) && ((uint8_t)(x) <= ST_CHANGE_MAX) )
@@ -621,14 +652,11 @@ int imu_self_test(void){
 		values_avg[ch] /= count;
 	}
 
-#ifdef IMU_MODULE_DEBUG
+#ifdef IMU_MODULE_DEBUG_SELF_TEST
 	PRINTS("AVG: ");
  	for(uint8_t i=0;i<3;i++){
- 		int16_t diff = values_avg[i];
-			uint8_t temp = ((diff & 0xFF00) >> 8);
-			PRINT_BYTE(&temp,sizeof(uint8_t));
-			PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
-			PRINTS(" ");
+        int16_t diff = values_avg[i];
+        PRINTF("%d, ", diff);
 	}
  	PRINTS("\r\n");
 #endif
@@ -683,14 +711,11 @@ int imu_self_test(void){
 	values_st_avg_2[1] /= 3;
 	values_st_avg_2[2] /= 3;
 
-#ifdef IMU_MODULE_DEBUG
+#ifdef IMU_MODULE_DEBUG_SELF_TEST
 	PRINTS("ST AVG: ");
  	for(uint8_t i=0;i<3;i++){
-		int16_t diff = values_st_avg_2[i];
-		uint8_t temp = ((diff & 0xFF00) >> 8);
-		PRINT_BYTE(&temp,sizeof(uint8_t));
-		PRINT_BYTE((uint8_t*)&diff,sizeof(uint8_t));
-		PRINTS(" ");
+        int16_t diff = values_st_avg_2[i];
+        PRINTF("%d, ", diff);
 	}
  	PRINTS("\r\n");
 #endif
@@ -700,13 +725,12 @@ int imu_self_test(void){
 
 	nrf_delay_ms(20);
 
-#ifdef IMU_MODULE_DEBUG
+#ifdef IMU_MODULE_DEBUG_SELF_TEST
 	PRINTS("DIFF: ");
  	for(uint8_t i=0;i<3;i++){
 		uint16_t diff = 0;
 		diff = abs(values_st_avg_2[i] - values_avg[i]);
-		PRINT_BYTE(&diff,sizeof(uint8_t));
-		PRINTS(" ");
+        PRINTF("%d, ", diff);
 	}
  	PRINTS("\r\n");
 

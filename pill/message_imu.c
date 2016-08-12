@@ -29,7 +29,9 @@
 #include "gpio_nor.h"
 
 #include "message_time.h"
-
+#include "pill_gatt.h"
+#include "message_prox.h"
+#include "hble.h"
 
 enum {
     IMU_COLLECTION_INTERVAL = 6553, // in timer ticks, so 200ms (0.2*32768)
@@ -61,7 +63,6 @@ static struct imu_settings _settings = {
 	.active_sensors = IMU_SENSORS_ACCEL,//|IMU_SENSORS_GYRO,
     .accel_range = IMU_ACCEL_RANGE_2G,
     .data_ready_callback = NULL,
-    .wom_callback = NULL,
     .is_active = false,
 };
 
@@ -72,11 +73,6 @@ static inline void _reset_accel_range(enum imu_accel_range range)
     imu_set_accel_range(range);
 }
 
-
-void imu_set_wom_callback(imu_wom_callback_t callback)
-{
-    _settings.wom_callback = callback;
-}
 
 inline void imu_get_settings(struct imu_settings *settings)
 {
@@ -139,7 +135,7 @@ static void _imu_switch_mode(bool is_active)
     {
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
-
+      
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 
 #ifdef IMU_ENABLE_LOW_POWER
@@ -221,7 +217,7 @@ fix_imu_interrupt(void){
 	uint8_t value = 0;
 	if(initialized){
 		if(NRF_SUCCESS == app_gpiote_pins_state_get(_gpiote_user, &gpio_pin_state)){
-			if((gpio_pin_state & (1<<IMU_INT))){
+			if(!(gpio_pin_state & (1<<IMU_INT))){
 				parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
 				if (stuck_counter < 15)
 				{
@@ -253,6 +249,9 @@ static void _on_pill_pairing_guesture_detected(void){
         MSG_Base_ReleaseDataAtomic(data_page);
     }
 #endif
+#ifdef BLE_ENABLE
+    hble_advertising_start();
+#endif
 
     PRINTS("Shake detected\r\n");
 }
@@ -260,7 +259,7 @@ static void _on_pill_pairing_guesture_detected(void){
 
 static MSG_Status _init(void){
 	if(!initialized){
-		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_PULLUP);
+		nrf_gpio_cfg_input(IMU_INT, NRF_GPIO_PIN_NOPULL);
 
 #ifdef IMU_DYNAMIC_SAMPLING
 		if(!imu_init_low_power(SPI_Channel_1, SPI_Mode3, IMU_SPI_MISO, IMU_SPI_MOSI, IMU_SPI_SCLK, IMU_SPI_nCS, 
@@ -325,11 +324,6 @@ static MSG_Status _handle_read_xyz(void){
 		//loop:
 		for(i=0;i<ret/6;i++)
 		{
-			// ble notify
-			if(_settings.wom_callback){
-				_settings.wom_callback(ptr, 3*sizeof(int16_t));
-			}
-
 			//aggregate value greater than threshold
 			mag = _aggregate_motion_data(ptr, 3*sizeof(int16_t));
 			ShakeDetect(mag);
@@ -347,10 +341,6 @@ static MSG_Status _handle_read_xyz(void){
     PRINTS("R\r\n");
 
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
-	if(_settings.wom_callback){
-		_settings.wom_callback(values, sizeof(values));
-	}
-
 	mag = _aggregate_motion_data(values, sizeof(values));
 	ShakeDetect(mag);
 #endif
@@ -384,10 +374,12 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
-
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
+			break;
+		case IMU_FORCE_SHAKE:
+			_on_pill_pairing_guesture_detected();
 			break;
 	}
 	return ret;
@@ -408,7 +400,7 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 #ifdef IMU_DYNAMIC_SAMPLING
 	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_REPEATED, _on_wom_timer));
 #endif
-	APP_OK(app_gpiote_user_register(&_gpiote_user, 1 << IMU_INT, 0, _imu_gpiote_process));
+	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
 	APP_OK(app_gpiote_user_disable(_gpiote_user));
     ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
     set_shake_detection_callback(_on_pill_pairing_guesture_detected);

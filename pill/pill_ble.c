@@ -38,15 +38,12 @@
 #include "ant_packet.h"
 #endif
 
-#ifdef PLATFORM_HAS_PROX
 #include "message_prox.h"
-#endif
 
 extern uint8_t hello_type;
 
 static uint16_t _pill_service_handle;
 static MSG_Central_t * central;
-static bool _should_stream = false;
 
 
 static void
@@ -54,41 +51,6 @@ _unhandled_msg_event(void* event_data, uint16_t event_size){
 	PRINTS("Unknown Event");
 	
 }
-
-
-static void
-_data_send_finished()
-{
-	PRINTS("DONE!");
-}
-
-static void _on_motion_data_arrival(const int16_t* raw_xyz, size_t len)
-{
-	if(_should_stream)
-	{
-        size_t new_len = len + sizeof(uint32_t);
-        uint32_t aggregate = raw_xyz[0] * raw_xyz[0] + raw_xyz[1] * raw_xyz[1] + raw_xyz[2] * raw_xyz[2];
-        uint8_t buffer[new_len];
-        memcpy(buffer, raw_xyz, len);
-        memcpy(&buffer[len], &aggregate, sizeof(aggregate));
-
-		hlo_ble_notify(0xFEED, buffer, new_len, NULL);
-	}
-	
-}
-
-
-
-static void _calibrate_imu(void * p_event_data, uint16_t event_size)
-{
-#ifdef PLATFORM_HAS_IMU
-#include "imu.h"
-        //imu_calibrate_zero();
-#endif
-        struct pill_command* command = (struct pill_command*)p_event_data;
-        hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
-}
-
 
 static void _command_write_handler(ble_gatts_evt_write_t* event)
 {
@@ -98,32 +60,38 @@ static void _command_write_handler(ble_gatts_evt_write_t* event)
     case PILL_COMMAND_DISCONNECT:
         hlo_ble_notify(0xD00D, &command->command, sizeof(command->command), NULL);
         break;
-    case PILL_COMMAND_SEND_DATA:
-		//hlo_ble_notify(0xFEED, (uint8_t *)TF_GetAll(), TF_GetAll()->length, _data_send_finished);
-        break;
-    case PILL_COMMAND_START_ACCELEROMETER:
-    	PRINTS("Streamming started\r\n");
-    	_should_stream = true;
-    	imu_set_wom_callback(_on_motion_data_arrival);
-    	break;
-    case PILL_COMMAND_STOP_ACCELEROMETER:
-    	_should_stream = false;
-    	imu_set_wom_callback(NULL);
-    	PRINTS("Streamming stopped\r\n");
-    	break;
-	case PILL_COMMAND_GET_BATTERY_LEVEL:
-		break;
 	case PILL_COMMAND_WIPE_FIRMWARE:
 		REBOOT_TO_DFU();
+		break;
+#ifdef PLATFORM_HAS_PROX
+	case PILL_COMMAND_CALIBRATE:
+		//calibrate prox routine
+		if(MSG_App_IsModLoaded(PROX)){
+			central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_START_CALIBRATE), NULL);
+		} else {//try load it again
+#ifdef PLATFORM_HAS_PROX
+			central->loadmod(MSG_Prox_Init(central));
+#endif
+			if(MSG_App_IsModLoaded(PROX)){
+				central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_START_CALIBRATE), NULL);
+			}else{
+				hlo_ble_notify(0xD00D, "I2CFail", 7, NULL);
+			}
+		}
+		break;
+	case PILL_COMMAND_WIPE_CALIBRATION:
+		central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_ERASE_CALIBRATE), NULL);
+		break;
+#endif
+	case PILL_COMMAND_RESET:
+		REBOOT();
+		break;
+	case PILL_COMMAND_READ_PROX:
+		central->dispatch( ADDR(BLE, 0), ADDR(PROX, PROX_READ_REPLY_BLE), NULL);
 		break;
     default:
         break;
     };
-}
-
-static void _data_ack_handler(ble_gatts_evt_write_t* event)
-{
-    PRINTS("_data_ack_handler()\r\n");
 }
 
 void pill_ble_evt_handler(ble_evt_t* ble_evt)
@@ -146,11 +114,6 @@ pill_ble_services_init(void)
 
     hlo_ble_char_write_request_add(0xDEED, &_command_write_handler, sizeof(struct pill_command));
     hlo_ble_char_notify_add(0xD00D);
-    hlo_ble_char_notify_add(0xFEED);
-    hlo_ble_char_write_command_add(0xF00D, &_data_ack_handler, sizeof(struct pill_data_response));
-    hlo_ble_char_notify_add(BLE_UUID_DAY_DATE_TIME_CHAR);
-    
-
 }
 
 int is_debug_enabled(){
@@ -198,6 +161,7 @@ void pill_ble_load_modules(void){
 
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1SEC), NULL);
         central->dispatch( ADDR(CENTRAL, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
+
 
 #ifdef PLATFORM_HAS_VLED
   		central->loadmod(MSG_LEDInit(central));
