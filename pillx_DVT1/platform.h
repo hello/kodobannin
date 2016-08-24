@@ -15,6 +15,8 @@
 #define USE_HLO_ANT_NETWORK
 #define PILL_ANT_TYPE HLO_ANT_DEVICE_TYPE_PILL1_5
 
+#define EXT_MODEL_NUM "1p5 "
+
 #define configTOTAL_HEAP_SIZE 1024
 
 /*
