@@ -34,7 +34,10 @@ void generate_new_device(device_info_t * info){
      */
     get_random(16, einfo->device_aes);
     memcpy(einfo->ficr, NRF_FICR, sizeof(einfo->ficr));
-    sha1_calc(einfo, sizeof(*einfo) - SHA1_DIGEST_LENGTH, einfo->sha);
+    SHA1_CTX sha;
+    SHA1_Init(&sha);
+    SHA1_Update(&sha, (uint8_t*)einfo, sizeof(*einfo) - SHA1_SIZE);
+    SHA1_Final(einfo->sha, &sha);
  
     aes128_ctr_encrypt_inplace((uint8_t*)einfo, sizeof(*einfo), (const uint8_t*)aes, meta->nonce);
 
