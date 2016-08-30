@@ -92,12 +92,13 @@ static bool bootloader_app_is_signed(uint32_t app_addr, uint32_t app_total_len){
     uint8_t opad[64] = {0};
     uint8_t digest[SHA1_SIZE] = {0};
     uint8_t hmac[SHA1_SIZE] = {0};
+
+    memcpy(ipad, sign_key, sizeof(sign_key));
+    memcpy(opad, sign_key, sizeof(sign_key));
     for(int i = 0; i < sizeof(ipad); i++){
         ipad[i] ^= 0x36;
         opad[i] ^= 0x5c;
     }
-    memcpy(ipad, sign_key, sizeof(sign_key));
-    memcpy(opad, sign_key, sizeof(sign_key));
     {
         SHA1_CTX ctx;
         SHA1_Init(&ctx);
