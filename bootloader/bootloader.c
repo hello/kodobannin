@@ -24,6 +24,8 @@
 #include "crc16.h"
 #include "pstorage.h"
 #include "app_scheduler.h"
+#include "crypto.h"
+#include "hlo_keys.h"
 
 #define IRQ_ENABLED             0x01                    /**< Field identifying if an interrupt is enabled. */
 #define MAX_NUMBER_INTERRUPTS   32                      /**< Maximum number of interrupts available. */
@@ -80,6 +82,42 @@ static void wait_for_events(void)
         }
     }
 }
+static bool bootloader_app_is_signed(uint32_t app_addr, uint32_t app_total_len){
+    if(app_total_len <= SHA1_SIZE){
+        return false;
+    }
+    uint32_t app_len = app_total_len - SHA1_SIZE;
+    uint8_t sign_key[] = HLO_SIGN_AES;
+    uint8_t ipad[64] = {0};
+    uint8_t opad[64] = {0};
+    uint8_t digest[SHA1_SIZE] = {0};
+    uint8_t hmac[SHA1_SIZE] = {0};
+    for(int i = 0; i < sizeof(ipad); i++){
+        ipad[i] ^= 0x36;
+        opad[i] ^= 0x5c;
+    }
+    memcpy(ipad, sign_key, sizeof(sign_key));
+    memcpy(opad, sign_key, sizeof(sign_key));
+    {
+        SHA1_CTX ctx;
+        SHA1_Init(&ctx);
+        SHA1_Update(&ctx, ipad, sizeof(ipad));
+        SHA1_Update(&ctx, (const uint8_t*)app_addr, app_len);
+        SHA1_Final(digest, &ctx);
+    }
+    {
+        SHA1_CTX ctx;
+        SHA1_Init(&ctx);
+        SHA1_Update(&ctx, opad, sizeof(opad));
+        SHA1_Update(&ctx, digest, SHA1_SIZE);
+        SHA1_Final(hmac, &ctx);
+    }
+    uint8_t * image_sha = (uint8_t*)(app_addr + app_len);
+    if( 0 == memcmp(hmac, image_sha, SHA1_SIZE) ){
+        return true;
+    }
+    return false;
+}
 
 
 bool bootloader_app_is_valid(uint32_t app_addr)
@@ -112,7 +150,7 @@ bool bootloader_app_is_valid(uint32_t app_addr)
                                               NULL);
                 }
 
-                success = (image_crc == p_bootloader_settings->bank_0_crc);
+                success = ((image_crc == p_bootloader_settings->bank_0_crc) && bootloader_app_is_signed(DFU_BANK_0_REGION_START, p_bootloader_settings->bank_0_size));
             }
             break;
             
