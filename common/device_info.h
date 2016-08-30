@@ -5,7 +5,9 @@
 
 #define META_NONCE_SIZE 8
 typedef struct{
-    uint8_t  reserved[4];
+    uint8_t  reserved[2];
+    uint8_t  factory_key_ver;
+    uint8_t  fw_signature_key_ver;
     uint8_t  hw_revision;
     uint8_t  bootloader_ver;
     uint16_t factory_crc;
