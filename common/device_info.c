@@ -20,6 +20,8 @@ void generate_new_device(device_info_t * info){
 #else
     meta->bootloader_ver = 0;
 #endif
+    meta->factory_key_ver = HLO_FACTORY_AES_VER;
+    meta->fw_signature_key_ver = HLO_SIGN_AES_VER;
     meta->hw_revision = HW_REVISION;
     memset(meta->reserved, 0xA5, 4);
     get_random(META_NONCE_SIZE, meta->nonce);
