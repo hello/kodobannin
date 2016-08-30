@@ -3,8 +3,8 @@
  * A place to put all common defines
  */
 //make sure the FW_VERSION_STRING fits in MorpheusCommand.top_version (16 bytes)
-#define FW_VERSION_STRING "1.4.3"
+#define FW_VERSION_STRING "1.5.0"
 
 //pill only
-#define FIRMWARE_VERSION_8BIT (43)
+#define FIRMWARE_VERSION_8BIT (50)
 
