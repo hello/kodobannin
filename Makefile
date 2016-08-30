@@ -139,7 +139,7 @@ $(SOFTDEVICE_UICR):: $(SOFTDEVICE_SRC)
 #4 bytes bank0_size
 
 %.crc: %.bin tools/crc16
-	cat $< | openssl dgst -binary -sha1 -hmac "3C44662f28a1c4d3b2f293f8e0d4be78" >> $<
+	cat $< | openssl dgst -binary -sha1 -mac HMAC -macopt hexkey:3c44662f28a1c4d3b2f293f8e0d4be78 >> $<
 	echo 01 00 | xxd -r -p >> $@
 	$(CURDIR)/tools/crc16 $< | xxd -r -p | dd conv=swab 2> /dev/null >> $@
 	echo ff ff ff ff| xxd -r -p >> $@
