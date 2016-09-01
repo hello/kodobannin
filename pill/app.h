@@ -56,7 +56,7 @@ enum {
 // Advertising interval (in units of 0.625 ms)
 #define APP_ADV_INTERVAL                     800
 // Advertising timeout in units of seconds.
-#define APP_ADV_TIMEOUT_IN_SECONDS           5 * 60
+#define APP_ADV_TIMEOUT_IN_SECONDS           60
 
 // Definition of 1 second, when 1 unit is 1.25 ms.
 #define SECOND_1_25_MS_UNITS                    800
@@ -112,11 +112,12 @@ enum {
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
 #define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
+#define IMU_SLEEP_TIMEOUT                   (IMU_ACTIVE_INTERVAL * 6) /* time which the imu goes back to sleep */
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_MIN              (3600/60)
 #define BATT_MEASURE_INTERVAL_MIN           (1200/60)  /* Measure battery level every 20 minutes */
 
-#define SHAKING_MOTION_THRESHOLD        (300000000)
+#define SHAKING_MOTION_THRESHOLD        (400000000)
 #define SLIDING_WINDOW_SIZE_SEC         (2) // shake second timer runs on imu active timer at 2hz now, so this is 1/2 secs
 #define SHAKING_DATA_COUNT_THRESHOLD    (8)
 
