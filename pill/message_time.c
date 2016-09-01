@@ -141,28 +141,10 @@ static void _1min_timer_handler(void * ctx) {
 //this one needs to be the max of all the requirements in the 1sec timer...
 #define MAX_1SEC_TIMER_RUNTIME  10
 
-static bool self_test_complete = false;
 extern int imu_self_test();
 static void _1sec_timer_handler(void * ctx){
     PRINTS("*");
     _update_uptime();
-
-#if 1 /* DVT hack */
-    if(self.uptime == 1){
-        //do self test
-        if( 0 == imu_self_test() ){
-            self_test_complete = true;
-            PRINTS("IMU self test pass\r\n");
-        }else{
-            PRINTS("IMU self test fail\r\n");
-        }
-        self.central->unloadmod(MSG_IMU_GetBase());
-        self.central->loadmod(MSG_IMU_GetBase());
-    }else if(self.uptime < 5 && self_test_complete){
-        self.central->dispatch( ADDR(CENTRAL, 0), ADDR(IMU, IMU_FORCE_SHAKE), NULL);
-        self.central->dispatch( ADDR(CENTRAL, 0), ADDR(IMU, IMU_FORCE_SHAKE), NULL);
-    }
-#endif
 
     uint8_t current_reed_state = 0;
     self.onesec_runtime += 1;
