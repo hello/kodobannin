@@ -192,7 +192,7 @@ static void _on_wom_timer(void* context)
         //PRINTS("Active state continues.\r\n");
     }
 
-    if(active_time_diff >= IMU_ACTIVE_INTERVAL && _settings.is_active)
+    if(active_time_diff >= IMU_SLEEP_TIMEOUT && _settings.is_active)
     {
         _imu_switch_mode(false);
         //PRINTF( "time diff %d\r\n", time_diff);
