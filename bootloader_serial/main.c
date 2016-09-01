@@ -12,7 +12,6 @@
 #include <app_timer.h>
 #include <platform.h>
 #include <ble_err.h>
-#include "sha1.h"
 #include <bootloader.h>
 #include <dfu_types.h>
 #include <bootloader_util_arm.h>
@@ -91,9 +90,6 @@ _start()
 #endif
 	_slip_prints("BOOTLOADER IS ALIVE\n\r");
 
-	//crash_log_save();
-
-	// const bool firmware_verified = _verify_fw_sha1((uint8_t*)proposed_fw_sha1);
 
     if((NRF_POWER->GPREGRET & GPREGRET_APP_CRASHED_MASK)) {
         //SIMPRINTS("Application crashed :(\r\n");
