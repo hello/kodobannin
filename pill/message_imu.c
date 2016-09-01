@@ -164,7 +164,7 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
         parent->dispatch( (MSG_Address_t){IMU, 0}, (MSG_Address_t){IMU, IMU_READ_XYZ}, NULL);
         reading = true;
     }
-    PRINTS("I\r");
+    PRINTS("I\r\n");
 }
 
 #define PRINT_HEX_X(x) PRINT_HEX(&x, sizeof(x)); PRINTS("\r\n");
