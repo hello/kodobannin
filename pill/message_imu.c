@@ -121,7 +121,7 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     ++current->num_meas;
     if(current->max_amp < aggregate){
         current->max_amp = aggregate;
-        PRINTF( "NEW MAX: %d\r\n", aggregate);
+        PRINTF( "NEW MAX: %u\r\n", aggregate);
     }
     for(int i=0;i<3;++i){
         current->avg_accel[i] += (values[i] - current->avg_accel[i])/current->num_meas;
