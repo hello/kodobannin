@@ -231,10 +231,8 @@ fix_imu_interrupt(void){
 	}
 	return value;
 }
-
-static void _on_pill_pairing_guesture_detected(void){
+static void _send_shake(void){
 	static uint8_t counter;
-    //TODO: send pairing request packets via ANT
 #ifdef ANT_ENABLE
     MSG_Data_t* data_page = MSG_Base_AllocateDataAtomic(sizeof(MSG_ANT_PillData_t) + sizeof(pill_shakedata_t));
     if(data_page){
@@ -249,6 +247,12 @@ static void _on_pill_pairing_guesture_detected(void){
         MSG_Base_ReleaseDataAtomic(data_page);
     }
 #endif
+}
+
+static void _on_pill_pairing_guesture_detected(void){
+    //TODO: send pairing request packets via ANT
+	_send_shake();
+	_send_shake();
 #ifdef BLE_ENABLE
     hble_advertising_start();
 #endif
