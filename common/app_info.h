@@ -8,6 +8,8 @@
 //pill only
 #define FIRMWARE_VERSION_8BIT (52)
 
+#define BLE_SIG_COMPANY_ID 387
+
 typedef struct __attribute__((packed)){
     uint8_t hw_type;    /* hw type, see ant_devices.h */
     uint8_t fw_version; /* version */

@@ -188,7 +188,7 @@ static void _advertising_data_init(uint8_t flags){
 		.fw_version = FIRMWARE_VERSION_8BIT,
 		.id = GET_UUID_64(),
 	};
-	manf.company_identifier = 387;//to be assigned
+	manf.company_identifier = BLE_SIG_COMPANY_ID;
 	manf.data.p_data = &hlo_manf;
 	manf.data.size = sizeof(hlo_manf);
 		

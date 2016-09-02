@@ -30,6 +30,7 @@
 #include "ant_driver.h"
 #include "morpheus_gatt.h"
 #include "morpheus_ble.h"
+#include "ant_devices.h"
 
 extern uint8_t hello_type;
 static uint16_t _morpheus_service_handle;
@@ -487,6 +488,16 @@ static void _advertising_data_init(uint8_t flags){
     memcpy(device_id_cpy, &_device_id, sizeof(_device_id));
     uint8_array_t data_array = { .p_data = device_id_cpy, .size = DEVICE_ID_SIZE };
 
+	//manufacturing data
+	ble_advdata_manuf_data_t manf = (ble_advdata_manuf_data_t){0};
+	hlo_ble_adv_manuf_data_t hlo_manf = (hlo_ble_adv_manuf_data_t){
+		.hw_type = HLO_ANT_DEVICE_TYPE_SENSE1_5,
+		.fw_version = FIRMWARE_VERSION_8BIT,
+		.id = GET_UUID_64(),
+	};
+	manf.company_identifier = BLE_SIG_COMPANY_ID;
+	manf.data.p_data = &hlo_manf;
+	manf.data.size = sizeof(hlo_manf);
 
     ble_advdata_service_data_t  srv_data = { 
         .service_uuid = _service_uuid.uuid,
@@ -502,6 +513,7 @@ static void _advertising_data_init(uint8_t flags){
     advdata.include_appearance = true;
     advdata.flags.size = sizeof(flags);
     advdata.flags.p_data = &flags;
+	advdata.p_manuf_specific_data = &manf;
 
     memset(&scanrsp, 0, sizeof(scanrsp));
     scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
