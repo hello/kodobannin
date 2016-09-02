@@ -22,7 +22,7 @@
 #define LIS2DH_HRES_MG_PER_CNT 		(1)
 #define MPU6500_MG_PER_LSB 			(16384UL)
 
-#define IMU_WTM_THRESHOLD (0x19UL)
+#define IMU_WTM_THRESHOLD (6)
 
 #define IMU_USE_PIN_INT1
 //#define IMU_USE_PIN_INT2

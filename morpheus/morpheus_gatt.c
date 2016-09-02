@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "morpheus_gatt.h"
-#include "sha1.h"
 #include "util.h"
 
 struct hlo_ble_notify_context {

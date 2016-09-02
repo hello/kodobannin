@@ -173,6 +173,12 @@ static void _sync_device_id()
     memset(sync_device_id_command.top_version, 0, sizeof(sync_device_id_command.top_version));
     memcpy(sync_device_id_command.top_version, FW_VERSION_STRING, sizeof(FW_VERSION_STRING));
 
+    //write bond count
+    uint16_t bond_count = BLE_BONDMNGR_MAX_BONDED_CENTRALS;
+    APP_OK(ble_bondmngr_central_ids_get(NULL, &bond_count));
+    sync_device_id_command.has_ble_bond_count = true;
+    sync_device_id_command.ble_bond_count = bond_count;
+
     if(!morpheus_ble_route_protobuf_to_cc3200(&sync_device_id_command))
     {
         PRINTS("Encode sync deviceId protobuf failed.\r\n");

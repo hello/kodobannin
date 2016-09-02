@@ -23,11 +23,15 @@ _ctr_inc_ctr(nrf_ecb_hal_data_t * ecb){
 const uint8_t *
 get_aes128_key(void){
 	//Use encryption root for now
-
+	return (uint8_t*)NRF_FICR->ER;
+#ifdef DEVICE_KEY_ADDRESS
+	return (uint8_t*)DEVICE_KEY_ADDRESS;
+#else
 	{
 		static 	uint8_t default_key[16]= {0};
 		return  default_key;
 	}
+#endif
 }
 uint32_t
 aes128_ctr_decrypt_inplace(uint8_t * message, uint32_t message_size, const uint8_t * key, const uint8_t * nonce){

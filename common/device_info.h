@@ -1,11 +1,13 @@
 #pragma once
 #include <stdint.h>
-#include "sha1.h"
 #include <stdbool.h>
+#include "crypto.h"
 
 #define META_NONCE_SIZE 8
 typedef struct{
-    uint8_t  reserved[4];
+    uint8_t  reserved[2];
+    uint8_t  factory_key_ver;
+    uint8_t  fw_signature_key_ver;
     uint8_t  hw_revision;
     uint8_t  bootloader_ver;
     uint16_t factory_crc;
@@ -17,7 +19,7 @@ typedef struct{
     uint32_t device_address[2];
     uint8_t device_aes[16];
     uint8_t ficr[256];
-    uint8_t sha[SHA1_DIGEST_LENGTH];
+    uint8_t sha[SHA1_SIZE];
 }__attribute__((packed)) device_encrypted_info_t;
 
 typedef struct{

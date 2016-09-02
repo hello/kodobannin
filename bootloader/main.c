@@ -11,7 +11,6 @@
 #include <app_timer.h>
 #include <platform.h>
 #include <ble_err.h>
-#include "sha1.h"
 #include <bootloader.h>
 #include <dfu_types.h>
 #include <bootloader_util_arm.h>
@@ -42,8 +41,6 @@ enum {
 };
 
 bool dfu_success = false;
-
-extern uint8_t __app_sha1_start__[SHA1_DIGEST_LENGTH];
 
 void
 _start()
