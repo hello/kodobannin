@@ -189,7 +189,7 @@ static void _advertising_data_init(uint8_t flags){
 		.id = GET_UUID_64(),
 	};
 	manf.company_identifier = BLE_SIG_COMPANY_ID;
-	manf.data.p_data = &hlo_manf;
+	manf.data.p_data = (uint8_t*)&hlo_manf;
 	manf.data.size = sizeof(hlo_manf);
 		
     // Build and set advertising data
