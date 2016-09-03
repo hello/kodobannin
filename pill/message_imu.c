@@ -252,7 +252,6 @@ static void _send_shake(void){
 static void _on_pill_pairing_guesture_detected(void){
     //TODO: send pairing request packets via ANT
 	_send_shake();
-	_send_shake();
 #ifdef BLE_ENABLE
     hble_advertising_start();
 #endif
