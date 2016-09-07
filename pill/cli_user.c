@@ -173,7 +173,7 @@ _handle_command(int argc, char * argv[]){
         PRINTS("\r\n");
     }
     //dispatch message through ANT
-    if(argc > 1 && !match_command(argv[0], "ant") ){
+    if(argc > 0 && !match_command(argv[0], "ant") ){
         //Create a message object from uart string
         _send_data_test();
     }

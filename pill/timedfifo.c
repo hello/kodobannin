@@ -102,7 +102,7 @@ bool TF_GetCondensed(MotionPayload_t* payload){
         dot = ((uint64_t)dot*_fastinvsqrt(_mag(datum.prev_avg_accel)))>>16;
         
         payload->cos_theta = _bitlog(dot);
-        uint32_t s = (_fastsqrt(datum.max_amp)) >> 7;
+        uint32_t s = (_fastsqrt(datum.max_amp)) >> 8;
         if( s < UINT8_MAX ) {
             payload->max = s;
         }else{
