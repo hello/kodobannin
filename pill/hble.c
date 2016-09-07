@@ -25,6 +25,7 @@
 
 #include "battery.h"
 #include "app_info.h"
+#include "ant_devices.h"
 
 //static hble_evt_handler_t _user_ble_evt_handler;
 //static uint16_t _connection_handle = BLE_CONN_HANDLE_INVALID;
@@ -180,12 +181,24 @@ static void _advertising_data_init(uint8_t flags){
         _service_uuid,
         {BLE_UUID_BATTERY_SERVICE, BLE_UUID_TYPE_BLE}
     };
+	//manufacturing data
+	ble_advdata_manuf_data_t manf = (ble_advdata_manuf_data_t){0};
+	hlo_ble_adv_manuf_data_t hlo_manf = (hlo_ble_adv_manuf_data_t){
+		.hw_type = HLO_ANT_DEVICE_TYPE_PILL1_5,
+		.fw_version = FIRMWARE_VERSION_8BIT,
+		.id = GET_UUID_64(),
+	};
+	manf.company_identifier = BLE_SIG_COMPANY_ID;
+	manf.data.p_data = (uint8_t*)&hlo_manf;
+	manf.data.size = sizeof(hlo_manf);
+		
     // Build and set advertising data
     memset(&advdata, 0, sizeof(advdata));
     advdata.name_type = BLE_ADVDATA_FULL_NAME;
     advdata.include_appearance = true;
     advdata.flags.size = sizeof(flags);
     advdata.flags.p_data = &flags;
+	advdata.p_manuf_specific_data = &manf;
     memset(&scanrsp, 0, sizeof(scanrsp));
     scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
     scanrsp.uuids_complete.p_uuids = adv_uuids;
