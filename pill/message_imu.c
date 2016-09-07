@@ -370,7 +370,6 @@ static MSG_Status _handle_read_xyz(void){
     app_timer_cnt_get(&active_time);
 #endif
 
-    APP_OK(app_gpiote_user_enable(_gpiote_user));
 	return SUCCESS;
 }
 
@@ -385,6 +384,7 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
+			APP_OK(app_gpiote_user_enable(_gpiote_user));
 			{
 				uint32_t current_time = 0;
 				app_timer_cnt_get(&current_time);
