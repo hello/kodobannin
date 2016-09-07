@@ -192,8 +192,6 @@ static void _on_wom_timer(void* context)
     uint32_t active_time_diff = 0;
     app_timer_cnt_diff_compute(current_time, active_time, &active_time_diff);
 
-    _update_motion_mask(current_time, top_of_minute);
-
     ShakeDetectDecWindow();
 
     if(active_time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
@@ -387,6 +385,11 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
+			{
+				uint32_t current_time = 0;
+				app_timer_cnt_get(&current_time);
+				_update_motion_mask(current_time, top_of_minute);
+			}
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
