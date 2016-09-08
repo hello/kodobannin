@@ -734,6 +734,9 @@ void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3
         const char* ble_mode_num = BLE_MODEL_NUM;
         memcpy(mod_num, ble_mode_num, strlen(ble_mode_num));
         uint8_t mod_num_len = strlen(ble_mode_num);
+		if(mod_num_len >= sizeof(mod_num) - 1){
+			APP_ASSERT(0);
+		}
         
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, mod_num);
