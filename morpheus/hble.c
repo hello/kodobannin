@@ -734,35 +734,6 @@ void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3
         const char* ble_mode_num = BLE_MODEL_NUM;
         memcpy(mod_num, ble_mode_num, strlen(ble_mode_num));
         uint8_t mod_num_len = strlen(ble_mode_num);
-
-        mod_num[mod_num_len] = ':';
-        size_t cc_ver_len = 1;
-        uint32_t tmp = _cc3200_verion;
-        PRINTS("CC VER: ");
-        PRINT_HEX(&_cc3200_verion, sizeof(_cc3200_verion));
-        PRINTS("\r\n");
-
-        while(tmp / 10 > 0){
-            cc_ver_len++;
-            tmp = tmp / 10;
-        }
-        tmp = _cc3200_verion;
-
-        if(mod_num_len + cc_ver_len + 1 >= sizeof(mod_num)){
-            PRINTS("Model name string tooooo long\r\n");
-            nrf_delay_ms(100);
-            APP_ASSERT(0);  // fail loudly, the version name cannot be too long
-        }
-
-        PRINTS("CC VER LEN: ");
-        PRINT_HEX(&cc_ver_len, sizeof(cc_ver_len));
-        PRINTS("\r\n");
-
-        for(int i = cc_ver_len - 1; i >= 0; i--)
-        {
-            mod_num[mod_num_len + 1 + i] = '0' + tmp % 10;
-            tmp /= 10;
-        }
         
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, mod_num);
