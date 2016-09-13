@@ -104,7 +104,7 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     memcpy(values, raw_xyz, len);
 
     //int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
-    uint32_t aggregate = (values[0] * values[0] + values[1] * values[1] + values[2] * values[2]) * 2;
+    uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
 	
 	tf_unit_t* current = TF_GetCurrent();
     ++current->num_meas;
