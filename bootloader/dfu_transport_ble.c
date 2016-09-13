@@ -716,6 +716,18 @@ static void advertising_init(void)
     m_adv_params.fp          = BLE_GAP_ADV_FP_ANY;
     m_adv_params.interval    = APP_ADV_INTERVAL;
     m_adv_params.timeout     = APP_ADV_TIMEOUT_IN_SECONDS;
+
+	//manufacturing data
+	ble_advdata_manuf_data_t manf = (ble_advdata_manuf_data_t){0};
+	hlo_ble_adv_manuf_data_t hlo_manf = (hlo_ble_adv_manuf_data_t){
+		.hw_type = PILL_HW_TYPE,
+		.fw_version = FIRMWARE_VERSION_8BIT,
+		.id = GET_UUID_64(),
+	};
+	manf.company_identifier = BLE_SIG_COMPANY_ID;
+	manf.data.p_data = (uint8_t*)&hlo_manf;
+	manf.data.size = sizeof(hlo_manf);
+	advdata.p_manuf_specific_data = &manf;
 }
 
 
