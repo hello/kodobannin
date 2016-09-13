@@ -35,6 +35,10 @@
 #include <stddef.h>
 #include <string.h>
 #include "dfu_config.h"
+#include "platform.h"
+#include "app_info.h"
+#include "ant_devices.h"
+#include "util.h"
 
 #define ADVERTISING_LED_PIN_NO               LED_0                                                   /**< Is on when device is advertising. */
 #define CONNECTED_LED_PIN_NO                 LED_1                                                   /**< Is on when device has connected. */
