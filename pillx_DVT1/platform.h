@@ -6,7 +6,9 @@
 #define ANT_ENABLE
 #endif
 
-#define BLE_ENABLE
+/*
+ *#define BLE_ENABLE
+ */
 
 #define HW_REVISION 4
 
