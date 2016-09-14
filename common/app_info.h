@@ -3,12 +3,12 @@
  * A place to put all common defines
  */
 //make sure the FW_VERSION_STRING fits in MorpheusCommand.top_version (16 bytes)
-#define FW_VERSION_STRING "1.5.5"
+#define FW_VERSION_STRING "1.5.6"
 
 //pill only
-#define FIRMWARE_VERSION_8BIT (55)
+#define FIRMWARE_VERSION_8BIT (56)
 
-#define BLE_SIG_COMPANY_ID 998
+#define BLE_SIG_COMPANY_ID 1002
 
 typedef struct __attribute__((packed)){
     uint8_t hw_type;    /* hw type, see ant_devices.h */

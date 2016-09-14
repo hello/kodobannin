@@ -50,6 +50,7 @@ static uint8_t stuck_counter;
 static uint32_t top_of_minute = 0;
 static uint32_t active_time = 0;
 
+static void _update_motion_mask(uint32_t now, uint32_t anchor);
 
 static struct imu_settings _settings = {
 	.active_wom_threshold = IMU_ACTIVE_WOM,
@@ -105,18 +106,6 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     //int32_t aggregate = ABS(values[0]) + ABS(values[1]) + ABS(values[2]);
     uint32_t aggregate = values[0] * values[0] + values[1] * values[1] + values[2] * values[2];
 	
-    /*
-    tf_unit_t curr = TF_GetCurrent();
-
-    PRINTS("Current value: ");
-    PRINT_HEX(&curr, sizeof(curr));
-    PRINTS("\r\n");
-    PRINTS("New value: ");
-    PRINT_HEX(&aggregate, sizeof(tf_unit_t));
-    PRINTS("\r\n");
-    */
-
-	//TF_SetCurrent((uint16_t)values[0]);
 	tf_unit_t* current = TF_GetCurrent();
     ++current->num_meas;
     if(current->max_amp < aggregate){
@@ -169,21 +158,28 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
 
 #define PRINT_HEX_X(x) PRINT_HEX(&x, sizeof(x)); PRINTS("\r\n");
 
+static void _update_motion_mask(uint32_t now, uint32_t anchor){
+    uint32_t time_diff = 0;
+    app_timer_cnt_diff_compute(now, anchor, &time_diff);
+    time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
+
+	uint64_t old_mask = TF_GetCurrent()->motion_mask;
+    TF_GetCurrent()->motion_mask |= 1ull<<(time_diff%60);
+
+	if(TF_GetCurrent()->motion_mask != old_mask){
+		PRINTS("mask\r\n");
+		PRINT_HEX_X( TF_GetCurrent()->motion_mask  );
+	}
+}
+
 static void _on_wom_timer(void* context)
 {
     uint32_t current_time = 0;
     app_timer_cnt_get(&current_time);
-    uint32_t time_diff = 0;
-    app_timer_cnt_diff_compute(current_time, top_of_minute, &time_diff);
+
     uint32_t active_time_diff = 0;
     app_timer_cnt_diff_compute(current_time, active_time, &active_time_diff);
 
-    time_diff /= APP_TIMER_TICKS( 1000, APP_TIMER_PRESCALER );
-    TF_GetCurrent()->motion_mask |= 1ull<<(time_diff%60);
-    PRINTS("mask\r\n");
-    
-    PRINT_HEX_X( TF_GetCurrent()->motion_mask  );
-    
     ShakeDetectDecWindow();
 
     if(active_time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
@@ -377,6 +373,11 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
 			imu_clear_interrupt_status();
+			{
+				uint32_t current_time = 0;
+				app_timer_cnt_get(&current_time);
+				_update_motion_mask(current_time, top_of_minute);
+			}
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
