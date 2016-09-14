@@ -230,6 +230,7 @@ MSG_Base_t * MSG_ANT_Base(MSG_Central_t * parent, const MSG_ANTHandler_t * handl
             hlo_ant_cw_test(66, 4);
             break;
         case HLO_ANT_ROLE_PERIPHERAL:
+            hlo_ant_cw_test(66, 1);
             self.local_device = (hlo_ant_device_t){
                 .device_number = GET_UUID_16(),
                 .device_type = device_type,
