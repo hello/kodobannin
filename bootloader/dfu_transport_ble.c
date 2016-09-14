@@ -38,7 +38,6 @@
 #include "platform.h"
 #include "app_info.h"
 #include "ant_devices.h"
-#include "util.h"
 
 #define ADVERTISING_LED_PIN_NO               LED_0                                                   /**< Is on when device is advertising. */
 #define CONNECTED_LED_PIN_NO                 LED_1                                                   /**< Is on when device has connected. */
@@ -709,6 +708,18 @@ static void advertising_init(void)
     advdata.uuids_more_available.uuid_cnt = 1;
     advdata.uuids_more_available.p_uuids  = &service_uuid;
 
+	//manufacturing data
+	ble_advdata_manuf_data_t manf = (ble_advdata_manuf_data_t){0};
+	hlo_ble_adv_manuf_data_t hlo_manf = (hlo_ble_adv_manuf_data_t){
+		.hw_type = PILL_HW_TYPE,
+		.fw_version = FIRMWARE_VERSION_8BIT,
+		.id = *(uint64_t*)NRF_FICR->DEVICEID,
+	};
+	manf.company_identifier = BLE_SIG_COMPANY_ID;
+	manf.data.p_data = (uint8_t*)&hlo_manf;
+	manf.data.size = sizeof(hlo_manf);
+	advdata.p_manuf_specific_data = &manf;
+
     err_code = ble_advdata_set(&advdata, NULL);
     APP_ERROR_CHECK(err_code);
 
@@ -720,18 +731,6 @@ static void advertising_init(void)
     m_adv_params.fp          = BLE_GAP_ADV_FP_ANY;
     m_adv_params.interval    = APP_ADV_INTERVAL;
     m_adv_params.timeout     = APP_ADV_TIMEOUT_IN_SECONDS;
-
-	//manufacturing data
-	ble_advdata_manuf_data_t manf = (ble_advdata_manuf_data_t){0};
-	hlo_ble_adv_manuf_data_t hlo_manf = (hlo_ble_adv_manuf_data_t){
-		.hw_type = PILL_HW_TYPE,
-		.fw_version = FIRMWARE_VERSION_8BIT,
-		.id = GET_UUID_64(),
-	};
-	manf.company_identifier = BLE_SIG_COMPANY_ID;
-	manf.data.p_data = (uint8_t*)&hlo_manf;
-	manf.data.size = sizeof(hlo_manf);
-	advdata.p_manuf_specific_data = &manf;
 }
 
 
