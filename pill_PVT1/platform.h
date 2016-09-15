@@ -17,6 +17,7 @@
 #define configTOTAL_HEAP_SIZE 1280
 
 #define PLATFORM_HAS_SERIAL
+#define PILL_HW_TYPE  HLO_ANT_DEVICE_TYPE_PILL
 
 enum {
     SERIAL_TX_PIN = 18,
