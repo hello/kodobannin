@@ -692,6 +692,7 @@ static void advertising_init(void)
 {
     uint32_t      err_code;
     ble_advdata_t advdata;
+    ble_advdata_t scanrsp;
     ble_uuid_t    service_uuid;
     uint8_t       flags = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
@@ -705,8 +706,10 @@ static void advertising_init(void)
     advdata.include_appearance            = false;
     advdata.flags.size                    = sizeof(flags);
     advdata.flags.p_data                  = &flags;
-    advdata.uuids_more_available.uuid_cnt = 1;
-    advdata.uuids_more_available.p_uuids  = &service_uuid;
+    /*
+     *advdata.uuids_more_available.uuid_cnt = 1;
+     *advdata.uuids_more_available.p_uuids  = &service_uuid;
+     */
 
 	//manufacturing data
 	ble_advdata_manuf_data_t manf = (ble_advdata_manuf_data_t){0};
@@ -720,7 +723,11 @@ static void advertising_init(void)
 	manf.data.size = sizeof(hlo_manf);
 	advdata.p_manuf_specific_data = &manf;
 
-    err_code = ble_advdata_set(&advdata, NULL);
+    memset(&scanrsp, 0, sizeof(scanrsp));
+    scanrsp.uuids_complete.uuid_cnt = 1;
+    scanrsp.uuids_complete.p_uuids = &service_uuid;
+
+    err_code = ble_advdata_set(&advdata, &scanrsp);
     APP_ERROR_CHECK(err_code);
 
     // Initialize advertising parameters (used when starting advertising).
