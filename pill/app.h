@@ -33,8 +33,8 @@ enum {
 
 #ifdef IMU_ENABLE_LOW_POWER
 	#define IMU_INACTIVE_FREQ    (IMU_HZ_10)
-	#define IMU_INACTIVE_WOM     (55)
-	#define IMU_ACTIVE_WOM       (80)
+	#define IMU_INACTIVE_WOM     (75)
+	#define IMU_ACTIVE_WOM       (100)
 #else
 	#define IMU_INACTIVE_FREQ    (IMU_HZ_1)
 	//TODO arbitrarily set, may need to be changed if using this mode
@@ -112,7 +112,7 @@ enum {
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
 #define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
-#define IMU_SLEEP_TIMEOUT                   (IMU_ACTIVE_INTERVAL * 6) /* time which the imu goes back to sleep */
+#define IMU_SLEEP_TIMEOUT                   (IMU_ACTIVE_INTERVAL * 4) /* time which the imu goes back to sleep */
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_MIN              (3600/60)
 #define BATT_MEASURE_INTERVAL_MIN           (1200/60)  /* Measure battery level every 20 minutes */

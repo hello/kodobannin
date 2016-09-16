@@ -184,7 +184,7 @@ static void _advertising_data_init(uint8_t flags){
 	//manufacturing data
 	ble_advdata_manuf_data_t manf = (ble_advdata_manuf_data_t){0};
 	hlo_ble_adv_manuf_data_t hlo_manf = (hlo_ble_adv_manuf_data_t){
-		.hw_type = HLO_ANT_DEVICE_TYPE_PILL1_5,
+		.hw_type = PILL_HW_TYPE,
 		.fw_version = FIRMWARE_VERSION_8BIT,
 		.id = GET_UUID_64(),
 	};

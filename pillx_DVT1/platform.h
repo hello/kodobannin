@@ -14,6 +14,7 @@
 //use hello's ant network key
 #define USE_HLO_ANT_NETWORK
 #define PILL_ANT_TYPE HLO_ANT_DEVICE_TYPE_PILL
+#define PILL_HW_TYPE  HLO_ANT_DEVICE_TYPE_PILL1_5
 
 #define EXT_MODEL_NUM "1p5 "
 
