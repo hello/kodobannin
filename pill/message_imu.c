@@ -229,6 +229,13 @@ fix_imu_interrupt(void){
 	}
 	return value;
 }
+uint8_t fix_imu_stuck_on(void){
+	if(TF_GetCurrent()->motion_mask == 0x0FFFFFFFFFFFFFFF){
+		PRINTF("fix imu stuck");
+		parent->unloadmod(MSG_IMU_GetBase());
+		parent->loadmod(MSG_IMU_GetBase());
+	}
+}
 static void _send_shake(void){
 	static uint8_t counter;
 #ifdef ANT_ENABLE
