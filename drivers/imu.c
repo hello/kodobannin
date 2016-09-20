@@ -293,10 +293,18 @@ void imu_enter_normal_mode()
 
 	imu_reset_hp_filter();
 
+	// Update FIFO mode
+	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+	imu_wtm_intr_en = true;
+	imu_fifo_enable();
 }
 
 void imu_enter_low_power_mode()
 {
+	imu_fifo_disable();
+	// Update FIFO mode
+	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, 0, IMU_WTM_THRESHOLD);
+	imu_wtm_intr_en = false;
 
 	imu_disable_hres();
 
@@ -382,6 +390,7 @@ inline void imu_fifo_disable()
 	_register_write(REG_CTRL_5, reg);
 
 }
+
 
 // Read all bytes from FIFO
 static uint16_t imu_fifo_read_all(uint16_t* values, uint32_t bytes_to_read)
