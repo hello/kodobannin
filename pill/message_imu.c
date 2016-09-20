@@ -406,7 +406,7 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 	base.type = IMU;
 	base.typestr = name;
 #ifdef IMU_DYNAMIC_SAMPLING
-	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_REPEATED, _on_wom_timer));
+	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_ONE_SHOT, _on_wom_timer));
 #endif
 	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
 	APP_OK(app_gpiote_user_disable(_gpiote_user));
