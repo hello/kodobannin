@@ -41,9 +41,6 @@ enum {
 
 static SPI_Context _spi_context;
 
-// true if imu fifo watermark interrupt is enabled
-static bool imu_wtm_intr_en = false;
-
 static uint16_t imu_fifo_read_all(uint16_t* values, uint32_t bytes_to_read);
 
 
@@ -203,8 +200,7 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 	fifo_src_reg = imu_read_fifo_src_reg();
 
 	//If wtm interrupt is enabled or if wtm flag is set, read FIFO
-	if((imu_wtm_intr_en == true) ||
-		(fifo_src_reg & FIFO_WATERMARK))
+	if(fifo_src_reg & FIFO_WATERMARK)
 	{
 
 		// FIFO sample size
@@ -219,15 +215,6 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 		ret = imu_fifo_read_all(values, (fifo_unread_samples*fifo_channels_per_sample*fifo_bytes_per_channel));
 
 		_register_write(REG_CTRL_3, INT1_AOI1);
-
-		imu_wtm_intr_en = false;
-
-	}
-	else if(imu_wtm_intr_en == false)
-	{
-		// AOI intr occurred but FIFO not full, wait for WTM INT
-		_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);//INT1_FIFO_OVERRUN);
-		imu_wtm_intr_en = true;
 
 	}
 
@@ -294,17 +281,12 @@ void imu_enter_normal_mode()
 	imu_reset_hp_filter();
 
 	// Update FIFO mode
-	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
-	imu_wtm_intr_en = true;
-	imu_fifo_enable();
+	_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);
 }
 
 void imu_enter_low_power_mode()
 {
-	imu_fifo_disable();
-	// Update FIFO mode
-	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, 0, IMU_WTM_THRESHOLD);
-	imu_wtm_intr_en = false;
+	_register_write(REG_CTRL_3, INT1_AOI1);
 
 	imu_disable_hres();
 
@@ -582,8 +564,7 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 	// Update FIFO mode
 	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
 
-	imu_wtm_intr_en = false;
-#else
+	#else
 	imu_fifo_disable();
 
 #endif
