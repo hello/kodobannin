@@ -33,13 +33,13 @@ enum {
 
 #ifdef IMU_ENABLE_LOW_POWER
 	#define IMU_INACTIVE_FREQ    (IMU_HZ_10)
-	#define IMU_INACTIVE_WOM     (60)
-	#define IMU_ACTIVE_WOM       (100)
+	#define IMU_INACTIVE_WOM     (80)
+	#define IMU_ACTIVE_WOM       (96)
 #else
 	#define IMU_INACTIVE_FREQ    (IMU_HZ_1)
 	//TODO arbitrarily set, may need to be changed if using this mode
-	#define IMU_INACTIVE_WOM     (60)
-	#define IMU_ACTIVE_WOM       (100)
+	#define IMU_INACTIVE_WOM     (80)
+	#define IMU_ACTIVE_WOM       (96)
 #endif
 
 #define IMU_ACTIVE_FREQ      (IMU_HZ_25)

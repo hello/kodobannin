@@ -41,6 +41,7 @@ bool imu_is_active();
 void imu_set_data_ready_callback(imu_data_ready_callback_t callback);
 uint8_t clear_stuck_count(void);
 uint8_t fix_imu_interrupt(void);
+uint8_t fix_imu_stuck_on(void);
 
 void top_of_meas_minute(void);
 
