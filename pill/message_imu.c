@@ -170,7 +170,6 @@ static void _update_motion_mask(uint32_t now, uint32_t anchor){
 
 static void _on_wom_timer(void* context)
 {
-    ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
     _imu_switch_mode_inactive();
     _settings.is_active = false;
 }
