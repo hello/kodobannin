@@ -287,7 +287,7 @@ void imu_enter_normal_mode()
 void imu_enter_low_power_mode()
 {
 	// bypass fifo in low power mode
-	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, 0, IMU_WTM_THRESHOLD);
 
 	imu_disable_hres();
 
