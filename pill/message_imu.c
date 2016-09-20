@@ -39,7 +39,6 @@ enum {
 
 static app_timer_id_t _wom_timer;
 static app_gpiote_user_id_t _gpiote_user;
-static uint32_t _last_active_time;
 
 static char * name = "IMU";
 static bool initialized = false;
@@ -48,7 +47,6 @@ static const MSG_Central_t * parent;
 static MSG_Base_t base;
 static uint8_t stuck_counter;
 static uint32_t top_of_minute = 0;
-static uint32_t active_time = 0;
 
 static void _update_motion_mask(uint32_t now, uint32_t anchor);
 
@@ -118,31 +116,29 @@ static uint32_t _aggregate_motion_data(const int16_t* raw_xyz, size_t len)
     return aggregate;
 }
 
-static void _imu_switch_mode(bool is_active)
+static void _imu_switch_mode_active(void)
 {
-    if(is_active)
-    {
-        imu_set_accel_freq(_settings.active_sampling_rate);
-        imu_wom_set_threshold(_settings.active_wom_threshold);
-      
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
+    imu_set_accel_freq(_settings.active_sampling_rate);
+    imu_wom_set_threshold(_settings.active_wom_threshold);
+     
+    //this timer will set the pill to low power mode, which will call this function  
+    app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
 
 #ifdef IMU_ENABLE_LOW_POWER
-        imu_enter_normal_mode();
+    imu_enter_normal_mode();
 #endif
         //PRINTS("IMU Active.\r\n");
-        _settings.is_active = true;
-    }else{
-        imu_set_accel_freq(_settings.inactive_sampling_rate);
-        imu_wom_set_threshold(_settings.inactive_wom_threshold);
+}
+static void _imu_switch_mode_inactive(void)
+{
+    imu_set_accel_freq(_settings.inactive_sampling_rate);
+    imu_wom_set_threshold(_settings.inactive_wom_threshold);
 
-        app_timer_stop(_wom_timer);
+    app_timer_stop(_wom_timer);
 #ifdef IMU_ENABLE_LOW_POWER
-        imu_enter_low_power_mode();
+    imu_enter_low_power_mode();
 #endif
-        //PRINTS("IMU Inactive.\r\n");
-        _settings.is_active = false;
-    }
+    //PRINTS("IMU Inactive.\r\n");
 }
 
 static bool reading = false;
@@ -174,27 +170,9 @@ static void _update_motion_mask(uint32_t now, uint32_t anchor){
 
 static void _on_wom_timer(void* context)
 {
-    uint32_t current_time = 0;
-    app_timer_cnt_get(&current_time);
-
-    uint32_t active_time_diff = 0;
-    app_timer_cnt_diff_compute(current_time, active_time, &active_time_diff);
-
-    _update_motion_mask(current_time, top_of_minute);
-
-    ShakeDetectDecWindow();
-
-    if(active_time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
-    {
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-        //PRINTS("Active state continues.\r\n");
-    }
-
-    if(active_time_diff >= IMU_SLEEP_TIMEOUT && _settings.is_active)
-    {
-        _imu_switch_mode(false);
-        //PRINTF( "time diff %d\r\n", time_diff);
-    }
+    ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
+    _imu_switch_mode_inactive();
+    _settings.is_active = false;
 }
 
 uint8_t
@@ -313,6 +291,10 @@ static MSG_Status _handle_read_xyz(void){
 	uint8_t ret;
 	int16_t* ptr = values;
 	uint32_t mag;
+        uint32_t current_time = 0;
+
+        app_timer_cnt_get(&current_time);
+
 
 	// Returns number of bytes read, 0 if no data read
 	ret = imu_handle_fifo_read(values);
@@ -327,7 +309,7 @@ static MSG_Status _handle_read_xyz(void){
 		{
 			//aggregate value greater than threshold
 			mag = _aggregate_motion_data(ptr, 3*sizeof(int16_t));
-			ShakeDetect(mag);
+			ShakeDetect(mag,current_time);
 
 			ptr += 3;
 		}
@@ -337,31 +319,30 @@ static MSG_Status _handle_read_xyz(void){
 #else
 	int16_t values[3];
 	uint32_t mag;
+        uint32_t current_time = 0;
+
+        app_timer_cnt_get(&current_time);
 
 	imu_accel_reg_read((uint8_t*)values);
     PRINTS("R\r\n");
 
 	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	mag = _aggregate_motion_data(values, sizeof(values));
-	ShakeDetect(mag);
+	ShakeDetect(mag,current_time);
 #endif
+
+    _update_motion_mask(current_time, top_of_minute);
 
     reading = false;
 
-#ifdef IMU_DYNAMIC_SAMPLING        
-
-	app_timer_cnt_get(&_last_active_time);
-
-	if(!_settings.is_active)
-	{
-		_imu_switch_mode(true);
-	}
-
-    app_timer_cnt_get(&active_time);
-#endif
+    if(!_settings.is_active)
+    {
+        _settings.is_active = true;
+        _imu_switch_mode_active();
+    }
 
     APP_OK(app_gpiote_user_enable(_gpiote_user));
-	return SUCCESS;
+    return SUCCESS;
 }
 
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
