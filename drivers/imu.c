@@ -214,8 +214,6 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 		// Read FIFO
 		ret = imu_fifo_read_all(values, (fifo_unread_samples*fifo_channels_per_sample*fifo_bytes_per_channel));
 
-		_register_write(REG_CTRL_3, INT1_AOI1);
-
 	}
 
 	return ret;
