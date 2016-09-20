@@ -348,16 +348,13 @@ static MSG_Status _handle_read_xyz(void){
 
     reading = false;
 
-#ifdef IMU_DYNAMIC_SAMPLING        
-
-	app_timer_cnt_get(&_last_active_time);
-
+#ifdef IMU_DYNAMIC_SAMPLING
 	if(!_settings.is_active)
 	{
 		_imu_switch_mode(true);
+		app_timer_cnt_get(&_last_active_time);
+	    app_timer_cnt_get(&active_time);
 	}
-
-    app_timer_cnt_get(&active_time);
 #endif
 
     APP_OK(app_gpiote_user_enable(_gpiote_user));
