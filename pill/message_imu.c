@@ -125,22 +125,19 @@ static void _imu_switch_mode(bool is_active)
         imu_set_accel_freq(_settings.active_sampling_rate);
         imu_wom_set_threshold(_settings.active_wom_threshold);
       
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_normal_mode();
 #endif
-        //PRINTS("IMU Active.\r\n");
+		PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
 
-        app_timer_stop(_wom_timer);
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_low_power_mode();
 #endif
-        //PRINTS("IMU Inactive.\r\n");
+		PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }
 }
@@ -182,17 +179,14 @@ static void _on_wom_timer(void* context)
 
     ShakeDetectDecWindow();
 
-    if(active_time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
-    {
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-        //PRINTS("Active state continues.\r\n");
-    }
-
     if(active_time_diff >= IMU_SLEEP_TIMEOUT && _settings.is_active)
     {
         _imu_switch_mode(false);
-        //PRINTF( "time diff %d\r\n", time_diff);
-    }
+		PRINTS("IMU:S\r\n");
+    }else{
+		PRINTF("IMU:A\r\n");
+		app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
+	}
 }
 
 uint8_t
@@ -357,11 +351,10 @@ static MSG_Status _handle_read_xyz(void){
 
 	app_timer_cnt_get(&_last_active_time);
 
-	if(!_settings.is_active)
-	{
+	if(!_settings.is_active){
 		_imu_switch_mode(true);
 	}
-
+	app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
     app_timer_cnt_get(&active_time);
 #endif
 
@@ -409,7 +402,7 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central)
 	base.type = IMU;
 	base.typestr = name;
 #ifdef IMU_DYNAMIC_SAMPLING
-	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_ONE_SHOT, _on_wom_timer));
+	APP_OK(app_timer_create(&_wom_timer, APP_TIMER_MODE_SINGLE_SHOT, _on_wom_timer));
 #endif
 	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << IMU_INT, _imu_gpiote_process));
 	APP_OK(app_gpiote_user_disable(_gpiote_user));
