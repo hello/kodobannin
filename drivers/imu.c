@@ -280,20 +280,23 @@ void imu_enter_normal_mode()
 
 	imu_reset_hp_filter();
 
+	// Reset FIFO
+	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+
 	// Update FIFO mode
 	_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);
 }
 
 void imu_enter_low_power_mode()
 {
-	_register_write(REG_CTRL_3, INT1_AOI1);
-
 	imu_disable_hres();
 
 	imu_lp_enable();
 
 	imu_reset_hp_filter();
 
+	_register_write(REG_CTRL_3, INT1_AOI1);
 }
 
 void imu_wom_set_threshold(uint16_t microgravities)
