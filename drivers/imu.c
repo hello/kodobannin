@@ -199,8 +199,10 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 
 	fifo_src_reg = imu_read_fifo_src_reg();
 
+	PRINTF("INT SRC %x %x\n", fifo_src_reg, INT1_FIFO_OVERRUN | FIFO_WATERMARK);
+
 	//If wtm interrupt is enabled or if wtm flag is set, read FIFO
-	if(fifo_src_reg & FIFO_WATERMARK)
+	if(fifo_src_reg & (INT1_FIFO_OVERRUN | FIFO_WATERMARK) )
 	{
 
 		// FIFO sample size
@@ -278,7 +280,7 @@ void imu_enter_normal_mode()
 
 	imu_reset_hp_filter();
 
-	imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
+	//imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
 
 	// Update FIFO mode
 	_register_write(REG_CTRL_3, INT1_FIFO_WATERMARK);
@@ -287,7 +289,7 @@ void imu_enter_normal_mode()
 void imu_enter_low_power_mode()
 {
 	// bypass fifo in low power mode
-	imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, 0, IMU_WTM_THRESHOLD);
+	//imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, 0, IMU_WTM_THRESHOLD);
 
 	imu_disable_hres();
 
