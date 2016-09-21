@@ -11,8 +11,7 @@
 typedef void(*shake_detection_callback_t)(void);  
 
 void ShakeDetectReset(uint32_t threshold);
-void ShakeDetectDecWindow(void);
-bool ShakeDetect(uint32_t accelmag);
+bool ShakeDetect(uint32_t accelmag,uint32_t time);
 
 void set_shake_detection_callback(shake_detection_callback_t callback);
 
