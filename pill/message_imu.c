@@ -131,7 +131,10 @@ static void _imu_switch_mode_active(void)
 }
 static void _imu_switch_mode_inactive(void)
 {
-    imu_set_accel_freq(_settings.inactive_sampling_rate);
+
+    //imu_set_accel_freq seems to set of an interupt... for reasons unkown
+//    imu_set_accel_freq(_settings.inactive_sampling_rate);
+
     imu_wom_set_threshold(_settings.inactive_wom_threshold);
 
     app_timer_stop(_wom_timer);
