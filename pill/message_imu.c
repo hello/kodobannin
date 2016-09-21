@@ -130,9 +130,10 @@ static void _imu_switch_mode(bool is_active)
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_normal_mode();
 #endif
-        //PRINTS("IMU Active.\r\n");
+        PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
+        ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
 
@@ -140,7 +141,7 @@ static void _imu_switch_mode(bool is_active)
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_low_power_mode();
 #endif
-        //PRINTS("IMU Inactive.\r\n");
+        PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }
 }
@@ -184,16 +185,9 @@ static void _on_wom_timer(void* context)
 
     ShakeDetectDecWindow();
 
-    if(active_time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
-    {
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-        //PRINTS("Active state continues.\r\n");
-    }
-
     if(active_time_diff >= IMU_SLEEP_TIMEOUT && _settings.is_active)
     {
         _imu_switch_mode(false);
-        //PRINTF( "time diff %d\r\n", time_diff);
     }
 }
 

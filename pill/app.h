@@ -118,7 +118,7 @@ enum {
 #define BATT_MEASURE_INTERVAL_MIN           (1200/60)  /* Measure battery level every 20 minutes */
 
 #define SHAKING_MOTION_THRESHOLD        (500000000)
-#define SLIDING_WINDOW_SIZE_SEC         (2) // shake second timer runs on imu active timer at 2hz now, so this is 1/2 secs
-#define SHAKING_DATA_COUNT_THRESHOLD    (5)
+#define SLIDING_WINDOW_SIZE_SEC         (4) // shake second timer runs on imu active timer at 2hz now, so this is 1/2 secs
+#define SHAKING_DATA_COUNT_THRESHOLD    (15)
 
 #define TF_CONDENSED_BUFFER_SIZE        (1)
