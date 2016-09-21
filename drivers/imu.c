@@ -22,7 +22,8 @@
 #define LIS2DH_HRES_MG_PER_CNT 		(1)
 #define MPU6500_MG_PER_LSB 			(16384UL)
 
-#define IMU_WTM_THRESHOLD (3)
+//should be just less than a half second
+#define IMU_WTM_THRESHOLD (11)
 
 #define IMU_USE_PIN_INT1
 //#define IMU_USE_PIN_INT2

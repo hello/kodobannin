@@ -111,7 +111,7 @@ enum {
  */
 // Battery level measurement interval (ticks).
 #define BATTERY_LEVEL_MEAS_INTERVAL          APP_TIMER_TICKS(200000, APP_TIMER_PRESCALER)
-#define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(1000, APP_TIMER_PRESCALER)
+#define IMU_ACTIVE_INTERVAL                  APP_TIMER_TICKS(500, APP_TIMER_PRESCALER)
 #define IMU_SLEEP_TIMEOUT                   (IMU_ACTIVE_INTERVAL * 4) /* time which the imu goes back to sleep */
 #define LED_INIT_LIGHTUP_INTERAVL            APP_TIMER_TICKS(200,APP_TIMER_PRESCALER)
 #define HEARTBEAT_INTERVAL_MIN              (3600/60)
