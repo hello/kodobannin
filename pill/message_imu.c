@@ -122,24 +122,25 @@ static void _imu_switch_mode(bool is_active)
 {
     if(is_active)
     {
-        imu_set_accel_freq(_settings.active_sampling_rate);
-      
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_normal_mode();
 #endif
+        imu_set_accel_freq(_settings.active_sampling_rate);
+//        imu_wom_set_threshold(_settings.active_wom_threshold); todo this is not meaninful anymore
+      
+        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
+
         PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
+#ifdef IMU_ENABLE_LOW_POWER
+        imu_enter_low_power_mode();
+#endif
         ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
         imu_set_accel_freq(_settings.inactive_sampling_rate);
         imu_wom_set_threshold(_settings.inactive_wom_threshold);
 
         app_timer_stop(_wom_timer);
-#ifdef IMU_ENABLE_LOW_POWER
-        imu_enter_low_power_mode();
-#endif
         PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }
