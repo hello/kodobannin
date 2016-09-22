@@ -125,7 +125,7 @@ static void _imu_switch_mode(bool is_active)
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_normal_mode();
 #endif
-        imu_set_accel_freq(_settings.active_sampling_rate);
+//        imu_set_accel_freq(_settings.active_sampling_rate);
 //        imu_wom_set_threshold(_settings.active_wom_threshold); todo this is not meaninful anymore
       
         app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
@@ -137,8 +137,8 @@ static void _imu_switch_mode(bool is_active)
         imu_enter_low_power_mode();
 #endif
         ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
-        imu_set_accel_freq(_settings.inactive_sampling_rate);
-        imu_wom_set_threshold(_settings.inactive_wom_threshold);
+//        imu_set_accel_freq(_settings.inactive_sampling_rate);
+//        imu_wom_set_threshold(_settings.inactive_wom_threshold); //only set this once in init
 
         app_timer_stop(_wom_timer);
         PRINTS("IMU Inactive.\r\n");
@@ -270,6 +270,8 @@ static MSG_Status _init(void){
 			initialized = true;
         }
         app_timer_cnt_get(&top_of_minute);
+
+        imu_wom_set_threshold(_settings.inactive_wom_threshold);
 	}
     return SUCCESS;
 }
