@@ -18,7 +18,6 @@
 
 #include <watchdog.h>
 
-#define LIS2DH_LOW_POWER_MG_PER_CNT (16)
 #define LIS2DH_HRES_MG_PER_CNT 		(1)
 #define MPU6500_MG_PER_LSB 			(16384UL)
 
@@ -274,11 +273,6 @@ inline void imu_lp_disable()
 void imu_enter_normal_mode()
 {
 	// IMU reset enables low power mode, LP has to be disabled before HRES is enabled
-	imu_lp_disable();
-
-	imu_enable_hres();
-
-	imu_reset_hp_filter();
 
 	//imu_set_fifo_mode(IMU_FIFO_STREAM_MODE, FIFO_TRIGGER_SEL_INT1, IMU_WTM_THRESHOLD);
 
@@ -291,10 +285,6 @@ void imu_enter_low_power_mode()
 	// bypass fifo in low power mode
 	//imu_set_fifo_mode(IMU_FIFO_BYPASS_MODE, 0, IMU_WTM_THRESHOLD);
 
-	imu_disable_hres();
-
-	imu_lp_enable();
-
 	imu_reset_hp_filter();
 
 	_register_write(REG_CTRL_3, INT1_AOI1);
@@ -304,7 +294,7 @@ void imu_wom_set_threshold(uint16_t microgravities)
 {
 
 	// 16 is FSR is 2g
-	_register_write(REG_INT1_THR, microgravities / 16);
+	_register_write(REG_INT1_THR, microgravities );
 
 }
 
@@ -579,13 +569,9 @@ int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode,
 
 	imu_clear_interrupt_status();
 
-#ifdef IMU_ENABLE_LOW_POWER
-	imu_enter_low_power_mode();
-#else
-
+	imu_lp_disable();
+	imu_enable_hres();
 	imu_enter_normal_mode();
-
-#endif
 
 	imu_enable_intr();
 
