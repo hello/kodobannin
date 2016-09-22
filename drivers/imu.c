@@ -294,7 +294,7 @@ void imu_wom_set_threshold(uint16_t microgravities)
 {
 
 	// 16 is FSR is 2g
-	_register_write(REG_INT1_THR, microgravities );
+	_register_write(REG_INT1_THR, microgravities/16 );
 
 }
 

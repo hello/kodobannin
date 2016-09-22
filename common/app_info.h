@@ -3,10 +3,10 @@
  * A place to put all common defines
  */
 //make sure the FW_VERSION_STRING fits in MorpheusCommand.top_version (16 bytes)
-#define FW_VERSION_STRING "1.6.3"
+#define FW_VERSION_STRING "1.6.4"
 
 //pill only
-#define FIRMWARE_VERSION_8BIT (0x3f)
+#define FIRMWARE_VERSION_8BIT (0x40)
 
 #define BLE_SIG_COMPANY_ID 1002
 
