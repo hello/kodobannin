@@ -187,7 +187,7 @@ bool imu_data_within_thr(int16_t value)
 	return false;
 }
 
-uint8_t imu_handle_fifo_read(uint16_t* values, uint8_t * intbits )
+uint8_t imu_handle_fifo_read(uint16_t* values)
 {
 
 	uint8_t ret = 0;
@@ -197,7 +197,7 @@ uint8_t imu_handle_fifo_read(uint16_t* values, uint8_t * intbits )
 	const uint8_t fifo_bytes_per_channel = 2;
 
 
-	*intbits = fifo_src_reg = imu_read_fifo_src_reg();
+	fifo_src_reg = imu_read_fifo_src_reg();
 
 	PRINTF("INT SRC %x %x\n", fifo_src_reg, INT1_FIFO_OVERRUN | FIFO_WATERMARK);
 

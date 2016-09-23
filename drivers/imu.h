@@ -60,7 +60,7 @@ void imu_fifo_enable();
 void imu_fifo_disable();
 
 // Read from FIFO
-uint8_t imu_handle_fifo_read(uint16_t* values, uint8_t * intbits );
+uint8_t imu_handle_fifo_read(uint16_t* values);
 
 // Set FIFO mode
 void imu_set_fifo_mode(enum imu_fifo_mode fifo_mode, uint8_t fifo_trigger, uint8_t wtm_threshold);

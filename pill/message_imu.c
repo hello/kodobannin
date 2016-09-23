@@ -307,10 +307,9 @@ static MSG_Status _handle_read_xyz(void){
 	uint8_t ret;
 	int16_t* ptr = values;
 	uint32_t mag;
-	uint8_t intbits;
 
 	// Returns number of bytes read, 0 if no data read
-	ret = imu_handle_fifo_read(values, &intbits);
+	ret = imu_handle_fifo_read(values);
 
 	if(ret){
 
@@ -326,14 +325,7 @@ static MSG_Status _handle_read_xyz(void){
 
 			ptr += 3;
 		}
-	}
 
-	uint8_t interrupt_status = imu_clear_interrupt_status();
-	if( intbits != 0xDF && interrupt_status ) {
-	    uint32_t current_time = 0;
-	    app_timer_cnt_get(&current_time);
-
-	    _update_motion_mask(current_time, top_of_minute);
 	}
 	}
 
@@ -360,6 +352,15 @@ static MSG_Status _handle_read_xyz(void){
 #endif
 
     APP_OK(app_gpiote_user_enable(_gpiote_user));
+
+
+	uint8_t interrupt_status = imu_clear_interrupt_status();
+	if( interrupt_status ) {
+	    uint32_t current_time = 0;
+	    app_timer_cnt_get(&current_time);
+
+	    _update_motion_mask(current_time, top_of_minute);
+	}
 
 	return SUCCESS;
 }
