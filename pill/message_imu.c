@@ -122,25 +122,26 @@ static void _imu_switch_mode(bool is_active)
 {
     if(is_active)
     {
-        imu_set_accel_freq(_settings.active_sampling_rate);
-        imu_wom_set_threshold(_settings.active_wom_threshold);
-      
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_normal_mode();
 #endif
-        //PRINTS("IMU Active.\r\n");
+        imu_set_accel_freq(_settings.active_sampling_rate);
+//        imu_wom_set_threshold(_settings.active_wom_threshold); todo this is not meaninful anymore
+      
+        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
+
+        PRINTS("IMU Active.\r\n");
         _settings.is_active = true;
     }else{
-        imu_set_accel_freq(_settings.inactive_sampling_rate);
-        imu_wom_set_threshold(_settings.inactive_wom_threshold);
-
-        app_timer_stop(_wom_timer);
 #ifdef IMU_ENABLE_LOW_POWER
         imu_enter_low_power_mode();
 #endif
-        //PRINTS("IMU Inactive.\r\n");
+        ShakeDetectReset(SHAKING_MOTION_THRESHOLD);
+        imu_set_accel_freq(_settings.inactive_sampling_rate);
+//        imu_wom_set_threshold(_settings.inactive_wom_threshold); //only set this once in init
+
+        app_timer_stop(_wom_timer);
+        PRINTS("IMU Inactive.\r\n");
         _settings.is_active = false;
     }
 }
@@ -180,20 +181,11 @@ static void _on_wom_timer(void* context)
     uint32_t active_time_diff = 0;
     app_timer_cnt_diff_compute(current_time, active_time, &active_time_diff);
 
-    _update_motion_mask(current_time, top_of_minute);
-
     ShakeDetectDecWindow();
-
-    if(active_time_diff < IMU_ACTIVE_INTERVAL && _settings.is_active)
-    {
-        app_timer_start(_wom_timer, IMU_ACTIVE_INTERVAL, NULL);
-        //PRINTS("Active state continues.\r\n");
-    }
 
     if(active_time_diff >= IMU_SLEEP_TIMEOUT && _settings.is_active)
     {
         _imu_switch_mode(false);
-        //PRINTF( "time diff %d\r\n", time_diff);
     }
 }
 
@@ -276,6 +268,8 @@ static MSG_Status _init(void){
 			initialized = true;
         }
         app_timer_cnt_get(&top_of_minute);
+
+        imu_wom_set_threshold(_settings.inactive_wom_threshold);
 	}
     return SUCCESS;
 }
@@ -308,7 +302,7 @@ static MSG_Status _handle_self_test(void){
 static MSG_Status _handle_read_xyz(void){
 
 #ifdef IMU_FIFO_ENABLE
-
+	{
 	int16_t values[IMU_FIFO_CAPACITY_WORDS]; //todo check if the stack can handle this
 	uint8_t ret;
 	int16_t* ptr = values;
@@ -333,6 +327,7 @@ static MSG_Status _handle_read_xyz(void){
 		}
 
 	}
+	}
 
 #else
 	int16_t values[3];
@@ -341,26 +336,32 @@ static MSG_Status _handle_read_xyz(void){
 	imu_accel_reg_read((uint8_t*)values);
     PRINTS("R\r\n");
 
-	//uint8_t interrupt_status = imu_clear_interrupt_status();
 	mag = _aggregate_motion_data(values, sizeof(values));
 	ShakeDetect(mag);
 #endif
 
     reading = false;
 
-#ifdef IMU_DYNAMIC_SAMPLING        
-
-	app_timer_cnt_get(&_last_active_time);
-
+#ifdef IMU_DYNAMIC_SAMPLING
 	if(!_settings.is_active)
 	{
 		_imu_switch_mode(true);
+		app_timer_cnt_get(&_last_active_time);
+	    app_timer_cnt_get(&active_time);
 	}
-
-    app_timer_cnt_get(&active_time);
 #endif
 
     APP_OK(app_gpiote_user_enable(_gpiote_user));
+
+
+	uint8_t interrupt_status = imu_clear_interrupt_status();
+	if( interrupt_status ) {
+	    uint32_t current_time = 0;
+	    app_timer_cnt_get(&current_time);
+
+	    _update_motion_mask(current_time, top_of_minute);
+	}
+
 	return SUCCESS;
 }
 
@@ -374,7 +375,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
 			break;
 		case IMU_READ_XYZ:
 			ret = _handle_read_xyz();
-			imu_clear_interrupt_status();
 			break;
 		case IMU_SELF_TEST:
 			ret = _handle_self_test();
