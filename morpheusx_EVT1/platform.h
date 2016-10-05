@@ -49,7 +49,9 @@ enum{
 	ACCEL_INT = 29,
 };
 
-#define PLATFORM_HAS_SERIAL_CROSS_CONNECT
+/*
+ *#define PLATFORM_HAS_SERIAL_CROSS_CONNECT
+ */
 
 enum {
     CCU_TX_PIN = 1,
