@@ -161,7 +161,7 @@ clean:
 
 
 # compile flags
-DEBUG = 1
+DEBUG = 0
 
 ifeq ($(DEBUG), 1)
 OPTFLAGS=-O1 -fno-omit-frame-pointer -fno-inline -fno-strict-aliasing -g -DDEBUG_SERIAL=2 -DuECC_ASM=0 # 1 (TxD) alone and 2 (TxD|RxD) both
