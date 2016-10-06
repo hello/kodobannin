@@ -4,7 +4,10 @@
 #include <spi.h>
 #include <util.h>
 #include "imu.h"
+#include <nrf_gpio.h>
+#include <app_gpiote.h>
 static const MSG_Central_t * parent;
+static app_gpiote_user_id_t _gpiote_user;
 static MSG_Base_t base;
 static char * name = "IMU";
 
@@ -15,11 +18,18 @@ static MSG_Status _flush(void){
     return SUCCESS;
 }
 
+static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
+{
+    int status = imu_clear_interrupt_status();
+    PRINTS("Tap\r\n");
+}
 static MSG_Status _init(void){
 #ifdef PLATFORM_HAS_ACCEL_SPI
     if( 0 == imu_init_simple(SPI_Channel_0, SPI_Mode3, ACCEL_MISO, ACCEL_MOSI, ACCEL_SCLK, ACCEL_nCS)
-        &&  0 == imu_tap_enable(0)
-        ){
+        &&  0 == imu_tap_enable()
+    ){
+        APP_OK(app_gpiote_user_enable(_gpiote_user));
+        imu_clear_interrupt_status();
         return SUCCESS;
     }else{
         return FAIL;
@@ -39,5 +49,8 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central){
 	base.send = _send;
 	base.type = IMU;
 	base.typestr = name;
+    nrf_gpio_cfg_input(ACCEL_INT, NRF_GPIO_PIN_NOPULL);
+	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << ACCEL_INT, _imu_gpiote_process));
+	APP_OK(app_gpiote_user_disable(_gpiote_user));
 	return &base;
 }

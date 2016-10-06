@@ -17,6 +17,7 @@ enum imu_hz {
 	IMU_HZ_1 = 1,
 	IMU_HZ_10 = 2,
 	IMU_HZ_25 = 3,
+	IMU_HZ_400 = 7,
 };
 
 enum imu_accel_range {

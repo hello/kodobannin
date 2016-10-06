@@ -172,9 +172,11 @@ inline uint8_t imu_clear_interrupt_status()
 	// clear the interrupt by reading INT_SRC register
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
+	PRINTF("INT CLR %x\r\n", int_source);
 	imu_reset_hp_filter();
+	_register_read(REG_CLICK_SRC, &int_source);
+	PRINTF("INT CLR %x\r\n", int_source);
 
-	PRINTF("INT CLR %x\n", int_source);
 	return int_source;
 }
 
@@ -472,13 +474,28 @@ int32_t imu_init_simple(enum SPI_Channel channel,
 		APP_ASSERT(0);
 		return -1;
 	}
-	return 0;
 
+	imu_reset();
+	_register_write(REG_CTRL_4, BLOCKDATA_UPDATE);//80
+
+	return 0;
 }
 
-int32_t imu_tap_enable(uint32_t tap_pin){
-	return 0;
+int32_t imu_tap_enable(void){
+	imu_enable_all_axis();
+	imu_set_accel_freq(IMU_HZ_400);
+	_register_write(REG_CTRL_3, INT1_CLICK);
+	_register_write(REG_CTRL_5, (LATCH_INTERRUPT1));
+	_register_write(REG_CTRL_6, INT_ACTIVE_LOW );
 
+	_register_write(REG_CLICK_CFG, 0x3F);//all directions clickable
+	_register_write(REG_CLICK_SRC, CLICK_SRC_DCLICK | CLICK_SRC_STAP);
+	_register_write(REG_CLICK_THR, 0xB0);
+	_register_write(REG_TIME_LIMIT, 0x04);
+	_register_write(REG_TIME_LATENCY, 0x24);
+	_register_write(REG_TIME_WINDOW, 0x7F);
+
+	return 0;
 }
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 		uint8_t miso, uint8_t mosi, uint8_t sclk,
