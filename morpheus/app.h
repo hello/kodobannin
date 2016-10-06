@@ -10,7 +10,7 @@
 
 enum {
     APP_TIMER_PRESCALER = 255, //overflow every 36 hours
-    APP_TIMER_MAX_TIMERS = 6,
+    APP_TIMER_MAX_TIMERS = 7,
     APP_TIMER_OP_QUEUE_SIZE = 2,
 };
 

@@ -166,6 +166,10 @@ inline void imu_enable_all_axis()
 	_register_write(REG_CTRL_1, reg | (AXIS_ENABLE));
 }
 
+void imu_clear_tap_interrupt(void){
+	uint8_t int_source;
+	_register_read(REG_CLICK_SRC, &int_source);
+}
 inline uint8_t imu_clear_interrupt_status()
 {
 
@@ -174,8 +178,6 @@ inline uint8_t imu_clear_interrupt_status()
 	_register_read(REG_INT1_SRC, &int_source);
 	PRINTF("INT CLR %x\r\n", int_source);
 	imu_reset_hp_filter();
-	_register_read(REG_CLICK_SRC, &int_source);
-	PRINTF("INT CLR %x\r\n", int_source);
 
 	return int_source;
 }

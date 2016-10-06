@@ -111,3 +111,4 @@ int32_t imu_init_simple(enum SPI_Channel channel,
 		uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS);
 
 int32_t imu_tap_enable(void);
+void imu_clear_tap_interrupt(void);
