@@ -492,7 +492,7 @@ int32_t imu_tap_enable(void){
 
 	_register_write(REG_CLICK_CFG, 0x3F);//all directions clickable
 	_register_write(REG_CLICK_SRC, CLICK_SRC_DCLICK | CLICK_SRC_STAP);
-	_register_write(REG_CLICK_THR, 0xB0);
+	_register_write(REG_CLICK_THR, 0x06);
 	_register_write(REG_TIME_LIMIT, 0x04);
 	_register_write(REG_TIME_LATENCY, 0x24);
 	_register_write(REG_TIME_WINDOW, 0x7F);
