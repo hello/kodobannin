@@ -20,8 +20,15 @@ static MSG_Status _flush(void){
 
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
-    int status = imu_clear_interrupt_status();
+    imu_clear_interrupt_status();
     PRINTS("Tap\r\n");
+    MSG_Data_t * data = MSG_Base_AllocateStringAtomic("tap");
+    if(data){
+        parent->dispatch(  (MSG_Address_t){IMU, 0},
+                (MSG_Address_t){SSPI,MSG_SSPI_TEXT},
+                data);
+        MSG_Base_ReleaseDataAtomic(data);
+    }
 }
 static MSG_Status _init(void){
 #ifdef PLATFORM_HAS_ACCEL_SPI
