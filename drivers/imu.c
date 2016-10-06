@@ -475,6 +475,11 @@ int32_t imu_init_simple(enum SPI_Channel channel,
 	return 0;
 
 }
+
+int32_t imu_tap_enable(uint32_t tap_pin){
+	return 0;
+
+}
 int32_t imu_init_low_power(enum SPI_Channel channel, enum SPI_Mode mode, 
 		uint8_t miso, uint8_t mosi, uint8_t sclk,
 		uint8_t nCS,

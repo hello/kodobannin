@@ -109,4 +109,5 @@ bool imu_data_within_thr(int16_t value);
 int32_t imu_init_simple(enum SPI_Channel channel,
 		enum SPI_Mode mode,
 		uint8_t miso, uint8_t mosi, uint8_t sclk, uint8_t nCS);
-
+//
+int32_t imu_tap_enable(uint32_t tap_pin);

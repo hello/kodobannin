@@ -17,7 +17,9 @@ static MSG_Status _flush(void){
 
 static MSG_Status _init(void){
 #ifdef PLATFORM_HAS_ACCEL_SPI
-    if(0 == imu_init_simple(SPI_Channel_0, SPI_Mode3, ACCEL_MISO, ACCEL_MOSI, ACCEL_SCLK, ACCEL_nCS)){
+    if( 0 == imu_init_simple(SPI_Channel_0, SPI_Mode3, ACCEL_MISO, ACCEL_MOSI, ACCEL_SCLK, ACCEL_nCS)
+        &&  0 == imu_tap_enable(0)
+        ){
         return SUCCESS;
     }else{
         return FAIL;
