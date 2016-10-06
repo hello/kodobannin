@@ -8,6 +8,7 @@
 #include <app_gpiote.h>
 #include "message_sspi.h"
 #include <app_timer.h>
+#include "platform.h"
 static const MSG_Central_t * parent;
 static app_gpiote_user_id_t _gpiote_user;
 static MSG_Base_t base;
