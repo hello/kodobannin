@@ -176,9 +176,9 @@ inline uint8_t imu_clear_interrupt_status()
 	// clear the interrupt by reading INT_SRC register
 	uint8_t int_source;
 	_register_read(REG_INT1_SRC, &int_source);
-	PRINTF("INT CLR %x\r\n", int_source);
 	imu_reset_hp_filter();
 
+	PRINTF("INT CLR %x\r\n", int_source);
 	return int_source;
 }
 
