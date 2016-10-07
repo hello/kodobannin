@@ -10,11 +10,8 @@
 #include <app_timer.h>
 #include "platform.h"
 static const MSG_Central_t * parent;
-static app_gpiote_user_id_t _gpiote_user;
 static MSG_Base_t base;
 static char * name = "IMU";
-static uint8_t flipped = 0;
-static app_timer_id_t _flip_timer;
 
 static MSG_Status _destroy(void){
     return SUCCESS;
@@ -24,6 +21,9 @@ static MSG_Status _flush(void){
 }
 
 #ifdef PLATFORM_HAS_ACCEL_SPI
+static uint8_t flipped = 0;
+static app_timer_id_t _flip_timer;
+static app_gpiote_user_id_t _gpiote_user;
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
     imu_clear_tap_interrupt();
