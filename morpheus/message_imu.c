@@ -94,9 +94,11 @@ MSG_Base_t * MSG_IMU_Init(const MSG_Central_t * central){
 	base.send = _send;
 	base.type = IMU;
 	base.typestr = name;
+#ifdef PLATFORM_HAS_ACCEL_SPI
     nrf_gpio_cfg_input(ACCEL_INT, NRF_GPIO_PIN_NOPULL);
 	APP_OK(app_gpiote_user_register(&_gpiote_user, 0, 1 << ACCEL_INT, _imu_gpiote_process));
 	APP_OK(app_gpiote_user_disable(_gpiote_user));
 	APP_OK(app_timer_create(&_flip_timer, APP_TIMER_MODE_REPEATED, _on_flip_timer));
+#endif
 	return &base;
 }
