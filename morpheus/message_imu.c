@@ -23,6 +23,7 @@ static MSG_Status _flush(void){
     return SUCCESS;
 }
 
+#ifdef PLATFORM_HAS_ACCEL_SPI
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
     imu_clear_tap_interrupt();
@@ -37,23 +38,6 @@ static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_
     parent->dispatch(  (MSG_Address_t){IMU, 0},
             (MSG_Address_t){IMU,0},
             NULL);
-}
-static MSG_Status _init(void){
-#ifdef PLATFORM_HAS_ACCEL_SPI
-    if( 0 == imu_init_simple(SPI_Channel_0, SPI_Mode3, ACCEL_MISO, ACCEL_MOSI, ACCEL_SCLK, ACCEL_nCS)
-        &&  0 == imu_tap_enable()
-    ){
-        APP_OK(app_gpiote_user_enable(_gpiote_user));
-        imu_clear_interrupt_status();
-        imu_clear_tap_interrupt();
-        app_timer_start(_flip_timer, 250, NULL);
-        return SUCCESS;
-    }else{
-        return FAIL;
-    }
-#else
-    return FAIL;
-#endif
 }
 static void _on_flip_timer(void* context){
     int16_t xyz[3] = {0};
@@ -82,6 +66,24 @@ static void _on_flip_timer(void* context){
         }
         flipped = 0;
     }
+}
+#endif
+static MSG_Status _init(void){
+#ifdef PLATFORM_HAS_ACCEL_SPI
+    if( 0 == imu_init_simple(SPI_Channel_0, SPI_Mode3, ACCEL_MISO, ACCEL_MOSI, ACCEL_SCLK, ACCEL_nCS)
+        &&  0 == imu_tap_enable()
+    ){
+        APP_OK(app_gpiote_user_enable(_gpiote_user));
+        imu_clear_interrupt_status();
+        imu_clear_tap_interrupt();
+        app_timer_start(_flip_timer, 250, NULL);
+        return SUCCESS;
+    }else{
+        return FAIL;
+    }
+#else
+    return FAIL;
+#endif
 }
 static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data){
     return SUCCESS;
