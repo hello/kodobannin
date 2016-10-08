@@ -48,7 +48,7 @@ enum {
 #define PLATFORM_HAS_IMU_VDD_CONTROL
 
 enum {
-    IMU_VDD_EN   = 20,
+    IMU_VDD_EN   = 19,
 
     IMU_SPI_nCS  = 13, // 16,
     IMU_SPI_SCLK = 15, // 14,
@@ -75,7 +75,7 @@ enum {
 
     RTC_INT =  2,
     LDO_INT = 24,
-    PROX_VDD_EN  = 17, // VPROX_VDD_EN
+    PROX_VDD_EN  = 20, // VPROX_VDD_EN
     PROX_BOOST_ENABLE  = 10, // 11, BOOST ENABLE
 };
 
