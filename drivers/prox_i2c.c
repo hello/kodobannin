@@ -137,7 +137,6 @@ static MSG_Status _prox_power(uint8_t on){
 }
 
 MSG_Status init_prox(void){
-	//tie vaux to vbat
     MSG_Status ret = _prox_power(1);
     _prox_power(0);
     return ret;
