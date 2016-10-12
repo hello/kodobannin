@@ -70,13 +70,14 @@ enum {
 #define PLATFORM_HAS_PROX
 
 enum {
-    I2C_SCL = 24, // 21,
-    I2C_SDA = 23, // 22,
+    I2C_SCL = 23, // 21,
+    I2C_SDA = 24, // 22,
 
     RTC_INT =  2,
     LDO_INT = 24,
     PROX_VDD_EN  = 20, // VPROX_VDD_EN
     PROX_BOOST_ENABLE  = 10, // 11, BOOST ENABLE
+    PROX_BOOST_MODE  = 22, // 11, BOOST ENABLE
 };
 
 // Real Time Calendar
