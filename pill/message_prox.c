@@ -146,9 +146,11 @@ static MSG_Status _init(void){
     }
 
     if(SUCCESS ==  init_prox()){
+        PRINTF("Prox Load OK\r\n");
         app_timer_start(timer_id_prox, ticks, NULL);
         return SUCCESS;
     }else{
+        PRINTF("Prox Load Fail\r\n");
         return FAIL;
     }
 }
@@ -165,6 +167,11 @@ static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t *
         case PROX_PING:
             break;
         case PROX_READ:
+            {
+                uint32_t data[2] = {0};
+                read_prox(&data[0], &data[1]);
+                PRINTF("Prox read [%u, %u]\r\n", data[0], data[1]);
+            }
             break;
         case PROX_START_CALIBRATE:
             _do_prox_calibration();

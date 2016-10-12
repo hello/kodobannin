@@ -153,6 +153,11 @@ _handle_command(int argc, char * argv[]){
                                 (MSG_Address_t){PROX, PROX_START_CALIBRATE},
                                 NULL);
     }
+    if( !match_command(argv[0], "prox")){
+        self.parent->dispatch( (MSG_Address_t){CLI,0},
+                                (MSG_Address_t){PROX, PROX_READ},
+                                NULL);
+    }
 
     if( !match_command(argv[0], "gpio")){
     	bool en = nrf_atoi(argv[1]);
