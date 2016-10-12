@@ -108,21 +108,32 @@ static MSG_Status _prox_power(uint8_t on){
 #ifdef PLATFORM_HAS_PROX
     if(on){
         nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
-        nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
+        nrf_gpio_cfg_output(PROX_BOOST_MODE);
         nrf_gpio_cfg_output(PROX_VDD_EN);
+
+        nrf_gpio_pin_set(PROX_BOOST_ENABLE);
+        nrf_gpio_pin_set(PROX_BOOST_MODE);
         nrf_gpio_pin_set(PROX_VDD_EN);
-        nrf_delay_ms(4 * I2C_DELAY);
+
+        nrf_delay_ms(8 * I2C_DELAY);
         if(SUCCESS != _check_id()){
+            PRINTF("Unable to check id");
             return FAIL;
         }
         _reset_config();
         _conf_prox();
     }else{
         nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
-        nrf_gpio_pin_set(PROX_BOOST_ENABLE);
+        nrf_gpio_cfg_output(PROX_BOOST_MODE);
+        nrf_gpio_cfg_output(PROX_VDD_EN);
+
+        nrf_gpio_pin_clear(PROX_BOOST_ENABLE);
+        nrf_gpio_pin_clear(PROX_BOOST_MODE);
+        nrf_gpio_pin_clear(PROX_VDD_EN);
     }
     return SUCCESS;
 #endif
+    return FAIL;
 }
 
 MSG_Status init_prox(void){
