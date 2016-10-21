@@ -125,6 +125,22 @@ enum IMU_Reg_Bits {
 	INT1_X_HIGH = 0x2,
 	INT1_X_LOW = 0x1,
 
+	//REG_CLICK_CFG
+	CLICK_CFG_ZD = 0x20,
+	CLICK_CFG_ZS = 0x10,
+	CLICK_CFG_YD = 0x08,
+	CLICK_CFG_YS = 0x04,
+	CLICK_CFG_XD = 0x02,
+	CLICK_CFG_XS = 0x01,
+
+	//REG_CLICK_SRC
+	CLICK_SRC_IA = 0x40,
+	CLICK_SRC_DCLICK = 0x20,
+	CLICK_SRC_STAP = 0x10,
+	CLICK_SRC_SIGN = 0x08,
+	CLICK_SRC_Z = 0x04,
+	CLICK_SRC_Y = 0x02,
+	CLICK_SRC_X = 0x01,
 	//INT1_SRC
 	//... we will just look for not zero...
 	// reading this one will clear the interrupt in latched mode
