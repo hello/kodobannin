@@ -27,6 +27,9 @@ static app_gpiote_user_id_t _gpiote_user;
 static void _imu_gpiote_process(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low)
 {
     imu_clear_tap_interrupt();
+    if(!is_boot_completed()){
+        return;
+    }
     PRINTS("Tap\r\n");
     MSG_Data_t * data = MSG_Base_AllocateStringAtomic("tap");
     if(data){
@@ -45,6 +48,9 @@ static void _on_flip_timer(void* context){
     /*
      *PRINTF("<imu>x:%d y:%d z:%d</imu>\r\n", xyz[0], xyz[1], xyz[2]);
      */
+    if(!is_boot_completed()){
+        return;
+    }
     if(xyz[2] > 1000 && !flipped){
         PRINTF("flipped");
         MSG_Data_t * data = MSG_Base_AllocateStringAtomic("flipped 1");

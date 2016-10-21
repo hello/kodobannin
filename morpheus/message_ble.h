@@ -32,4 +32,4 @@ MSG_Status message_ble_pill_pairing_begin(MSG_Data_t* account_id_page);
 MSG_Status message_ble_remove_pill(MSG_Data_t* pill_id_page);
 void message_ble_reset();
 void message_ble_on_protobuf_command(MSG_Data_t* data_page, MorpheusCommand* command);
-
+bool is_boot_completed(void);

@@ -709,6 +709,9 @@ static void _pair_morpheus(MorpheusCommand* command)
 
     MSG_Base_ReleaseDataAtomic(command->accountId.arg);
 }
+bool is_boot_completed(void){
+    return self.boot_state == BOOT_COMPLETED;
+}
 
 bool morpheus_ble_route_protobuf_to_cc3200(MorpheusCommand* command)
 {
