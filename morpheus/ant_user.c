@@ -21,8 +21,6 @@ static struct{
 static int _copy_pill_meta_data(MorpheusCommand * c, MSG_ANT_PillData_t * pill_data, const hlo_ant_device_t * id, char * device_id){
     memcpy(c->pill_data.device_id, device_id, sizeof(c->pill_data.device_id));
 
-    c->pill_data.has_firmware_version = true;
-    c->pill_data.firmware_version = pill_data->version;
 
     c->pill_data.has_rssi = true;
     c->pill_data.rssi = id->rssi;
@@ -125,6 +123,9 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Data_t * msg){
                             morpheus_command.pill_data.uptime = heartbeat.uptime_sec;
 
                             _copy_pill_meta_data(&morpheus_command, pill_data, id, buffer);
+
+                            morpheus_command.pill_data.has_firmware_version = true;
+                            morpheus_command.pill_data.firmware_version = heartbeat.firmware_version;
 
                             PRINTS("ANT Pill Heartbeat Received.\r\n");
                         }
