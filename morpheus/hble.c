@@ -730,8 +730,11 @@ void hble_params_init(const char* device_name, uint64_t device_id, uint32_t _cc3
         memset(&dis_init, 0, sizeof(dis_init));
 
         char mod_num[20] = {0};
-        
+#ifdef EXT_MODEL_NUM
+        const char* ble_mode_num = EXT_MODEL_NUM BLE_MODEL_NUM;
+#else
         const char* ble_mode_num = BLE_MODEL_NUM;
+#endif
         memcpy(mod_num, ble_mode_num, strlen(ble_mode_num));
         uint8_t mod_num_len = strlen(ble_mode_num);
 		if(mod_num_len >= sizeof(mod_num) - 1){

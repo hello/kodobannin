@@ -6,7 +6,7 @@
 #define FW_VERSION_STRING "1.7.4"
 
 //pill only
-#define FIRMWARE_VERSION_8BIT (0x48)
+#define FIRMWARE_VERSION_8BIT (0x49)
 
 #define BLE_SIG_COMPANY_ID 1002
 
