@@ -64,11 +64,11 @@ _handle_command(int argc, char * argv[]){
     }
     if(!match_command(argv[0], "ant")){
         pill_heartbeat_t heartbeat = {0};
-        heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
+        heartbeat.firmware_build = FIRMWARE_VERSION_8BIT;
         heartbeat.uptime_sec = time_keeper_get();
         MSG_Data_t* data_page = AllocateAntPayload(ANT_PILL_HEARTBEAT,&heartbeat , sizeof(pill_heartbeat_t));
         if(data_page){
-            PRINTF("HB battery %d uptime %d fw %d\r\n", heartbeat.battery_level, heartbeat.uptime_sec, heartbeat.firmware_version);
+            PRINTF("HB battery %d uptime %d fw %d\r\n", heartbeat.battery_level, heartbeat.uptime_sec, heartbeat.firmware_build);
             self.parent->dispatch((MSG_Address_t){TIME,1}, (MSG_Address_t){ANT,MSG_ANT_TRANSMIT}, data_page);
             MSG_Base_ReleaseDataAtomic(data_page);
         }
