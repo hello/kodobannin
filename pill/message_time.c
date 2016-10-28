@@ -87,7 +87,7 @@ static void _send_heartbeat_data_ant(){
     pill_heartbeat_t heartbeat = {0};
     heartbeat.battery_level = battery_get_percent_cached();
     heartbeat.uptime_sec = self.uptime;
-    heartbeat.firmware_version = FIRMWARE_VERSION_8BIT;
+    heartbeat.firmware_build = FIRMWARE_VERSION_8BIT;
     MSG_Data_t* data_page = AllocateAntPayload(ANT_PILL_HEARTBEAT,&heartbeat , sizeof(pill_heartbeat_t));
     if(data_page){
         PRINTF("HB battery %d uptime %d fw %d\r\n", heartbeat.battery_level, heartbeat.uptime_sec, heartbeat.firmware_version);
