@@ -311,7 +311,11 @@ void hble_params_init(char* device_name)
         memset(&dis_init, 0, sizeof(dis_init));
 
         ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, BLE_MANUFACTURER_NAME);
+#ifdef EXT_MODEL_NUM
+        ble_srv_ascii_to_utf8(&dis_init.model_num_str, EXT_MODEL_NUM BLE_MODEL_NUM);
+#else
         ble_srv_ascii_to_utf8(&dis_init.model_num_str, BLE_MODEL_NUM);
+#endif
 
         size_t device_id_len = sizeof(NRF_FICR->DEVICEID); 
 

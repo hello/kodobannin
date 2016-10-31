@@ -222,7 +222,7 @@ static void _init_ble_stack(const MorpheusCommand* command)
         {
             PRINTS("SYNC DEVICEID\r\n");
             
-            hble_params_init(device_name, GET_UUID_64(), command->firmwareVersion);
+            hble_params_init(device_name, GET_UUID_64(), command->firmware_build);
             hble_services_init();
 
             ble_uuid_t service_uuid = {
