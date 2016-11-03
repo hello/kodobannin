@@ -46,7 +46,7 @@ typedef struct{
 typedef struct 
 {
     uint8_t battery_level;
-    uint8_t firmware_version;
+    uint8_t firmware_build;
     uint32_t uptime_sec;
 }__attribute__((packed)) pill_heartbeat_t;
 
