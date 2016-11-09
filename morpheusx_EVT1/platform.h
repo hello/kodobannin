@@ -14,7 +14,6 @@
 
 #define DEVICE_ID_SIZE        8
 
-#define EXT_MODEL_NUM "1p5 "
 
 #define configTOTAL_HEAP_SIZE 1152
 #define configLOW_MEM 128
