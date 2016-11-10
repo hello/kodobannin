@@ -169,6 +169,12 @@ void read_prox(uint32_t * out_val1, uint32_t * out_val4){
     cap_meas1_raw = cap_meas1_raw >> 8;
     cap_meas4_raw = swap_endian16(cap_meas4_lo) | (swap_endian16(cap_meas4_hi) << 16);
     cap_meas4_raw = cap_meas4_raw >> 8;
+    if(cap_meas4_raw & 1<<23){
+        cap_meas4_raw |= 0xFF000000;
+    }
+    if(cap_meas1_raw & 1<<23){
+        cap_meas1_raw |= 0xFF000000;
+    }
     *out_val1 = (uint32_t)((cap_meas1_raw));
     *out_val4 = (uint32_t)((cap_meas4_raw));
 
