@@ -73,7 +73,7 @@ static void _handle_pill(const hlo_ant_device_t * id, MSG_Data_t * msg){
                             // http://dbp-consulting.com/StrictAliasing.pdf
                             memcpy(&prox, pill_data->payload, sizeof(prox));
                             self.parent->dispatch((MSG_Address_t){SSPI,1}, (MSG_Address_t){UART,MSG_UART_HEX}, msg);
-                            PRINTF("Cap1: %u\r\nCap4: %u\r\n", prox.cap[0], prox.cap[1]);
+                            PRINTF("Cap1: %d\r\nCap4: %d\r\n", prox.cap[0], prox.cap[1]);
                         }
                         break;
                     case ANT_PILL_PROX_ENCRYPTED:
