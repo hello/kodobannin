@@ -38,8 +38,8 @@ static const uint8_t CONF_MEAS1[3] = { 0x08, 0x13, 0x40 };
 //static const uint8_t CONF_MEAS1[3] = { 0x08, 0x0C, 0x00 };
 static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x73, 0x40 }; //72
 
-static uint8_t CONF_GAIN_CAL1[3] = {0x11, 0x40, 0x00};// CIN1 4x gain as 0xFF
-static uint8_t CONF_GAIN_CAL4[3] = {0x14, 0x40, 0x00};// CIN4 4x gain as 0xFF
+static uint8_t CONF_GAIN_CAL1[3] = {0x11, 0x20, 0x00};// CIN1 4x gain as 0xFF
+static uint8_t CONF_GAIN_CAL4[3] = {0x14, 0x20, 0x00};// CIN4 4x gain as 0xFF
 
 static uint8_t CONF_OFFSET_CAL1[3] = {0x0D, 0x00, 0x00};// 9 pF
 static uint8_t CONF_OFFSET_CAL4[3] = {0x10, 0x00, 0x00};// 6 pF
@@ -154,14 +154,13 @@ void read_prox(int32_t * out_val1, int32_t * out_val4){
     _prox_power(1);
 
     TWI_WRITE(FDC_ADDRESS, CONF_READ1, sizeof(CONF_READ1));
-    TWI_WRITE(FDC_ADDRESS, CONF_READ4, sizeof(CONF_READ4));
-   // PRINT_HEX(&ready_conf, 2);  PRINTS("\r\n");
 //    do { 
 //        TWI_READ(FDC_ADDRESS, CONF_READ4[0], ready_conf, sizeof(ready_conf));
 //    }while ((ready_conf[1] & 0x19) != 0x19);
-    //todo verify write
     TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_HI, &cap_meas1_hi, 2);
     TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_LO, &cap_meas1_lo, 2);
+
+    TWI_WRITE(FDC_ADDRESS, CONF_READ4, sizeof(CONF_READ4));
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_HI, &cap_meas4_hi, 2);
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_LO, &cap_meas4_lo, 2);
 
