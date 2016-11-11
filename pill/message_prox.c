@@ -17,7 +17,6 @@ static pstorage_handle_t fs;
 
 #define PROX_POLL_INTERVAL 15000 /*in ms*/
 #define MSB_24_MASK (1<<23)
-#define VALID_PROX_RANGE(x) (x &&  x <= (1<<21))
 
 static void _send_available_prox_ant();
 
@@ -57,13 +56,21 @@ static void _notify_calibration_result(uint8_t good){
     }
 
 }
+static bool _is_in_range(int32_t value){
+    int16_t msb = value >> 19;
+    PRINTF("MSB %d\r\n", msb);
+    if( msb < 13 && msb > -13 ){
+        return true;
+    }
+    return false;
+}
 static void _do_prox_calibration(void){
-    uint32_t cap1 = 0;
-    uint32_t cap4 = 0;
+    int32_t cap1 = 0;
+    int32_t cap4 = 0;
     PRINTF("Prox Calibration\r\n");
     read_prox(&cap1, &cap4);
-    PRINTF("Got [%u, %u]\r\n", cap1, cap4);
-    if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
+    PRINTF("Got [%d, %d]\r\n", cap1, cap4);
+    if(_is_in_range(cap1) && _is_in_range(cap4)){
         //don't need to recalibrate
         PRINTF("Skipping Calibration [%u, %u]\r\n", cap1, cap4);
         _notify_calibration_result(1);
@@ -79,9 +86,9 @@ static void _do_prox_calibration(void){
     set_prox_gain(cal.gain[0], cal.gain[1]);
 
     read_prox(&cap1, &cap4);
-    PRINTF("Got [%u, %u]\r\n", cap1, cap4);
+    PRINTF("Got [%d, %d]\r\n", cap1, cap4);
     //check if values are reasonable, if so, commit
-    if(VALID_PROX_RANGE(cap1) && VALID_PROX_RANGE(cap4)){
+    if(_is_in_range(cap1) && _is_in_range(cap4)){
         //ok
         //commit
         cal.reserved[0] = CALIBRATION_GOOD_MAGIC;
@@ -162,13 +169,19 @@ static MSG_Status _on_message(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t *
             break;
         case PROX_READ:
             {
-                uint32_t data[2] = {0};
+                int32_t data[2] = {0};
                 read_prox(&data[0], &data[1]);
-                PRINTF("Prox read [%u, %u]\r\n", data[0], data[1]);
+                int32_t msb[2] = {0};
+                msb[0] = data[0] >> 19;
+                msb[1] = data[1] >> 19;
+                PRINTF("Prox MSB Read [%d, %d]\r\n", msb[0], msb[1]);
+                _send_available_prox_ant();
             }
             break;
         case PROX_START_CALIBRATE:
-            _do_prox_calibration();
+            {
+                _do_prox_calibration();
+            }
             break;
         case PROX_ERASE_CALIBRATE:
             APP_OK(pstorage_clear(&fs, sizeof(prox_calibration_t)));
@@ -189,7 +202,7 @@ static void _send_available_prox_ant(){
         .reserved = 0,
     };
     read_prox(&prox.cap[0], &prox.cap[1]);
-    PRINTF("P1: %u, P4: %u \r\n", prox.cap[0], prox.cap[1]);
+    PRINTF("P1: %d, P4: %d \r\n", prox.cap[0], prox.cap[1]);
     {
         MSG_Data_t * data = AllocateEncryptedAntPayload(ANT_PILL_PROX_ENCRYPTED, &prox, sizeof(prox));
         if(data){
@@ -200,16 +213,16 @@ static void _send_available_prox_ant(){
             MSG_Base_ReleaseDataAtomic(data);
         }
     }
-    /*
-     *{
-     *    MSG_Data_t * data = AllocateAntPayload(ANT_PILL_PROX_PLAINTEXT, &prox, sizeof(prox));
-     *    if(data){
-     *        parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){ANT,1}, data);
-     *        parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){UART,MSG_UART_HEX}, data);
-     *        MSG_Base_ReleaseDataAtomic(data);
-     *    }
-     *}
-     */
+    {
+        MSG_Data_t * data = AllocateAntPayload(ANT_PILL_PROX_PLAINTEXT, &prox, sizeof(prox));
+        if(data){
+            parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){ANT,1}, data);
+            /*
+             *parent->dispatch((MSG_Address_t){PROX,1}, (MSG_Address_t){UART,MSG_UART_HEX}, data);
+             */
+            MSG_Base_ReleaseDataAtomic(data);
+        }
+    }
 }
 static void _prox_timer_handler(void * ctx) {
     _send_available_prox_ant();
