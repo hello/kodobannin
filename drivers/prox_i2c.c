@@ -142,7 +142,7 @@ MSG_Status init_prox(void){
     return ret;
 }
 
-void read_prox(uint32_t * out_val1, uint32_t * out_val4){
+void read_prox(int32_t * out_val1, int32_t * out_val4){
 #ifdef PLATFORM_HAS_PROX
     uint16_t cap_meas1_hi = 0;
     uint16_t cap_meas1_lo = 0;
