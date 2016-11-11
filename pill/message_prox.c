@@ -29,14 +29,8 @@ typedef struct {
 }prox_calibration_t;
 static prox_calibration_t  cal;
 
-static int16_t get_offset(uint32_t meas){
-    int inv = meas;
-    if(meas & MSB_24_MASK){//negative
-        inv = (1<<23) - (meas & 0x007FFFFF);
-    }else{//positive
-         inv = (~inv + 1) & 0x00FFFFFF;
-    }
-    return (inv/(1<<19) + 1);
+static int16_t get_offset(int32_t meas){
+    return (-1 * meas) / (1<<19);
 }
 static uint16_t get_gain(uint32_t meas){
     return 0xFFFF;
