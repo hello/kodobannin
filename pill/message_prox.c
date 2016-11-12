@@ -16,7 +16,6 @@ static app_timer_id_t timer_id_prox;
 static pstorage_handle_t fs;
 
 #define PROX_POLL_INTERVAL 15000 /*in ms*/
-#define MSB_24_MASK (1<<23)
 
 static void _send_available_prox_ant();
 
