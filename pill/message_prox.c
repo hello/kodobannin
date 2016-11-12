@@ -32,7 +32,7 @@ static int16_t get_offset(int32_t meas){
     return (-1 * meas) / (1<<19);
 }
 static uint16_t get_gain(uint32_t meas){
-    return 0xFFFF;
+    return 0x2000;
 }
 static int _get_calibration(prox_calibration_t * out){
     pstorage_handle_t block;
