@@ -150,17 +150,25 @@ void read_prox(int32_t * out_val1, int32_t * out_val4){
     uint16_t cap_meas4_lo = 0;
     uint32_t cap_meas1_raw = 0;
     uint32_t cap_meas4_raw = 0;
+    uint16_t res = 0;
 
     _prox_power(1);
 
     TWI_WRITE(FDC_ADDRESS, CONF_READ1, sizeof(CONF_READ1));
-//    do { 
-//        TWI_READ(FDC_ADDRESS, CONF_READ4[0], ready_conf, sizeof(ready_conf));
-//    }while ((ready_conf[1] & 0x19) != 0x19);
+    do {
+        TWI_READ(FDC_ADDRESS, 0x0C, &res, sizeof(res));
+        res = swap_endian16(res);
+        nrf_delay_ms(10);
+    }while (!(res & 0x08));
     TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_HI, &cap_meas1_hi, 2);
     TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_LO, &cap_meas1_lo, 2);
 
     TWI_WRITE(FDC_ADDRESS, CONF_READ4, sizeof(CONF_READ4));
+    do {
+        TWI_READ(FDC_ADDRESS, 0x0C, &res, sizeof(res));
+        res = swap_endian16(res);
+        nrf_delay_ms(10);
+    }while (!(res & 0x01));
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_HI, &cap_meas4_hi, 2);
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_LO, &cap_meas4_lo, 2);
 
