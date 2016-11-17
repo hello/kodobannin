@@ -7,7 +7,7 @@
 #include <nrf_delay.h>
 #include <nrf_gpio.h>
 
-#define I2C_DELAY   15
+#define I2C_DELAY   5
 
 #define FDC_ADDRESS (0b1010000)
 /*
