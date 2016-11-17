@@ -34,11 +34,11 @@ static inline void TWI_READ(uint8_t addr, uint8_t reg, void * ptr, size_t ptr_si
 }
 
 
-static const uint8_t CONF_MEAS1[3] = { 0x08, 0x12, 0x00 };
-static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x73, 0x40 }; //72
+static const uint8_t CONF_MEAS1[3] = { 0x08, 0x13, 0x00 };
+static const uint8_t CONF_MEAS4[3] = { 0x0B, 0x73, 0x00 }; //72
 
-static uint8_t CONF_GAIN_CAL1[3] = {0x11, 0x20, 0x00};// CIN1 4x gain as 0xFF
-static uint8_t CONF_GAIN_CAL4[3] = {0x14, 0x20, 0x00};// CIN4 4x gain as 0xFF
+static uint8_t CONF_GAIN_CAL1[3] = {0x11, 0x40, 0x00};// CIN1 4x gain as 0xFF
+static uint8_t CONF_GAIN_CAL4[3] = {0x14, 0x40, 0x00};// CIN4 4x gain as 0xFF
 
 static uint8_t CONF_OFFSET_CAL1[3] = {0x0D, 0x00, 0x00};// 9 pF
 static uint8_t CONF_OFFSET_CAL4[3] = {0x10, 0x00, 0x00};// 6 pF
@@ -87,7 +87,6 @@ static MSG_Status _check_id(void){
     return SUCCESS;
 }
 static void _conf_prox(void){
-    uint8_t r[2] = {0};
     TWI_WRITE(FDC_ADDRESS, CONF_MEAS1, sizeof(CONF_MEAS1));
     TWI_WRITE(FDC_ADDRESS, CONF_MEAS4, sizeof(CONF_MEAS4));
     //config offset
@@ -97,6 +96,7 @@ static void _conf_prox(void){
     TWI_WRITE(FDC_ADDRESS, CONF_GAIN_CAL1, sizeof(CONF_GAIN_CAL1));
     TWI_WRITE(FDC_ADDRESS, CONF_GAIN_CAL4, sizeof(CONF_GAIN_CAL4));
     //verify
+    uint8_t r[2] = {0};
     TWI_READ(FDC_ADDRESS, CONF_MEAS1[0], r,sizeof(r));
     APP_OK( _byte_check(r, &CONF_MEAS1[1], sizeof(r)) );
     TWI_READ(FDC_ADDRESS, CONF_MEAS4[0], r,sizeof(r));
@@ -114,13 +114,11 @@ static MSG_Status _prox_power(uint8_t on){
         nrf_gpio_pin_set(PROX_BOOST_MODE);
         nrf_gpio_pin_set(PROX_VDD_EN);
 
-        nrf_delay_ms(8 * I2C_DELAY);
+        nrf_delay_ms(I2C_DELAY);
         if(SUCCESS != _check_id()){
             PRINTF("Unable to check id");
             return FAIL;
         }
-        _reset_config();
-        _conf_prox();
     }else{
         nrf_gpio_cfg_output(PROX_BOOST_ENABLE);
         nrf_gpio_cfg_output(PROX_BOOST_MODE);
@@ -141,49 +139,50 @@ MSG_Status init_prox(void){
     return ret;
 }
 
+static void _poll_prox(uint8_t mask){
+    uint16_t res = 0; 
+    uint16_t timeout = 4;
+    timeout = 4;
+    do {
+        TWI_READ(FDC_ADDRESS, 0x0C, &res, sizeof(res));
+        res = swap_endian16(res);
+        nrf_delay_ms(10);
+        timeout--;
+    }while (!(res & mask) && timeout);
+}
 void read_prox(int32_t * out_val1, int32_t * out_val4){
 #ifdef PLATFORM_HAS_PROX
     uint16_t cap_meas1_hi = 0;
     uint16_t cap_meas1_lo = 0;
+    uint32_t cap_meas1_raw = 0;
     uint16_t cap_meas4_hi = 0;
     uint16_t cap_meas4_lo = 0;
-    uint32_t cap_meas1_raw = 0;
     uint32_t cap_meas4_raw = 0;
-    uint16_t res = 0;
 
     _prox_power(1);
-
-    TWI_WRITE(FDC_ADDRESS, CONF_READ1, sizeof(CONF_READ1));
-    do {
-        TWI_READ(FDC_ADDRESS, 0x0C, &res, sizeof(res));
-        res = swap_endian16(res);
-        nrf_delay_ms(10);
-    }while (!(res & 0x08));
-    TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_HI, &cap_meas1_hi, 2);
-    TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_LO, &cap_meas1_lo, 2);
+    _conf_prox();
 
     TWI_WRITE(FDC_ADDRESS, CONF_READ4, sizeof(CONF_READ4));
-    do {
-        TWI_READ(FDC_ADDRESS, 0x0C, &res, sizeof(res));
-        res = swap_endian16(res);
-        nrf_delay_ms(10);
-    }while (!(res & 0x01));
+    _poll_prox(0x01);
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_HI, &cap_meas4_hi, 2);
     TWI_READ(FDC_ADDRESS, READ_4_ADDRESS_LO, &cap_meas4_lo, 2);
-
-    cap_meas1_raw = swap_endian16(cap_meas1_lo) | (swap_endian16(cap_meas1_hi) << 16);
-    cap_meas1_raw = cap_meas1_raw >> 8;
     cap_meas4_raw = swap_endian16(cap_meas4_lo) | (swap_endian16(cap_meas4_hi) << 16);
     cap_meas4_raw = cap_meas4_raw >> 8;
     if(cap_meas4_raw & 1<<23){
         cap_meas4_raw |= 0xFF000000;
     }
+    *out_val4 = (uint32_t)((cap_meas4_raw));
+
+    TWI_WRITE(FDC_ADDRESS, CONF_READ1, sizeof(CONF_READ1));
+    TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_HI, &cap_meas1_hi, 2);
+    TWI_READ(FDC_ADDRESS, READ_1_ADDRESS_LO, &cap_meas1_lo, 2);
+    _poll_prox(0x08);
+    cap_meas1_raw = swap_endian16(cap_meas1_lo) | (swap_endian16(cap_meas1_hi) << 16);
+    cap_meas1_raw = cap_meas1_raw >> 8;
     if(cap_meas1_raw & 1<<23){
         cap_meas1_raw |= 0xFF000000;
     }
     *out_val1 = (uint32_t)((cap_meas1_raw));
-    *out_val4 = (uint32_t)((cap_meas4_raw));
-
     _prox_power(0);
 #endif
 }
