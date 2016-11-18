@@ -38,7 +38,7 @@ enum {
 
     SSPI_INT = 24,
 };
-
+/*  Removed for MP
 #define PLATFORM_HAS_ACCEL_SPI
 
 enum{
@@ -48,7 +48,7 @@ enum{
 	ACCEL_MISO = 10,
 	ACCEL_INT = 29,
 };
-
+*/
 #define PLATFORM_HAS_SERIAL_CROSS_CONNECT
 
 enum {
