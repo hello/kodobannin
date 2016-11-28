@@ -188,6 +188,7 @@ static void _1sec_timer_handler(void * ctx){
         hble_advertising_start();
         self.central->dispatch( ADDR(TIME, 0), ADDR(TIME, MSG_TIME_SET_START_1MIN), NULL);
         APP_OK(app_gpiote_user_enable(_gpiote_user));
+        ShakeDetectFactoryTest();
     } else if(self.reed_states && self.reed_states != POWER_STATE_MASK){
         battery_update_droop();
     }
@@ -217,7 +218,6 @@ static MSG_Status _send(MSG_Address_t src, MSG_Address_t dst, MSG_Data_t * data)
                 app_timer_stop(self.timer_id_1sec);
                 app_timer_start(self.timer_id_1sec, ticks, NULL);
                 self.onesec_runtime = 0;
-                ShakeDetectFactoryTest();
             }
             break;
         case MSG_TIME_SET_START_1MIN:
