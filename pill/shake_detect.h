@@ -13,6 +13,7 @@ typedef void(*shake_detection_callback_t)(void);
 void ShakeDetectReset(uint32_t threshold);
 void ShakeDetectDecWindow(void);
 bool ShakeDetect(uint32_t accelmag);
+void ShakeDetectFactoryTest(void);//enable hi sensitivity for N shakes
 
 void set_shake_detection_callback(shake_detection_callback_t callback);
 
