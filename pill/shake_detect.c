@@ -34,6 +34,9 @@ void ShakeDetectDecWindow(void){
             if(self._shake_detection_callback){
                 self._shake_detection_callback();
             }
+            if(self.factory_shake_cnt){
+                self.factory_shake_cnt--;
+            }
         }
         _reset();
     }
@@ -57,8 +60,5 @@ bool ShakeDetect(uint32_t accelmag){
 }
 
 void set_shake_detection_callback(shake_detection_callback_t callback){
-    if(self.factory_shake_cnt){
-        self.factory_shake_cnt--;
-    }
     self._shake_detection_callback = callback;
 }
