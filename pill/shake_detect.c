@@ -5,6 +5,7 @@
 static struct{
     uint32_t thmag, cnt;
     uint8_t shaking_time_sec;
+    uint8_t factory_shake_cnt;
     shake_detection_callback_t _shake_detection_callback;
 }self;
 
@@ -17,6 +18,9 @@ void ShakeDetectReset(uint32_t threshold){
     _reset();
 }
 
+void ShakeDetectFactoryTest(void){
+    self.factory_shake_cnt = 3;
+}
 void ShakeDetectDecWindow(void){
 
     //increase sliding window if started
@@ -30,6 +34,9 @@ void ShakeDetectDecWindow(void){
             if(self._shake_detection_callback){
                 self._shake_detection_callback();
             }
+            if(self.factory_shake_cnt){
+                self.factory_shake_cnt--;
+            }
         }
         _reset();
     }
@@ -37,7 +44,11 @@ void ShakeDetectDecWindow(void){
 }
 
 bool ShakeDetect(uint32_t accelmag){
-    if(accelmag >= self.thmag){
+    uint32_t mag = self.thmag;
+    if(self.factory_shake_cnt){
+        mag = self.thmag / 2;
+    }
+    if(accelmag >= mag){
         if(!self.shaking_time_sec){
             ++self.shaking_time_sec;  // initialize the sliding window timer.
         }
