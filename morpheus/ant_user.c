@@ -209,6 +209,7 @@ static void _on_message(const hlo_ant_device_t * id, MSG_Data_t * msg){
         PRINTS("\r\n");
         return;
     }
+    PRINTS("Message:\t");
     _disp_ant_id(id);
     switch(id->device_type){
         case HLO_ANT_DEVICE_TYPE_PILL:
