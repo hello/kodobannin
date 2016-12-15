@@ -174,7 +174,7 @@ inline uint8_t imu_clear_interrupt_status()
 	_register_read(REG_INT1_SRC, &int_source);
 	imu_reset_hp_filter();
 
-	PRINTF("INT CLR %x\n", int_source);
+	PRINTF("INT CLR %x\r\n", int_source);
 	return int_source;
 }
 
@@ -200,7 +200,7 @@ uint8_t imu_handle_fifo_read(uint16_t* values)
 
 	fifo_src_reg = imu_read_fifo_src_reg();
 
-	PRINTF("INT SRC %x %x\n", fifo_src_reg, INT1_FIFO_OVERRUN | FIFO_WATERMARK);
+	PRINTF("INT SRC %x %x\r\n", fifo_src_reg, INT1_FIFO_OVERRUN | FIFO_WATERMARK);
 
 	//If wtm interrupt is enabled or if wtm flag is set, read FIFO
 	if(fifo_src_reg & (INT1_FIFO_OVERRUN | FIFO_WATERMARK) )

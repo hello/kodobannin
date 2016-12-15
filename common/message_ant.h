@@ -55,7 +55,7 @@ typedef struct{
 }__attribute__((packed)) pill_shakedata_t;
 
 typedef struct{
-    uint32_t cap[2];
+    int32_t cap[2];
     uint32_t reserved;
 }__attribute__((packed)) pill_proxdata_t;
 
