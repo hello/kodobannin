@@ -53,6 +53,7 @@ static struct{
      */
     uint8_t dummy[4];
     hlo_queue_t * tx_queue;
+    sspi_handler_t on_rx;
 }self;
 
 static char * name = "SSPI";
@@ -179,8 +180,9 @@ _handle_transaction(){
              *PRINT_HEX(&self.transaction.context_reg.pad, sizeof(uint16_t));
              */
             //send and release
-            self.parent->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){BLE, 1}, self.transaction.payload);
-            //self.parent->dispatch( (MSG_Address_t){SSPI, 1}, (MSG_Address_t){UART, 1}, self.transaction.payload);
+            if(self.on_rx){
+                self.on_rx(self.parent, self.transaction.context_reg.address, self.transaction.payload);
+            }
 
             if(self.transaction.payload){
                 MSG_Base_ReleaseDataAtomic(self.transaction.payload);
@@ -297,12 +299,13 @@ _init(){
 
 }
 
-MSG_Base_t * MSG_SSPI_Base(const spi_slave_config_t * p_spi_slave_config, const MSG_Central_t * parent){
+MSG_Base_t * MSG_SSPI_Base(const spi_slave_config_t * p_spi_slave_config, sspi_handler_t handler, const MSG_Central_t * parent){
     if(!p_spi_slave_config){
         return NULL;
     }
     self.config = *p_spi_slave_config;
     self.parent = parent;
+    self.on_rx = handler;
     {
         self.base.init =  _init;
         self.base.flush = _flush;

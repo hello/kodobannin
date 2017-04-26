@@ -29,6 +29,7 @@
 #include "ant_devices.h"
 #include "ant_user.h"
 #include "cli_user.h"
+#include "sspi_user.h"
 
 // To generate the protobuf download nanopb
 // Generate C code: ~/nanopb-0.2.8-macosx-x86/generator-bin/protoc --nanopb_out=. morpheus/morpheus_ble.proto
@@ -595,7 +596,7 @@ void morpheus_load_modules(void){
 			0xAA,
 			0x55,
 		};
-		central->loadmod(MSG_SSPI_Base(&spi_params,central));
+		central->loadmod(MSG_SSPI_Base(&spi_params, spi_handler, central));
 #endif
 #ifdef PLATFORM_HAS_ACCEL_SPI
 #include "message_imu.h"
