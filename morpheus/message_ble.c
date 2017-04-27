@@ -193,13 +193,9 @@ static void _sync_device_id()
 static void _init_ble_stack(const MorpheusCommand* command)
 {
     // append something to device name
-    char device_name[strlen(BLE_DEVICE_NAME)+4];
+    char device_name[strlen(BLE_DEVICE_NAME)+1];
     memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
-    uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
-    device_name[strlen(BLE_DEVICE_NAME)] = '-';
-    device_name[strlen(BLE_DEVICE_NAME)+1] = hex[(id >> 4) & 0xF];
-    device_name[strlen(BLE_DEVICE_NAME)+2] = hex[(id & 0xF)];
-    device_name[strlen(BLE_DEVICE_NAME)+3] = '\0';
+    device_name[strlen(BLE_DEVICE_NAME)] = 0;
 
     switch(self.boot_state)
     {

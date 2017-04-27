@@ -71,9 +71,9 @@ static void _init_rf_modules()
     hble_bond_manager_init();
 #endif
     // append something to device name
-    char device_name[strlen(BLE_DEVICE_NAME)+4];
-
+    char device_name[strlen(BLE_DEVICE_NAME)+1];
     memcpy(device_name, BLE_DEVICE_NAME, strlen(BLE_DEVICE_NAME));
+    device_name[strlen(BLE_DEVICE_NAME)] = 0;
 
     uint8_t id = *(uint8_t *)NRF_FICR->DEVICEID;
     //DEBUG("ID is ", id);
